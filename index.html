@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Crónicas de Brumaluz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="loading"><div class="crest">✦</div><p>Encendiendo los faroles de Brumaluz…</p></div>
+
+  <header id="title">
+    <h1>Crónicas de Brumaluz</h1>
+    <p>Creación de personaje</p>
+  </header>
+
+  <aside id="panel" class="frame">
+    <nav id="tabs">
+      <button data-tab="raza" class="active"><span>⚜</span>Raza</button>
+      <button data-tab="rostro"><span>☺</span>Rostro</button>
+      <button data-tab="cabello"><span>✂</span>Cabello</button>
+      <button data-tab="clase"><span>⚔</span>Clase</button>
+    </nav>
+    <div id="pages">
+      <section data-page="raza" class="active">
+        <h3>Linaje</h3>
+        <div class="cards" id="races"></div>
+        <p class="desc" id="raceDesc"></p>
+        <h3>Sexo</h3>
+        <div class="seg" id="sex">
+          <button data-v="0">Hombre</button>
+          <button data-v="1">Mujer</button>
+        </div>
+        <h3>Cuerpo</h3>
+        <label class="slider"><span>Altura</span><input type="range" id="height" min="0" max="1" step="0.01" /></label>
+        <label class="slider"><span>Complexión</span><input type="range" id="build" min="0" max="1" step="0.01" /></label>
+      </section>
+      <section data-page="rostro">
+        <h3>Tono de piel</h3>
+        <div class="swatches" id="skin"></div>
+        <h3>Ojos</h3>
+        <div class="swatches" id="eyes"></div>
+        <div id="detailBox">
+          <h3 id="detailLabel">Barba</h3>
+          <div class="stepper" data-key="detail"></div>
+        </div>
+      </section>
+      <section data-page="cabello">
+        <h3 id="hairLabel">Peinado</h3>
+        <div class="stepper" data-key="hair"></div>
+        <h3>Color</h3>
+        <div class="swatches" id="hairColor"></div>
+      </section>
+      <section data-page="clase">
+        <h3>Vocación</h3>
+        <div class="cards" id="classes"></div>
+        <p class="desc" id="classDesc"></p>
+        <h3>Tocado</h3>
+        <div class="stepper" data-key="headgear"></div>
+        <h3>Color principal</h3>
+        <div class="swatches" id="primary"></div>
+        <h3>Color secundario</h3>
+        <div class="swatches" id="secondary"></div>
+      </section>
+    </div>
+  </aside>
+
+  <div id="tools">
+    <button id="random" class="btn ghost" title="Personaje aleatorio">🎲 Aleatorio</button>
+    <button id="wave" class="btn ghost" title="Saludar">👋 Saludar</button>
+  </div>
+
+  <footer id="bottom" class="frame">
+    <div class="namebox">
+      <input id="name" maxlength="16" placeholder="Nombre del personaje" autocomplete="off" spellcheck="false" />
+      <button id="dice" title="Nombre aleatorio">⟳</button>
+    </div>
+    <button id="enter" class="btn gold">Entrar en Brumaluz</button>
+  </footer>
+
+  <div id="hint">Arrastra para girar · Rueda para acercar</div>
+  <div id="toast"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
