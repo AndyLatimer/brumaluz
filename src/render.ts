@@ -18,6 +18,8 @@ export const SUN_DIR = new THREE.Vector3(-0.62, 0.7, 0.42).normalize();
 export interface Stage {
   composer: EffectComposer;
   sun: THREE.DirectionalLight;
+  /** Centra el sol (y sus sombras) en un punto; `wide` para el modo exploración. */
+  follow(p: THREE.Vector3, wide: boolean): void;
   resize(w: number, h: number): void;
   render(): void;
 }
@@ -29,7 +31,7 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  scene.fog = new THREE.Fog('#e3a985', 22, 120);
+  scene.fog = new THREE.Fog('#e8b090', 45, 170);
 
   // Sol cálido y bajo, con sombras suaves centradas en el personaje
   const sun = new THREE.DirectionalLight('#ffd2a0', 3.2);
@@ -74,6 +76,15 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
     gtao = new GTAOPass(scene, camera, 1, 1);
     gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.5, thickness: 1, scale: 1.2, samples: 12 });
     gtao.blendIntensity = 0.75;
+    // destellos, partículas y piezas transparentes no deben hacer sombra de contacto
+    const g = gtao as unknown as { overrideVisibility(): void; _visibilityCache: Map<THREE.Object3D, boolean> };
+    g.overrideVisibility = () => {
+      scene.traverse((o) => {
+        g._visibilityCache.set(o, o.visible);
+        const mat = (o as THREE.Mesh).material as THREE.Material | undefined;
+        if ((o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite || (mat && !Array.isArray(mat) && mat.transparent)) o.visible = false;
+      });
+    };
     composer.addPass(gtao);
   }
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.28, 0.6, 0.88);
@@ -83,6 +94,20 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   return {
     composer,
     sun,
+    follow(p, wide) {
+      const e = wide ? 16 : 9;
+      if (sc.right !== e) {
+        sc.left = -e; sc.right = e; sc.top = e; sc.bottom = -e;
+        sc.far = 70;
+        sc.updateProjectionMatrix();
+      }
+      sun.target.position.copy(p);
+      sun.position.copy(p).addScaledVector(SUN_DIR, 30);
+      // ajuste al texel para que las sombras no tiemblen al moverse
+      const texel = (2 * e) / sun.shadow.mapSize.x;
+      sun.target.position.x = Math.round(sun.target.position.x / texel) * texel;
+      sun.target.position.z = Math.round(sun.target.position.z / texel) * texel;
+    },
     resize(w, h) {
       composer.setPixelRatio(renderer.getPixelRatio());
       composer.setSize(w, h);

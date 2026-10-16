@@ -14,9 +14,20 @@ MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 ## Créditos
 
 - Personajes: [KayKit Adventurers](https://kaylousberg.itch.io/kaykit-adventurers) de Kay Lousberg (CC0).
+- Ciudad: [KayKit Medieval Hexagon](https://kaylousberg.itch.io/kaykit-medieval-hexagon) de Kay Lousberg (CC0).
 - HDRI y mapas de relieve: [Poly Haven](https://polyhaven.com) (CC0), empaquetados en `@pmndrs/assets`.
 
-Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta gltf del pack>`.
+Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta gltf de Adventurers>` y
+`node tools/prepare-city.mjs <carpeta Assets/gltf de Medieval Hexagon>`.
+
+## Ciudad
+
+- Brumaluz está hecha con el pack **KayKit Medieval Hexagon** (Kay Lousberg, CC0) a escala ×4:
+  plaza con fuente, avenidas, barrio de casas, taberna, mercado, iglesia, herrería, castillo,
+  granja con molino, río con vado y bosques y montañas alrededor, rodeada de agua.
+- Las calles se eligen y giran solas según sus vecinos (`src/city.ts`).
+- Modo exploración: WASD o clic para moverse, Mayús para caminar, arrastrar para girar la cámara,
+  rueda para acercar y E para saludar.
 
 ## Desarrollo
 

@@ -364,6 +364,18 @@ export class Character {
     a.fadeIn(0.25).play();
     this.idle.fadeOut(0.25);
   }
+  private gait: 'idle' | 'walk' | 'run' = 'idle';
+  /** Cambia entre reposo, caminar y correr con transición suave. */
+  setGait(g: 'idle' | 'walk' | 'run') {
+    if (g === this.gait) return;
+    const pick = (x: string) => (x === 'idle' ? this.idle : this.actions.get(x === 'walk' ? 'Walking_A' : 'Running_A')!);
+    const from = pick(this.gait), to = pick(g);
+    this.mixer.stopAllAction();
+    from.play();
+    to.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+    from.crossFadeTo(to, 0.2, false);
+    this.gait = g;
+  }
   wave() { this.play('Cheer'); }
   hop() { this.play(this.opts.outfit && this.d.cls === 'mago' ? 'Spellcast_Raise' : 'Interact'); }
 

@@ -193,3 +193,21 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
   #toast h2 { font-size: 21px; }
 }
 [hidden] { display: none !important; }
+
+/* ---------- Modo exploración ---------- */
+#hud, #controls { display: none; }
+body.playing #panel, body.playing #bottom, body.playing #title, body.playing #tools, body.playing #hint { display: none; }
+body.playing #hud {
+  display: flex; align-items: center; gap: 14px; top: 18px; left: 18px; padding: 10px 12px 10px 16px;
+}
+#hud .who { display: flex; flex-direction: column; line-height: 1.15; }
+#hud strong { font-family: 'Cinzel', serif; font-size: 18px; color: var(--ink); }
+#hud span { font-style: italic; color: var(--ink-soft); font-size: 14px; }
+body.playing #controls {
+  display: block; position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 4;
+  color: #fff3da; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,.8); white-space: nowrap; pointer-events: none;
+}
+body.playing #toast { left: 50%; }
+@media (max-width: 760px) {
+  body.playing #controls { white-space: normal; text-align: center; width: calc(100% - 32px); font-size: 12px; }
+}
