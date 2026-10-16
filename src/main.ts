@@ -4,8 +4,9 @@ import { buildEnv } from './env';
 import { Character, loadKits } from './character';
 import { setupStage, castShadows } from './render';
 import { buildCity, City } from './city';
+import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
-  CharData, Race, ClassId, RACES, CLASSES, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, FACES,
+  CharData, Race, ClassId, RACES, CLASSES, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
   defaultChar, randomChar, randomName, sanitize,
 } from './data';
 
@@ -107,7 +108,7 @@ function updateCamera(dt: number) {
   const head = char.headWorld(tmp);
   const mobile = window.innerWidth <= 760;
   let ty: number, dist: number;
-  if (focus === 'face') { ty = head.y - 0.02; dist = 1.7; }
+  if (focus === 'face') { ty = head.y - 0.06; dist = 2.6; }
   else { ty = head.y * 0.5; dist = 3.6 + head.y * 1.3; }
   if (mobile) { dist *= focus === 'face' ? 1.5 : 1.75; ty += focus === 'face' ? 0.02 : 0.15; }
   dist *= zoom;
@@ -258,7 +259,7 @@ function cards<T extends string>(el: HTMLElement, items: Record<T, { label: stri
   });
 }
 
-function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'primary' | 'secondary', names: () => string[]) {
+function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'eyeColor' | 'primary' | 'secondary', names: () => string[]) {
   return () => {
     el.innerHTML = '';
     const ns = names();
@@ -274,7 +275,7 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairCo
   };
 }
 
-function stepper(key: 'face' | 'trait', list: () => string[]) {
+function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail', list: () => string[]) {
   const el = $(`.stepper[data-key="${key}"]`);
   el.innerHTML = `<button aria-label="Anterior">‹</button><div class="val"></div><button aria-label="Siguiente">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
@@ -303,12 +304,26 @@ const renders = [
   swatches($('#hairColor'), () => HAIR_COLORS, 'hairColor', () => HAIR_NAMES),
   swatches($('#primary'), () => CLOTH, 'primary', () => CLOTH_NAMES),
   swatches($('#secondary'), () => CLOTH, 'secondary', () => CLOTH_NAMES),
-  stepper('face', () => FACES[state.sex].map((f) => f.label)),
+  swatches($('#eyeColor'), () => EYE_COLORS, 'eyeColor', () => EYE_COLOR_NAMES),
+  stepper('face', () => FACE_KITS.map((k) => FACE_LABELS[k])),
+  stepper('hair', () => HAIR_STYLES),
+  stepper('beard', () => BEARDS),
+  stepper('eyeShape', () => EYE_SHAPES),
+  stepper('brows', () => BROWS),
+  stepper('nose', () => NOSES),
+  stepper('mouth', () => MOUTHS),
+  stepper('detail', () => DETAILS),
   stepper('trait', () => RACES[state.race].traits),
 ];
 
 document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {
-  b.onclick = () => set('sex', Number(b.dataset.v) as 0 | 1, true);
+  b.onclick = () => {
+    const sex = Number(b.dataset.v) as 0 | 1;
+    if (sex !== state.sex) {
+      if (sex === 1) { state.face = 0; state.hair = 3; state.beard = 0; } else { state.face = 1; state.hair = 1; }
+    }
+    set('sex', sex, true);
+  };
 });
 for (const key of ['height', 'build'] as const) {
   const input = $<HTMLInputElement>('#' + key);
@@ -424,6 +439,7 @@ requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide')
   tab: selectTab,
   wave() { char.wave(); },
   play: () => enterPlay(),
+  spin(a: number) { holder.rotation.y = a; spinVel = 0; },
   move(x: number, z: number) { holder.position.set(x, 0, z); },
   view(y: number, p: number, d: number) { yaw = y; pitch = p; followDist = d; },
   time() { const t0 = performance.now(); rebuildNow(); return performance.now() - t0; },

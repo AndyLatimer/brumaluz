@@ -211,3 +211,6 @@ body.playing #toast { left: 50%; }
 @media (max-width: 760px) {
   body.playing #controls { white-space: normal; text-align: center; width: calc(100% - 32px); font-size: 12px; }
 }
+
+.swatches.small { margin-top: 10px; }
+.swatches.small .sw { width: 28px; height: 28px; }

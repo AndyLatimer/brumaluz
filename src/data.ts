@@ -1,3 +1,4 @@
+import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
@@ -11,7 +12,15 @@ export interface CharData {
   build: number; // 0..1
   skin: number;
   face: number;
+  hair: number;
   hairColor: number;
+  beard: number;
+  eyeShape: number;
+  eyeColor: number;
+  brows: number;
+  nose: number;
+  mouth: number;
+  detail: number;
   trait: number; // rasgo propio del linaje (orejas, cresta…)
   cls: ClassId;
   primary: number;
@@ -64,17 +73,8 @@ export const RACES: Record<Race, RaceDef> = {
   },
 };
 
-/** Caras disponibles (cada una con su peinado) según el sexo. */
-export const FACES: Record<0 | 1, { label: string; head: string }[]> = {
-  0: [
-    { label: 'Moreno de flequillo', head: 'Mage' },
-    { label: 'Rubio despeinado', head: 'Knight' },
-    { label: 'Barbudo', head: 'Barbarian' },
-  ],
-  1: [
-    { label: 'Media melena', head: 'Rogue' },
-  ],
-};
+export const EYE_COLORS = ['#1c1418', '#5a3420', '#2e66b0', '#2f8a46', '#b07a1a', '#6a3fa0', '#a83030', '#7d8c98'];
+export const EYE_COLOR_NAMES = ['Negro', 'Castaño', 'Azul', 'Verde', 'Ámbar', 'Violeta', 'Rubí', 'Gris'];
 
 export interface ClassDef {
   label: string;
@@ -103,8 +103,9 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 0,
-    hairColor: 2, trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
+    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 1,
+    hair: 1, hairColor: 2, beard: 0, eyeShape: 0, eyeColor: 1, brows: 0, nose: 0, mouth: 1, detail: 0,
+    trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
   };
 }
 
@@ -117,7 +118,15 @@ export function sanitize(d: Record<string, unknown>): CharData {
   const R = RACES[out.race];
   const clamp = (n: unknown, len: number) => Math.min(Math.max((Number(n) | 0), 0), Math.max(len - 1, 0));
   out.skin = clamp(out.skin, R.skins.length);
-  out.face = clamp(out.face, FACES[out.sex].length);
+  out.face = clamp(out.face, FACE_KITS.length);
+  out.hair = clamp(out.hair, HAIR_STYLES.length);
+  out.beard = clamp(out.beard, BEARDS.length);
+  out.eyeShape = clamp(out.eyeShape, EYE_SHAPES.length);
+  out.eyeColor = clamp(out.eyeColor, EYE_COLORS.length);
+  out.brows = clamp(out.brows, BROWS.length);
+  out.nose = clamp(out.nose, NOSES.length);
+  out.mouth = clamp(out.mouth, MOUTHS.length);
+  out.detail = clamp(out.detail, DETAILS.length);
   out.trait = clamp(out.trait, R.traits.length);
   out.hairColor = clamp(out.hairColor, HAIR_COLORS.length);
   out.primary = clamp(out.primary, CLOTH.length);
@@ -138,7 +147,10 @@ export function randomChar(): CharData {
   return {
     name: randomName(race), race, sex,
     height: Math.random(), build: Math.random(),
-    skin: rnd(R.skins.length), face: rnd(FACES[sex].length), hairColor: rnd(HAIR_COLORS.length),
+    skin: rnd(R.skins.length), face: rnd(3),
+    hair: sex ? [3, 4, 5, 6, 8, 9][rnd(6)] : [0, 1, 2, 7, 5][rnd(5)], hairColor: rnd(HAIR_COLORS.length),
+    beard: sex ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),
+    brows: rnd(BROWS.length - 1), nose: rnd(NOSES.length), mouth: 1 + rnd(MOUTHS.length - 1), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
     cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),
   };

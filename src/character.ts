@@ -6,7 +6,8 @@ import mageUrl from './assets/models/Mage.glb?url';
 import knightUrl from './assets/models/Knight.glb?url';
 import rogueUrl from './assets/models/Rogue.glb?url';
 import barbarianUrl from './assets/models/Barbarian.glb?url';
-import { CharData, RACES, CLOTH, HAIR_COLORS, FACES } from './data';
+import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS } from './data';
+import { buildHead, paintCell, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
 import { softDot } from './paint';
 
 // ---------------------------------------------------------------------------
@@ -21,8 +22,16 @@ type Kit = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian';
 const URLS: Record<Kit, string> = { Mage: mageUrl, Knight: knightUrl, Rogue: rogueUrl, Barbarian: barbarianUrl };
 const kits = {} as Record<Kit, GLTF>;
 
+const heads = {} as Record<HeadKit, HeadSource>;
+
 export async function loadKits() {
   await Promise.all((Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }));
+  for (const k of Object.keys(URLS) as Kit[]) {
+    const src = kits[k].scene.getObjectByName(`${k}_Head`) as THREE.SkinnedMesh;
+    const hi = src.skeleton.bones.findIndex((b) => b.name === 'head');
+    const toBone = new THREE.Matrix4().multiplyMatrices(src.skeleton.boneInverses[hi], src.bindMatrix);
+    heads[k] = { kit: k, geometry: src.geometry, toBone };
+  }
 }
 
 // Celdas de la paleta por función
@@ -162,10 +171,33 @@ export class Character {
       return m;
     };
 
+    // Cabeza modular: material propio con color de ojos y de boca
+    const headMats = new Map<HeadKit, THREE.MeshStandardMaterial>();
+    const headMat = (kit: HeadKit) => {
+      let m = headMats.get(kit);
+      if (!m) {
+        const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        m = new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.7 });
+        headMats.set(kit, m);
+        this.owned.push(m);
+      }
+      return m;
+    };
+    const flatMats = new Map<string, THREE.MeshStandardMaterial>();
+    const flatMat = (c: string) => {
+      let m = flatMats.get(c);
+      if (!m) { m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); flatMats.set(c, m); this.owned.push(m); }
+      return m;
+    };
+    const hatKind = !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
+    const head = buildHead(heads, {
+      face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
+      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind,
+    }, headMat, flatMat);
+    this.bones.get('head')!.add(head.group);
+    head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
+
     // Piezas
-    const face = FACES[d.sex][d.face] ?? FACES[d.sex][0];
-    const headKit = face.head as Kit;
-    this.addSkinned(headKit, `${headKit}_Head`, mat(headKit, false));
     for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
     if (outfit.cape) this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true));
     if (outfit.hat) this.addRigid(outfit.kit, outfit.hat, mat(outfit.kit, true));
@@ -175,7 +207,7 @@ export class Character {
     }
 
     // Rasgos del linaje
-    this.addRaceTraits(d, skin, hair, !!outfit.hat, `${headKit}_Head`);
+    this.addRaceTraits(d, head, headMat(FACE_KITS[d.face] ?? 'Mage'), flatMat, hatKind);
 
     // Animaciones
     this.mixer = new THREE.AnimationMixer(this.model);
@@ -238,95 +270,93 @@ export class Character {
     this.owned.push(glowMat, glowMat.map!);
   }
 
-  private addRaceTraits(d: CharData, skin: string, hair: string, hat: boolean, headName: string) {
+  private addRaceTraits(d: CharData, head: HeadResult, mat: THREE.Material, flatMat: (c: string) => THREE.Material, hat: string) {
     if (d.race === 'humano') return;
-    const head = this.bones.get('head')!;
-    const hips = this.bones.get('hips')!;
-    this.model.updateMatrixWorld(true);
-    // caja de la cabeza en el espacio del hueso
-    const headMesh = this.model.getObjectByName(headName) as THREE.SkinnedMesh;
-    headMesh.computeBoundingBox();
-    const hb = headMesh.boundingBox!.clone().applyMatrix4(headMesh.matrixWorld);
-    const corners = [hb.min, hb.max].flatMap((a) => [hb.min, hb.max].flatMap((b) => [hb.min, hb.max].map((c) => head.worldToLocal(new THREE.Vector3(a.x, b.y, c.z)))));
-    const lb = new THREE.Box3().setFromPoints(corners);
-    const hc = lb.getCenter(new THREE.Vector3());
-    const hsz = lb.getSize(new THREE.Vector3());
-    const hw = hsz.x / 2, hh = hsz.y / 2, hd = hsz.z / 2;
-
-    const smooth = (c: THREE.ColorRepresentation, rough = 0.75) => { const m = new THREE.MeshStandardMaterial({ color: c, roughness: rough }); this.owned.push(m); return m; };
-    const skinM = smooth(skin), hairM = smooth(hair, 0.6), innerM = smooth('#f2a6ae');
-    const geo = <G extends THREE.BufferGeometry>(g: G) => { this.owned.push(g); return g; };
+    const bone = this.bones.get('head')!;
+    const A = head.anchors;
+    const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+    const own = <G extends THREE.BufferGeometry>(g: G) => { this.owned.push(g); return g; };
+    /** Pivote colocado en un punto del espacio de la malla de la cabeza. */
+    const pivot = (p: THREE.Vector3) => {
+      const holder = new THREE.Group();
+      holder.matrixAutoUpdate = false;
+      holder.matrix.copy(head.toBone).multiply(new THREE.Matrix4().makeTranslation(p.x, p.y, p.z));
+      bone.add(holder);
+      const g = new THREE.Group();
+      holder.add(g);
+      return g;
+    };
+    const mesh = (g: THREE.BufferGeometry, m: THREE.Material, parent: THREE.Object3D) => {
+      const o = new THREE.Mesh(own(g), m);
+      o.castShadow = true;
+      parent.add(o);
+      return o;
+    };
+    /** Cono orientado según una dirección y aplanado. */
+    const cone = (r: number, h: number, seg: number, dir: THREE.Vector3, flat = 1, roll = 0) => {
+      const g = new THREE.ConeGeometry(r, h, seg).translate(0, h / 2, 0);
+      g.scale(1, 1, flat);
+      g.rotateY(roll);
+      g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), dir.clone().normalize()));
+      return g;
+    };
 
     if (d.race === 'elfo') {
       for (const s of [-1, 1]) {
-        const g = new THREE.Group();
-        g.position.set(hc.x + s * hw * 0.86, hc.y - hh * 0.12, hc.z - hd * 0.02);
-        const len = [0.62, 0.36, 0.5][d.trait] * hh;
-        const ear = new THREE.Mesh(geo(new THREE.ConeGeometry(hh * 0.14, len, 10).translate(0, len / 2, 0)), skinM);
-        ear.scale.z = 0.45;
-        ear.rotation.z = -s * (d.trait === 2 ? 2.1 : 1.2);
-        ear.rotation.y = s * 0.3;
-        g.add(ear);
-        head.add(g);
+        const len = [0.5, 0.3, 0.42][d.trait];
+        const dir = d.trait === 2 ? V(s, -0.25, -0.35) : V(s, 0.5, -0.3);
+        const g = paintCell(cone(0.1, len, 8, dir, 0.4), 0, 0.15, 0.5);
+        mesh(g.translate(-s * 0.02, 0, 0), mat, pivot(A.ear(s)));
       }
     }
     if (d.race === 'pelso') {
       for (const s of [-1, 1]) {
-        const g = new THREE.Group();
-        g.position.set(hc.x + s * hw * 0.52, hc.y + hh * (hat ? 1.05 : 0.82), hc.z - hd * 0.1);
+        const g = pivot(A.top(s).add(V(s * 0.02, -0.06, 0)));
         g.rotation.z = -s * 0.3;
-        const H = hh * (d.trait === 1 ? 0.4 : 0.55), Rr = hh * (d.trait === 1 ? 0.24 : 0.22);
-        let outer: THREE.Mesh;
+        if (d.trait === 2) g.rotation.x = 0.7;
         if (d.trait === 1) {
-          outer = new THREE.Mesh(geo(new THREE.SphereGeometry(Rr, 14, 8, 0, PI * 2, 0, PI / 2)), hairM);
-          outer.scale.set(1, 1.4, 0.5);
+          const ear = new THREE.SphereGeometry(0.17, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+          ear.scale(1, 1.3, 0.5);
+          mesh(paintCell(ear, 1), mat, g);
+          const inner = new THREE.SphereGeometry(0.11, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+          inner.scale(1, 1.2, 0.3).translate(0, 0.0, 0.05);
+          mesh(inner, flatMat('#f2a6ae'), g);
         } else {
-          outer = new THREE.Mesh(geo(new THREE.ConeGeometry(Rr, H, 4, 1).translate(0, H / 2, 0)), hairM);
-          outer.scale.z = 0.5;
-          outer.rotation.y = PI / 4;
-          const inner = new THREE.Mesh(geo(new THREE.ConeGeometry(Rr * 0.6, H * 0.72, 4, 1).translate(0, H * 0.36, 0)), innerM);
-          inner.scale.z = 0.3;
-          inner.rotation.y = PI / 4;
-          inner.position.set(0, Rr * 0.06, Rr * 0.14);
-          g.add(inner);
+          mesh(paintCell(new THREE.ConeGeometry(0.17, 0.34, 4).rotateY(Math.PI / 4).scale(1, 1, 0.55).translate(0, 0.17, 0), 1), mat, g);
+          mesh(new THREE.ConeGeometry(0.1, 0.24, 4).rotateY(Math.PI / 4).scale(1, 1, 0.3).translate(0, 0.12, 0.055), flatMat('#f2a6ae'), g);
         }
-        if (d.trait === 2) g.rotation.x = 0.85;
-        g.add(outer);
-        head.add(g);
         this.ears.push(g);
       }
-      this.addTail(hips, hairM, 0.05, 0.03, [[0, 0, 0], [0, -0.12, -0.16], [0, -0.05, -0.34], [0, 0.18, -0.44], [0.04, 0.36, -0.42]]);
+      this.addTail(mat, 1, 0.055, 0.035, [[0, 0, 0], [0, -0.1, -0.16], [0, -0.04, -0.34], [0, 0.16, -0.44], [0.04, 0.33, -0.42]]);
     }
     if (d.race === 'lagto') {
-      const crestM = smooth(new THREE.Color(skin).multiplyScalar(0.62), 0.5);
-      if (!hat && d.trait === 0) for (let i = 0; i < 5; i++) {
-        const f = 0.45 - i * 0.32;
-        const sp = new THREE.Mesh(geo(new THREE.ConeGeometry(hh * 0.13, hh * (0.45 - i * 0.05), 6).translate(0, hh * 0.2, 0)), crestM);
-        sp.position.set(hc.x, hc.y + Math.cos(f) * hh * 0.92, hc.z + Math.sin(f) * hd * 0.92);
-        sp.rotation.x = f;
-        sp.scale.x = 0.45;
-        head.add(sp);
-      }
-      if (!hat && d.trait === 1) for (const s of [-1, 1]) {
-        const c = new THREE.Mesh(geo(new THREE.ConeGeometry(hh * 0.12, hh * 0.65, 10).translate(0, hh * 0.32, 0)), smooth('#efe4c8', 0.4));
-        c.position.set(hc.x + s * hw * 0.45, hc.y + hh * 0.72, hc.z - hd * 0.25);
-        c.rotation.set(-0.75, 0, -s * 0.35);
-        head.add(c);
+      if (hat === 'none' && d.trait === 0) A.crest.forEach((c, i) => {
+        const h = [0.16, 0.22, 0.24, 0.22, 0.18, 0.13][i];
+        mesh(paintCell(cone(0.09, h, 4, c.n, 1).scale(0.35, 1, 1), 0, 0.5, 0.95), mat, pivot(c.p.clone().addScaledVector(c.n, -0.04)));
+      });
+      if (hat === 'none' && d.trait === 1) for (const s of [-1, 1]) {
+        const base = A.crest[1].p.clone().add(V(s * 0.22, -0.06, -0.05));
+        mesh(cone(0.07, 0.36, 8, V(s * 0.35, 0.6, -0.75)), flatMat('#efe4c8'), pivot(base));
       }
       if (d.trait === 2) for (const s of [-1, 1]) {
-        const fin = new THREE.Mesh(geo(new THREE.ConeGeometry(hh * 0.3, hh * 0.6, 3).translate(0, hh * 0.3, 0)), crestM);
-        fin.position.set(hc.x + s * hw * 0.88, hc.y - hh * 0.05, hc.z - hd * 0.1);
-        fin.rotation.set(0, s * 0.3, -s * 1.35);
-        fin.scale.z = 0.2;
-        head.add(fin);
+        const g = new THREE.ConeGeometry(0.16, 0.34, 3).translate(0, 0.17, 0);
+        g.scale(1, 1, 0.2);
+        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), V(s, 0.15, -0.7).normalize()));
+        mesh(paintCell(g, 0, 0.5, 0.95), mat, pivot(A.ear(s)));
       }
-      this.addTail(hips, skinM, 0.12, 0.012, [[0, 0, 0], [0, -0.18, -0.2], [0, -0.38, -0.42], [0, -0.45, -0.66]]);
+      this.addTail(mat, 0, 0.11, 0.015, [[0, 0, 0], [0, -0.08, -0.2], [0, -0.16, -0.42], [0, -0.17, -0.66]]);
     }
   }
 
   /** Cola articulada: una cadena de segmentos que se balancea. */
-  private addTail(hips: THREE.Bone, mat: THREE.Material, r0: number, r1: number, raw: [number, number, number][]) {
+  private addTail(mat: THREE.Material, cell: number, r0: number, r1: number, raw: [number, number, number][]) {
+    const hips = this.bones.get('hips')!;
+    this.model.updateMatrixWorld(true);
     const sc = 1 / hips.getWorldScale(new THREE.Vector3()).y;
+    // que la cola no atraviese el suelo: el punto más bajo queda por encima
+    const hipsY = hips.getWorldPosition(new THREE.Vector3()).y - this.root.position.y;
+    const lowest = Math.min(...raw.map((p) => p[1])) - 0.02 - r0;
+    if (hipsY + lowest < 0.06) { const k = (hipsY - 0.06 - 0.02 - r0) / -Math.min(...raw.map((p) => p[1])); raw = raw.map(([x, y, z]) => [x, y < 0 ? y * Math.max(k, 0) : y, z]); }
     const root = new THREE.Group();
     root.position.set(0, -0.02 * sc, -0.16 * sc);
     hips.add(root);
@@ -341,11 +371,12 @@ export class Character {
       parent.add(g);
       const len = a.distanceTo(b);
       const rr = (r0 + (r1 - r0) * ((i + 0.5) / N)) * sc;
-      const cg = new THREE.CapsuleGeometry(rr, len, 6, 12);
+      const cg = paintCell(new THREE.CapsuleGeometry(rr, len, 4, 8), cell, 0.2, 0.8);
       this.owned.push(cg);
       const m = new THREE.Mesh(cg, mat);
       m.position.copy(b.clone().sub(a).multiplyScalar(0.5));
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+      m.castShadow = true;
       g.add(m);
       segs.push(g);
       parent = g;
