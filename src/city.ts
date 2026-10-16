@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { loadGLB } from './load';
 import cityUrl from './assets/models/city.glb?url';
 
 // ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ export interface City {
 }
 
 export async function buildCity(): Promise<City> {
-  const gltf = await new GLTFLoader().loadAsync(cityUrl);
+  const gltf = await loadGLB(cityUrl);
   const models = new Map<string, THREE.Object3D>();
   for (const c of gltf.scene.children) models.set(c.name, c);
 

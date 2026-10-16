@@ -383,8 +383,13 @@ $('#back').onclick = () => exitPlay();
 
 // ---------------- Bucle ----------------
 const clock = new THREE.Clock();
-await loadKits();
-city = await buildCity();
+try {
+  await loadKits();
+  city = await buildCity();
+} catch (e) {
+  $('#loading p').textContent = 'No se pudo cargar Brumaluz: ' + (e instanceof Error ? e.message : String(e));
+  throw e;
+}
 scene.add(city.root);
 holder.position.copy(city.spawn);
 holder.rotation.y = city.spawnYaw - 0.3;

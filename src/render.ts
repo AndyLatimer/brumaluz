@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+import { loadEXR } from './load';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
@@ -62,10 +62,13 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   // Reflejos e iluminación ambiental de un HDRI de atardecer
   scene.environmentIntensity = 0.4;
   const pmrem = new THREE.PMREMGenerator(renderer);
-  new EXRLoader().load(sunsetExr, (tex) => {
+  try {
+    const tex = loadEXR(sunsetExr);
     scene.environment = pmrem.fromEquirectangular(tex).texture;
     tex.dispose();
-  });
+  } catch (e) {
+    console.warn('Sin HDRI:', e);
+  }
 
   // Postprocesado
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: lowEnd ? 0 : 4 });

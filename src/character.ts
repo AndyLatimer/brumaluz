@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { loadGLB } from './load';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import mageUrl from './assets/models/Mage.glb?url';
 import knightUrl from './assets/models/Knight.glb?url';
@@ -21,8 +22,7 @@ const URLS: Record<Kit, string> = { Mage: mageUrl, Knight: knightUrl, Rogue: rog
 const kits = {} as Record<Kit, GLTF>;
 
 export async function loadKits() {
-  const loader = new GLTFLoader();
-  await Promise.all((Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loader.loadAsync(URLS[k]); }));
+  await Promise.all((Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }));
 }
 
 // Celdas de la paleta por función
