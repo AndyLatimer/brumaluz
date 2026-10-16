@@ -24,6 +24,7 @@ export interface HeadOptions {
   mouth: number;
   detail: number;
   eyeColor: string;
+  fem: boolean;
   /** Aplanar las orejas humanas (elfos, Pelso, Lagto'). */
   flattenEars: boolean;
   hat: 'none' | 'helmet' | 'wizard' | 'bear';
@@ -34,6 +35,8 @@ export interface HeadResult {
   /** Puntos de anclaje en el espacio de la malla original (pasar por toBone). */
   anchors: { ear: (s: number) => THREE.Vector3; top: (s: number) => THREE.Vector3; crest: { p: THREE.Vector3; n: THREE.Vector3 }[] };
   toBone: THREE.Matrix4;
+  /** Grupos de los ojos (para parpadear escalando en Y). */
+  eyes: THREE.Object3D[];
 }
 
 // Celdas de la paleta
@@ -105,6 +108,58 @@ function moveToCell(uv: Float32Array, i: number, cell: number) {
   uv[i * 2 + 1] = (Math.floor(cell / 8) + Math.min(Math.max(fv, 0.05), 0.95)) / 8;
 }
 /** Asigna a una geometría procedural UVs de una celda con degradado vertical (arriba más claro). */
+/**
+ * Sombreado suave: promedia las normales de los vértices que comparten posición
+ * cuando el ángulo entre caras es menor que `maxDeg` (las aristas marcadas se conservan).
+ */
+export function smoothNormals(g: THREE.BufferGeometry, maxDeg = 60) {
+  const pos = g.attributes.position, n = pos.count;
+  const idx = g.index;
+  const get = (i: number) => (idx ? idx.getX(i) : i);
+  const triCount = (idx ? idx.count : n) / 3;
+  const fn: THREE.Vector3[] = [];
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const key = (i: number) => `${Math.round(pos.getX(i) * 1e4)},${Math.round(pos.getY(i) * 1e4)},${Math.round(pos.getZ(i) * 1e4)}`;
+  const groups = new Map<string, { f: number; v: number }[]>();
+  for (let t = 0; t < triCount; t++) {
+    const i0 = get(t * 3), i1 = get(t * 3 + 1), i2 = get(t * 3 + 2);
+    a.fromBufferAttribute(pos, i0); b.fromBufferAttribute(pos, i1); c.fromBufferAttribute(pos, i2);
+    const nn = new THREE.Vector3().subVectors(c, b).cross(new THREE.Vector3().subVectors(a, b));
+    const area = nn.length();
+    fn.push(area > 1e-12 ? nn.divideScalar(area).multiplyScalar(Math.sqrt(area)) : nn);
+    for (const v of [i0, i1, i2]) { const k = key(v); (groups.get(k) ?? groups.set(k, []).get(k)!).push({ f: t, v }); }
+  }
+  const cos = Math.cos((maxDeg * Math.PI) / 180);
+  const out = new Float32Array(n * 3);
+  for (const list of groups.values()) for (const { f, v } of list) {
+    const base = fn[f].clone().normalize();
+    const sum = new THREE.Vector3();
+    for (const o of list) { const on = fn[o.f]; if (base.dot(on.clone().normalize()) >= cos) sum.add(on); }
+    if (sum.lengthSq() < 1e-20) sum.copy(base);
+    sum.normalize();
+    out[v * 3] = sum.x; out[v * 3 + 1] = sum.y; out[v * 3 + 2] = sum.z;
+  }
+  g.setAttribute('normal', new THREE.BufferAttribute(out, 3));
+  return g;
+}
+
+let blushTex: THREE.Texture | null = null;
+function softBlushTexture() {
+  if (blushTex) return blushTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d')!;
+  const gr = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)');
+  gr.addColorStop(0.55, 'rgba(255,255,255,0.55)');
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gr;
+  ctx.fillRect(0, 0, 64, 64);
+  blushTex = new THREE.CanvasTexture(c);
+  blushTex.colorSpace = THREE.SRGBColorSpace;
+  return blushTex;
+}
+
 export function paintCell(g: THREE.BufferGeometry, cell: number, t0 = 0.1, t1 = 0.9) {
   g.computeBoundingBox();
   const bb = g.boundingBox!;
@@ -394,6 +449,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   // ---------- Ojos y cejas ----------
   const decals: THREE.Object3D[] = [];
+  const eyes: THREE.Object3D[] = [];
   const pupil = extraMat('#16101a'), white = extraMat('#ffffff'), lidMat = material(o.face);
   for (const s of [-1, 1]) {
     const x = s * A.eyeX, y = A.eyeY;
@@ -401,23 +457,45 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     const eye = new THREE.Group();
     eye.position.copy(onFace(x, y, 0.014));
     eye.rotation.set(r.x, r.y, s * E.tilt);
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), extraMat(o.eyeColor));
-    iris.scale.set(E.rx, E.ry, 0.02);
-    const pup = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), pupil);
-    pup.scale.set(E.rx * 0.62, E.ry * 0.62, 0.02);
-    pup.position.z = 0.006;
-    const hl = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), white);
-    hl.scale.set(E.rx * 0.28, E.ry * 0.24, 0.01);
-    hl.position.set(s * -E.rx * 0.3, E.ry * 0.38, 0.016);
-    eye.add(iris, pup, hl);
+    // ojo estilo cozy: contorno oscuro, iris con degradado, pupila grande y dos brillos
+    const disc = (rx: number, ry: number, z: number, mat: THREE.Material) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14), mat);
+      m.scale.set(rx, ry, 0.012);
+      m.position.z = z;
+      eye.add(m);
+      return m;
+    };
+    const iris = new THREE.Color(o.eyeColor);
+    disc(E.rx * 1.08, E.ry * 1.08, 0, pupil);
+    disc(E.rx, E.ry, 0.003, extraMat('#' + iris.clone().multiplyScalar(0.62).getHexString()));
+    const low = disc(E.rx * 0.78, E.ry * 0.62, 0.005, extraMat('#' + iris.clone().lerp(new THREE.Color('#ffffff'), 0.28).getHexString()));
+    low.position.y = -E.ry * 0.3;
+    disc(E.rx * 0.5, E.ry * 0.55, 0.008, pupil).position.y = E.ry * 0.05;
+    const hl1 = disc(E.rx * 0.3, E.ry * 0.27, 0.012, white);
+    hl1.position.set(-s * E.rx * 0.32, E.ry * 0.38, 0.012);
+    const hl2 = disc(E.rx * 0.14, E.ry * 0.12, 0.012, white);
+    hl2.position.set(s * E.rx * 0.34, -E.ry * 0.42, 0.012);
+    // línea del párpado superior y pestañas
+    const lidLine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.11, 5, 20, PI * 0.82).rotateZ(PI * 0.09), pupil);
+    lidLine.scale.set(E.rx * 1.08, E.ry * 1.08, 0.3);
+    lidLine.position.z = 0.012;
+    eye.add(lidLine);
+    if (o.fem) for (const k of [0, 1]) {
+      const lash = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 4).translate(0, 0.025, 0), pupil);
+      lash.position.set(s * E.rx * (0.82 + k * 0.05), E.ry * (0.62 - k * 0.32), 0.012);
+      lash.rotation.z = -s * (0.9 + k * 0.5);
+      lash.scale.z = 0.3;
+      eye.add(lash);
+    }
     if (E.lid) {
       const lid = new THREE.Mesh(paintCell(new THREE.SphereGeometry(1, 16, 8, 0, PI * 2, 0, PI * 0.5), C_SKIN, 0.3, 0.6), lidMat);
       lid.scale.set(E.rx * 1.12, E.ry * 1.12, 0.03);
-      lid.position.set(0, -E.ry * (1 - E.lid) * 1.1, 0.012);
+      lid.position.set(0, -E.ry * (1 - E.lid) * 1.1, 0.02);
       lid.scale.y = E.ry * 1.15;
       eye.add(lid);
     }
     decals.push(eye);
+    eyes.push(eye);
     // ceja
     if (B.t > 0) {
       const by = y + E.ry + 0.055 + B.dy, bx = x + s * 0.01;
@@ -440,8 +518,17 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     decals.push(m);
   };
   const cheekY = nose.y - 0.04;
+  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: '#ff6f7a', transparent: true, opacity: o.detail === 1 ? 0.85 : 0.42, depthWrite: false });
+  for (const s of [-1, 1]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.14), blushMat);
+    const r = facing(s * 0.27, cheekY);
+    m.position.copy(onFace(s * 0.27, cheekY, 0.008));
+    m.rotation.set(r.x, r.y, 0);
+    m.renderOrder = 2;
+    decals.push(m);
+  }
   switch (o.detail) {
-    case 1: for (const s of [-1, 1]) decal(new THREE.CircleGeometry(0.07, 16), '#f08a8a', s * 0.27, cheekY, 0, V(1, 0.65, 1), 0.006); break;
+    case 1: break;
     case 2: for (const s of [-1, 1]) for (let k = 0; k < 5; k++) decal(new THREE.CircleGeometry(0.011, 6), '#a0603a', s * (0.2 + (k % 3) * 0.045), cheekY + (k % 2 ? 0.03 : -0.01) - (k > 2 ? 0.035 : 0), 0, V(1, 1, 1), 0.006); break;
     case 3: decal(new THREE.BoxGeometry(0.018, 0.2, 0.01), '#b8605a', 0.25, A.eyeY - 0.02, 0.35); break;
     case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) decal(new THREE.BoxGeometry(0.17, 0.028, 0.01), '#3a6ab8', s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
@@ -467,11 +554,12 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   // ---------- Montaje en el espacio del hueso ----------
   const finish = (m: THREE.Mesh) => { m.geometry.applyMatrix4(toBone); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
+  smoothNormals(faceGeo, 70);
   finish(faceMesh);
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
   const byKit = new Map<HeadKit, THREE.BufferGeometry[]>();
   for (const h of hairPieces) (byKit.get(h.kit) ?? byKit.set(h.kit, []).get(h.kit)!).push(h.geo);
-  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finish(new THREE.Mesh(g, material(kit))); }
+  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finish(new THREE.Mesh(smoothNormals(g, 55), material(kit))); }
   const mg = mergeGeoms(mouth);
   if (mg) finish(new THREE.Mesh(mg, material(o.face)));
   for (const d of decals) {
@@ -484,6 +572,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   return {
     group,
     toBone,
+    eyes,
     anchors: { ear: (s) => V(s * 0.455, 1.47, -0.02), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest },
   };
 }

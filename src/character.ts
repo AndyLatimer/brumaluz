@@ -7,7 +7,7 @@ import knightUrl from './assets/models/Knight.glb?url';
 import rogueUrl from './assets/models/Rogue.glb?url';
 import barbarianUrl from './assets/models/Barbarian.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS } from './data';
-import { buildHead, paintCell, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
+import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
 import { softDot } from './paint';
 
 // ---------------------------------------------------------------------------
@@ -26,6 +26,11 @@ const heads = {} as Record<HeadKit, HeadSource>;
 
 export async function loadKits() {
   await Promise.all((Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }));
+  // sombreado suave en cuerpos, ropa y accesorios (las aristas marcadas se mantienen)
+  for (const k of Object.keys(URLS) as Kit[]) kits[k].scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && !m.name.endsWith('_Head')) smoothNormals(m.geometry, 50);
+  });
   for (const k of Object.keys(URLS) as Kit[]) {
     const src = kits[k].scene.getObjectByName(`${k}_Head`) as THREE.SkinnedMesh;
     const hi = src.skeleton.bones.findIndex((b) => b.name === 'head');
@@ -125,6 +130,9 @@ export class Character {
   private tail?: THREE.Object3D[];
   private ears: THREE.Object3D[] = [];
   private glow?: THREE.Sprite;
+  private eyes: { o: THREE.Object3D; sy: number }[] = [];
+  private nextBlink = 1 + Math.random() * 2;
+  private blinkT = -1;
   private owned: { dispose(): void }[] = [];
 
   constructor(public d: CharData, public opts: BuildOpts) {
@@ -192,9 +200,10 @@ export class Character {
     const hatKind = !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
-      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind,
+      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], fem: d.sex === 1, flattenEars: d.race !== 'humano', hat: hatKind,
     }, headMat, flatMat);
     this.bones.get('head')!.add(head.group);
+    this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
@@ -422,6 +431,11 @@ export class Character {
     if (this.tail) this.tail.forEach((g, i) => { g.rotation.y = Math.sin(t * 1.6 - i * 0.6) * 0.16; g.rotation.x = Math.sin(t * 1.1 - i * 0.5) * 0.05; });
     this.ears.forEach((e, i) => { e.rotation.x = (e.userData.rx ??= e.rotation.x) - Math.max(0, Math.sin(t * 0.7 + i * 0.4) - 0.97) * 8; });
     if (this.glow) this.glow.scale.setScalar(0.45 + Math.sin(t * 3) * 0.05);
+    // parpadeo (a veces doble)
+    if (t > this.nextBlink) { this.blinkT = t; this.nextBlink = t + (Math.random() < 0.2 ? 0.25 : 2 + Math.random() * 3.5); }
+    const bp = (t - this.blinkT) / 0.14;
+    const k = bp >= 0 && bp <= 1 ? Math.max(0.08, Math.abs(bp * 2 - 1)) : 1;
+    for (const e of this.eyes) e.o.scale.y = e.sy * k;
   }
 
   dispose() {

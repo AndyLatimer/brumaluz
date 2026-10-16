@@ -104,7 +104,7 @@ export function randomName(race: Race, r = Math.random) {
 export function defaultChar(): CharData {
   return {
     name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 1,
-    hair: 1, hairColor: 2, beard: 0, eyeShape: 0, eyeColor: 1, brows: 0, nose: 0, mouth: 1, detail: 0,
+    hair: 1, hairColor: 2, beard: 0, eyeShape: 0, eyeColor: 1, brows: 0, nose: 1, mouth: 1, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
   };
 }
