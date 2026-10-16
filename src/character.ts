@@ -158,6 +158,9 @@ export class Character {
   private eyes: { o: THREE.Object3D; sy: number }[] = [];
   private nextBlink = 1 + Math.random() * 2;
   private blinkT = -1;
+  private happy: THREE.Object3D[] = [];
+  private happyReq = false;
+  private happyUntil = -1;
   private owned: { dispose(): void }[] = [];
 
   constructor(public d: CharData, public opts: BuildOpts) {
@@ -196,6 +199,8 @@ export class Character {
       if (!m) {
         const map: [number[], string][] = [[SKIN, skin], [HAIR, hair]];
         if (withCloth) map.push([CLOTH_CELLS[kit].primary, P], [CLOTH_CELLS[kit].secondary, S]);
+        // la cota de diario es acolchada: el gris metálico pasa a ser tela
+        if (withCloth && !this.opts.outfit && kit === 'Knight') map.push([[11], P]);
         const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
         m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, map), roughness: 0.7, metalness: 0 }));
         matCache.set(k, m);
@@ -230,6 +235,7 @@ export class Character {
     }, headMat, flatMat);
     this.bones.get('head')!.add(head.group);
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
+    this.happy = head.happy;
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
@@ -457,7 +463,7 @@ export class Character {
     from.crossFadeTo(to, 0.2, false);
     this.gait = g;
   }
-  wave() { this.play('Cheer'); }
+  wave() { this.play('Cheer'); this.happyReq = true; }
   hop() { this.play(this.opts.outfit && this.d.cls === 'mago' ? 'Spellcast_Raise' : 'Interact'); }
 
   /** Centro aproximado de la cara, para encuadrar la cámara. */
@@ -477,6 +483,11 @@ export class Character {
     const bp = (t - this.blinkT) / 0.14;
     const k = bp >= 0 && bp <= 1 ? Math.max(0.08, Math.abs(bp * 2 - 1)) : 1;
     for (const e of this.eyes) e.o.scale.y = e.sy * k;
+    // al saludar, ojos cerrados de alegría (^ ^)
+    if (this.happyReq) { this.happyUntil = t + 1.7; this.happyReq = false; }
+    const joy = t < this.happyUntil && t > this.happyUntil - 1.45;
+    for (const e of this.eyes) e.o.visible = !joy;
+    for (const h of this.happy) h.visible = joy;
   }
 
   dispose() {

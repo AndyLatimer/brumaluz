@@ -33,6 +33,8 @@ export interface CharData {
   acc: number;
   makeup: number;
   accColor: number;
+  /** Qué se pone para pasear por la ciudad: 0 traje de clase, 1 ropa de diario. */
+  cityWear: number;
   cls: ClassId;
   primary: number;
   secondary: number;
@@ -115,6 +117,7 @@ export const LEGS = ['Calzas y zapatos', 'Botas de viaje', 'Grebas', 'Botas de p
 export const CAPES = ['Sin capa', 'Capa corta', 'Capa de mago', 'Capa noble', 'Capa de piel'];
 export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Diadema', 'Pluma'];
 export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda'];
+export const CITY_WEAR = ['Traje de clase', 'Ropa de diario'];
 export const MAKEUPS = ['Ninguno', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno'];
 export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036'];
 export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro'];
@@ -129,7 +132,7 @@ export function defaultChar(): CharData {
     name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 1,
     hair: 1, hairColor: 2, beard: 0, eyeShape: 0, eyeColor: 1, brows: 0, nose: 1, mouth: 1, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
-    top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0,
+    top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0, cityWear: 0,
   };
 }
 
@@ -165,6 +168,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.acc = clamp(out.acc, ACCS.length);
   out.makeup = clamp(out.makeup, MAKEUPS.length);
   out.accColor = clamp(out.accColor, ACC_COLORS.length);
+  out.cityWear = clamp(out.cityWear, CITY_WEAR.length);
   out.height = Math.min(Math.max(Number(out.height) || 0.5, 0), 1);
   out.build = Math.min(Math.max(Number(out.build) || 0.5, 0), 1);
   for (const k of Object.keys(out)) if (!(k in defaultChar())) delete (out as unknown as Record<string, unknown>)[k];
@@ -182,7 +186,7 @@ export function randomChar(): CharData {
     name: randomName(race), race, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: rnd(3),
-    hair: sex ? [3, 4, 5, 6, 8, 9][rnd(6)] : [0, 1, 2, 7, 5][rnd(5)], hairColor: rnd(HAIR_COLORS.length),
+    hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11][rnd(6)], hairColor: rnd(HAIR_COLORS.length),
     beard: sex ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),
     brows: rnd(BROWS.length - 1), nose: rnd(NOSES.length), mouth: 1 + rnd(MOUTHS.length - 1), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
@@ -190,6 +194,6 @@ export function randomChar(): CharData {
     top: rnd(TOPS.length), arms: rnd(ARMS.length), legs: rnd(LEGS.length), cape: Math.random() < 0.6 ? 0 : rnd(CAPES.length),
     clothA: rnd(CLOTH.length), clothB: rnd(CLOTH.length),
     hairAcc: Math.random() < 0.5 ? 0 : rnd(HAIR_ACCS.length), acc: Math.random() < 0.6 ? 0 : rnd(ACCS.length),
-    makeup: sex && Math.random() < 0.5 ? rnd(MAKEUPS.length) : 0, accColor: rnd(ACC_COLORS.length),
+    makeup: sex && Math.random() < 0.5 ? rnd(MAKEUPS.length) : 0, accColor: rnd(ACC_COLORS.length), cityWear: 0,
   };
 }

@@ -7,7 +7,7 @@ import { buildCity, City } from './city';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
   CharData, Race, ClassId, RACES, CLASSES, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
-  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, CAPES, HAIR_ACCS, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES,
+  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, CAPES, HAIR_ACCS, ACCS, MAKEUPS, CITY_WEAR, ACC_COLORS, ACC_COLOR_NAMES,
 } from './data';
 
 
@@ -49,7 +49,7 @@ let rebuildQueued = false;
 function rebuildNow() {
   rebuildQueued = false;
   char?.dispose();
-  char = new Character({ ...state }, { outfit: tab === 'clase' || mode === 'play' });
+  char = new Character({ ...state }, { outfit: tab === 'clase' || (mode === 'play' && state.cityWear === 0) });
   holder.add(char.root);
   castShadows(char.root);
   char.update(clock.getElapsedTime());
@@ -275,7 +275,7 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairCo
   };
 }
 
-function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'top' | 'arms' | 'legs' | 'cape' | 'hairAcc' | 'acc' | 'makeup', list: () => string[]) {
+function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'top' | 'arms' | 'legs' | 'cape' | 'hairAcc' | 'acc' | 'makeup' | 'cityWear', list: () => string[]) {
   const el = $(`.stepper[data-key="${key}"]`);
   el.innerHTML = `<button aria-label="Anterior">‹</button><div class="val"></div><button aria-label="Siguiente">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
@@ -321,6 +321,7 @@ const renders = [
   stepper('legs', () => LEGS),
   stepper('cape', () => CAPES),
   stepper('acc', () => ACCS),
+  stepper('cityWear', () => CITY_WEAR),
   swatches($('#clothA'), () => CLOTH, 'clothA', () => CLOTH_NAMES),
   swatches($('#clothB'), () => CLOTH, 'clothB', () => CLOTH_NAMES),
   swatches($('#accColor'), () => ACC_COLORS, 'accColor', () => ACC_COLOR_NAMES),
