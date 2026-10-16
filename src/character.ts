@@ -1,7 +1,30 @@
 import * as THREE from 'three';
 import { paint, softDot, irisTex, Kind } from './paint';
 import { Prim, Shape, surfaceNet, skinAndTint, surfaceZ, V3 } from './sdf';
-import { CharData, RACES, CLOTH, EYES, HAIR_COLORS } from './data';
+import { CharData, RACES, CLASSES, CLOTH, EYES, HAIR_COLORS } from './data';
+
+/** Formas de ojo: tamaño, inclinación (rasgado) y apertura del párpado. */
+const EYE_SHAPE = [
+  { size: 1, tilt: 0, open: -0.3 },
+  { size: 0.95, tilt: 0.12, open: -0.17 },
+  { size: 0.9, tilt: 0.26, open: -0.07 },
+  { size: 1, tilt: -0.14, open: -0.2 },
+  { size: 1.14, tilt: 0.04, open: -0.28 },
+  { size: 0.94, tilt: 0, open: -0.02 },
+];
+/** Cejas: grosor, curvatura, radio, inclinación y altura. */
+const BROW = [
+  { t: 1, arc: 1.15, r: 0.03, tilt: 0, dy: 0 },
+  { t: 0.55, arc: 1.2, r: 0.03, tilt: 0.04, dy: 0.003 },
+  { t: 1.7, arc: 1.0, r: 0.034, tilt: -0.04, dy: -0.002 },
+  { t: 0.9, arc: 1.6, r: 0.024, tilt: 0.1, dy: 0.004 },
+  { t: 1.1, arc: 0.6, r: 0.055, tilt: 0, dy: 0 },
+  { t: 1.2, arc: 0.9, r: 0.035, tilt: 0.34, dy: -0.004 },
+  { t: 1, arc: 1.0, r: 0.032, tilt: -0.3, dy: 0.004 },
+];
+const SNOUT = [
+  { z: 0.15, r: 0.04 }, { z: 0.12, r: 0.042 }, { z: 0.18, r: 0.036 }, { z: 0.15, r: 0.052 }, { z: 0.15, r: 0.04 },
+];
 
 const PI = Math.PI;
 const E = Prim.ell;
@@ -270,9 +293,10 @@ interface HeadInfo { cy: number; eye: (s: number) => V3; eyeR: number; eyeYaw: n
 function headInfo(rig: Rig, d: CharData): HeadInfo {
   const hs = rig.hs, cy = 0.105 * hs;
   const P = (x: number, y: number, z: number): V3 => [x * hs, cy + y * hs, z * hs];
-  if (d.race === 'pelso') return { cy, eye: (s) => P(s * 0.042, 0.003, 0.074), eyeR: 0.025 * hs, eyeYaw: 0.15 };
-  if (d.race === 'lagto') return { cy, eye: (s) => P(s * 0.054, 0.012, 0.047), eyeR: 0.02 * hs, eyeYaw: 0.55 };
-  return { cy, eye: (s) => P(s * 0.04, 0, 0.079), eyeR: (rig.fem ? 0.0235 : 0.022) * hs, eyeYaw: 0.12 };
+  const k = EYE_SHAPE[d.eyeShape]?.size ?? 1;
+  if (d.race === 'pelso') return { cy, eye: (s) => P(s * 0.042, 0.003, 0.074), eyeR: 0.025 * hs * k, eyeYaw: 0.15 };
+  if (d.race === 'lagto') return { cy, eye: (s) => P(s * 0.054, 0.012, 0.047), eyeR: 0.02 * hs * k, eyeYaw: 0.55 };
+  return { cy, eye: (s) => P(s * 0.04, 0, 0.079), eyeR: (rig.fem ? 0.0235 : 0.022) * hs * k, eyeYaw: 0.12 };
 }
 
 function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
@@ -282,6 +306,7 @@ function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
   const torso: Prim[] = [], limbs: Prim[][] = [], sub: Prim[] = [], tints: Prim[] = [];
   const tint = (p: Prim, t: V3) => { p.tint = t; return p; };
   const blush: V3 = [0, 0, fem ? 0.75 : 0.4];
+  const ek = EYE_SHAPE[d.eyeShape]?.size ?? 1;
 
   if (d.race === 'pelso') {
     torso.push(E(P(0, 0.005, -0.005), r3(0.1, 0.1, 0.098)));
@@ -290,7 +315,7 @@ function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
       torso.push(tint(E(P(s * 0.058, -0.045, 0.025), r3(0.052, 0.045, 0.055)), [0, 0, 0.3]));
       torso.push(E(P(s * 0.017, -0.047, 0.083), r3(0.025, 0.021, 0.022)));
       limbs.push([C(P(s * 0.052, 0.07, -0.005), P(s * 0.08, 0.168, -0.015), 0.04 * hs, 0.007 * hs)]);
-      sub.push(E(P(s * 0.042, 0.003, 0.088), r3(0.03, 0.025, 0.022)));
+      sub.push(E(P(s * 0.042, 0.003, 0.088), r3(0.03 * ek, 0.025 * ek, 0.022)));
       if (d.detail === 3) tints.push(tint(E(P(s * 0.045, 0.01, 0.07), r3(0.045, 0.035, 0.04)), [0, 0.9, 0]));
     }
     torso.push(E(P(0, -0.072, 0.07), r3(0.02, 0.016, 0.018)));
@@ -300,14 +325,15 @@ function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
 
   if (d.race === 'lagto') {
     torso.push(E(P(0, 0.015, -0.02), r3(0.082, 0.083, 0.092)));
-    torso.push(C(P(0, -0.015, 0.03), P(0, -0.04, 0.15), 0.062 * hs, 0.04 * hs));
+    const sn = SNOUT[d.nose] ?? SNOUT[0];
+    torso.push(C(P(0, -0.015, 0.03), P(0, -0.04, sn.z), 0.062 * hs, sn.r * hs));
     torso.push(tint(E(P(0, -0.06, 0.055), r3(0.06, 0.035, 0.085)), [0.8, 0, 0]));
     torso.push(tint(E(P(0, -0.085, 0), r3(0.05, 0.04, 0.05)), [0.8, 0, 0]));
     for (const s of [-1, 1]) {
       torso.push(E(P(s * 0.045, 0.035, 0.055), r3(0.034, 0.016, 0.03)));
       torso.push(E(P(s * 0.055, -0.03, 0.03), r3(0.035, 0.03, 0.04)));
-      sub.push(E(P(s * 0.052, 0.012, 0.058), r3(0.024, 0.02, 0.022)));
-      sub.push(E(P(s * 0.016, -0.028, 0.183), r3(0.006, 0.005, 0.008)));
+      sub.push(E(P(s * 0.052, 0.012, 0.058), r3(0.024 * ek, 0.02 * ek, 0.022)));
+      sub.push(E(P(s * (0.016 + (sn.r - 0.04) * 0.6), -0.028, sn.z + 0.033 + (sn.r - 0.04) * 0.4), r3(0.006, 0.005, 0.008)));
     }
     return { shape: { torso, limbs, sub, kT: 0.04, kL: 0.01, kJ: 0.02, kS: 0.01 }, tints };
   }
@@ -320,14 +346,30 @@ function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
   for (const s of [-1, 1]) {
     if (!fem) torso.push(E(P(s * 0.058, -0.07, 0.02), r3(0.025, 0.025, 0.03)));
     torso.push(tint(E(P(s * 0.05, -0.035, 0.062), r3(0.032, 0.028, 0.028)), blush));
-    sub.push(E(P(s * 0.04, 0, 0.092), r3(0.027, 0.021, 0.02)));
+    sub.push(E(P(s * 0.04, 0, 0.092), r3(0.027 * ek, 0.021 * ek, 0.02)));
     if (d.race === 'elfo') limbs.push([C(P(s * 0.088, -0.01, -0.005), P(s * 0.168, 0.058, -0.048), 0.017 * hs, 0.003 * hs)]);
     else limbs.push([E(P(s * 0.094, -0.01, -0.005), r3(0.013, 0.03, 0.02))]);
   }
-  const n = fem ? 0.85 : 1;
-  limbs.push([
-    C(P(0, 0, 0.094), P(0, -0.03, 0.113 - (1 - n) * 0.01), 0.008 * hs * n, 0.012 * hs * n),
-    E(P(0, -0.034, 0.108 - (1 - n) * 0.008), r3(0.014 * n, 0.011 * n, 0.011 * n)),
+  const n = (fem ? 0.85 : 1) * (d.nose === 4 ? 0.72 : 1);
+  const zt = (z: number) => z - (1 - n) * 0.01;
+  if (d.nose === 1) limbs.push([
+    C(P(0, -0.004, 0.094), P(0, -0.024, zt(0.11)), 0.006 * hs * n, 0.01 * hs * n),
+    E(P(0, -0.027, zt(0.108)), r3(0.014 * n, 0.011 * n, 0.012 * n)),
+  ]);
+  else if (d.nose === 2) limbs.push([
+    C(P(0, 0, 0.094), P(0, -0.03, zt(0.11)), 0.009 * hs * n, 0.013 * hs * n),
+    E(P(0, -0.035, zt(0.106)), r3(0.02 * n, 0.012 * n, 0.012 * n)),
+    E(P(-0.015, -0.037, zt(0.099)), r3(0.009 * n, 0.008 * n, 0.008 * n)),
+    E(P(0.015, -0.037, zt(0.099)), r3(0.009 * n, 0.008 * n, 0.008 * n)),
+  ]);
+  else if (d.nose === 3) limbs.push([
+    C(P(0, 0.004, 0.095), P(0, -0.033, zt(0.117)), 0.008 * hs * n, 0.011 * hs * n),
+    E(P(0, -0.013, zt(0.111)), r3(0.007 * n, 0.01 * n, 0.008 * n)),
+    E(P(0, -0.039, zt(0.11)), r3(0.011 * n, 0.012 * n, 0.011 * n)),
+  ]);
+  else limbs.push([
+    C(P(0, 0, 0.094), P(0, -0.03, zt(0.113)), 0.008 * hs * n, 0.012 * hs * n),
+    E(P(0, -0.034, zt(0.108)), r3(0.014 * n, 0.011 * n, 0.011 * n)),
   ]);
   return { shape: { torso, limbs, sub, kT: 0.04, kL: 0.01, kJ: 0.016, kS: 0.012 }, tints };
 }
@@ -360,6 +402,16 @@ function hairShape(rig: Rig, d: CharData): Shape | null {
       torso.push(E(P(0, 0.075, -0.05), r3(0.008, 0.06, 0.1)));
       for (let i = 0; i < 4; i++) limbs.push([C(P(0, 0.07, 0.02 - i * 0.045), P(0, 0.15 - i * 0.012, -0.01 - i * 0.05), 0.008 * hs, 0.003 * hs)]);
     }
+    if (style === 5) for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * PI * 2;
+      const base = P(Math.cos(a) * 0.06, 0.07, Math.sin(a) * 0.06 - 0.02);
+      limbs.push([C(base, v(base, [Math.cos(a) * 0.025 * hs, 0.05 * hs, Math.sin(a) * 0.025 * hs]), 0.013 * hs, 0.002 * hs)]);
+    }
+    if (style === 6) for (const s of [-1, 1]) limbs.push([
+      C(P(s * 0.035, 0.075, 0.01), P(s * 0.06, 0.13, -0.06), 0.024 * hs, 0.017 * hs),
+      C(P(s * 0.06, 0.13, -0.06), P(s * 0.07, 0.15, -0.17), 0.017 * hs, 0.01 * hs),
+      C(P(s * 0.07, 0.15, -0.17), P(s * 0.06, 0.12, -0.25), 0.01 * hs, 0.002 * hs),
+    ]);
     return { torso, limbs, kT: 0.03, kL: 0.01, kJ: 0.02 };
   }
 
@@ -430,6 +482,70 @@ function hairShape(rig: Rig, d: CharData): Shape | null {
       const f = 1.25 - i * 0.36;
       const base = P(0, Math.sin(f) * 0.115 + 0.012, Math.cos(f) * 0.11 - 0.01);
       limbs.push([C(base, v(base, [0, Math.sin(f) * 0.085 * hs, Math.cos(f) * 0.085 * hs]), 0.03 * hs, 0.006 * hs)]);
+    }
+  }
+  const fib = (n: number, f: (x: number, y: number, z: number) => void) => {
+    for (let i = 0; i < n; i++) {
+      const y = 1 - (2 * (i + 0.5)) / n, r = Math.sqrt(1 - y * y), a = i * 2.39996;
+      f(Math.cos(a) * r, y, Math.sin(a) * r);
+    }
+  };
+  if (style === 8) {
+    torso.push(E(P(0, 0.07, 0), r3(0.092, 0.065, 0.1)));
+    fib(26, (x, y, z) => {
+      if (y < 0.15 || (z > 0.6 && y < 0.55)) return;
+      const base = P(x * 0.095, 0.02 + y * 0.1, z * 0.1);
+      limbs.push([C(base, v(base, [x * 0.07 * hs, y * 0.05 * hs + 0.012 * hs, z * 0.07 * hs]), 0.028 * hs, 0.006 * hs)]);
+    });
+    fringe();
+  }
+  if (style === 9) {
+    fib(70, (x, y, z) => {
+      if (y < -0.4 || (z > 0.55 && y < 0.5)) return;
+      limbs.push([E(P(x * 0.115, 0.014 + y * 0.128, z * 0.12 - 0.008), r3(0.027, 0.027, 0.027))]);
+    });
+  }
+  if (style === 10) {
+    fringe();
+    for (const s of [-1, 1]) {
+      torso.push(E(P(s * 0.1, 0.045, -0.045), r3(0.024, 0.024, 0.024)));
+      limbs.push([
+        C(P(s * 0.11, 0.045, -0.05), P(s * 0.16, -0.05, -0.06), 0.036 * hs, 0.03 * hs),
+        C(P(s * 0.16, -0.05, -0.06), P(s * 0.17, -0.2, -0.04), 0.03 * hs, 0.008 * hs),
+      ]);
+    }
+  }
+  if (style === 11) {
+    torso.push(E(P(-0.02, 0.075, 0.02), r3(0.1, 0.055, 0.1)));
+    torso.push(E(P(0.035, 0.06, 0.08), r3(0.07, 0.03, 0.04)));
+    limbs.push([C(P(0.075, 0.05, 0.07), P(0.095, -0.04, 0.055), 0.022 * hs, 0.012 * hs)]);
+    limbs.push([C(P(-0.09, 0, 0.02), P(-0.088, -0.035, 0.03), 0.011 * hs, 0.007 * hs)]);
+  }
+  if (style === 12) {
+    const ball = E(P(0, 0.06, -0.015), r3(0.165, 0.16, 0.16));
+    ball.above(P(0, -0.06, 0)[1]);
+    torso.push(ball);
+    fib(36, (x, y, z) => {
+      if (y < -0.5 || (z > 0.5 && y < 0.3)) return;
+      limbs.push([E(P(x * 0.16, 0.06 + y * 0.155, z * 0.155 - 0.015), r3(0.035, 0.035, 0.035))]);
+    });
+  }
+  if (style === 13) {
+    torso.push(E(P(0, 0.11, -0.03), r3(0.032, 0.02, 0.032)));
+    torso.push(E(P(0, 0.148, -0.03), r3(0.034, 0.045, 0.034)));
+  }
+  if (style === 14) {
+    torso.push(E(P(0, 0.07, 0.01), r3(0.09, 0.06, 0.1)));
+    torso.push(E(P(0.025, 0.065, 0.075), r3(0.07, 0.032, 0.04)));
+    for (let k = 0; k < 8; k++) {
+      const w = k % 2 ? 0.02 : -0.02;
+      const p = E(P(w, -0.02 - k * 0.05, -0.07 - (k % 2 ? 0.012 : 0)), r3(0.105 - k * 0.004, 0.045, 0.06));
+      torso.push(p);
+    }
+    for (const s of [-1, 1]) {
+      const lock: Prim[] = [];
+      for (let k = 0; k < 6; k++) lock.push(E(P(s * (0.085 + (k % 2 ? 0.014 : 0)), -k * 0.05, 0.03 - k * 0.004), r3(0.028, 0.04, 0.028)));
+      limbs.push(lock);
     }
   }
   // recorte de la cara (frente y mejillas despejadas)
@@ -586,10 +702,10 @@ export class Character {
     const head = this.bones.head;
     const hi = headInfo(rig, d);
     const hshape = headShape(rig, d);
-    const hkey = [d.race, d.sex, d.detail].join('|');
+    const hkey = [d.race, d.sex, d.detail, d.eyeShape, d.race === 'pelso' ? 0 : d.nose].join('|');
     add(head, cached('head|' + hkey, () => sculpt(hshape.shape, 0.0042, [...hshape.shape.torso, ...hshape.shape.limbs.flat(), ...hshape.tints], false)), sdfSkin);
     this.headTop = group(head, [0, hi.cy, 0]);
-    const hgear = this.opts.outfit ? d.headgear : 0;
+    const hgear = this.opts.outfit ? CLASSES[d.cls].headgear : 0;
     if (hgear !== 1 && hgear !== 2) {
       const hsh = hairShape(rig, d);
       if (hsh) add(head, cached(`hair|${d.race}|${d.sex}|${d.hair}`, () => sculpt(hsh, 0.0045, null, false)), m.hair);
@@ -828,8 +944,10 @@ export class Character {
     const lashMat = paint('#24161a', 'plain', { texAmt: 0, rim: 0 });
     const shine = paint('#ffffff', 'plain', { texAmt: 0, emissive: 1 });
     const r = hi.eyeR;
+    const es = EYE_SHAPE[d.eyeShape] ?? EYE_SHAPE[0];
+    this.lidOpen = es.open;
     for (const s of [-1, 1]) {
-      const eg = group(head, hi.eye(s), [0, s * hi.eyeYaw, 0]);
+      const eg = group(head, hi.eye(s), [0, s * hi.eyeYaw, s * es.tilt]);
       add(eg, sphere(r, 32, 20), eyeMat, [0, 0, 0], [0, -s * hi.eyeYaw * 0.6, 0]);
       add(eg, sphere(r * 0.2, 8, 6), shine, [r * 0.32, r * 0.38, r * 0.9]);
       add(eg, sphere(r * 0.1, 6, 5), shine, [-r * 0.2, -r * 0.3, r * 0.95]);
@@ -844,28 +962,64 @@ export class Character {
       this.lids.push(lid);
     }
 
-    if (d.race === 'humano' || d.race === 'elfo') {
+    // cejas
+    if (d.race !== 'lagto') {
+      const b = BROW[d.brows] ?? BROW[0];
+      const ey = d.race === 'pelso' ? 0.003 : 0;
       for (const s of [-1, 1]) {
-        const arc = 1.15;
-        const g = torus(0.03, fem ? 0.0034 : 0.0055, arc, 16).rotateZ(PI / 2 - arc / 2);
-        add(head, g, hairMat, v(S(s * 0.042, 0.042, -0.001), [0, -0.03, 0]), [0, s * 0.32, s * (fem ? 0.06 : -0.04)], [1, 0.75, 1]);
+        const g = torus(b.r, (fem ? 0.0034 : 0.0055) * b.t, b.arc, 16).rotateZ(PI / 2 - b.arc / 2);
+        add(head, g, hairMat, v(S(s * 0.042, ey + 0.042 + b.dy, -0.001), [0, -b.r, 0]), [0, s * 0.32, s * ((fem ? 0.06 : -0.04) + b.tilt)], [1, 0.75, 1]);
       }
-      const arc = 1.2;
-      add(head, torus(0.016 * hs, 0.0024, arc, 16).rotateZ(-PI / 2 - arc / 2), paint('#8a4448', 'plain', { texAmt: 0, rim: 0 }), v(S(0, -0.064, 0.001), [0, 0.016 * hs, 0]), [-0.3, 0, 0]);
-      if (fem) add(head, sphere(1, 14, 8), paint(mixHex(RACES[d.race].skins[d.skin], '#c4505a', 0.5), 'skin', { rim: 0.2 }), S(0, -0.07, -0.002), [0.2, 0, 0], [0.012 * hs, 0.005 * hs, 0.006 * hs]);
+    }
+    const white = paint('#fbf6ee', 'plain', { texAmt: 0, rim: 0 });
+    const inner = paint('#4a1c22', 'plain', { texAmt: 0, rim: 0 });
+    if (d.race === 'humano' || d.race === 'elfo') {
+      const mouthMat = paint('#8a4448', 'plain', { texAmt: 0, rim: 0 });
+      const M = S(0, -0.064, 0.001);
+      const mo = d.mouth;
+      if (mo === 0) add(head, torus(0.016 * hs, 0.0024, 1.2, 16).rotateZ(-PI / 2 - 0.6), mouthMat, v(M, [0, 0.016 * hs, 0]), [-0.3, 0, 0]);
+      if (mo === 1) rod(head, S(-0.014, -0.064, 0), S(0.014, -0.064, 0), 0.0022, mouthMat);
+      if (mo === 2) add(head, torus(0.014 * hs, 0.0024, 0.9, 16).rotateZ(-PI / 2 - 0.45), mouthMat, v(S(0.006, -0.062, 0.001), [0, 0.014 * hs, 0]), [-0.3, 0, 0.35]);
+      if (mo === 3) {
+        add(head, sphere(1, 18, 10, 0, PI * 2, PI / 2, PI / 2), inner, v(M, [0, 0.004 * hs, -0.002]), [-0.25, 0, 0], [0.016 * hs, 0.012 * hs, 0.007 * hs]);
+        add(head, box(0.022 * hs, 0.0035 * hs, 0.003), white, v(M, [0, 0.0025 * hs, 0.001]));
+        add(head, sphere(1, 10, 8), paint('#d0606a', 'plain', { rim: 0 }), v(M, [0, -0.004 * hs, -0.001]), [0, 0, 0], [0.009 * hs, 0.004 * hs, 0.004 * hs]);
+      }
+      if (mo === 4) add(head, sphere(1, 14, 10), inner, M, [0, 0, 0], [0.007 * hs, 0.009 * hs, 0.004 * hs]);
+      if (mo === 5) add(head, torus(0.02 * hs, 0.0024, 0.8, 16).rotateZ(PI / 2 - 0.4), mouthMat, v(M, [0, -0.018 * hs, 0]), [0.25, 0, 0]);
+      if (fem && mo !== 3 && mo !== 4) add(head, sphere(1, 14, 8), paint(mixHex(RACES[d.race].skins[d.skin], '#c4505a', 0.5), 'skin', { rim: 0.2 }), S(0, -0.07, -0.002), [0.2, 0, 0], [0.012 * hs, 0.005 * hs, 0.006 * hs]);
     }
     if (d.race === 'pelso') {
-      add(head, sphere(1, 14, 10), paint('#d98c94', 'plain', { rim: 0.3 }), S(0, -0.026, -0.002), [0, 0, 0], [0.013 * hs, 0.008 * hs, 0.008 * hs]);
+      const noseCol = ['#d98c94', '#2a2224', '#e07f8e', '#a0624a'][d.nose] ?? '#d98c94';
+      const nm = paint(noseCol, 'plain', { rim: 0.3 });
+      const N = S(0, -0.026, -0.002);
+      if (d.nose === 2) {
+        for (const s of [-1, 1]) add(head, sphere(1, 12, 10), nm, v(N, [s * 0.005 * hs, 0.002 * hs, 0]), [0, 0, 0], [0.008 * hs, 0.008 * hs, 0.007 * hs]);
+        add(head, spike(0.009 * hs, 0.012 * hs, 10), nm, v(N, [0, -0.002 * hs, 0]), [PI, 0, 0], [1, 1, 0.7]);
+      } else add(head, sphere(1, 14, 10), nm, N, [0, 0, 0], [0.013 * hs, 0.008 * hs, 0.008 * hs]);
       const whisk = paint('#f4efe6', 'plain', { texAmt: 0 });
+      const mo = d.mouth;
+      if (mo === 1) add(head, torus(0.016, 0.0018, 1.6, 14).rotateZ(-PI / 2 - 0.8), lashMat, v(S(0, -0.062, 0), [0, 0.014, 0]));
+      if (mo === 2) add(head, spike(0.003, 0.009, 6), white, v(S(0.012, -0.062, -0.001), [0, -0.002, 0]), [PI, 0, 0]);
+      if (mo === 3) add(head, sphere(1, 14, 10, 0, PI * 2, PI / 2, PI / 2), inner, v(S(0, -0.062, -0.002), [0, 0.002, 0]), [-0.2, 0, 0], [0.012 * hs, 0.012 * hs, 0.006 * hs]);
       for (const s of [-1, 1]) {
-        add(head, torus(0.01, 0.0018, PI * 0.9, 10).rotateZ(-PI / 2 - PI * 0.45), lashMat, v(S(s * 0.01, -0.06, 0), [0, 0.01, 0]));
+        if (mo !== 1) add(head, torus(0.01, 0.0018, PI * 0.9, 10).rotateZ(-PI / 2 - PI * 0.45), lashMat, v(S(s * 0.01, -0.06, 0), [0, 0.01, 0]));
         for (let k = 0; k < 3; k++) { const a = S(s * 0.03, -0.045 - k * 0.006, -0.003); rod(head, a, v(a, [s * 0.07 * hs, (0.01 - k * 0.012) * hs, -0.015 * hs]), 0.0009, whisk); }
         const ear = group(head, P(s * 0.064, 0.112, 0.012), [0, 0, -s * 0.29]);
         add(ear, spike(0.022 * hs, 0.07 * hs, 10), paint('#e8a0a8', 'skin', { rim: 0.2 }), [0, -0.03 * hs, 0], [0, 0, 0], [1, 1, 0.35]);
       }
     }
     if (d.race === 'lagto') {
-      for (const s of [-1, 1]) rod(head, v(P(s * 0.034, -0.063, 0), [0, 0, surfaceZ(shape, s * 0.034 * hs, cy - 0.063 * hs) - 0.012]), P(s * 0.064, -0.058, 0.045), 0.002, lashMat);
+      const mo = d.mouth;
+      for (const s of [-1, 1]) {
+        const front = v(P(s * 0.034, -0.063, 0), [0, 0, surfaceZ(shape, s * 0.034 * hs, cy - 0.063 * hs) - 0.012]);
+        rod(head, front, P(s * 0.064, mo === 1 ? -0.045 : -0.058, 0.045), 0.002, lashMat);
+        if (mo === 2) add(head, spike(0.0035, 0.011, 6), white, v(front, [0, -0.002, -0.012]), [PI, 0, 0]);
+      }
+      if (d.nose === 4) {
+        const sn = SNOUT[4];
+        add(head, spike(0.012 * hs, 0.04 * hs, 10), paint('#efe4c8', 'plain', { rim: 0.4 }), P(0, -0.006, sn.z - 0.015), [0.35, 0, 0]);
+      }
     }
   }
 

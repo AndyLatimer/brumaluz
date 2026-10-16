@@ -4,7 +4,7 @@ import { buildEnv } from './env';
 import { Character } from './character';
 import {
   CharData, Race, ClassId, RACES, CLASSES, EYES, EYE_NAMES, HAIR_COLORS, CLOTH, CLOTH_NAMES,
-  HEADGEAR, detailOptions, defaultChar, randomChar, randomName, sanitize,
+  EYE_SHAPES, BROWS, faceOptions, detailOptions, defaultChar, randomChar, randomName, sanitize,
 } from './data';
 
 THREE.ColorManagement.enabled = false;
@@ -147,7 +147,7 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'eyes' 
   };
 }
 
-function stepper(key: 'detail' | 'hair' | 'headgear', list: () => string[]) {
+function stepper(key: 'detail' | 'hair' | 'eyeShape' | 'brows' | 'nose' | 'mouth', list: () => string[]) {
   const el = $(`.stepper[data-key="${key}"]`);
   el.innerHTML = `<button aria-label="Anterior">‹</button><div class="val"></div><button aria-label="Siguiente">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
@@ -166,7 +166,6 @@ cards($('#races'), RACES, RACE_ICONS, (k) => {
 });
 cards($('#classes'), CLASSES, CLASS_ICONS, (k) => {
   const c = CLASSES[k];
-  state.headgear = c.headgear;
   state.primary = c.primary;
   state.secondary = c.secondary;
   set('cls', k, true);
@@ -180,7 +179,10 @@ const renders = [
   swatches($('#secondary'), () => CLOTH, 'secondary', () => CLOTH_NAMES),
   stepper('detail', () => detailOptions(state.race, state.sex)?.list ?? []),
   stepper('hair', () => RACES[state.race].hairStyles),
-  stepper('headgear', () => HEADGEAR),
+  stepper('eyeShape', () => EYE_SHAPES),
+  stepper('brows', () => BROWS),
+  stepper('nose', () => faceOptions(state.race).nose),
+  stepper('mouth', () => faceOptions(state.race).mouth),
 ];
 
 document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {
@@ -207,6 +209,9 @@ function refreshUI() {
   $('#detailBox').hidden = !det;
   if (det) $('#detailLabel').textContent = det.label;
   $('#hairLabel').textContent = RACES[state.race].hairLabel;
+  const F = faceOptions(state.race);
+  $('#browBox').hidden = !F.brows;
+  $('#noseLabel').textContent = F.noseLabel;
   if (document.activeElement !== nameInput) nameInput.value = state.name;
   renders.forEach((r) => r());
 }

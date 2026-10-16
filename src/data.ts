@@ -14,10 +14,13 @@ export interface CharData {
   hair: number;
   hairColor: number;
   detail: number; // barba / pelaje / patrón según linaje
+  eyeShape: number;
+  brows: number;
+  nose: number;
+  mouth: number;
   cls: ClassId;
   primary: number;
   secondary: number;
-  headgear: number;
 }
 
 export interface RaceDef {
@@ -38,7 +41,8 @@ export interface RaceDef {
   names: [string[], string[]];
 }
 
-const HUMAN_HAIR = ['Rapado', 'Corto', 'Melena', 'Coleta', 'Moño', 'Media melena', 'Trenzas', 'Cresta'];
+const HUMAN_HAIR = ['Rapado', 'Corto', 'Melena', 'Coleta', 'Moño', 'Media melena', 'Trenzas', 'Cresta',
+  'Despeinado', 'Rizos', 'Dos coletas', 'Raya al lado', 'Afro', 'Moño alto', 'Ondulado largo'];
 
 export const RACES: Record<Race, RaceDef> = {
   humano: {
@@ -65,7 +69,7 @@ export const RACES: Record<Race, RaceDef> = {
     skins: ['#5f9a52', '#3e8a76', '#97a84c', '#c9813f', '#3f72a0', '#a5473f'],
     skinNames: ['Junco', 'Laguna', 'Musgo', 'Arena', 'Río', 'Brasa'],
     skinKind: 'scales', height: 1.03, slim: 1.05, leg: 0.96, head: 1, tail: 2, slit: true, light: '#efe0a8',
-    hairLabel: 'Cresta', hairStyles: ['Ninguna', 'Púas', 'Abanico', 'Cuernos', 'Aleta'],
+    hairLabel: 'Cresta', hairStyles: ['Ninguna', 'Púas', 'Abanico', 'Cuernos', 'Aleta', 'Corona', 'Cuernos largos'],
     names: [["Sss'", 'Ka', 'Zith', 'Ish', 'Tol', 'Xa', 'Rek', 'Ssa'], ["'ra", 'ssik', 'tek', "'li", 'zar', 'ko', 'thiss']],
   },
   pelso: {
@@ -90,6 +94,28 @@ export function detailOptions(race: Race, sex: 0 | 1): { label: string; list: st
   return sex === 0 ? { label: 'Barba', list: BEARDS } : null;
 }
 
+export const EYE_SHAPES = ['Redondos', 'Almendrados', 'Rasgados', 'Dulces', 'Grandes', 'Soñolientos'];
+export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Arqueadas', 'Rectas', 'Enfadadas', 'Preocupadas'];
+
+/** Opciones de la cara según linaje (null = no aplica). */
+export function faceOptions(race: Race) {
+  if (race === 'pelso') return {
+    brows: BROWS,
+    noseLabel: 'Nariz', nose: ['Rosa', 'Negra', 'Corazón', 'Canela'],
+    mouth: ['Gatuna', 'Sonrisa', 'Colmillito', 'Abierta'],
+  };
+  if (race === 'lagto') return {
+    brows: null,
+    noseLabel: 'Hocico', nose: ['Normal', 'Corto', 'Largo', 'Romo', 'Cuerno nasal'],
+    mouth: ['Línea', 'Sonrisa', 'Colmillos'],
+  };
+  return {
+    brows: BROWS,
+    noseLabel: 'Nariz', nose: ['Recta', 'Respingona', 'Ancha', 'Aguileña', 'Pequeña'],
+    mouth: ['Sonrisa', 'Neutra', 'Pícara', 'Abierta', 'Sorpresa', 'Seria'],
+  };
+}
+
 export interface ClassDef {
   label: string;
   desc: string;
@@ -99,7 +125,7 @@ export interface ClassDef {
 }
 
 export const CLASSES: Record<ClassId, ClassDef> = {
-  guerrero: { label: 'Guerrero', desc: 'Armadura, espada y escudo. Protege las murallas y a sus amigos.', headgear: 0, primary: 0, secondary: 6 },
+  guerrero: { label: 'Guerrero', desc: 'Armadura, yelmo, espada y escudo. Protege las murallas y a sus amigos.', headgear: 2, primary: 0, secondary: 6 },
   mago: { label: 'Mago', desc: 'Estudia las runas en la torre del reloj. Su bastón brilla con magia arcana.', headgear: 3, primary: 3, secondary: 4 },
   picaro: { label: 'Pícaro', desc: 'Se mueve entre tejados y callejones. Dagas gemelas y muchos secretos.', headgear: 1, primary: 5, secondary: 0 },
   clerigo: { label: 'Clérigo', desc: 'Sanador del templo del Sol. Su maza bendita reparte luz y consuelo.', headgear: 5, primary: 7, secondary: 4 },
@@ -111,7 +137,6 @@ export const EYE_NAMES = ['Zafiro', 'Esmeralda', 'Avellana', 'Ámbar', 'Amatista
 export const HAIR_COLORS = ['#2a1d16', '#5a3a22', '#8a5a2b', '#c48a3f', '#e8c97e', '#b23a22', '#e4e0d8', '#3a3a4a', '#5a86c8', '#8a5fb8', '#4f9a6a', '#d8608a'];
 export const CLOTH = ['#8b2a2a', '#2f4f8b', '#3f6b3a', '#5f3a8b', '#c9a24a', '#5a3a22', '#2e2e38', '#e9e1cc', '#2f7a7a', '#c0622a'];
 export const CLOTH_NAMES = ['Carmesí', 'Azul real', 'Bosque', 'Púrpura', 'Ocre', 'Castaño', 'Carbón', 'Lino', 'Turquesa', 'Calabaza'];
-export const HEADGEAR = ['Ninguno', 'Capucha', 'Yelmo', 'Sombrero de mago', 'Sombrero con pluma', 'Diadema'];
 
 export function randomName(race: Race, r = Math.random) {
   const [a, b] = RACES[race].names;
@@ -121,7 +146,7 @@ export function randomName(race: Race, r = Math.random) {
 export function defaultChar(): CharData {
   return {
     name: '', race: 'humano', sex: 0, height: 0.5, build: 0.45, skin: 1, eyes: 0,
-    hair: 1, hairColor: 2, detail: 0, cls: 'guerrero', primary: 0, secondary: 6, headgear: 0,
+    hair: 1, hairColor: 2, detail: 0, eyeShape: 0, brows: 0, nose: 0, mouth: 0, cls: 'guerrero', primary: 0, secondary: 6,
   };
 }
 
@@ -136,7 +161,13 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.skin = Math.min(Math.max(out.skin | 0, 0), R.skins.length - 1);
   const det = detailOptions(out.race, out.sex);
   out.detail = det ? Math.min(Math.max(out.detail | 0, 0), det.list.length - 1) : 0;
-  out.headgear = Math.min(Math.max(out.headgear | 0, 0), HEADGEAR.length - 1);
+  const F = faceOptions(out.race);
+  const clamp = (n: number, len: number) => Math.min(Math.max(n | 0, 0), len - 1);
+  out.eyeShape = clamp(out.eyeShape, EYE_SHAPES.length);
+  out.brows = clamp(out.brows, BROWS.length);
+  out.nose = clamp(out.nose, F.nose.length);
+  out.mouth = clamp(out.mouth, F.mouth.length);
+  delete (out as unknown as Record<string, unknown>).headgear;
   return out;
 }
 
@@ -147,13 +178,15 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   const det = detailOptions(race, sex);
+  const F = faceOptions(race);
+  const rnd = (n: number) => Math.floor(Math.random() * n);
   return {
     name: randomName(race), race, sex,
     height: Math.random(), build: Math.random(),
     skin: Math.floor(Math.random() * R.skins.length), eyes: Math.floor(Math.random() * EYES.length),
     hair: Math.floor(Math.random() * R.hairStyles.length), hairColor: Math.floor(Math.random() * HAIR_COLORS.length),
-    detail: det ? Math.floor(Math.random() * det.list.length) : 0,
-    cls, primary: Math.floor(Math.random() * CLOTH.length), secondary: Math.floor(Math.random() * CLOTH.length),
-    headgear: Math.random() < 0.6 ? CLASSES[cls].headgear : Math.floor(Math.random() * HEADGEAR.length),
+    detail: det ? rnd(det.list.length) : 0,
+    eyeShape: rnd(EYE_SHAPES.length), brows: rnd(BROWS.length), nose: rnd(F.nose.length), mouth: rnd(F.mouth.length),
+    cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),
   };
 }
