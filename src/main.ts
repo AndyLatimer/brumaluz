@@ -7,7 +7,7 @@ import { buildCity, City } from './city';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
   CharData, Race, ClassId, RACES, CLASSES, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
-  defaultChar, randomChar, randomName, sanitize,
+  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, CAPES, HAIR_ACCS, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES,
 } from './data';
 
 
@@ -259,7 +259,7 @@ function cards<T extends string>(el: HTMLElement, items: Record<T, { label: stri
   });
 }
 
-function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'eyeColor' | 'primary' | 'secondary', names: () => string[]) {
+function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'eyeColor' | 'primary' | 'secondary' | 'clothA' | 'clothB' | 'accColor', names: () => string[]) {
   return () => {
     el.innerHTML = '';
     const ns = names();
@@ -275,7 +275,7 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairCo
   };
 }
 
-function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail', list: () => string[]) {
+function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'top' | 'arms' | 'legs' | 'cape' | 'hairAcc' | 'acc' | 'makeup', list: () => string[]) {
   const el = $(`.stepper[data-key="${key}"]`);
   el.innerHTML = `<button aria-label="Anterior">‹</button><div class="val"></div><button aria-label="Siguiente">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
@@ -314,6 +314,16 @@ const renders = [
   stepper('mouth', () => MOUTHS),
   stepper('detail', () => DETAILS),
   stepper('trait', () => RACES[state.race].traits),
+  stepper('makeup', () => MAKEUPS),
+  stepper('hairAcc', () => HAIR_ACCS),
+  stepper('top', () => TOPS),
+  stepper('arms', () => ARMS),
+  stepper('legs', () => LEGS),
+  stepper('cape', () => CAPES),
+  stepper('acc', () => ACCS),
+  swatches($('#clothA'), () => CLOTH, 'clothA', () => CLOTH_NAMES),
+  swatches($('#clothB'), () => CLOTH, 'clothB', () => CLOTH_NAMES),
+  swatches($('#accColor'), () => ACC_COLORS, 'accColor', () => ACC_COLOR_NAMES),
 ];
 
 document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {

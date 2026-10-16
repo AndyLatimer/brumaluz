@@ -6,7 +6,7 @@ import mageUrl from './assets/models/Mage.glb?url';
 import knightUrl from './assets/models/Knight.glb?url';
 import rogueUrl from './assets/models/Rogue.glb?url';
 import barbarianUrl from './assets/models/Barbarian.glb?url';
-import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS } from './data';
+import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, OUTFIT_KITS, ACC_COLORS } from './data';
 import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
 import { softDot } from './paint';
 
@@ -187,8 +187,8 @@ export class Character {
     // Colores
     const skin = R.skins[d.skin];
     const hair = HAIR_COLORS[d.hairColor];
-    const P = this.opts.outfit ? CLOTH[d.primary] : '#d9c9a8';
-    const S = this.opts.outfit ? CLOTH[d.secondary] : '#8a5a34';
+    const P = this.opts.outfit ? CLOTH[d.primary] : CLOTH[d.clothA];
+    const S = this.opts.outfit ? CLOTH[d.secondary] : CLOTH[d.clothB];
     const matCache = new Map<string, THREE.MeshStandardMaterial>();
     const mat = (kit: Kit, withCloth: boolean) => {
       const k = kit + withCloth;
@@ -226,15 +226,31 @@ export class Character {
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], fem: d.sex === 1, flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
+      hairAcc: d.hairAcc, acc: d.acc, makeup: d.makeup, accColor: ACC_COLORS[d.accColor],
     }, headMat, flatMat);
     this.bones.get('head')!.add(head.group);
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
-    for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
-    if (outfit.cape) this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true));
-    if (outfit.hat) this.addRigid(outfit.kit, outfit.hat, mat(outfit.kit, true));
+    if (this.opts.outfit) {
+      for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
+      if (outfit.cape) this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true));
+    } else {
+      // ropa de diario: torso, mangas y piernas combinables de los cuatro modelos
+      const top = OUTFIT_KITS[d.top], arms = OUTFIT_KITS[d.arms], legs = OUTFIT_KITS[d.legs];
+      this.addSkinned(top, `${top}_Body`, mat(top, true));
+      for (const side of ['Left', 'Right']) {
+        this.addSkinned(arms, `${arms}_Arm${side}`, mat(arms, true));
+        this.addSkinned(legs, `${legs}_Leg${side}`, mat(legs, true));
+      }
+      if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1]; this.addRigid(k, `${k}_Cape`, mat(k, true)); }
+    }
+    if (outfit.hat) {
+      // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
+      const hat = this.addRigid(outfit.kit, outfit.hat, mat(outfit.kit, true));
+      if (hat) hat.scale.multiplyScalar(1.06);
+    }
     for (const it of outfit.items) {
       const o = this.addRigid(it.kit, it.name, mat(it.kit, it.kit === outfit.kit));
       if (it.name === '2H_Staff' && o) this.addGlow(o);

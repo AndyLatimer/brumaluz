@@ -70,7 +70,7 @@ html, body {
   top: 24px; left: 24px; bottom: 24px; width: var(--panel-w);
   display: flex; flex-direction: column; overflow: hidden;
 }
-#tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: linear-gradient(var(--wood-2), var(--wood-1)); border-bottom: 3px solid var(--gold-lo); }
+#tabs { display: grid; grid-template-columns: repeat(5, 1fr); background: linear-gradient(var(--wood-2), var(--wood-1)); border-bottom: 3px solid var(--gold-lo); }
 #tabs button {
   appearance: none; border: 0; background: transparent; color: #e9d3a8; padding: 10px 4px 8px; cursor: pointer;
   font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px; letter-spacing: .04em;
