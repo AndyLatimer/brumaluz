@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { paint, softDot, irisTex, Kind } from './paint';
-import { Prim, Shape, surfaceNet, skinAndTint, surfaceZ, V3 } from './sdf';
+import { Prim, Shape, surfaceNet, skinAndTint, surfaceZ, evalShape, V3 } from './sdf';
 import { CharData, RACES, CLASSES, CLOTH, EYES, HAIR_COLORS } from './data';
 
 /** Formas de ojo: tamaño, inclinación (rasgado) y apertura del párpado. */
@@ -12,15 +12,15 @@ const EYE_SHAPE = [
   { size: 1.14, tilt: 0.04, open: -0.28 },
   { size: 0.94, tilt: 0, open: -0.02 },
 ];
-/** Cejas: grosor, curvatura, radio, inclinación y altura. */
+/** Cejas: grosor, curvatura, inclinación (+ = cola alta) y altura. */
 const BROW = [
-  { t: 1, arc: 1.15, r: 0.03, tilt: 0, dy: 0 },
-  { t: 0.55, arc: 1.2, r: 0.03, tilt: 0.04, dy: 0.003 },
-  { t: 1.7, arc: 1.0, r: 0.034, tilt: -0.04, dy: -0.002 },
-  { t: 0.9, arc: 1.6, r: 0.024, tilt: 0.1, dy: 0.004 },
-  { t: 1.1, arc: 0.6, r: 0.055, tilt: 0, dy: 0 },
-  { t: 1.2, arc: 0.9, r: 0.035, tilt: 0.34, dy: -0.004 },
-  { t: 1, arc: 1.0, r: 0.032, tilt: -0.3, dy: 0.004 },
+  { t: 1, curve: 0.008, tilt: 0.002, dy: 0 },
+  { t: 0.6, curve: 0.009, tilt: 0.004, dy: 0.003 },
+  { t: 1.6, curve: 0.005, tilt: -0.002, dy: -0.002 },
+  { t: 0.9, curve: 0.016, tilt: 0.004, dy: 0.004 },
+  { t: 1.1, curve: 0.001, tilt: 0, dy: 0 },
+  { t: 1.2, curve: 0.004, tilt: 0.02, dy: -0.005 },
+  { t: 1, curve: 0.006, tilt: -0.018, dy: 0.004 },
 ];
 const SNOUT = [
   { z: 0.15, r: 0.04 }, { z: 0.12, r: 0.042 }, { z: 0.18, r: 0.036 }, { z: 0.15, r: 0.052 }, { z: 0.15, r: 0.04 },
@@ -46,11 +46,12 @@ function cached(key: string, make: () => THREE.BufferGeometry) {
 }
 
 /** Malla una forma y la convierte en geometría (con pesos de hueso si se piden). */
-function sculpt(shape: Shape, cell: number, weightPrims: Prim[] | null, skin: boolean) {
-  const m = surfaceNet(shape, cell);
+function sculpt(shape: Shape, cell: number, weightPrims: Prim[] | null, skin: boolean, occluders: Shape[] = []) {
+  const m = surfaceNet(shape, cell, occluders);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(m.pos, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(m.nrm, 3));
+  g.setAttribute('ao', new THREE.BufferAttribute(m.ao, 1));
   g.setIndex(new THREE.BufferAttribute(m.idx, 1));
   if (weightPrims) {
     const w = skinAndTint(m.pos, weightPrims, 0.012, skin);
@@ -96,6 +97,16 @@ function rod(parent: THREE.Object3D, a: V3, b: V3, r: number, mat: THREE.Materia
   m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.sub(va).normalize());
   parent.add(m);
   return m;
+}
+/** Superficie a lo largo de -Z (espalda). */
+function surfaceBackZ(s: Shape, x: number, y: number) {
+  for (let z = -0.35; z < 0.05; z += 0.0008) if (evalShape(s, x, y, z) < 0) return z;
+  return 0;
+}
+/** Orienta un objeto (cuyo eje es +Y) hacia una dirección. */
+function aim(o: THREE.Object3D, dir: V3) {
+  o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...dir).normalize());
+  return o;
 }
 const v = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 function mixHex(a: string, b: string, t: number) {
@@ -211,14 +222,16 @@ function bodyShape(rig: Rig, d: CharData): Body {
     const S = side(s);
     P('glute' + S, E([s * 0.062 * W, rig.pelvisY - 0.035, -0.04 * W], [0.078 * W, 0.085, 0.075 * W * (fem ? 1.12 : 1)]), 'hips');
     if (fem) P('bust' + S, E([s * 0.06 * W, rig.chestY + 0.015, 0.068 * W], [0.058 * W, 0.056, 0.05]), 'chest');
-    else P('pec' + S, E([s * 0.068 * W, rig.chestY + 0.045, 0.058 * W * lag], [0.072 * W, 0.052, 0.045]), 'chest');
+    else P('pec' + S, E([s * 0.07 * W, rig.chestY + 0.04, 0.06 * W * lag], [0.078 * W, 0.056, 0.05]), 'chest');
     P('trap' + S, C([s * 0.03, rig.shoulderY + 0.03, -0.02], [s * (rig.shoulderX - 0.045), rig.shoulderY - 0.018, -0.012], fem ? 0.032 : 0.044, fem ? 0.03 : 0.04), 'chest');
 
     const A = rig.arm[S], aw = W * (fem ? 0.86 : 1) * lag;
     const ag = 'arm' + S;
-    P('delt' + S, E(v(A.sh, [s * 0.006, 0, 0]), [0.052 * aw, 0.054 * aw, 0.055 * aw]), `upperArm${S}`, ag);
-    P('uarm' + S, C(v(A.sh, A.d, 0.02), A.el, 0.047 * aw, 0.039 * aw), `upperArm${S}`, ag);
-    P('farm' + S, C(A.el, A.wr, 0.038 * aw, 0.027 * aw), `forearm${S}`, ag);
+    const mus = fem ? 1 : 1.1;
+    P('delt' + S, E(v(A.sh, [s * 0.008, 0, 0]), [0.052 * aw * mus, 0.054 * aw * mus, 0.055 * aw * mus]), `upperArm${S}`, ag);
+    P('uarm' + S, C(v(A.sh, A.d, 0.02), A.el, 0.047 * aw * mus, 0.038 * aw), `upperArm${S}`, ag);
+    P('farm' + S, C(v(A.el, A.d, 0.02), A.wr, 0.04 * aw * mus, 0.027 * aw), `forearm${S}`, ag);
+    if (!fem) P('bicep' + S, E(v(v(A.sh, A.d, 0.14), [0, 0, 0.012]), [0.04 * aw, 0.045 * aw, 0.04 * aw]), `upperArm${S}`, ag);
 
     const L = rig.leg[S], lw = W * (fem ? 1.04 : 1);
     const lg = 'leg' + S;
@@ -248,12 +261,71 @@ function bodyShape(rig: Rig, d: CharData): Body {
     for (const s of [-1, 1]) T(E(v(rig.leg[side(s)].toe, [0, 0, -0.04]), [0.06, 0.05, 0.1]), `foot${side(s)}` as BoneName, [1, 0, 0]);
   }
 
+  // rubor pintado en rodillas, codos y hombros (piel desnuda)
+  if (RACES[d.race].skinKind === 'skin') for (const s of [-1, 1]) {
+    const S = side(s);
+    T(E(v(rig.leg[S].knee, [0, 0, 0.04]), [0.04, 0.045, 0.03]), `shin${S}` as BoneName, [0, 0, 0.45]);
+    T(E(v(rig.arm[S].el, [0, 0, -0.03]), [0.03, 0.035, 0.03]), `forearm${S}` as BoneName, [0, 0, 0.35]);
+    T(E(v(rig.arm[S].sh, [s * 0.02, 0.035, 0]), [0.045, 0.03, 0.05]), `upperArm${S}` as BoneName, [0, 0, 0.25]);
+  }
+
   const torso: Prim[] = [], limbs: Record<string, Prim[]> = {};
   for (const [k, p] of Object.entries(parts)) {
     if (group[k] === 'torso') torso.push(p);
     else (limbs[group[k]] ??= []).push(p);
   }
-  return { shape: { torso, limbs: Object.values(limbs), kT: 0.07, kL: 0.03, kJ: 0.05 }, parts, group, tintPrims };
+  const shape: Shape = { torso, limbs: Object.values(limbs), kT: 0.07, kL: 0.03, kJ: 0.05 };
+
+  // Detalles anatómicos sobre la forma base
+  const detail: Prim[] = [];
+  const D = (name: string, p: Prim, bone: BoneName) => { p.bone = BI[bone]; detail.push(p); parts[name] = p; group[name] = 'detail'; return p; };
+  const fz = (x: number, y: number) => surfaceZ(shape, x, y, 0.4);
+  const bz = (x: number, y: number) => surfaceBackZ(shape, x, y);
+  for (const s of [-1, 1]) {
+    const S = side(s);
+    // clavículas
+    const ya = rig.shoulderY - 0.035, yb = rig.shoulderY - 0.014;
+    const xa = s * 0.02, xb = s * (rig.shoulderX - 0.035);
+    D('clav' + S, C([xa, ya, fz(xa, ya) - 0.006], [xb, yb, fz(xb, yb) - 0.007], 0.0085, 0.0075), 'chest');
+    // omóplatos
+    const yo = rig.chestY + 0.07, xo = s * 0.065;
+    D('blade' + S, E([xo, yo, bz(xo, yo) + 0.01], [0.045, 0.055, 0.016]), 'chest');
+    // codo y tobillos
+    const A = rig.arm[S];
+    D('elbow' + S, E(v(A.el, [0, 0, -0.03]), [0.016, 0.018, 0.016]), `forearm${S}` as BoneName);
+    const L = rig.leg[S];
+    for (const o of [-1, 1]) D(`ankle${S}${o}`, E(v(L.ankle, [o * 0.026, 0.006, -0.004]), [0.011, 0.013, 0.012]), `foot${S}` as BoneName);
+    // dedos de los pies
+    if (d.race === 'humano' || d.race === 'elfo') {
+      for (let i = 0; i < 5; i++) {
+        const big = i === 0;
+        const x = L.toe[0] - s * 0.024 + s * i * 0.0115;
+        D(`toe${S}${i}`, E([x, 0.024 - i * 0.0015, L.toe[2] + 0.028 - i * 0.007], big ? [0.0125, 0.012, 0.016] : [0.0095 - i * 0.0006, 0.0095, 0.012]), `foot${S}` as BoneName);
+      }
+    } else if (d.race === 'pelso') {
+      for (let i = 0; i < 4; i++) {
+        const x = L.toe[0] + s * (-0.027 + i * 0.018);
+        D(`toe${S}${i}`, E([x, 0.03, L.toe[2] + 0.008 - Math.abs(i - 1.5) * 0.006], [0.013, 0.013, 0.015]), `foot${S}` as BoneName);
+      }
+    } else {
+      for (let i = 0; i < 3; i++) {
+        const x = L.toe[0] + s * (-0.022 + i * 0.022);
+        D(`toe${S}${i}`, C([x, 0.03, L.toe[2] - 0.01], [x * 1.0 + s * (i - 1) * 0.008, 0.014, L.toe[2] + 0.045 - Math.abs(i - 1) * 0.012], 0.014, 0.009), `foot${S}` as BoneName);
+      }
+    }
+  }
+  // abdominales sutiles (más marcados con más complexión)
+  if (!fem && d.build > 0.2) for (let r = 0; r < 3; r++) for (const s of [-1, 1]) {
+    const x = s * 0.026 * W, y = rig.spineY + 0.075 - r * 0.052;
+    D(`abs${r}${s}`, E([x, y, fz(x, y) - 0.0115], [0.026 * W, 0.024, 0.0125]), 'spine');
+  }
+  shape.detail = detail;
+  shape.kD = 0.012;
+  // ombligo
+  const ny = rig.spineY - 0.04;
+  shape.sub = [E([0, ny, fz(0, ny) - 0.001], [0.0055, 0.008, 0.008])];
+  shape.kS = 0.006;
+  return { shape, parts, group, tintPrims };
 }
 
 /** Prenda ajustada: copia engordada de piezas del cuerpo, recortada con planos. */
@@ -280,7 +352,7 @@ function garment(body: Body, keys: string[], t: number, planes: Plane[], perPart
 }
 
 const TORSO_KEYS = ['pelvis', 'abdomen', 'ribcage', 'pecL', 'pecR', 'bustL', 'bustR', 'trapL', 'trapR', 'gluteL', 'gluteR'];
-const ARM_KEYS = ['deltL', 'deltR', 'uarmL', 'uarmR', 'farmL', 'farmR'];
+const ARM_KEYS = ['deltL', 'deltR', 'uarmL', 'uarmR', 'bicepL', 'bicepR', 'farmL', 'farmR'];
 const LEG_KEYS = ['thighL', 'thighR', 'kneeL', 'kneeR', 'calfL', 'calfR', 'calfML', 'calfMR'];
 const FOOT_KEYS = ['footL', 'footR', 'heelL', 'heelR'];
 
@@ -341,10 +413,10 @@ function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
   // humano / elfo
   torso.push(E(P(0, 0, -0.005), fem ? r3(0.093, 0.108, 0.104) : r3(0.097, 0.112, 0.107)));
   torso.push(E(P(0, -0.046, 0.025), fem ? r3(0.068, 0.064, 0.078) : r3(0.076, 0.07, 0.082)));
-  torso.push(E(P(0, -0.092, 0.062), fem ? r3(0.026, 0.022, 0.022) : r3(0.033, 0.026, 0.026)));
+  torso.push(E(P(0, -0.092, 0.062), fem ? r3(0.026, 0.022, 0.022) : r3(0.036, 0.027, 0.027)));
   torso.push(E(P(0, 0.03, 0.083), r3(0.07, 0.02, 0.022)));
   for (const s of [-1, 1]) {
-    if (!fem) torso.push(E(P(s * 0.058, -0.07, 0.02), r3(0.025, 0.025, 0.03)));
+    if (!fem) torso.push(E(P(s * 0.058, -0.072, 0.018), r3(0.03, 0.028, 0.034)));
     torso.push(tint(E(P(s * 0.05, -0.035, 0.062), r3(0.032, 0.028, 0.028)), blush));
     sub.push(E(P(s * 0.04, 0, 0.092), r3(0.027 * ek, 0.021 * ek, 0.02)));
     if (d.race === 'elfo') limbs.push([C(P(s * 0.088, -0.01, -0.005), P(s * 0.168, 0.058, -0.048), 0.017 * hs, 0.003 * hs)]);
@@ -371,7 +443,17 @@ function headShape(rig: Rig, d: CharData): { shape: Shape; tints: Prim[] } {
     C(P(0, 0, 0.094), P(0, -0.03, zt(0.113)), 0.008 * hs * n, 0.012 * hs * n),
     E(P(0, -0.034, zt(0.108)), r3(0.014 * n, 0.011 * n, 0.011 * n)),
   ]);
-  return { shape: { torso, limbs, sub, kT: 0.04, kL: 0.01, kJ: 0.016, kS: 0.012 }, tints };
+  const shape: Shape = { torso, limbs, sub, kT: 0.04, kL: 0.01, kJ: 0.016, kS: 0.012 };
+  // labios esculpidos sobre la cara, con color
+  const lip = fem ? 1 : 0.55;
+  const yU = -0.058, yL = -0.0705;
+  const rU = fem ? r3(0.0175, 0.0058, 0.008) : r3(0.018, 0.005, 0.007);
+  const rL = fem ? r3(0.0158, 0.0078, 0.0088) : r3(0.016, 0.0065, 0.0075);
+  const zU = surfaceZ(shape, 0, cy + yU * hs) - rU[2] * 0.5;
+  const zL = surfaceZ(shape, 0, cy + yL * hs) - rL[2] * 0.45;
+  shape.detail = [tint(E([0, cy + yU * hs, zU], rU), [0, 0, lip]), tint(E([0, cy + yL * hs, zL], rL), [0, 0, lip])];
+  shape.kD = 0.006;
+  return { shape, tints };
 }
 
 function hairShape(rig: Rig, d: CharData): Shape | null {
@@ -575,8 +657,32 @@ function beardShape(rig: Rig, d: CharData): Shape | null {
   return { torso, limbs, sub, kT: 0.03, kL: 0.01, kJ: 0.02, kS: 0.006 };
 }
 
+/** Cejas esculpidas: se afinan hacia la cola y siguen la curva de la frente. */
+function browShape(rig: Rig, d: CharData, head: Shape): Shape | null {
+  if (d.race === 'lagto') return null;
+  const hs = rig.hs, cy = 0.105 * hs;
+  const b = BROW[d.brows] ?? BROW[0];
+  const ey = (d.race === 'pelso' ? 0.003 : 0) + 0.042 + b.dy;
+  const limbs: Prim[][] = [];
+  for (const s of [-1, 1]) {
+    const pts: V3[] = [], rs: number[] = [];
+    const N = 8;
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1);
+      const x = s * (0.017 + 0.053 * u) * hs;
+      const y = cy + (ey + b.curve * Math.sin(PI * (0.12 + 0.8 * u)) + b.tilt * u - 0.004 * u * u) * hs;
+      pts.push([x, y, surfaceZ(head, x, y) - 0.0006]);
+      rs.push((rig.fem ? 0.0026 : 0.0042) * b.t * (1 - 0.6 * u) * hs + 0.0006);
+    }
+    const chain: Prim[] = [];
+    for (let i = 0; i < N - 1; i++) chain.push(C(pts[i], pts[i + 1], rs[i], rs[i + 1]));
+    limbs.push(chain);
+  }
+  return { torso: [], limbs, kT: 0.002, kL: 0.003, kJ: 0.002 };
+}
+
 /** Mano en un marco canónico: muñeca en el origen, dedos hacia -Y, palma hacia -s·X. */
-function handShape(d: CharData, s: number): Shape {
+function handShape(d: CharData, s: number): { shape: Shape; tips: { tip: V3; dir: V3 }[] } {
   const k = (d.sex === 1 ? 0.9 : 1) * (d.race === 'lagto' ? 1.05 : 1);
   const p = (x: number, y: number, z: number): V3 => [x * k, y * k, z * k];
   const paw = d.race === 'pelso';
@@ -586,15 +692,20 @@ function handShape(d: CharData, s: number): Shape {
     E(p(-s * 0.004, -0.035, 0.024), p(0.014, 0.022, 0.016)),
   ];
   const limbs: Prim[][] = [];
+  const tips: { tip: V3; dir: V3 }[] = [];
   const zs = [0.025, 0.008, -0.009, -0.025], Ls = [0.048, 0.054, 0.05, 0.04];
   for (let i = 0; i < 4; i++) {
     const L = Ls[i] * (paw ? 0.75 : 1), rr = paw ? 0.002 : 0;
     const base = p(0, -0.082, zs[i]);
     const mid = v(base, p(-s * 0.005, -L * 0.55, 0)), tip = v(mid, p(-s * 0.012, -L * 0.45, 0));
     limbs.push([C(base, mid, (0.0095 + rr) * k, (0.0088 + rr) * k), C(mid, tip, (0.0088 + rr) * k, (0.0078 + rr) * k)]);
+    tips.push({ tip, dir: [tip[0] - mid[0], tip[1] - mid[1], tip[2] - mid[2]] });
   }
   limbs.push([C(p(-s * 0.006, -0.03, 0.03), p(-s * 0.014, -0.058, 0.05), 0.012 * k, 0.01 * k), C(p(-s * 0.014, -0.058, 0.05), p(-s * 0.024, -0.08, 0.052), 0.01 * k, 0.0085 * k)]);
-  return { torso, limbs, kT: 0.02, kL: 0.006, kJ: 0.012 };
+  tips.push({ tip: p(-s * 0.024, -0.08, 0.052), dir: p(-s * 0.01, -0.022, 0.002) });
+  // nudillos
+  const detail = zs.map((z) => E(p(s * 0.012, -0.084, z), p(0.007, 0.007, 0.007)));
+  return { shape: { torso, limbs, detail, kT: 0.02, kL: 0.006, kJ: 0.012, kD: 0.006 }, tips };
 }
 
 // ---------------------------------------------------------------------------
@@ -666,7 +777,7 @@ export class Character {
     const flatSkin = paint(skinC, 'skin', { rim: 0.3, texAmt: 0.4 });
     const cloth = (c: string, k: Kind = 'cloth', o = {}) => paint(c, k, { sdf: true, triScale: k === 'metal' ? 2 : 4, rim: 0.3, ...o });
     const m = {
-      hair: paint(hairC, 'hair', { sdf: true, rim: 0.55, spec: 0.14, triScale: 5 }),
+      hair: paint(hairC, 'hair', { sdf: true, hair: true, rim: 0.5, spec: 0.05, triScale: 5 }),
       P: cloth(P), S: cloth(S),
       Pleather: cloth(P, 'leather'),
       leather: cloth('#6e4a2c', 'leather'), dleather: cloth('#46301f', 'leather'),
@@ -694,7 +805,7 @@ export class Character {
       sm.frustumCulled = false;
       return sm;
     };
-    skinned(cached('body|' + bkey, () => sculpt(body.shape, 0.011, [...bodyPrims, ...body.tintPrims], true)), sdfSkin);
+    skinned(cached('body|' + bkey, () => sculpt(body.shape, 0.0095, [...bodyPrims, ...body.tintPrims], true)), sdfSkin);
     const wear = (name: string, mat: THREE.Material, make: () => Shape, cell = 0.01) =>
       skinned(cached(`g|${bkey}|${name}`, () => sculpt(make(), cell, bodyPrims, true)), mat);
 
@@ -702,24 +813,50 @@ export class Character {
     const head = this.bones.head;
     const hi = headInfo(rig, d);
     const hshape = headShape(rig, d);
-    const hkey = [d.race, d.sex, d.detail, d.eyeShape, d.race === 'pelso' ? 0 : d.nose].join('|');
-    add(head, cached('head|' + hkey, () => sculpt(hshape.shape, 0.0042, [...hshape.shape.torso, ...hshape.shape.limbs.flat(), ...hshape.tints], false)), sdfSkin);
-    this.headTop = group(head, [0, hi.cy, 0]);
     const hgear = this.opts.outfit ? CLASSES[d.cls].headgear : 0;
-    if (hgear !== 1 && hgear !== 2) {
-      const hsh = hairShape(rig, d);
-      if (hsh) add(head, cached(`hair|${d.race}|${d.sex}|${d.hair}`, () => sculpt(hsh, 0.0045, null, false)), m.hair);
-    }
+    const showHair = hgear !== 1 && hgear !== 2;
+    const hsh = showHair ? hairShape(rig, d) : null;
     const bsh = beardShape(rig, d);
+    const hkey = [d.race, d.sex, d.detail, d.eyeShape, d.race === 'pelso' ? 0 : d.nose, hsh ? d.hair : -1].join('|');
+    const occ = [hsh, bsh].filter((x): x is Shape => !!x);
+    const headPrims = [...hshape.shape.torso, ...hshape.shape.limbs.flat(), ...(hshape.shape.detail ?? []), ...hshape.tints];
+    add(head, cached('head|' + hkey, () => sculpt(hshape.shape, 0.0042, headPrims, false, occ)), sdfSkin);
+    this.headTop = group(head, [0, hi.cy, 0]);
+    if (hsh) add(head, cached(`hair|${d.race}|${d.sex}|${d.hair}`, () => sculpt(hsh, 0.0045, null, false)), m.hair);
     if (bsh) add(head, cached(`beard|${d.race}|${d.detail}`, () => sculpt(bsh, 0.004, null, false)), m.hair);
+    const brs = browShape(rig, d, hshape.shape);
+    if (brs) add(head, cached(`brow|${hkey}|${d.brows}`, () => sculpt(brs, 0.001, null, false)), m.hair);
     this.buildFace(head, rig, d, hi, flatSkin, m.rHair, hshape.shape);
 
     // ---------- Manos ----------
     const gloves = this.opts.outfit && (d.cls === 'guerrero' || d.cls === 'picaro');
     const handMat = gloves ? (d.cls === 'guerrero' ? m.leather : m.dleather) : sdfSkin;
+    const nailMat = paint(mixHex(skinC, '#fff2ee', 0.45), 'plain', { rim: 0.3, spec: 0.5, texAmt: 0 });
+    const clawMat = paint('#e8dcc0', 'plain', { rim: 0.4, spec: 0.3 });
     for (const s of [-1, 1]) {
-      const hg = cached(`hand|${d.race}|${d.sex}|${s}`, () => sculpt(handShape(d, s), 0.0032, null, false));
-      add(this.bones[`hand${side(s)}` as BoneName], hg, handMat, [0, 0, 0], [0, 0, s * rig.a]);
+      const hs0 = handShape(d, s);
+      const hg = cached(`hand|${d.race}|${d.sex}|${s}`, () => sculpt(hs0.shape, 0.0032, null, false));
+      const hgrp = group(this.bones[`hand${side(s)}` as BoneName], [0, 0, 0], [0, 0, s * rig.a]);
+      add(hgrp, hg, handMat);
+      if (!gloves && d.race !== 'pelso') for (const { tip, dir } of hs0.tips) {
+        if (d.race === 'lagto') {
+          aim(add(hgrp, spike(0.004, 0.012, 6), clawMat, v(tip, dir, 0.25)), dir);
+        } else {
+          // uña en el dorso de la yema
+          const l = Math.hypot(dir[0], dir[1]) || 1;
+          const dn: V3 = [dir[0] / l, dir[1] / l, 0], back: V3 = [s * -dn[1], s * dn[0], 0];
+          const n = add(hgrp, sphere(1, 12, 8), nailMat, v(v(tip, back, 0.0068), dn, -0.004), [0, 0, 0], [0.0022, 0.0075, 0.0062]);
+          n.rotation.z = Math.atan2(-dn[0], dn[1]);
+        }
+      }
+    }
+    // garras de los pies (Lagto')
+    if (d.race === 'lagto' && !this.opts.outfit) for (const s of [-1, 1]) {
+      const L = rig.leg[side(s)];
+      for (let i = 0; i < 3; i++) {
+        const x = L.toe[0] + s * (-0.022 + i * 0.022) + s * (i - 1) * 0.008;
+        add(at(`foot${side(s)}` as BoneName, [x, 0.014, L.toe[2] + 0.05 - Math.abs(i - 1) * 0.012], [1.35, 0, 0]), spike(0.006, 0.02, 6), clawMat);
+      }
     }
 
     // ---------- Ropa ----------
@@ -740,15 +877,24 @@ export class Character {
     };
     const bootTop = kneeY - 0.07;
 
+    const origin = (bone: BoneName) => at(bone, [0, 0, 0]);
+    const trimC = cloth('#c9a46a', 'silk');
     if (!this.opts.outfit) {
       wear('under-shorts', m.under, () => garment(body, ['pelvis', 'gluteL', 'gluteR', 'thighL', 'thighR'], 0.008, [keepAbove(hipJY - 0.1), keepBelow(pelvisY + 0.055)]));
-      if (fem) wear('under-top', m.under, () => garment(body, ['ribcage', 'bustL', 'bustR'], 0.008, [keepAbove(chestY - 0.045), keepBelow(chestY + 0.07)]));
+      wear('under-band', trimC, () => garment(body, ['pelvis', 'gluteL', 'gluteR'], 0.0115, [keepAbove(pelvisY + 0.038), keepBelow(pelvisY + 0.056)]), 0.007);
+      wear('under-hem', trimC, () => garment(body, ['thighL', 'thighR'], 0.011, [keepAbove(hipJY - 0.1), keepBelow(hipJY - 0.088)]), 0.007);
+      if (fem) {
+        wear('under-top', m.under, () => garment(body, ['ribcage', 'bustL', 'bustR'], 0.008, [keepAbove(chestY - 0.045), keepBelow(chestY + 0.07)]));
+        wear('under-top-band', trimC, () => garment(body, ['ribcage', 'bustL', 'bustR'], 0.011, [keepAbove(chestY - 0.045), keepBelow(chestY - 0.033)]), 0.007);
+      }
     } else {
+      const toeKeys = Object.keys(body.parts).filter((k) => k.startsWith('toe') || k.startsWith('ankle'));
       const shirtKeys = [...TORSO_KEYS, ...ARM_KEYS];
       const pants = () => garment(body, ['pelvis', 'gluteL', 'gluteR', ...LEG_KEYS], 0.009, [keepBelow(beltY + 0.012), keepAbove(bootTop - 0.03)]);
       const boots = (mat: THREE.Material) => {
-        wear('boots', mat, () => garment(body, ['calfL', 'calfR', 'calfML', 'calfMR', ...FOOT_KEYS], 0.016, [keepBelow(bootTop)]));
+        wear('boots', mat, () => garment(body, ['calfL', 'calfR', 'calfML', 'calfMR', ...FOOT_KEYS, ...toeKeys], 0.016, [keepBelow(bootTop)]));
         wear('cuff', mat, () => garment(body, ['calfL', 'calfR', 'calfML', 'calfMR'], 0.028, [keepAbove(bootTop - 0.045), keepBelow(bootTop)]));
+        wear('soles', cloth('#2c1f17', 'leather'), () => garment(body, [...FOOT_KEYS, ...toeKeys], 0.021, [keepBelow(0.02)]), 0.008);
       };
       const belt = (mat: THREE.Material, t = 0.02) => {
         wear('belt' + t, mat, () => garment(body, ['pelvis', 'abdomen', 'gluteL', 'gluteR'], t, [keepAbove(beltY - 0.022), keepBelow(beltY + 0.022)]));
@@ -761,23 +907,42 @@ export class Character {
         p.bone = BI.hips;
         return p;
       };
+      const bell = (Sd: 'L' | 'R', t = 0) => {
+        const A = rig.arm[Sd];
+        const b = C(v(A.el, A.d, 0.02), v(A.wr, A.d, 0.02), 0.05 + t, 0.085 + t);
+        b.bone = BI[`forearm${Sd}`];
+        return b;
+      };
+      const robeShape = (t: number, planes: Plane[], arms = true) => garment(body, arms ? shirtKeys : TORSO_KEYS, t, [keepAbove(0.06), keepBelow(shoulderY + 0.045), ...planes], (k) => wrist(k, -0.01), {
+        torso: [skirt(pelvisY + 0.12, 0.06, 0.14 * W + (t - 0.012), 0.3 * W + (t - 0.012))],
+        limbs: arms ? { armL: [bell('L')], armR: [bell('R')] } : {},
+      });
       const robe = (mat: THREE.Material, trim: THREE.Material) => {
-        wear('robe', mat, () => garment(body, shirtKeys, 0.012, [keepAbove(0.06), keepBelow(shoulderY + 0.045)], (k) => wrist(k, -0.01), {
-          torso: [skirt(pelvisY + 0.12, 0.06, 0.14 * W, 0.3 * W)],
-          limbs: Object.fromEntries((['L', 'R'] as const).map((Sd) => {
-            const A = rig.arm[Sd];
-            const bell = C(v(A.el, A.d, 0.02), v(A.wr, A.d, 0.02), 0.05, 0.085);
-            bell.bone = BI[`forearm${Sd}`];
-            return ['arm' + Sd, [bell]];
-          })),
-        }), 0.011);
+        wear('robe', mat, () => robeShape(0.012, []), 0.011);
         wear('robe-hem', trim, () => garment(body, [], 0, [keepAbove(0.06), keepBelow(0.085)], undefined, { torso: [skirt(pelvisY + 0.12, 0.06, 0.14 * W + 0.006, 0.3 * W + 0.006)] }), 0.008);
+        // ribete frontal y puños de las mangas
+        wear('robe-front', trim, () => robeShape(0.017, [[[1, 0, 0], [0.02, 0, 0]], [[-1, 0, 0], [-0.02, 0, 0]], [[0, 0, -1], [0, 0, 0]], keepBelow(chestY + 0.02)], false), 0.007);
+        wear('robe-cuffs', trim, () => ({
+          torso: [], kT: 0.07, kL: 0.03, kJ: 0.05,
+          limbs: (['L', 'R'] as const).map((Sd) => {
+            const A = rig.arm[Sd], b = bell(Sd, 0.006);
+            b.cut(-A.d[0], -A.d[1], -A.d[2], ...v(A.wr, A.d, -0.005));
+            b.cut(A.d[0], A.d[1], A.d[2], ...v(A.wr, A.d, 0.02));
+            return [b];
+          }),
+        }), 0.007);
       };
       const mantle = (mat: THREE.Material, trim: THREE.Material) => {
         const keys = ['trapL', 'trapR', 'deltL', 'deltR', 'pecL', 'pecR', 'bustL', 'bustR'];
         const lo = shoulderY - 0.13;
         const cape = () => { const p = E([0, shoulderY - 0.06, -0.008], [rig.shoulderX + 0.055, 0.075, rig.ribR[2] + 0.025]); p.bone = BI.chest; return p; };
-        wear('mantle', mat, () => garment(body, keys, 0.02, [keepAbove(lo)], undefined, { torso: [cape()] }));
+        const ms = garment(body, keys, 0.02, [keepAbove(lo)], undefined, { torso: [cape()] });
+        wear('mantle', mat, () => ms);
+        // broche
+        const cy0 = shoulderY - 0.075, cz = surfaceZ(ms, 0, cy0);
+        const br = origin('chest');
+        add(br, cyl(0.022, 0.022, 0.008, 20), m.rGold, [0, cy0, cz + 0.002], [PI / 2, 0, 0]);
+        add(br, sphere(0.011, 14, 10), paint(CLOTH[d.primary], 'plain', { spec: 1, rim: 0.5, texAmt: 0 }), [0, cy0, cz + 0.008], [0, 0, 0], [1, 1, 0.6]);
         wear('mantle-trim', trim, () => garment(body, keys, 0.025, [keepAbove(lo), keepBelow(lo + 0.02)], undefined, { torso: [cape().inflate(0.005)] }), 0.008);
       };
       const cls = d.cls;
@@ -787,7 +952,19 @@ export class Character {
         wear('pants', m.S, pants);
         boots(m.dleather);
         wear('plate', m.metal, () => garment(body, TORSO_KEYS.filter((k) => !k.startsWith('glute') && k !== 'pelvis'), 0.03, [keepAbove(pelvisY + 0.04), keepBelow(shoulderY + 0.05)]));
-        wear('plate-trim', m.gold, () => garment(body, ['abdomen', 'ribcage'], 0.037, [keepAbove(pelvisY + 0.04), keepBelow(pelvisY + 0.064)]), 0.008);
+        const trimShape = garment(body, ['abdomen', 'ribcage'], 0.037, [keepAbove(pelvisY + 0.04), keepBelow(pelvisY + 0.064)]);
+        wear('plate-trim', m.gold, () => trimShape, 0.008);
+        const plateShape = garment(body, TORSO_KEYS.filter((k) => !k.startsWith('glute') && k !== 'pelvis'), 0.03, [keepAbove(pelvisY + 0.04), keepBelow(shoulderY + 0.05)]);
+        const rv = origin('spine');
+        for (let i = -3; i <= 3; i++) {
+          const x = i * 0.028, y = pelvisY + 0.052;
+          add(rv, sphere(0.0055, 10, 8), m.rGold, [x, y, surfaceZ(trimShape, x, y) - 0.001]);
+        }
+        const ey = chestY + 0.035, emb = origin('chest');
+        const ez = surfaceZ(plateShape, 0, ey);
+        add(emb, cyl(0.032, 0.032, 0.008, 24), m.rGold, [0, ey, ez + 0.001], [PI / 2, 0, 0]);
+        add(emb, sphere(0.012, 14, 10), paint(CLOTH[d.primary], 'plain', { spec: 1, rim: 0.5, texAmt: 0 }), [0, ey, ez + 0.007], [0, 0, 0], [1, 1, 0.6]);
+        for (let i = 0; i < 4; i++) add(emb, spike(0.008, 0.022, 4), m.rGold, [Math.cos(i * PI / 2) * 0.034, ey + Math.sin(i * PI / 2) * 0.034, ez + 0.002], [0, 0, i * PI / 2 - PI / 2], [1, 1, 0.4]);
         wear('bracers', m.metal, () => garment(body, ['farmL', 'farmR'], 0.017, [], (k) => forearmBand(k, 0.08, 0.004)));
         belt(m.dleather);
         const hz = rig.pelvisR[2] + 0.03;
@@ -840,7 +1017,13 @@ export class Character {
         longShirt(m.rogue, 'rogue-shirt');
         wear('rogue-pants', m.rogue, pants);
         boots(m.dleather);
-        wear('vest', m.Pleather, () => garment(body, ['abdomen', 'ribcage', 'pecL', 'pecR', 'bustL', 'bustR', 'pelvis', 'trapL', 'trapR'], 0.022, [keepAbove(pelvisY - 0.04), keepBelow(shoulderY + 0.02)]));
+        const vs = garment(body, ['abdomen', 'ribcage', 'pecL', 'pecR', 'bustL', 'bustR', 'pelvis', 'trapL', 'trapR'], 0.022, [keepAbove(pelvisY - 0.04), keepBelow(shoulderY + 0.02)]);
+        wear('vest', m.Pleather, () => vs);
+        const bt = origin('spine');
+        for (let i = 0; i < 5; i++) {
+          const y = pelvisY + 0.02 + i * ((chestY + 0.03 - pelvisY) / 4);
+          add(bt, sphere(0.0065, 12, 8), m.rGold, [0, y, surfaceZ(vs, 0, y) + 0.001], [0, 0, 0], [1, 1, 0.6]);
+        }
         wear('gcuff', m.dleather, () => garment(body, ['farmL', 'farmR'], 0.014, [], (k) => forearmBand(k, 0.12, -0.01)));
         belt(m.dleather);
         add(at('neck', [0, shoulderY + 0.005, -0.005]), torus(rig.neckR + 0.028, 0.026), m.rS, [0, 0, 0], [PI / 2, 0, 0], [1, 0.9, 1]);
@@ -884,7 +1067,23 @@ export class Character {
         }));
         wear('ranger-pants', m.leather, pants);
         boots(m.dleather);
-        wear('jerkin', m.dleather, () => garment(body, ['abdomen', 'ribcage', 'pecL', 'pecR', 'bustL', 'bustR', 'pelvis', 'trapL', 'trapR'], 0.024, [keepAbove(pelvisY - 0.02), keepBelow(shoulderY + 0.01)]));
+        const js = garment(body, ['abdomen', 'ribcage', 'pecL', 'pecR', 'bustL', 'bustR', 'pelvis', 'trapL', 'trapR'], 0.024, [keepAbove(pelvisY - 0.02), keepBelow(shoulderY + 0.01)]);
+        wear('jerkin', m.dleather, () => js);
+        // cordones cruzados
+        const lc = origin('spine'), lace = paint('#e8d8b0', 'plain', { rim: 0.2 });
+        const jz = (x: number, y: number) => surfaceZ(js, x, y) + 0.0015;
+        for (let i = 0; i < 5; i++) {
+          const y0 = pelvisY + 0.02 + i * 0.045, y1 = y0 + 0.04;
+          rod(lc, [-0.016, y0, jz(-0.016, y0)], [0.016, y1, jz(0.016, y1)], 0.0032, lace);
+          rod(lc, [0.016, y0, jz(0.016, y0)], [-0.016, y1, jz(-0.016, y1)], 0.0032, lace);
+        }
+        wear('tunic-hem', m.dleather, () => garment(body, TORSO_KEYS, 0.014, [keepAbove(hipJY - 0.2), keepBelow(hipJY - 0.18)], undefined, {
+          torso: [skirt(pelvisY + 0.08, hipJY - 0.22, 0.14 * W + 0.004, 0.2 * W + 0.004)],
+        }), 0.007);
+        wear('sleeve-hem', m.dleather, () => garment(body, ['deltL', 'deltR', 'uarmL', 'uarmR', 'bicepL', 'bicepR'], 0.014, [], (k) => {
+          const A = rig.arm[k.endsWith('L') ? 'L' : 'R'];
+          return [[A.d, v(A.sh, A.d, 0.16)], [[-A.d[0], -A.d[1], -A.d[2]], v(A.sh, A.d, 0.14)]];
+        }), 0.007);
         wear('bracers-l', m.leather, () => garment(body, ['farmL', 'farmR'], 0.015, [], (k) => forearmBand(k, 0.06, 0.004)));
         belt(m.leather);
         add(at('chest', [0, shoulderY - 0.005, -0.012]), torus(0.085 * W + rig.neckR * 0.5, 0.04), m.fur, [0, 0, 0], [PI / 2, 0, 0], [1.1, 0.85, 1]);
@@ -956,26 +1155,25 @@ export class Character {
       if (d.race !== 'lagto') {
         const lr = r * 1.1 * Math.sin(1.3), ly = r * 1.1 * Math.cos(1.3);
         const arc = 1.7;
-        add(lid, torus(lr, fem ? 0.0028 : 0.0016, arc, 20).rotateZ(PI / 2 - arc / 2).rotateX(PI / 2), lashMat, [0, ly, 0]);
-        if (fem) add(lid, spike(0.004, 0.014, 5), lashMat, [s * lr * 0.95, ly, lr * 0.25], [0, 0, -s * 1.1]);
+        add(lid, torus(lr, fem ? 0.0026 : 0.0016, arc, 20).rotateZ(PI / 2 - arc / 2).rotateX(PI / 2), lashMat, [0, ly, 0]);
+        // pestañas en abanico, más largas hacia el rabillo
+        const nL = fem ? 7 : 4;
+        for (let k = 0; k < nL; k++) {
+          const f = k / (nL - 1);
+          const ph = -0.35 + f * 1.15;
+          const pos: V3 = [s * lr * Math.sin(ph), ly, lr * Math.cos(ph)];
+          const len = (fem ? 0.0045 + f * 0.005 : 0.003 + f * 0.0015) * rig.hs;
+          aim(add(lid, spike(fem ? 0.0011 : 0.0008, len, 4), lashMat, pos), [s * Math.sin(ph) * 0.55 + s * f * 0.25, 0.75, Math.cos(ph) * 0.65]);
+        }
       }
       this.lids.push(lid);
     }
 
-    // cejas
-    if (d.race !== 'lagto') {
-      const b = BROW[d.brows] ?? BROW[0];
-      const ey = d.race === 'pelso' ? 0.003 : 0;
-      for (const s of [-1, 1]) {
-        const g = torus(b.r, (fem ? 0.0034 : 0.0055) * b.t, b.arc, 16).rotateZ(PI / 2 - b.arc / 2);
-        add(head, g, hairMat, v(S(s * 0.042, ey + 0.042 + b.dy, -0.001), [0, -b.r, 0]), [0, s * 0.32, s * ((fem ? 0.06 : -0.04) + b.tilt)], [1, 0.75, 1]);
-      }
-    }
     const white = paint('#fbf6ee', 'plain', { texAmt: 0, rim: 0 });
     const inner = paint('#4a1c22', 'plain', { texAmt: 0, rim: 0 });
     if (d.race === 'humano' || d.race === 'elfo') {
       const mouthMat = paint('#8a4448', 'plain', { texAmt: 0, rim: 0 });
-      const M = S(0, -0.064, 0.001);
+      const M = S(0, -0.0638, 0.0005);
       const mo = d.mouth;
       if (mo === 0) add(head, torus(0.016 * hs, 0.0024, 1.2, 16).rotateZ(-PI / 2 - 0.6), mouthMat, v(M, [0, 0.016 * hs, 0]), [-0.3, 0, 0]);
       if (mo === 1) rod(head, S(-0.014, -0.064, 0), S(0.014, -0.064, 0), 0.0022, mouthMat);
@@ -987,7 +1185,6 @@ export class Character {
       }
       if (mo === 4) add(head, sphere(1, 14, 10), inner, M, [0, 0, 0], [0.007 * hs, 0.009 * hs, 0.004 * hs]);
       if (mo === 5) add(head, torus(0.02 * hs, 0.0024, 0.8, 16).rotateZ(PI / 2 - 0.4), mouthMat, v(M, [0, -0.018 * hs, 0]), [0.25, 0, 0]);
-      if (fem && mo !== 3 && mo !== 4) add(head, sphere(1, 14, 8), paint(mixHex(RACES[d.race].skins[d.skin], '#c4505a', 0.5), 'skin', { rim: 0.2 }), S(0, -0.07, -0.002), [0.2, 0, 0], [0.012 * hs, 0.005 * hs, 0.006 * hs]);
     }
     if (d.race === 'pelso') {
       const noseCol = ['#d98c94', '#2a2224', '#e07f8e', '#a0624a'][d.nose] ?? '#d98c94';

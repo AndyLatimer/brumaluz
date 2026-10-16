@@ -115,7 +115,9 @@ export interface Shape {
   torso: Prim[];
   limbs: Prim[][];
   sub?: Prim[];
-  kT: number; kL: number; kJ: number; kS?: number;
+  /** Detalles finos (clavículas, labios…) que se funden con poca suavidad. */
+  detail?: Prim[];
+  kT: number; kL: number; kJ: number; kS?: number; kD?: number;
 }
 
 function sminList(list: Prim[], x: number, y: number, z: number, k: number) {
@@ -132,6 +134,11 @@ export function evalShape(s: Shape, x: number, y: number, z: number) {
     const j = smin(t, l, s.kJ);
     if (j < d) d = j;
   }
+  if (s.detail && s.detail.length) {
+    let dd = 1e9;
+    for (let i = 0; i < s.detail.length; i++) dd = Math.min(dd, s.detail[i].dist(x, y, z));
+    d = smin(d, dd, s.kD ?? 0.012);
+  }
   if (s.sub) for (let i = 0; i < s.sub.length; i++) d = -smin(-d, s.sub[i].dist(x, y, z), s.kS ?? 0.01);
   return d;
 }
@@ -142,7 +149,7 @@ export function surfaceZ(s: Shape, x: number, y: number, zMax = 0.3) {
   return 0;
 }
 
-export function allPrims(s: Shape) { return [...s.torso, ...s.limbs.flat()]; }
+export function allPrims(s: Shape) { return [...s.torso, ...s.limbs.flat(), ...(s.detail ?? [])]; }
 
 function bounds(s: Shape, pad: number) {
   const mn: V3 = [1e9, 1e9, 1e9], mx: V3 = [-1e9, -1e9, -1e9];
@@ -154,17 +161,18 @@ function cull(s: Shape, lo: V3, hi: V3, m: number): Shape {
   const hit = (p: Prim) => p.max[0] >= lo[0] - m && p.min[0] <= hi[0] + m && p.max[1] >= lo[1] - m && p.min[1] <= hi[1] + m && p.max[2] >= lo[2] - m && p.min[2] <= hi[2] + m;
   const limbs: Prim[][] = [];
   for (const l of s.limbs) { const f = l.filter(hit); if (f.length) limbs.push(f); }
-  return { torso: s.torso.filter(hit), limbs, sub: s.sub?.filter(hit), kT: s.kT, kL: s.kL, kJ: s.kJ, kS: s.kS };
+  return { torso: s.torso.filter(hit), limbs, sub: s.sub?.filter(hit), detail: s.detail?.filter(hit), kT: s.kT, kL: s.kL, kJ: s.kJ, kS: s.kS, kD: s.kD };
 }
 
 export interface MeshData {
   pos: Float32Array;
   nrm: Float32Array;
   idx: Uint32Array;
+  ao: Float32Array;
 }
 
 /** Malla una forma con Surface Nets en una rejilla de tamaño `cell`. */
-export function surfaceNet(shape: Shape, cell: number): MeshData {
+export function surfaceNet(shape: Shape, cell: number, occluders: Shape[] = []): MeshData {
   const kMax = Math.max(shape.kT, shape.kL, shape.kJ, shape.kS ?? 0);
   const { mn, mx } = bounds(shape, cell * 2 + kMax * 0.25);
   const nx = Math.ceil((mx[0] - mn[0]) / cell) + 1;
@@ -265,7 +273,39 @@ export function surfaceNet(shape: Shape, cell: number): MeshData {
     const l = Math.hypot(gx, gy, gz) || 1;
     nrm[v * 3] = gx / l; nrm[v * 3 + 1] = gy / l; nrm[v * 3 + 2] = gz / l;
   }
-  return { pos: new Float32Array(pos), nrm, idx: new Uint32Array(idx) };
+
+  // Oclusión ambiental: se muestrea el campo hacia fuera desde cada vértice.
+  // Pliegues, axilas y zonas bajo el pelo quedan en sombra suave.
+  const ao = new Float32Array(nv);
+  const occCache = new Map<number, Shape[]>();
+  const occFor = (b: number) => {
+    let o = occCache.get(b);
+    if (!o) {
+      const bk = Math.floor(b / (bnx * bny)), bj = Math.floor((b % (bnx * bny)) / bnx), bi = b % bnx;
+      const lo: V3 = [mn[0] + bi * B * cell, mn[1] + bj * B * cell, mn[2] + bk * B * cell];
+      const hi: V3 = [lo[0] + B * cell, lo[1] + B * cell, lo[2] + B * cell];
+      o = occluders.map((x) => cull(x, lo, hi, 0.06)).filter((x) => x.torso.length || x.limbs.length);
+      occCache.set(b, o);
+    }
+    return o;
+  };
+  for (let v = 0; v < nv; v++) {
+    const s = blockShape[vcell[v]];
+    const occs = occluders.length ? occFor(vcell[v]) : occluders;
+    const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
+    const nx = nrm[v * 3], ny = nrm[v * 3 + 1], nz = nrm[v * 3 + 2];
+    let occ = 0, sca = 1;
+    for (let i = 0; i < 4; i++) {
+      const hd = 0.005 + 0.015 * i;
+      const px = x + nx * hd, py = y + ny * hd, pz = z + nz * hd;
+      let dd = evalShape(s, px, py, pz);
+      for (const o of occs) dd = Math.min(dd, evalShape(o, px, py, pz));
+      occ += Math.max(hd - dd, 0) * sca;
+      sca *= 0.75;
+    }
+    ao[v] = Math.min(Math.max(1 - occ * 9, 0.2), 1);
+  }
+  return { pos: new Float32Array(pos), nrm, idx: new Uint32Array(idx), ao };
 }
 
 /**
@@ -281,7 +321,15 @@ export function skinAndTint(pos: Float32Array, prims: Prim[], sigma = 0.012, wit
   for (let v = 0; v < n; v++) {
     const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
     let dmin = 1e9;
-    for (let i = 0; i < prims.length; i++) { d[i] = Math.max(prims[i].dist(x, y, z), 0); if (d[i] < dmin) dmin = d[i]; }
+    for (let i = 0; i < prims.length; i++) {
+      const p = prims[i];
+      // descarte rápido por caja: piezas lejanas no aportan peso
+      const bx = Math.max(p.min[0] - x, 0, x - p.max[0]), by = Math.max(p.min[1] - y, 0, y - p.max[1]), bz = Math.max(p.min[2] - z, 0, z - p.max[2]);
+      if (bx * bx + by * by + bz * bz > 0.0081) { d[i] = 1e9; continue; }
+      d[i] = Math.max(p.dist(x, y, z), 0);
+      if (d[i] < dmin) dmin = d[i];
+    }
+    if (dmin > 1e8) { for (let i = 0; i < prims.length; i++) d[i] = Math.max(prims[i].dist(x, y, z), 0); dmin = Math.min(...d); }
     const bw = new Map<number, number>();
     let tw = 0, t0 = 0, t1 = 0, t2 = 0;
     for (let i = 0; i < prims.length; i++) {

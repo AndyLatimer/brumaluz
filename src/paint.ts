@@ -299,7 +299,7 @@ export function irisTex(color: string, slit: boolean, sclera = '#fbf6ee'): THREE
 // ---------------------------------------------------------------------------
 
 export const world = {
-  uLightDir: { value: new THREE.Vector3(-0.45, 0.75, 0.55).normalize() },
+  uLightDir: { value: new THREE.Vector3(-0.62, 0.7, 0.42).normalize() },
   uFogColor: { value: new THREE.Color('#e3a985') },
   uFogNear: { value: 14 },
   uFogFar: { value: 95 },
@@ -319,7 +319,9 @@ const vertexShader = /* glsl */ `
   varying vec3 vView;
   #ifdef TRI
     attribute vec3 tint;
+    attribute float ao;
     varying vec3 vTint;
+    varying float vAO;
     varying vec3 vObjP;
     varying vec3 vObjN;
   #endif
@@ -327,6 +329,7 @@ const vertexShader = /* glsl */ `
     #ifdef TRI
       vUv = vec2(0.0);
       vTint = tint;
+      vAO = ao;
       vObjP = position * uTriScale;
       vObjN = normal;
     #else
@@ -376,6 +379,7 @@ const fragmentShader = /* glsl */ `
   varying vec3 vView;
   #ifdef TRI
     varying vec3 vTint;
+    varying float vAO;
     varying vec3 vObjP;
     varying vec3 vObjN;
     float tri(sampler2D t) {
@@ -418,14 +422,37 @@ const fragmentShader = /* glsl */ `
     col += base * 0.12 * clamp(N.y, 0.0, 1.0) * vec3(0.7, 0.8, 1.0);
     if (uGround > 0.0) col *= mix(0.62, 1.0, smoothstep(0.0, uGround, vWorld.y));
 
-    float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-    col += rim * uRim * vec3(1.0, 0.74, 0.45);
+    float occ = 1.0;
+    #ifdef TRI
+      // oclusión pintada: las sombras de contacto tiran a violeta, no a negro
+      occ = vAO;
+      col *= mix(vec3(0.38, 0.3, 0.42), vec3(1.0), smoothstep(0.15, 1.0, occ));
+    #endif
 
-    if (uSpec > 0.0) {
-      vec3 H = normalize(L + V);
+    float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+    col += rim * uRim * vec3(1.0, 0.74, 0.45) * occ;
+
+    vec3 H = normalize(L + V);
+    float specAmt = uSpec;
+    #ifdef TRI
+      specAmt += clamp(vTint.z, 0.0, 1.0) * 0.25 * step(0.6, vTint.z);
+    #endif
+    if (specAmt > 0.0) {
       float s = pow(max(dot(N, H), 0.0), 36.0);
-      col += smoothstep(0.35, 0.75, s) * uSpec * vec3(1.0, 0.93, 0.78);
+      col += smoothstep(0.35, 0.75, s) * specAmt * vec3(1.0, 0.93, 0.78) * occ;
     }
+    #ifdef HAIR
+      // brillo anisotrópico: franja de luz que recorre los mechones
+      vec3 T = vec3(0.0, 1.0, 0.0) - N * N.y;
+      T = length(T) > 0.01 ? normalize(T) : vec3(1.0, 0.0, 0.0);
+      float jitter = (tri(uMap) - 0.8) * 1.2;
+      vec3 T1 = normalize(T + N * (0.15 + jitter));
+      vec3 T2 = normalize(T + N * (-0.25 + jitter));
+      float d1 = dot(T1, H), d2 = dot(T2, H);
+      float s1 = pow(sqrt(max(1.0 - d1 * d1, 0.0)), 90.0);
+      float s2 = pow(sqrt(max(1.0 - d2 * d2, 0.0)), 24.0);
+      col += (s1 * vec3(1.0, 0.95, 0.85) * 0.32 + s2 * base * 0.5) * occ * (0.4 + 0.6 * lit);
+    #endif
     col = mix(col, uColor * 1.15, uEmissive);
     col = mix(col, uFogColor, smoothstep(uFogNear, uFogFar, length(vView)));
     gl_FragColor = vec4(min(col, vec3(1.0)), 1.0);
@@ -443,6 +470,8 @@ export interface PaintOpts {
   dark?: THREE.ColorRepresentation;
   blush?: THREE.ColorRepresentation;
   sss?: number;
+  /** Pelo: brillo anisotrópico. */
+  hair?: boolean;
   rim?: number;
   spec?: number;
   emissive?: number;
@@ -457,6 +486,7 @@ export function paint(color: THREE.ColorRepresentation, kind: Kind = 'plain', o:
   const defines: Record<string, string> = {};
   if (o.sdf) defines.TRI = '';
   if (o.map) defines.COLORMAP = '';
+  if (o.hair && o.sdf) defines.HAIR = '';
   return new THREE.ShaderMaterial({
     defines,
     uniforms: {
