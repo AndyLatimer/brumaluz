@@ -1,4 +1,16 @@
 import * as THREE from 'three';
+import n0003 from '@pmndrs/assets/normals/0003.webp';
+import n0004 from '@pmndrs/assets/normals/0004.webp';
+import n0006 from '@pmndrs/assets/normals/0006.webp';
+import n0010 from '@pmndrs/assets/normals/0010.webp';
+import n0011 from '@pmndrs/assets/normals/0011.webp';
+import n0014 from '@pmndrs/assets/normals/0014.webp';
+import n0018 from '@pmndrs/assets/normals/0018.webp';
+import n0019 from '@pmndrs/assets/normals/0019.webp';
+import n0021 from '@pmndrs/assets/normals/0021.webp';
+import n0024 from '@pmndrs/assets/normals/0024.webp';
+import n0026 from '@pmndrs/assets/normals/0026.webp';
+import n0027 from '@pmndrs/assets/normals/0027.webp';
 
 // ---------------------------------------------------------------------------
 // Texturas "pintadas a mano" generadas por código.
@@ -289,178 +301,59 @@ export function irisTex(color: string, slit: boolean, sclera = '#fbf6ee'): THREE
   ctx.fill();
   t = new THREE.CanvasTexture(c);
   t.anisotropy = 4;
+  t.colorSpace = THREE.SRGBColorSpace;
   irisCache.set(key, t);
   return t;
 }
 
 // ---------------------------------------------------------------------------
-// Material pintado: iluminación "a pincel" con sombras frías, luces cálidas,
-// luz de borde dorada, brillo de metal estilizado y niebla atmosférica.
+// Materiales PBR "pintados": MeshPhysicalMaterial (luz real, sombras, reflejos
+// del HDRI, terciopelo en telas, barniz en ojos y metal) más inyecciones propias:
+// proyección triplanar para las mallas esculpidas, tintes por zona, oclusión
+// horneada, relieve fotográfico, brillo anisotrópico de pelo y luz de borde.
 // ---------------------------------------------------------------------------
 
+
 export const world = {
-  uLightDir: { value: new THREE.Vector3(-0.62, 0.7, 0.42).normalize() },
-  uFogColor: { value: new THREE.Color('#e3a985') },
-  uFogNear: { value: 14 },
-  uFogFar: { value: 95 },
   uTime: { value: 0 },
 };
 
-const vertexShader = /* glsl */ `
-  #include <common>
-  #include <skinning_pars_vertex>
-  uniform vec2 uRepeat;
-  uniform float uWave;
-  uniform float uTime;
-  uniform float uTriScale;
-  varying vec2 vUv;
-  varying vec3 vN;
-  varying vec3 vWorld;
-  varying vec3 vView;
-  #ifdef TRI
-    attribute vec3 tint;
-    attribute float ao;
-    varying vec3 vTint;
-    varying float vAO;
-    varying vec3 vObjP;
-    varying vec3 vObjN;
-  #endif
-  void main() {
-    #ifdef TRI
-      vUv = vec2(0.0);
-      vTint = tint;
-      vAO = ao;
-      vObjP = position * uTriScale;
-      vObjN = normal;
-    #else
-      vUv = uv * uRepeat;
-    #endif
-    vec3 transformed = position;
-    vec3 objectNormal = normal;
-    #ifndef TRI
-    if (uWave > 0.0) {
-      float k = (1.0 - uv.y);
-      transformed.z += sin(uTime * 2.2 + transformed.y * 3.0 + transformed.x * 2.0) * uWave * k;
-      transformed.x += cos(uTime * 1.7 + transformed.y * 2.0) * uWave * 0.4 * k;
-    }
-    #endif
-    #include <skinbase_vertex>
-    #include <skinnormal_vertex>
-    #include <skinning_vertex>
-    vec4 w = modelMatrix * vec4(transformed, 1.0);
-    vWorld = w.xyz;
-    vN = normalize((vec4(normalMatrix * objectNormal, 0.0) * viewMatrix).xyz);
-    vView = cameraPosition - w.xyz;
-    gl_Position = projectionMatrix * viewMatrix * w;
+const loader = new THREE.TextureLoader();
+const nrmCache = new Map<string, THREE.Texture>();
+function nrmTex(url: string) {
+  let t = nrmCache.get(url);
+  if (!t) {
+    t = loader.load(url);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 4;
+    nrmCache.set(url, t);
   }
-`;
+  return t;
+}
 
-const fragmentShader = /* glsl */ `
-  uniform vec3 uColor;
-  uniform sampler2D uMap;
-  uniform float uTexAmt;
-  uniform float uRim;
-  uniform float uSpec;
-  uniform float uEmissive;
-  uniform float uGround;
-  uniform vec3 uLightDir;
-  uniform vec3 uFogColor;
-  uniform float uFogNear;
-  uniform float uFogFar;
-  uniform sampler2D uPattern;
-  uniform float uPatternAmt;
-  uniform vec3 uLight;
-  uniform vec3 uDark;
-  uniform vec3 uBlush;
-  uniform float uSSS;
-  varying vec2 vUv;
-  varying vec3 vN;
-  varying vec3 vWorld;
-  varying vec3 vView;
-  #ifdef TRI
-    varying vec3 vTint;
-    varying float vAO;
-    varying vec3 vObjP;
-    varying vec3 vObjN;
-    float tri(sampler2D t) {
-      vec3 bw = pow(abs(normalize(vObjN)), vec3(4.0));
-      bw /= (bw.x + bw.y + bw.z);
-      return texture2D(t, vObjP.zy).r * bw.x + texture2D(t, vObjP.xz).r * bw.y + texture2D(t, vObjP.xy).r * bw.z;
-    }
-  #endif
-  void main() {
-    vec3 N = normalize(vN);
-    if (!gl_FrontFacing) N = -N;
-    vec3 V = normalize(vView);
-    vec3 L = normalize(uLightDir);
-    #ifdef COLORMAP
-      vec3 base = texture2D(uMap, vUv).rgb * uColor;
-    #else
-      #ifdef TRI
-        float tex = mix(1.0, tri(uMap) * 1.25, uTexAmt);
-      #else
-        float tex = mix(1.0, texture2D(uMap, vUv).r * 1.25, uTexAmt);
-      #endif
-      vec3 base = uColor * tex;
-    #endif
-    #ifdef TRI
-      base = mix(base, uLight * mix(1.0, tex, 0.6), clamp(vTint.x, 0.0, 1.0));
-      base = mix(base, uDark * tex, clamp(vTint.y, 0.0, 1.0));
-      base = mix(base, uBlush * tex, clamp(vTint.z, 0.0, 1.0) * 0.45);
-      if (uPatternAmt > 0.0) base = mix(base, uDark * tex, tri(uPattern) * uPatternAmt * (1.0 - clamp(vTint.x, 0.0, 1.0)));
-    #endif
-
-    float ndl = dot(N, L) * 0.5 + 0.5;
-    float lit = smoothstep(0.28, 0.78, ndl);
-    vec3 shade = base * vec3(0.46, 0.43, 0.62);
-    vec3 light = base * vec3(1.13, 1.04, 0.9);
-    vec3 col = mix(shade, light, lit);
-    // dispersión subsuperficial pintada: borde cálido entre luz y sombra
-    col += base * vec3(0.32, 0.08, 0.04) * uSSS * smoothstep(0.18, 0.5, ndl) * (1.0 - smoothstep(0.5, 0.82, ndl));
-
-    // rebote del cielo y oclusión cerca del suelo
-    col += base * 0.12 * clamp(N.y, 0.0, 1.0) * vec3(0.7, 0.8, 1.0);
-    if (uGround > 0.0) col *= mix(0.62, 1.0, smoothstep(0.0, uGround, vWorld.y));
-
-    float occ = 1.0;
-    #ifdef TRI
-      // oclusión pintada: las sombras de contacto tiran a violeta, no a negro
-      occ = vAO;
-      col *= mix(vec3(0.38, 0.3, 0.42), vec3(1.0), smoothstep(0.15, 1.0, occ));
-    #endif
-
-    float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-    col += rim * uRim * vec3(1.0, 0.74, 0.45) * occ;
-
-    vec3 H = normalize(L + V);
-    float specAmt = uSpec;
-    #ifdef TRI
-      specAmt += clamp(vTint.z, 0.0, 1.0) * 0.25 * step(0.6, vTint.z);
-    #endif
-    if (specAmt > 0.0) {
-      float s = pow(max(dot(N, H), 0.0), 36.0);
-      col += smoothstep(0.35, 0.75, s) * specAmt * vec3(1.0, 0.93, 0.78) * occ;
-    }
-    #ifdef HAIR
-      // brillo anisotrópico: franja de luz que recorre los mechones
-      vec3 T = vec3(0.0, 1.0, 0.0) - N * N.y;
-      T = length(T) > 0.01 ? normalize(T) : vec3(1.0, 0.0, 0.0);
-      float jitter = (tri(uMap) - 0.8) * 1.2;
-      vec3 T1 = normalize(T + N * (0.15 + jitter));
-      vec3 T2 = normalize(T + N * (-0.25 + jitter));
-      float d1 = dot(T1, H), d2 = dot(T2, H);
-      float s1 = pow(sqrt(max(1.0 - d1 * d1, 0.0)), 90.0);
-      float s2 = pow(sqrt(max(1.0 - d2 * d2, 0.0)), 24.0);
-      col += (s1 * vec3(1.0, 0.95, 0.85) * 0.32 + s2 * base * 0.5) * occ * (0.4 + 0.6 * lit);
-    #endif
-    col = mix(col, uColor * 1.15, uEmissive);
-    col = mix(col, uFogColor, smoothstep(uFogNear, uFogFar, length(vView)));
-    gl_FragColor = vec4(min(col, vec3(1.0)), 1.0);
-  }
-`;
+/** Comportamiento físico de cada tipo de superficie. */
+interface Surface { rough: number; metal?: number; sheen?: number; coat?: number; nrm?: string; nScale?: number; nRepeat?: number }
+const SURF: Record<Kind, Surface> = {
+  plain: { rough: 0.6 },
+  skin: { rough: 0.58, sheen: 0.35, nrm: n0021, nScale: 0.25, nRepeat: 3 },
+  fur: { rough: 0.85, sheen: 0.8, nrm: n0011, nScale: 0.35, nRepeat: 2 },
+  scales: { rough: 0.42, coat: 0.25, nrm: n0027, nScale: 0.7, nRepeat: 1.6 },
+  cloth: { rough: 0.88, sheen: 0.7, nrm: n0014, nScale: 0.45, nRepeat: 1.4 },
+  silk: { rough: 0.42, sheen: 1, nrm: n0014, nScale: 0.2, nRepeat: 1.2 },
+  leather: { rough: 0.55, coat: 0.18, nrm: n0003, nScale: 0.55, nRepeat: 1.6 },
+  metal: { rough: 0.32, metal: 0.92, coat: 0.3, nrm: n0004, nScale: 0.3, nRepeat: 1 },
+  hair: { rough: 0.5, sheen: 0.3, nrm: n0019, nScale: 0.6, nRepeat: 2.5 },
+  wood: { rough: 0.72, nrm: n0019, nScale: 0.7, nRepeat: 1 },
+  stone: { rough: 0.9, nrm: n0024, nScale: 0.8, nRepeat: 1 },
+  cobble: { rough: 0.85, nrm: n0026, nScale: 0.9, nRepeat: 1 },
+  grass: { rough: 0.95, nrm: n0010, nScale: 0.5, nRepeat: 1 },
+  roof: { rough: 0.85, nrm: n0018, nScale: 0.5, nRepeat: 1 },
+  plaster: { rough: 0.95, nrm: n0006, nScale: 0.6, nRepeat: 1 },
+  leaf: { rough: 0.8, sheen: 0.4, nrm: n0010, nScale: 0.5, nRepeat: 1 },
+};
 
 export interface PaintOpts {
-  /** Malla esculpida: textura triplanar + tintes por vértice. */
+  /** Malla esculpida: textura triplanar + tintes y oclusión por vértice. */
   sdf?: boolean;
   triScale?: number;
   map?: THREE.Texture;
@@ -470,7 +363,6 @@ export interface PaintOpts {
   dark?: THREE.ColorRepresentation;
   blush?: THREE.ColorRepresentation;
   sss?: number;
-  /** Pelo: brillo anisotrópico. */
   hair?: boolean;
   rim?: number;
   spec?: number;
@@ -480,38 +372,236 @@ export interface PaintOpts {
   repeat?: [number, number];
   side?: THREE.Side;
   wave?: number;
+  rough?: number;
+  metal?: number;
+  coat?: number;
 }
 
+const VERT_HEAD = /* glsl */ `
+  uniform vec2 uRepeat;
+  uniform float uWave;
+  uniform float uTime;
+  uniform float uTriScale;
+  varying vec2 vDUv;
+  #ifdef TRI
+    attribute vec3 tint;
+    attribute float ao;
+    varying vec3 vTint;
+    varying float vAO;
+    varying vec3 vObjP;
+    varying vec3 vObjN;
+  #endif
+`;
+const VERT_BODY = /* glsl */ `
+  #ifdef TRI
+    vDUv = vec2(0.0);
+    vTint = tint;
+    vAO = ao;
+    vObjP = position * uTriScale;
+    vObjN = normal;
+  #else
+    vDUv = uv * uRepeat;
+    if (uWave > 0.0) {
+      float kw = 1.0 - uv.y;
+      transformed.z += sin(uTime * 2.2 + transformed.y * 3.0 + transformed.x * 2.0) * uWave * kw;
+      transformed.x += cos(uTime * 1.7 + transformed.y * 2.0) * uWave * 0.4 * kw;
+    }
+  #endif
+`;
+
+const FRAG_HEAD = /* glsl */ `
+  uniform sampler2D uDetail;
+  uniform float uTexAmt;
+  uniform sampler2D uNrm;
+  uniform float uNrmScale;
+  uniform float uNrmRepeat;
+  uniform sampler2D uPattern;
+  uniform float uPatternAmt;
+  uniform vec3 uLight;
+  uniform vec3 uDark;
+  uniform vec3 uBlush;
+  uniform float uRim;
+  uniform float uSSS;
+  uniform mat3 normalMatrix;
+  varying vec2 vDUv;
+  #ifdef TRI
+    varying vec3 vTint;
+    varying float vAO;
+    varying vec3 vObjP;
+    varying vec3 vObjN;
+    vec3 triW() { vec3 b = pow(abs(normalize(vObjN)), vec3(4.0)); return b / (b.x + b.y + b.z); }
+    float tri(sampler2D t, float k) {
+      vec3 bw = triW(); vec3 p = vObjP * k;
+      return texture2D(t, p.zy).r * bw.x + texture2D(t, p.xz).r * bw.y + texture2D(t, p.xy).r * bw.z;
+    }
+    // relieve triplanar (mezcla "whiteout")
+    vec3 triNormal(vec3 n) {
+      vec3 bw = triW(); vec3 p = vObjP * uNrmRepeat;
+      vec3 tx = texture2D(uNrm, p.zy).xyz * 2.0 - 1.0;
+      vec3 ty = texture2D(uNrm, p.xz).xyz * 2.0 - 1.0;
+      vec3 tz = texture2D(uNrm, p.xy).xyz * 2.0 - 1.0;
+      tx.xy *= uNrmScale; ty.xy *= uNrmScale; tz.xy *= uNrmScale;
+      tx = vec3(tx.xy + n.zy, abs(tx.z) * n.x);
+      ty = vec3(ty.xy + n.xz, abs(ty.z) * n.y);
+      tz = vec3(tz.xy + n.xy, abs(tz.z) * n.z);
+      return normalize(tx.zyx * bw.x + ty.xzy * bw.y + tz.xyz * bw.z);
+    }
+  #endif
+`;
+
+const FRAG_MAP = /* glsl */ `
+  #include <map_fragment>
+  float detailTex = 1.0;
+  #ifndef COLORMAP
+    #ifdef TRI
+      detailTex = mix(1.0, tri(uDetail, 1.0) * 1.25, uTexAmt);
+    #else
+      detailTex = mix(1.0, texture2D(uDetail, vDUv).r * 1.25, uTexAmt);
+    #endif
+    diffuseColor.rgb *= detailTex;
+  #endif
+  #ifdef TRI
+    diffuseColor.rgb = mix(diffuseColor.rgb, uLight * mix(1.0, detailTex, 0.6), clamp(vTint.x, 0.0, 1.0));
+    diffuseColor.rgb = mix(diffuseColor.rgb, uDark * detailTex, clamp(vTint.y, 0.0, 1.0));
+    diffuseColor.rgb = mix(diffuseColor.rgb, uBlush * detailTex, clamp(vTint.z, 0.0, 1.0) * 0.5);
+    if (uPatternAmt > 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, uDark * detailTex, tri(uPattern, 1.0) * uPatternAmt * (1.0 - clamp(vTint.x, 0.0, 1.0)));
+  #endif
+`;
+
+const FRAG_ROUGH = /* glsl */ `
+  #include <roughnessmap_fragment>
+  #ifdef TRI
+    // labios: más brillantes
+    roughnessFactor = mix(roughnessFactor, 0.28, smoothstep(0.9, 1.0, vTint.z));
+  #endif
+`;
+
+const FRAG_NORMAL = /* glsl */ `
+  #include <normal_fragment_maps>
+  #ifdef TRI
+    if (uNrmScale > 0.0) {
+      vec3 n0 = normalize(vObjN);
+      vec3 delta = triNormal(n0) - n0;
+      normal = normalize(normal + normalMatrix * delta);
+    }
+  #endif
+`;
+
+const FRAG_AO = /* glsl */ `
+  #include <aomap_fragment>
+  #ifdef TRI
+    float cav = smoothstep(0.12, 1.0, vAO);
+    reflectedLight.indirectDiffuse *= cav;
+    reflectedLight.indirectSpecular *= cav;
+    reflectedLight.directDiffuse *= mix(0.5, 1.0, cav);
+    reflectedLight.directSpecular *= cav;
+    // las sombras de contacto tiran a violeta, como en una ilustración
+    reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.035, 0.015, 0.05) * (1.0 - cav);
+  #endif
+`;
+
+const FRAG_OUT = /* glsl */ `
+  {
+    vec3 Vv = normalize(vViewPosition);
+    float occ = 1.0;
+    #ifdef TRI
+      occ = smoothstep(0.12, 1.0, vAO);
+    #endif
+    float rim = pow(1.0 - clamp(dot(normal, Vv), 0.0, 1.0), 3.0);
+    outgoingLight += rim * uRim * vec3(1.0, 0.72, 0.45) * 0.45 * occ;
+    #if NUM_DIR_LIGHTS > 0
+      vec3 Ld = directionalLights[0].direction;
+      float ndl = dot(normal, Ld) * 0.5 + 0.5;
+      // dispersión subsuperficial: borde cálido entre luz y sombra
+      outgoingLight += diffuseColor.rgb * vec3(0.5, 0.12, 0.06) * uSSS * smoothstep(0.2, 0.5, ndl) * (1.0 - smoothstep(0.5, 0.8, ndl)) * directionalLights[0].color * 0.25;
+      #ifdef HAIR
+        // brillo anisotrópico: franja de luz que recorre los mechones
+        vec3 Hh = normalize(Ld + Vv);
+        vec3 up = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+        vec3 T = up - normal * dot(normal, up);
+        T = length(T) > 0.01 ? normalize(T) : vec3(1.0, 0.0, 0.0);
+        float jit = (detailTex - 1.0) * 1.2;
+        vec3 T1 = normalize(T + normal * (0.18 + jit));
+        vec3 T2 = normalize(T + normal * (-0.22 + jit));
+        float d1 = dot(T1, Hh), d2 = dot(T2, Hh);
+        float s1 = pow(sqrt(max(1.0 - d1 * d1, 0.0)), 110.0);
+        float s2 = pow(sqrt(max(1.0 - d2 * d2, 0.0)), 28.0);
+        outgoingLight += (s1 * vec3(1.0, 0.95, 0.85) * 0.5 + s2 * diffuseColor.rgb * 0.7) * occ * directionalLights[0].color * 0.3 * smoothstep(0.3, 0.7, ndl);
+      #endif
+    #endif
+  }
+  #include <opaque_fragment>
+`;
+
+/** Material físico con las inyecciones del estilo pintado. */
 export function paint(color: THREE.ColorRepresentation, kind: Kind = 'plain', o: PaintOpts = {}) {
+  const S = SURF[kind];
+  const col = new THREE.Color(color);
   const defines: Record<string, string> = {};
   if (o.sdf) defines.TRI = '';
   if (o.map) defines.COLORMAP = '';
   if (o.hair && o.sdf) defines.HAIR = '';
-  return new THREE.ShaderMaterial({
-    defines,
-    uniforms: {
-      ...world,
-      uColor: { value: new THREE.Color(color) },
-      uMap: { value: o.map ?? detailTex(kind) },
-      uTriScale: { value: o.triScale ?? 3 },
-      uPattern: { value: o.pattern ? patternTex(o.pattern) : detailTex('plain') },
-      uPatternAmt: { value: o.pattern ? o.patternAmt ?? 0.75 : 0 },
-      uLight: { value: new THREE.Color(o.light ?? '#ffffff') },
-      uDark: { value: new THREE.Color(o.dark ?? '#000000') },
-      uBlush: { value: new THREE.Color(o.blush ?? '#e0605a') },
-      uSSS: { value: o.sss ?? 0 },
-      uTexAmt: { value: o.texAmt ?? 1 },
-      uRepeat: { value: new THREE.Vector2(...(o.repeat ?? [1, 1])) },
-      uRim: { value: o.rim ?? 0.35 },
-      uSpec: { value: o.spec ?? 0 },
-      uEmissive: { value: o.emissive ?? 0 },
-      uGround: { value: o.ground ?? 0.9 },
-      uWave: { value: o.wave ?? 0 },
-    },
-    vertexShader,
-    fragmentShader,
+  const spec = o.spec ?? 0;
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: col,
+    roughness: o.rough ?? Math.max(0.12, S.rough - spec * 0.35),
+    metalness: o.metal ?? S.metal ?? 0,
+    sheen: S.sheen ?? 0,
+    sheenColor: col.clone().lerp(new THREE.Color('#ffffff'), 0.45),
+    sheenRoughness: 0.55,
+    clearcoat: o.coat ?? (S.coat ?? 0) + spec * 0.3,
+    clearcoatRoughness: 0.35,
     side: o.side ?? THREE.FrontSide,
+    map: o.map ?? null,
+    emissive: o.emissive ? col : new THREE.Color(0),
+    emissiveIntensity: (o.emissive ?? 0) * 1.6,
+    envMapIntensity: 1,
   });
+  if (kind === 'skin' && o.sdf) mat.sheenColor = new THREE.Color('#ff9a80');
+  // relieve en piezas rígidas: mapa normal estándar por UV
+  const uvNrm = !o.sdf && !o.map && S.nrm && kind !== 'plain';
+  if (uvNrm) {
+    // el clon comparte la imagen (Source): se sube a la GPU cuando termina de cargar
+    const t = nrmTex(S.nrm!).clone();
+    t.repeat.set(...(o.repeat ?? [1, 1]));
+    mat.normalMap = t;
+    mat.normalScale.setScalar((S.nScale ?? 0.5) * 0.8);
+  }
+  const uniforms = {
+    uTime: world.uTime,
+    uDetail: { value: detailTex(kind) },
+    uTexAmt: { value: o.texAmt ?? 1 },
+    uRepeat: { value: new THREE.Vector2(...(o.repeat ?? [1, 1])) },
+    uTriScale: { value: o.triScale ?? 3 },
+    uNrm: { value: S.nrm ? nrmTex(S.nrm) : detailTex('plain') },
+    uNrmScale: { value: o.sdf && S.nrm ? S.nScale ?? 0.5 : 0 },
+    uNrmRepeat: { value: S.nRepeat ?? 1 },
+    uPattern: { value: o.pattern ? patternTex(o.pattern) : detailTex('plain') },
+    uPatternAmt: { value: o.pattern ? o.patternAmt ?? 0.75 : 0 },
+    uLight: { value: new THREE.Color(o.light ?? '#ffffff') },
+    uDark: { value: new THREE.Color(o.dark ?? '#000000') },
+    uBlush: { value: new THREE.Color(o.blush ?? '#e0605a') },
+    uRim: { value: o.rim ?? 0.35 },
+    uSSS: { value: o.sss ?? 0 },
+    uWave: { value: o.wave ?? 0 },
+  };
+  mat.userData.uniforms = uniforms;
+  mat.defines = { ...(mat.defines ?? {}), ...defines };
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, uniforms);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\n' + VERT_HEAD)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + VERT_BODY);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + FRAG_HEAD)
+      .replace('#include <map_fragment>', FRAG_MAP)
+      .replace('#include <roughnessmap_fragment>', FRAG_ROUGH)
+      .replace('#include <normal_fragment_maps>', FRAG_NORMAL)
+      .replace('#include <aomap_fragment>', FRAG_AO)
+      .replace('#include <opaque_fragment>', FRAG_OUT);
+  };
+  mat.customProgramCacheKey = () => 'paint|' + Object.keys(defines).join(',') + (uvNrm ? '|n' : '');
+  return mat;
 }
 
 // Textura suave radial para brillos, sombras y partículas.
@@ -524,5 +614,7 @@ export function softDot(inner = 'rgba(255,255,255,1)', outer = 'rgba(255,255,255
   g.addColorStop(1, outer);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(c);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }

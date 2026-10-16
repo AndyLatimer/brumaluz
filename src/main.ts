@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { world } from './paint';
 import { buildEnv } from './env';
 import { Character } from './character';
+import { setupStage, castShadows } from './render';
 import {
   CharData, Race, ClassId, RACES, CLASSES, EYES, EYE_NAMES, HAIR_COLORS, CLOTH, CLOTH_NAMES,
   EYE_SHAPES, BROWS, faceOptions, detailOptions, defaultChar, randomChar, randomName, sanitize,
 } from './data';
 
-THREE.ColorManagement.enabled = false;
 
 // ---------------- Estado ----------------
 const SAVE_KEY = 'brumaluz.personaje';
@@ -25,12 +25,13 @@ function save() {
 // ---------------- Render ----------------
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 600);
 const env = buildEnv(scene);
+const lowEnd = window.innerWidth <= 760 || /Mobi|Android/i.test(navigator.userAgent);
+const stage = setupStage(renderer, scene, camera, lowEnd);
 
 const holder = new THREE.Group();
 holder.rotation.y = -0.3;
@@ -46,6 +47,7 @@ function rebuildNow() {
   char?.dispose();
   char = new Character({ ...state }, { outfit: tab === 'clase' });
   holder.add(char.root);
+  castShadows(char.root);
   char.update(clock.getElapsedTime());
   if (pendingHop) char.hop();
   pendingHop = false;
@@ -68,6 +70,7 @@ const tmp = new THREE.Vector3();
 function layout() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
+  stage.resize(w, h);
   camera.aspect = w / h;
   const panel = document.getElementById('panel')!.getBoundingClientRect();
   const mobile = w <= 760;
@@ -280,7 +283,7 @@ renderer.setAnimationLoop(() => {
   char.update(t);
   env.update(t);
   updateCamera(dt);
-  renderer.render(scene, camera);
+  stage.render();
 });
 
 requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide'), 400));

@@ -25,7 +25,7 @@ export interface Env {
 export function buildEnv(scene: THREE.Scene): Env {
   const r = rng(7);
   const flames: THREE.Sprite[] = [];
-  const banners: THREE.ShaderMaterial[] = [];
+  const banners: THREE.Material[] = [];
 
   // ---------------- Cielo pintado ----------------
   const sky = new THREE.Mesh(
@@ -33,6 +33,7 @@ export function buildEnv(scene: THREE.Scene): Env {
     new THREE.ShaderMaterial({
       side: THREE.BackSide,
       depthWrite: false,
+      fog: false,
       uniforms: { uSun: { value: new THREE.Vector3(0.35, 0.12, -1).normalize() } },
       vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: `
@@ -47,7 +48,7 @@ export function buildEnv(scene: THREE.Scene): Env {
           float s = max(dot(normalize(vDir), uSun), 0.0);
           col += vec3(1.0,0.75,0.4) * pow(s, 12.0) * 0.5 + vec3(1.0,0.9,0.7) * pow(s, 400.0);
           if (h < 0.0) col = hor;
-          gl_FragColor = vec4(col,1.0);
+          gl_FragColor = vec4(pow(col, vec3(2.2)), 1.0);
         }`,
     }),
   );
@@ -67,7 +68,9 @@ export function buildEnv(scene: THREE.Scene): Env {
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(x, y, rad, 0, PI * 2); ctx.fill();
     }
-    return new THREE.CanvasTexture(c);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
   })();
   for (let i = 0; i < 9; i++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, transparent: true, depthWrite: false, fog: false, opacity: 0.85 }));
@@ -267,6 +270,11 @@ export function buildEnv(scene: THREE.Scene): Env {
     fragmentShader: `uniform sampler2D uTex; varying float vA; void main(){ gl_FragColor = texture2D(uTex, gl_PointCoord) * vA; }`,
   });
   scene.add(new THREE.Points(pg, pm));
+
+  scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && m !== sky && !(m.material as THREE.Material).transparent) { m.receiveShadow = true; m.castShadow = true; }
+  });
 
   return {
     update(t: number) {

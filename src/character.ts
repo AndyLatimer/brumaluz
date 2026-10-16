@@ -818,7 +818,9 @@ export class Character {
     const hsh = showHair ? hairShape(rig, d) : null;
     const bsh = beardShape(rig, d);
     const hkey = [d.race, d.sex, d.detail, d.eyeShape, d.race === 'pelso' ? 0 : d.nose, hsh ? d.hair : -1].join('|');
-    const occ = [hsh, bsh].filter((x): x is Shape => !!x);
+    // el cuello también hace sombra bajo la barbilla
+    const neckOcc: Shape = { torso: [C([0, -0.2, -0.012], [0, 0.03, 0], rig.neckR, rig.neckR * 0.9)], limbs: [], kT: 0.01, kL: 0.01, kJ: 0.01 };
+    const occ = [hsh, bsh, neckOcc].filter((x): x is Shape => !!x);
     const headPrims = [...hshape.shape.torso, ...hshape.shape.limbs.flat(), ...(hshape.shape.detail ?? []), ...hshape.tints];
     add(head, cached('head|' + hkey, () => sculpt(hshape.shape, 0.0042, headPrims, false, occ)), sdfSkin);
     this.headTop = group(head, [0, hi.cy, 0]);
@@ -1123,7 +1125,7 @@ export class Character {
     // Sombra de contacto
     const sh = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({ map: softDot('rgba(40,20,30,0.5)', 'rgba(40,20,30,0)'), transparent: true, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ map: softDot('rgba(40,20,30,0.3)', 'rgba(40,20,30,0)'), transparent: true, depthWrite: false }),
     );
     sh.rotation.x = -PI / 2;
     sh.position.y = 0.005;
@@ -1139,7 +1141,7 @@ export class Character {
     const R = RACES[d.race];
     const eyeCol = EYES[d.eyes];
     const sclera = d.race === 'lagto' ? mixHex(eyeCol, '#f0e0a0', 0.55) : '#fbf6ee';
-    const eyeMat = paint('#ffffff', 'plain', { map: irisTex(eyeCol, R.slit, sclera), rim: 0.1, spec: 0.5 });
+    const eyeMat = paint('#ffffff', 'plain', { map: irisTex(eyeCol, R.slit, sclera), rim: 0.1, rough: 0.25, coat: 1 });
     const lashMat = paint('#24161a', 'plain', { texAmt: 0, rim: 0 });
     const shine = paint('#ffffff', 'plain', { texAmt: 0, emissive: 1 });
     const r = hi.eyeR;
@@ -1222,7 +1224,7 @@ export class Character {
 
   private buildHeadgear(top: THREE.Group, hr: number, hg: number, m: Record<string, THREE.Material>, race: string) {
     if (hg === 1) {
-      const S = (m.rS as THREE.ShaderMaterial).uniforms.uColor.value as THREE.Color;
+      const S = (m.rS as THREE.MeshPhysicalMaterial).color.clone();
       const outer = paint(S, 'cloth', { side: THREE.DoubleSide });
       const inner = paint(S.clone().lerp(new THREE.Color('#120c10'), 0.65), 'cloth', { side: THREE.BackSide, rim: 0 });
       const ps = PI / 2 + 0.72, pl = PI * 2 - 1.44;
