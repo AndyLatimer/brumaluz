@@ -410,10 +410,19 @@ $('#enter').onclick = () => {
 $('#back').onclick = () => exitPlay();
 
 // ---------------- Bucle ----------------
+/** ?test: sin ciudad ni posproceso, para revisar personajes rápido (capturas automáticas). */
+const TEST = new URLSearchParams(location.search).has('test');
+function testCity(): City {
+  const root = new THREE.Group();
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(6, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#c9b48a' }));
+  ground.receiveShadow = true;
+  root.add(ground);
+  return { root, collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+}
 const clock = new THREE.Clock();
 try {
   await loadKits();
-  city = await buildCity();
+  city = TEST ? testCity() : await buildCity();
 } catch (e) {
   $('#loading p').textContent = 'No se pudo cargar Brumaluz: ' + (e instanceof Error ? e.message : String(e));
   throw e;
@@ -441,7 +450,7 @@ renderer.setAnimationLoop(() => {
   city.update(t);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
-  stage.render();
+  if (TEST) renderer.render(scene, camera); else stage.render();
 });
 
 requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide'), 400));

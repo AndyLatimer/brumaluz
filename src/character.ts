@@ -241,7 +241,7 @@ export class Character {
     // Piezas
     if (this.opts.outfit) {
       for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
-      if (outfit.cape) this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true));
+      if (outfit.cape) { this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true)); this.addMantle(outfit.kit, outfit.kit, mat(outfit.kit, true)); }
     } else {
       // ropa de diario: torso, mangas y piernas combinables de los cuatro modelos
       const top = OUTFIT_KITS[d.top], arms = OUTFIT_KITS[d.arms], legs = OUTFIT_KITS[d.legs];
@@ -250,7 +250,7 @@ export class Character {
         this.addSkinned(arms, `${arms}_Arm${side}`, mat(arms, true));
         this.addSkinned(legs, `${legs}_Leg${side}`, mat(legs, true));
       }
-      if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1]; this.addRigid(k, `${k}_Cape`, mat(k, true)); }
+      if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1]; this.addRigid(k, `${k}_Cape`, mat(k, true)); this.addMantle(top, k, mat(k, true)); }
     }
     if (outfit.hat) {
       // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
@@ -299,6 +299,60 @@ export class Character {
     m.bind(new THREE.Skeleton(bones, src.skeleton.boneInverses), src.bindMatrix);
     m.frustumCulled = false;
     return m;
+  }
+
+  /**
+   * Parte delantera de la capa: esclavina sobre los hombros con el color de la
+   * capa y un broche, para que se vea también de frente.
+   */
+  private addMantle(bodyKit: Kit, capeKit: Kit, material: THREE.Material) {
+    const body = kits[bodyKit].scene.getObjectByName(`${bodyKit}_Body`) as THREE.SkinnedMesh | undefined;
+    const cape = kits[capeKit].scene.getObjectByName(`${capeKit}_Cape`) as THREE.Mesh | undefined;
+    const chest = this.bones.get('chest');
+    if (!body || !cape || !chest) return;
+    const ci = body.skeleton.bones.findIndex((b) => b.name === 'chest');
+    const toBone = new THREE.Matrix4().multiplyMatrices(body.skeleton.boneInverses[ci], body.bindMatrix);
+    // tamaño del torso a la altura de los hombros
+    const probe = new THREE.Mesh(body.geometry, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+    const rc = new THREE.Raycaster(), y = 1.13;
+    const hitAt = (o: THREE.Vector3, d: THREE.Vector3, fb: number) => { rc.set(o, d); const h = rc.intersectObject(probe)[0]; return h ? h.point : null; };
+    const zf = hitAt(new THREE.Vector3(0, y, 2), new THREE.Vector3(0, 0, -1), 0)?.z ?? 0.25;
+    const xs = hitAt(new THREE.Vector3(2, y, 0), new THREE.Vector3(-1, 0, 0), 0)?.x ?? 0.3;
+    const zb = hitAt(new THREE.Vector3(0, y, -2), new THREE.Vector3(0, 0, 1), 0)?.z ?? -0.25;
+    probe.material.dispose();
+    // color: el mismo punto de la textura que la capa
+    const cuv = (cape.geometry.attributes.uv as THREE.BufferAttribute), count = new Map<number, number>();
+    for (let i = 0; i < cuv.count; i++) {
+      const c = Math.min(7, Math.floor(cuv.getY(i) * 8)) * 8 + Math.min(7, Math.floor(cuv.getX(i) * 8));
+      count.set(c, (count.get(c) ?? 0) + 1);
+    }
+    const cell = [...count.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const u = ((cell % 8) + 0.5) / 8, v = (Math.floor(cell / 8) + 0.5) / 8;
+    const g = new THREE.TorusGeometry(1, 0.085, 10, 40);
+    const uv = g.attributes.uv as THREE.BufferAttribute;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, u, v);
+    g.rotateX(PI / 2);
+    const rx = xs + 0.01, rzF = zf + 0.01, rzB = -zb + 0.01;
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      p.setX(i, p.getX(i) * rx);
+      p.setZ(i, p.getZ(i) * (p.getZ(i) > 0 ? rzF : rzB));
+      // cae un poco por delante y por los lados, como una esclavina
+      const fz = Math.max(0, p.getZ(i)) / rzF;
+      p.setY(i, p.getY(i) * 0.9 + y - fz * fz * 0.05);
+    }
+    g.computeVertexNormals();
+    g.applyMatrix4(toBone);
+    this.owned.push(g);
+    const m = new THREE.Mesh(g, material);
+    m.castShadow = true;
+    chest.add(m);
+    // broche dorado
+    const bg = new THREE.SphereGeometry(0.045, 14, 10).scale(1, 1, 0.5).translate(0, y - 0.06, zf + 0.07).applyMatrix4(toBone);
+    this.owned.push(bg);
+    const gold = new THREE.MeshStandardMaterial({ color: '#e8b84a', roughness: 0.3, metalness: 0.6 });
+    this.owned.push(gold);
+    chest.add(new THREE.Mesh(bg, gold));
   }
 
   /** Clona una pieza rígida (sombrero, arma) y la cuelga del mismo hueso en el esqueleto base. */
