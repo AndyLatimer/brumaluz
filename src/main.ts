@@ -442,5 +442,6 @@ requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide')
   spin(a: number) { holder.rotation.y = a; spinVel = 0; },
   move(x: number, z: number) { holder.position.set(x, 0, z); },
   view(y: number, p: number, d: number) { yaw = y; pitch = p; followDist = d; },
+  char: () => char,
   time() { const t0 = performance.now(); rebuildNow(); return performance.now() - t0; },
 };

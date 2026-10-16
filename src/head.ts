@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { LoopSubdivision } from 'three-subdivide';
 
 // ---------------------------------------------------------------------------
 // Cabezas modulares a partir de las cuatro cabezas de KayKit Adventurers.
@@ -28,6 +29,9 @@ export interface HeadOptions {
   /** Aplanar las orejas humanas (elfos, Pelso, Lagto'). */
   flattenEars: boolean;
   hat: 'none' | 'helmet' | 'wizard' | 'bear';
+  /** Linaje: cambia nariz, pupilas y marcas de la cara. */
+  race?: 'humano' | 'elfo' | 'lagto' | 'pelso';
+  skin?: string;
 }
 
 export interface HeadResult {
@@ -277,7 +281,9 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const F: Tris = { pos: A.face.pos.slice(), uv: A.face.uv.slice(), nrm: A.face.nrm.slice(), count: A.face.count };
   const cellAt = (i: number) => cellOfUV(A.face.uv[i * 2], A.face.uv[i * 2 + 1]);
   const nV = F.count * 3;
-  const E = EYE[o.eyeShape] ?? EYE[0], B = BROW[o.brows] ?? BROW[0];
+  const E0 = EYE[o.eyeShape] ?? EYE[0];
+  const E = { ...E0, rx: E0.rx * 1.18, ry: E0.ry * 1.18 }, B = BROW[o.brows] ?? BROW[0];
+  const beast = o.race === 'pelso' || o.race === 'lagto';
   const nose = A.noseTip, noseBase = V(0, nose.y + 0.01, nose.z - 0.095);
   for (let i = 0; i < nV; i++) {
     if (!isSkin(cellAt(i))) continue;
@@ -288,14 +294,16 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const w = THREE.MathUtils.smoothstep(z, noseBase.z, noseBase.z + 0.05);
       const d = p.clone().sub(noseBase);
       const q = d.clone();
+      // narices finas: la de KayKit es una patata; se reduce y se le da forma
       switch (o.nose) {
-        case 1: q.multiplyScalar(0.72); break;
-        case 2: q.multiplyScalar(1.28); break;
-        case 3: q.y += Math.max(0, d.z) * 0.6; q.z *= 0.9; break;
-        case 4: q.x *= 1.5; break;
-        case 5: q.z *= 1.25; q.y -= Math.max(0, d.z) * 0.35; break;
-        case 6: q.multiplyScalar(0.8); q.x *= 1.25; break;
+        case 1: q.multiplyScalar(0.4); q.x *= 0.85; break;
+        case 2: q.multiplyScalar(0.8); break;
+        case 3: q.multiplyScalar(0.5); q.y += Math.max(0, d.z) * 0.35; q.x *= 0.8; break;
+        case 4: q.multiplyScalar(0.55); q.x *= 1.45; break;
+        case 5: q.multiplyScalar(0.62); q.z *= 1.2; q.x *= 0.75; q.y -= Math.max(0, d.z) * 0.25; break;
+        case 6: q.multiplyScalar(0.48); q.x *= 1.15; break;
       }
+      if (beast) q.multiplyScalar(0.35);
       p.lerp(noseBase.clone().add(q), w);
     }
     // orejas humanas: se meten en el cráneo
@@ -324,7 +332,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     for (let i = 0; i < sp.count; i++) sp.setZ(i, sp.getZ(i) * (sp.getZ(i) > 0 ? rzFront : R3.z));
     sk.translate(C3.x, C3.y, C3.z);
     const T = toTris(sk.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(sk.attributes.position.count * 2), 2)));
-    const keep = subset(T, (t) => { const c = triCentroid(T, t); return c.y > 1.3 && (c.z < 0.12 || c.y > 1.6); });
+    const keep = subset(T, (t) => { const c = triCentroid(T, t); return c.y > 1.3 && (c.z < 0.24 || c.y > 1.6); });
     const g = toGeometry(keep);
     paintCell(g, C_SKIN, 0.2, 0.7);
     // con pelo, la coronilla y la nuca del cráneo van del color del pelo (tapa huecos del peinado)
@@ -393,9 +401,13 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       break;
     case 8: // melena larga
       kitHair('Rogue');
-      for (let k = 0; k < 7; k++) {
-        const a = -PI * 0.55 + (k / 6) * PI * 1.1;
-        hairPieces.push({ geo: piece(new THREE.CapsuleGeometry(0.1, 0.38, 3, 6), hairCell, compose(V(Math.sin(a) * 0.43, 1.12, -Math.cos(a) * 0.38 - 0.05), new THREE.Euler(Math.cos(a) * 0.15, 0, -Math.sin(a) * 0.12), V(1, 1, 0.8))), kit: o.face });
+      {
+        // una sola masa redondeada a la espalda y dos mechones junto a la cara
+        const back = new THREE.SphereGeometry(1, 22, 16);
+        const bp = back.attributes.position;
+        for (let i = 0; i < bp.count; i++) { const y = bp.getY(i); bp.setX(i, bp.getX(i) * (1 - Math.max(0, -y) * 0.22)); bp.setZ(i, bp.getZ(i) * (1 - Math.max(0, -y) * 0.3)); }
+        hairPieces.push({ geo: piece(back, hairCell, compose(V(0, 1.24, -0.27), new THREE.Euler(-0.08, 0, 0), V(0.5, 0.56, 0.32))), kit: o.face });
+        for (const sx of [-1, 1]) hairPieces.push({ geo: piece(new THREE.SphereGeometry(1, 14, 12), hairCell, compose(V(sx * 0.42, 1.24, 0.06), new THREE.Euler(0.1, 0, sx * 0.1), V(0.085, 0.3, 0.11))), kit: o.face });
       }
       break;
     case 9: // trenza
@@ -434,9 +446,12 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const mouthY = nose.y - 0.105;
   const mouth: THREE.BufferGeometry[] = [];
   const arc = (r: number, t: number, a0: number, a1: number) => new THREE.TorusGeometry(r, t, 5, 14, a1 - a0).rotateZ(a0);
-  const mp = onFace(0, mouthY, 0.006), mr = facing(0, mouthY);
+  const mp = onFace(0, mouthY, 0.012), mr = facing(0, mouthY);
   switch (o.mouth) {
-    case 1: mouth.push(piece(arc(0.07, 0.013, PI * 1.18, PI * 1.82), C_DARK, compose(mp.clone().add(V(0, 0.06, 0)), mr, V(1, 0.9, 0.4)))); break;
+    case 1:
+      if (o.race === 'pelso') for (const sx of [-1, 1]) mouth.push(piece(arc(0.03, 0.011, PI * 1.05, PI * 1.95), C_DARK, compose(mp.clone().add(V(sx * 0.03, 0.022, 0)), mr, V(1, 1, 0.4))));
+      else mouth.push(piece(arc(0.06, 0.014, PI * 1.2, PI * 1.8), C_DARK, compose(mp.clone().add(V(0, 0.05, 0)), mr, V(1, 0.85, 0.4))));
+      break;
     case 2: mouth.push(piece(new THREE.CircleGeometry(0.075, 14, PI, PI), C_DARK, compose(mp.clone().add(V(0, 0.012, 0.004)), mr, V(1, 0.85, 1)))); break;
     case 3: mouth.push(piece(new THREE.CapsuleGeometry(0.011, 0.08, 3, 6).rotateZ(PI / 2), C_DARK, compose(mp, mr, V(1, 1, 0.5)))); break;
     case 4: mouth.push(piece(new THREE.TorusGeometry(0.034, 0.012, 5, 14), C_DARK, compose(mp, mr, V(0.85, 1.05, 0.5)))); break;
@@ -452,7 +467,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const eyes: THREE.Object3D[] = [];
   const pupil = extraMat('#16101a'), white = extraMat('#ffffff'), lidMat = material(o.face);
   for (const s of [-1, 1]) {
-    const x = s * A.eyeX, y = A.eyeY;
+    const x = s * A.eyeX * 0.96, y = A.eyeY - 0.012;
     const r = facing(x, y);
     const eye = new THREE.Group();
     eye.position.copy(onFace(x, y, 0.014));
@@ -470,16 +485,29 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     disc(E.rx, E.ry, 0.003, extraMat('#' + iris.clone().multiplyScalar(0.62).getHexString()));
     const low = disc(E.rx * 0.78, E.ry * 0.62, 0.005, extraMat('#' + iris.clone().lerp(new THREE.Color('#ffffff'), 0.28).getHexString()));
     low.position.y = -E.ry * 0.3;
-    disc(E.rx * 0.5, E.ry * 0.55, 0.008, pupil).position.y = E.ry * 0.05;
+    // pupila: rasgada en gatos y lagartos
+    if (beast) disc(E.rx * 0.16, E.ry * 0.78, 0.008, pupil);
+    else disc(E.rx * 0.5, E.ry * 0.55, 0.008, pupil).position.y = E.ry * 0.05;
     const hl1 = disc(E.rx * 0.3, E.ry * 0.27, 0.012, white);
     hl1.position.set(-s * E.rx * 0.32, E.ry * 0.38, 0.012);
     const hl2 = disc(E.rx * 0.14, E.ry * 0.12, 0.012, white);
     hl2.position.set(s * E.rx * 0.34, -E.ry * 0.42, 0.012);
     // línea del párpado superior y pestañas
-    const lidLine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.11, 5, 20, PI * 0.82).rotateZ(PI * 0.09), pupil);
-    lidLine.scale.set(E.rx * 1.08, E.ry * 1.08, 0.3);
+    const lidLine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.14, 5, 24, PI * 0.86).rotateZ(PI * 0.07), pupil);
+    lidLine.scale.set(E.rx * 1.1, E.ry * 1.1, 0.3);
     lidLine.position.z = 0.012;
     eye.add(lidLine);
+    // rabillo del delineado hacia fuera
+    const wing = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.05, 4).translate(0, 0.025, 0), pupil);
+    wing.position.set(s * E.rx * 1.02, E.ry * 0.28, 0.012);
+    wing.rotation.z = -s * (o.fem ? 1.05 : 1.35);
+    wing.scale.set(1, o.fem ? 1.1 : 0.7, 0.3);
+    eye.add(wing);
+    // brillo inferior suave del iris
+    const shine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 4, 16, PI * 0.6).rotateZ(PI * 1.2), extraMat('#' + iris.clone().lerp(new THREE.Color('#ffffff'), 0.6).getHexString()));
+    shine.scale.set(E.rx * 0.82, E.ry * 0.82, 0.3);
+    shine.position.z = 0.009;
+    eye.add(shine);
     if (o.fem) for (const k of [0, 1]) {
       const lash = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 4).translate(0, 0.025, 0), pupil);
       lash.position.set(s * E.rx * (0.82 + k * 0.05), E.ry * (0.62 - k * 0.32), 0.012);
@@ -499,7 +527,18 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // ceja
     if (B.t > 0) {
       const by = y + E.ry + 0.055 + B.dy, bx = x + s * 0.01;
-      const brow = new THREE.Mesh(piece(new THREE.CapsuleGeometry(B.t, B.l, 3, 8).rotateZ(PI / 2), C_HAIR, M(), 0.3, 0.6), material(o.face));
+      const bg = new THREE.CapsuleGeometry(B.t * 0.8, B.l, 3, 8).rotateZ(PI / 2);
+      // afilada hacia fuera y con un leve arco
+      const bp = bg.attributes.position;
+      for (let i = 0; i < bp.count; i++) {
+        const u = THREE.MathUtils.clamp(bp.getX(i) / (B.l * 0.5 + B.t), -1, 1), out = (u * s + 1) / 2;
+        bp.setY(i, bp.getY(i) * (1 - out * 0.45) - u * u * B.l * B.arc * 0.25);
+      }
+      bg.computeVertexNormals();
+      // los Lagto' no tienen pelo en las cejas: arco de escamas algo más oscuro
+      const brow = o.race === 'lagto'
+        ? new THREE.Mesh(bg, extraMat('#' + new THREE.Color(o.skin ?? '#7cc06a').multiplyScalar(0.7).getHexString()))
+        : new THREE.Mesh(piece(bg, C_HAIR, M(), 0.3, 0.6), material(o.face));
       const br = facing(bx, by);
       brow.position.copy(onFace(bx, by, B.t * 0.4));
       brow.rotation.set(br.x, br.y, s * -B.rot);
@@ -518,7 +557,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     decals.push(m);
   };
   const cheekY = nose.y - 0.04;
-  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: '#ff6f7a', transparent: true, opacity: o.detail === 1 ? 0.85 : 0.42, depthWrite: false });
+  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: '#ff6f7a', transparent: true, opacity: o.detail === 1 ? 0.85 : o.race === 'lagto' ? 0.16 : 0.42, depthWrite: false });
   for (const s of [-1, 1]) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.14), blushMat);
     const r = facing(s * 0.27, cheekY);
@@ -533,6 +572,21 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     case 3: decal(new THREE.BoxGeometry(0.018, 0.2, 0.01), '#b8605a', 0.25, A.eyeY - 0.02, 0.35); break;
     case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) decal(new THREE.BoxGeometry(0.17, 0.028, 0.01), '#3a6ab8', s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
     case 5: decal(new THREE.CircleGeometry(0.016, 10), '#3a2420', 0.2, mouthY + 0.01, 0, V(1, 1, 1), 0.006); break;
+  }
+
+  // ---------- Rasgos del linaje en la cara ----------
+  if (o.race === 'pelso') {
+    // naricilla rosa de gato y bigotes
+    decal(new THREE.CircleGeometry(0.036, 3).rotateZ(-PI / 2), '#e8828e', 0, nose.y - 0.015, 0, V(1.35, 0.9, 1), 0.012);
+    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++)
+      decal(new THREE.CapsuleGeometry(0.0045, 0.1, 2, 4).rotateZ(PI / 2), '#5a3a30', sx * 0.3, cheekY - 0.01 - k * 0.028, sx * (0.12 - k * 0.12), V(1, 1, 0.5), 0.008);
+  }
+  if (o.race === 'lagto') {
+    for (const sx of [-1, 1]) decal(new THREE.CircleGeometry(0.011, 8), '#1e2a20', sx * 0.032, nose.y - 0.01, 0, V(1.4, 0.8, 1), 0.01);
+    // escamas: lunares algo más oscuros en frente y mejillas
+    const sc = new THREE.Color(o.skin ?? '#7cc06a').multiplyScalar(0.72).getHexString();
+    const spots: [number, number, number][] = [[0, 1.86, 0.03], [-0.09, 1.82, 0.022], [0.09, 1.82, 0.022], [0, 1.76, 0.018], [-0.36, cheekY + 0.05, 0.02], [-0.33, cheekY - 0.01, 0.015], [0.36, cheekY + 0.05, 0.02], [0.33, cheekY - 0.01, 0.015]];
+    for (const [sx, sy, r] of spots) decal(new THREE.CircleGeometry(r, 6), '#' + sc, sx, sy, 0.3, V(1, 1, 1), 0.006);
   }
 
   // ---------- Anclajes para rasgos del linaje ----------
@@ -554,12 +608,29 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   // ---------- Montaje en el espacio del hueso ----------
   const finish = (m: THREE.Mesh) => { m.geometry.applyMatrix4(toBone); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
-  smoothNormals(faceGeo, 70);
+  // subdivisión: cara y pelo redondeados en vez de facetados
+  // (Loop encoge un poco las formas convexas: se infla lo mismo para no abrir huecos)
+  const subdiv = (g: THREE.BufferGeometry, deg: number, inflate = 0) => {
+    const out = LoopSubdivision.modify(g, 1, { split: false, uvSmooth: false, preserveEdges: true });
+    if (out !== g) g.dispose();
+    smoothNormals(out, deg);
+    if (inflate) {
+      // dirección promediada por posición: los vértices repetidos se mueven juntos (sin grietas)
+      const p = out.attributes.position, n = out.attributes.normal, acc = new Map<string, THREE.Vector3>();
+      const key = (i: number) => `${p.getX(i).toFixed(4)},${p.getY(i).toFixed(4)},${p.getZ(i).toFixed(4)}`;
+      const keys: string[] = [];
+      for (let i = 0; i < p.count; i++) { const k = key(i); keys.push(k); (acc.get(k) ?? acc.set(k, V(0, 0, 0)).get(k)!).add(V(n.getX(i), n.getY(i), n.getZ(i))); }
+      for (const v of acc.values()) v.normalize().multiplyScalar(inflate);
+      for (let i = 0; i < p.count; i++) { const d = acc.get(keys[i])!; p.setXYZ(i, p.getX(i) + d.x, p.getY(i) + d.y, p.getZ(i) + d.z); }
+    }
+    return out;
+  };
+  faceMesh.geometry = subdiv(faceGeo, 70);
   finish(faceMesh);
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
   const byKit = new Map<HeadKit, THREE.BufferGeometry[]>();
   for (const h of hairPieces) (byKit.get(h.kit) ?? byKit.set(h.kit, []).get(h.kit)!).push(h.geo);
-  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finish(new THREE.Mesh(smoothNormals(g, 55), material(kit))); }
+  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finish(new THREE.Mesh(subdiv(g, 55, 0.014), material(kit))); }
   const mg = mergeGeoms(mouth);
   if (mg) finish(new THREE.Mesh(mg, material(o.face)));
   for (const d of decals) {

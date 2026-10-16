@@ -14,7 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "@pmndrs/assets": "^1.7.0",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "three-subdivide": "^1.1.5"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.1.1",

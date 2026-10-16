@@ -119,6 +119,31 @@ const PI = Math.PI;
 /** KayKit mide ~2.4 unidades: lo llevamos a ~1.55 m, proporción de la escena. */
 const UNIT = 0.65;
 
+/**
+ * Toque "premium" para los materiales del personaje: luz de contorno cálida
+ * (fresnel) y, en la cabeza, el anillo de brillo del pelo típico del anime.
+ */
+function charm(m: THREE.MeshStandardMaterial, hairRing = false) {
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
+      {
+        vec3 vd = normalize(vViewPosition);
+        float fr = pow(1.0 - clamp(dot(normal, vd), 0.0, 1.0), 3.0);
+        outgoingLight += vec3(1.0, 0.82, 0.66) * fr * 0.22 * (0.4 + diffuseColor.rgb);
+        ${hairRing ? `
+        vec2 cell = floor(vMapUv * 8.0);
+        if (cell.x == 1.0 && cell.y < 2.0) {
+          float ny = normal.y;
+          float ring = smoothstep(0.3, 0.5, ny) * (1.0 - smoothstep(0.62, 0.82, ny));
+          outgoingLight += (diffuseColor.rgb * 0.7 + 0.18) * ring * 0.55;
+        }` : ''}
+      }
+      #include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey = () => (hairRing ? 'charm-hair' : 'charm');
+  return m;
+}
+
 export class Character {
   root = new THREE.Group();
   private model!: THREE.Object3D;
@@ -172,7 +197,7 @@ export class Character {
         const map: [number[], string][] = [[SKIN, skin], [HAIR, hair]];
         if (withCloth) map.push([CLOTH_CELLS[kit].primary, P], [CLOTH_CELLS[kit].secondary, S]);
         const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        m = new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, map), roughness: 0.7, metalness: 0 });
+        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, map), roughness: 0.7, metalness: 0 }));
         matCache.set(k, m);
         this.owned.push(m);
       }
@@ -185,7 +210,7 @@ export class Character {
       let m = headMats.get(kit);
       if (!m) {
         const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        m = new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.7 });
+        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6 }), true);
         headMats.set(kit, m);
         this.owned.push(m);
       }
@@ -200,7 +225,7 @@ export class Character {
     const hatKind = !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
-      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], fem: d.sex === 1, flattenEars: d.race !== 'humano', hat: hatKind,
+      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], fem: d.sex === 1, flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
     }, headMat, flatMat);
     this.bones.get('head')!.add(head.group);
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
