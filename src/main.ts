@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { world } from './paint';
 import { buildEnv } from './env';
-import { Character } from './character';
+import { Character, loadKits } from './character';
 import { setupStage, castShadows } from './render';
 import {
-  CharData, Race, ClassId, RACES, CLASSES, EYES, EYE_NAMES, HAIR_COLORS, CLOTH, CLOTH_NAMES,
-  EYE_SHAPES, BROWS, faceOptions, detailOptions, defaultChar, randomChar, randomName, sanitize,
+  CharData, Race, ClassId, RACES, CLASSES, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, FACES,
+  defaultChar, randomChar, randomName, sanitize,
 } from './data';
 
 
@@ -85,8 +85,8 @@ function updateCamera(dt: number) {
   const head = char.headWorld(tmp);
   const mobile = window.innerWidth <= 760;
   let ty: number, dist: number;
-  if (focus === 'face') { ty = head.y - 0.03; dist = 1.15; }
-  else { ty = head.y * 0.52; dist = 2.9 + head.y * 1.1; }
+  if (focus === 'face') { ty = head.y - 0.02; dist = 1.7; }
+  else { ty = head.y * 0.5; dist = 3.6 + head.y * 1.3; }
   if (mobile) { dist *= focus === 'face' ? 1.5 : 1.75; ty += focus === 'face' ? 0.02 : 0.15; }
   dist *= zoom;
   const k = 1 - Math.exp(-dt * 4);
@@ -134,7 +134,7 @@ function cards<T extends string>(el: HTMLElement, items: Record<T, { label: stri
   });
 }
 
-function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'eyes' | 'hairColor' | 'primary' | 'secondary', names: () => string[]) {
+function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'primary' | 'secondary', names: () => string[]) {
   return () => {
     el.innerHTML = '';
     const ns = names();
@@ -150,7 +150,7 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'eyes' 
   };
 }
 
-function stepper(key: 'detail' | 'hair' | 'eyeShape' | 'brows' | 'nose' | 'mouth', list: () => string[]) {
+function stepper(key: 'face' | 'trait', list: () => string[]) {
   const el = $(`.stepper[data-key="${key}"]`);
   el.innerHTML = `<button aria-label="Anterior">‹</button><div class="val"></div><button aria-label="Siguiente">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
@@ -176,16 +176,11 @@ cards($('#classes'), CLASSES, CLASS_ICONS, (k) => {
 
 const renders = [
   swatches($('#skin'), () => RACES[state.race].skins, 'skin', () => RACES[state.race].skinNames),
-  swatches($('#eyes'), () => EYES, 'eyes', () => EYE_NAMES),
-  swatches($('#hairColor'), () => HAIR_COLORS, 'hairColor', () => []),
+  swatches($('#hairColor'), () => HAIR_COLORS, 'hairColor', () => HAIR_NAMES),
   swatches($('#primary'), () => CLOTH, 'primary', () => CLOTH_NAMES),
   swatches($('#secondary'), () => CLOTH, 'secondary', () => CLOTH_NAMES),
-  stepper('detail', () => detailOptions(state.race, state.sex)?.list ?? []),
-  stepper('hair', () => RACES[state.race].hairStyles),
-  stepper('eyeShape', () => EYE_SHAPES),
-  stepper('brows', () => BROWS),
-  stepper('nose', () => faceOptions(state.race).nose),
-  stepper('mouth', () => faceOptions(state.race).mouth),
+  stepper('face', () => FACES[state.sex].map((f) => f.label)),
+  stepper('trait', () => RACES[state.race].traits),
 ];
 
 document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {
@@ -208,13 +203,10 @@ function refreshUI() {
   document.querySelectorAll<HTMLElement>('#sex button').forEach((b) => b.classList.toggle('active', Number(b.dataset.v) === state.sex));
   $<HTMLInputElement>('#height').value = String(state.height);
   $<HTMLInputElement>('#build').value = String(state.build);
-  const det = detailOptions(state.race, state.sex);
-  $('#detailBox').hidden = !det;
-  if (det) $('#detailLabel').textContent = det.label;
-  $('#hairLabel').textContent = RACES[state.race].hairLabel;
-  const F = faceOptions(state.race);
-  $('#browBox').hidden = !F.brows;
-  $('#noseLabel').textContent = F.noseLabel;
+  const R = RACES[state.race];
+  $('#traitBox').hidden = !R.traitLabel;
+  if (R.traitLabel) $('#traitLabel').textContent = R.traitLabel;
+  $('#hairNote').textContent = state.race === 'pelso' ? 'El color también tiñe las orejas y la cola.' : '';
   if (document.activeElement !== nameInput) nameInput.value = state.name;
   renders.forEach((r) => r());
 }
@@ -266,6 +258,7 @@ $('#enter').onclick = () => {
 
 // ---------------- Bucle ----------------
 const clock = new THREE.Clock();
+await loadKits();
 rebuildNow();
 refreshUI();
 layout();

@@ -5,6 +5,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import sunsetExr from '@pmndrs/assets/hdri/sunset.exr';
 
 // ---------------------------------------------------------------------------
 // Iluminación de escena y postprocesado: sol de atardecer con sombras suaves,
@@ -59,11 +60,9 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   // Reflejos e iluminación ambiental de un HDRI de atardecer
   scene.environmentIntensity = 0.4;
   const pmrem = new THREE.PMREMGenerator(renderer);
-  import('@pmndrs/assets/hdri/sunset.exr').then((m) => {
-    new EXRLoader().load(m.default, (tex) => {
-      scene.environment = pmrem.fromEquirectangular(tex).texture;
-      tex.dispose();
-    });
+  new EXRLoader().load(sunsetExr, (tex) => {
+    scene.environment = pmrem.fromEquirectangular(tex).texture;
+    tex.dispose();
   });
 
   // Postprocesado
