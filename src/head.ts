@@ -25,7 +25,6 @@ export interface HeadOptions {
   mouth: number;
   detail: number;
   eyeColor: string;
-  fem: boolean;
   /** Aplanar las orejas humanas (elfos, Pelso, Lagto'). */
   flattenEars: boolean;
   hat: 'none' | 'helmet' | 'wizard' | 'bear';
@@ -61,9 +60,9 @@ const CENTER = new THREE.Vector3(0, 1.62, -0.02);
 export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Coleta de lado'];
 export const BEARDS = ['Ninguna', 'Barba completa', 'Barba corta', 'Perilla', 'Bigote', 'Patillas'];
 export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos'];
-export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Enfadadas', 'Preocupadas', 'Sin cejas'];
-export const NOSES = ['Original', 'Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón'];
-export const MOUTHS = ['Sin boca', 'Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo'];
+export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Enfadadas', 'Preocupadas'];
+export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón'];
+export const MOUTHS = ['Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo'];
 export const DETAILS = ['Ninguno', 'Rubor', 'Pecas', 'Cicatriz', 'Pintura de guerra', 'Lunar'];
 export const FACE_LABELS: Record<HeadKit, string> = { Mage: 'Serio', Knight: 'Noble', Rogue: 'Dulce', Barbarian: 'Rudo' };
 export const FACE_KITS: HeadKit[] = ['Rogue', 'Mage', 'Knight'];
@@ -276,7 +275,6 @@ const EYE = [
 const BROW = [
   { t: 0.022, l: 0.15, dy: 0, rot: 0.05, arc: 0.2 }, { t: 0.012, l: 0.14, dy: 0.008, rot: 0.04, arc: 0.3 }, { t: 0.034, l: 0.17, dy: -0.004, rot: 0, arc: 0.1 },
   { t: 0.02, l: 0.14, dy: 0.04, rot: 0.02, arc: 0.45 }, { t: 0.026, l: 0.16, dy: -0.01, rot: 0.38, arc: 0 }, { t: 0.022, l: 0.15, dy: 0.015, rot: -0.32, arc: 0.1 },
-  { t: 0, l: 0, dy: 0, rot: 0, arc: 0 },
 ];
 
 export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, material: (kit: HeadKit) => THREE.Material, extraMat: (c: string) => THREE.Material): HeadResult {
@@ -303,12 +301,12 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const q = d.clone();
       // narices finas: la de KayKit es una patata; se reduce y se le da forma
       switch (o.nose) {
-        case 1: q.multiplyScalar(0.4); q.x *= 0.85; break;
-        case 2: q.multiplyScalar(0.8); break;
-        case 3: q.multiplyScalar(0.5); q.y += Math.max(0, d.z) * 0.35; q.x *= 0.8; break;
-        case 4: q.multiplyScalar(0.55); q.x *= 1.45; break;
-        case 5: q.multiplyScalar(0.62); q.z *= 1.2; q.x *= 0.75; q.y -= Math.max(0, d.z) * 0.25; break;
-        case 6: q.multiplyScalar(0.48); q.x *= 1.15; break;
+        case 0: q.multiplyScalar(0.4); q.x *= 0.85; break;
+        case 1: q.multiplyScalar(0.8); break;
+        case 2: q.multiplyScalar(0.5); q.y += Math.max(0, d.z) * 0.35; q.x *= 0.8; break;
+        case 3: q.multiplyScalar(0.55); q.x *= 1.45; break;
+        case 4: q.multiplyScalar(0.62); q.z *= 1.2; q.x *= 0.75; q.y -= Math.max(0, d.z) * 0.25; break;
+        case 5: q.multiplyScalar(0.48); q.x *= 1.15; break;
       }
       if (beast) q.multiplyScalar(0.35);
       p.lerp(noseBase.clone().add(q), w);
@@ -399,11 +397,11 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       kitHair('Rogue');
       for (const s of [-1, 1]) for (let k = 0; k < 4; k++) hairPieces.push({ geo: blob(0.11 - k * 0.015, V(s * (0.5 + k * 0.03), 1.78 - k * 0.14, -0.18 - k * 0.03), V(1, 1.3, 1)), kit: o.face });
       break;
-    case 7: // cresta
-      if (!hasHat) for (let k = 0; k < 6; k++) {
-        const a = 0.42 - k * 0.38;
-        const p = V(0, CENTER.y + Math.cos(a) * 0.52, CENTER.z + Math.sin(a) * 0.5);
-        hairPieces.push({ geo: piece(new THREE.ConeGeometry(0.1, 0.32 - Math.abs(k - 2) * 0.03, 4).translate(0, 0.12, 0), hairCell, compose(p, new THREE.Euler(a, 0, 0), V(0.5, 1, 1.4))), kit: o.face });
+    case 7: // cresta: franja de pelo de la frente a la nuca
+      if (!hasHat) for (let k = 0; k < 8; k++) {
+        const a = 0.75 - k * 0.3;
+        const p = V(0, CENTER.y + Math.cos(a) * 0.5, CENTER.z + Math.sin(a) * 0.5);
+        hairPieces.push({ geo: blob(0.13, p, V(0.42, 1.25 - Math.abs(k - 2.5) * 0.06, 0.9), new THREE.Euler(a, 0, 0), 2), kit: o.face });
       }
       break;
     case 8: // melena larga
@@ -440,24 +438,6 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       break;
   }
 
-  // ---------- Barba ----------
-  const BB = analyse(sources.Barbarian).hair;
-  if (o.beard > 0 && BB) {
-    const keep = (t: number) => {
-      const c = triCentroid(BB, t);
-      if (c.y > 1.6 && Math.abs(c.x) < 0.36) return false; // cejas del bárbaro
-      switch (o.beard) {
-        case 2: return c.y > 1.25 || Math.abs(c.x) > 0.3;
-        case 3: return Math.abs(c.x) < 0.17 && c.y < 1.42;
-        case 4: return c.y > 1.36 && c.y < 1.48 && Math.abs(c.x) < 0.3 && c.z > 0.3;
-        case 5: return Math.abs(c.x) > 0.33 && c.y > 1.3;
-        default: return true;
-      }
-    };
-    const beard = subset(BB, keep);
-    if (beard.count) hairPieces.push({ geo: toGeometry(beard), kit: 'Barbarian' });
-  }
-
   // ---------- Boca ----------
   const surface = (x: number, y: number) => {
     const rc = new THREE.Raycaster(V(x, y, 2), V(0, 0, -1));
@@ -468,21 +448,98 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const facing = (x: number, y: number) => { const n = surface(x, y).n; return new THREE.Euler(-Math.asin(THREE.MathUtils.clamp(n.y, -1, 1)), Math.atan2(n.x, n.z), 0); };
   const mouthY = nose.y - 0.105;
   const mouth: THREE.BufferGeometry[] = [];
+  const teeth: THREE.BufferGeometry[] = [];
   const arc = (r: number, t: number, a0: number, a1: number) => new THREE.TorusGeometry(r, t, 5, 14, a1 - a0).rotateZ(a0);
   const mp = onFace(0, mouthY, 0.012), mr = facing(0, mouthY);
   switch (o.mouth) {
-    case 1:
+    case 0:
       if (o.race === 'pelso') for (const sx of [-1, 1]) mouth.push(piece(arc(0.03, 0.011, PI * 1.05, PI * 1.95), C_DARK, compose(mp.clone().add(V(sx * 0.03, 0.022, 0)), mr, V(1, 1, 0.4))));
       else mouth.push(piece(arc(0.06, 0.014, PI * 1.2, PI * 1.8), C_DARK, compose(mp.clone().add(V(0, 0.05, 0)), mr, V(1, 0.85, 0.4))));
       break;
-    case 2: mouth.push(piece(new THREE.CircleGeometry(0.075, 14, PI, PI), C_DARK, compose(mp.clone().add(V(0, 0.012, 0.004)), mr, V(1, 0.85, 1)))); break;
-    case 3: mouth.push(piece(new THREE.CapsuleGeometry(0.011, 0.08, 3, 6).rotateZ(PI / 2), C_DARK, compose(mp, mr, V(1, 1, 0.5)))); break;
-    case 4: mouth.push(piece(new THREE.TorusGeometry(0.034, 0.012, 5, 14), C_DARK, compose(mp, mr, V(0.85, 1.05, 0.5)))); break;
-    case 5: mouth.push(piece(arc(0.06, 0.012, PI * 1.25, PI * 1.85), C_DARK, compose(mp.clone().add(V(0.02, 0.05, 0)), new THREE.Euler(mr.x, mr.y, 0.22), V(1, 0.8, 0.4)))); break;
-    case 6:
-      mouth.push(piece(arc(0.07, 0.013, PI * 1.18, PI * 1.82), C_DARK, compose(mp.clone().add(V(0, 0.06, 0)), mr, V(1, 0.9, 0.4))));
-      mouth.push(piece(new THREE.ConeGeometry(0.018, 0.04, 4).rotateX(PI), C_WHITE, compose(onFace(0.04, mouthY - 0.012, 0.012), mr, V(1, 1, 0.6)), 0.1, 0.1));
+    case 1: mouth.push(piece(new THREE.CircleGeometry(0.075, 14, PI, PI), C_DARK, compose(mp.clone().add(V(0, 0.012, 0.004)), mr, V(1, 0.85, 1)))); break;
+    case 2: mouth.push(piece(new THREE.CapsuleGeometry(0.011, 0.08, 3, 6).rotateZ(PI / 2), C_DARK, compose(mp, mr, V(1, 1, 0.5)))); break;
+    case 3: mouth.push(piece(new THREE.TorusGeometry(0.034, 0.012, 5, 14), C_DARK, compose(mp, mr, V(0.85, 1.05, 0.5)))); break;
+    case 4: mouth.push(piece(arc(0.06, 0.012, PI * 1.25, PI * 1.85), C_DARK, compose(mp.clone().add(V(0.02, 0.05, 0)), new THREE.Euler(mr.x, mr.y, 0.22), V(1, 0.8, 0.4)))); break;
+    case 5:
+      mouth.push(piece(arc(0.06, 0.014, PI * 1.2, PI * 1.8), C_DARK, compose(mp.clone().add(V(0, 0.05, 0)), mr, V(1, 0.85, 0.4))));
+      teeth.push(piece(new THREE.ConeGeometry(0.018, 0.04, 4).rotateX(PI), C_WHITE, compose(onFace(0.04, mouthY - 0.012, 0.012), mr, V(1, 1, 0.6)), 0.1, 0.1));
       break;
+  }
+
+  // ---------- Barba ----------
+  // Láminas lisas que siguen la cara: más gruesas en el centro y finas en el borde,
+  // así no se ven bordes duros. El pelo final las suaviza con el resto del peinado.
+  if (o.beard > 0) {
+    const my = mouthY;
+    const nearMouth = (x: number, y: number) => Math.hypot(x / 1.3, y - (my + 0.005)) < 0.065;
+    /** Lámina sobre la cara: rejilla (u, v) proyectada con rayos; por defecto desde delante (u = x). */
+    const sheet = (inside: (x: number, y: number) => boolean, T: number, fall: number,
+      ray = (u: number, v: number) => [V(u, v, 2), V(0, 0, -1)] as const, u0 = -0.48, u1 = 0.48) => {
+      const st = 0.012, xs: number[] = [], ys: number[] = [];
+      for (let x = u0; x <= u1 + 1e-6; x += st) xs.push(x);
+      for (let y = my - 0.36; y <= A.eyeY; y += st) ys.push(y);
+      const W = xs.length, H = ys.length;
+      const node: ({ p: THREE.Vector3; n: THREE.Vector3 } | null)[] = [];
+      const inn: boolean[] = [];
+      const rc = new THREE.Raycaster();
+      for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+        const ok = inside(xs[c], ys[r]);
+        inn.push(ok);
+        let hit = null;
+        if (ok) {
+          const [ro, rd] = ray(xs[c], ys[r]);
+          rc.set(ro, rd);
+          const h = rc.intersectObjects([faceRay, capRay])[0];
+          if (h) hit = { p: h.point, n: h.face!.normal.clone() };
+        }
+        node.push(hit);
+      }
+      // distancia (en celdas) al borde de la zona: el grosor se afina hacia fuera
+      const out: [number, number][] = [];
+      for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (!inn[r * W + c]) out.push([r, c]);
+      const pos: number[] = [], idx = new Map<number, number>();
+      for (let k = 0; k < W * H; k++) {
+        const nd = node[k];
+        if (!nd) continue;
+        const r = Math.floor(k / W), c = k % W;
+        let dmin = 99;
+        for (const [orr, oc] of out) { const d = Math.hypot(orr - r, oc - c); if (d < dmin) dmin = d; }
+        const t = 0.003 + T * THREE.MathUtils.smoothstep(dmin * st, 0, fall);
+        const q = nd.p.clone().addScaledVector(nd.n, t);
+        idx.set(k, pos.length / 3);
+        pos.push(q.x, q.y, q.z);
+      }
+      const tri: number[] = [];
+      for (let r = 0; r < H - 1; r++) for (let c = 0; c < W - 1; c++) {
+        const a = idx.get(r * W + c), b = idx.get(r * W + c + 1), d = idx.get((r + 1) * W + c), e = idx.get((r + 1) * W + c + 1);
+        if (a === undefined || b === undefined || d === undefined || e === undefined) continue;
+        tri.push(a, b, e, a, e, d);
+      }
+      if (!tri.length) return;
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array((pos.length / 3) * 2).fill(0), 2));
+      g.setIndex(tri);
+      const flat = g.toNonIndexed();
+      flat.computeVertexNormals();
+      paintCell(flat, hairCell, 0.4, 0.6);
+      hairPieces.push({ geo: flat, kit: o.face });
+    };
+    const fullZone = (x: number, y: number) => {
+      const ax = Math.abs(x), top = ax > 0.32 ? my + 0.06 : ax > 0.14 ? my : my - 0.04;
+      return y <= top && y >= my - 0.36 && !nearMouth(x, y);
+    };
+    const stache = (x: number, y: number) => Math.abs(x) < 0.18 && y > my + 0.03 - x * x * 1.6 && y < my + 0.075 - x * x * 1.2;
+    switch (o.beard) {
+      case 1: sheet((x, y) => fullZone(x, y) || stache(x, y), 0.05, 0.07); break;
+      case 2: sheet(fullZone, 0.022, 0.04); break;
+      case 3: sheet((x, y) => Math.abs(x) < 0.1 && y < my - 0.035 && y > my - 0.36, 0.04, 0.05); break;
+      case 4: sheet(stache, 0.03, 0.025); break;
+      case 5: // patillas: desde el costado (u = profundidad z)
+        for (const sx of [-1, 1]) sheet((z, y) => z > -0.06 && z < 0.08 + (y - my) * 0.3 && y > my - 0.03 && y < A.eyeY - 0.02, 0.028, 0.03,
+          (z, y) => [V(sx * 2, y, z), V(-sx, 0, 0)] as const, -0.1, 0.2);
+        break;
+    }
   }
 
   /**
@@ -490,7 +547,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
    * desplaza en profundidad hasta la superficie, conservando su capa (z local).
    * Así no sobresalen de perfil.
    */
-  const conform = (grp: THREE.Object3D, lift: number) => {
+  const conform = (grp: THREE.Object3D, lift: number, clampY?: number) => {
     grp.updateMatrix();
     const N = V(0, 0, 1).applyQuaternion(grp.quaternion), inv = grp.matrix.clone().invert();
     const rc = new THREE.Raycaster(), memo = new Map<string, number>();
@@ -513,6 +570,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const g = m.geometry.clone().applyMatrix4(m.matrix);
       m.geometry.dispose();
       const p = g.attributes.position;
+      if (clampY !== undefined) for (let i = 0; i < p.count; i++) if (p.getY(i) > clampY) p.setY(i, clampY);
       for (let i = 0; i < p.count; i++) p.setZ(i, p.getZ(i) + depth(p.getX(i), p.getY(i)) + lift);
       g.computeVertexNormals();
       m.geometry = g;
@@ -524,7 +582,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const decals: THREE.Object3D[] = [];
   const eyes: THREE.Object3D[] = [];
   const happy: THREE.Object3D[] = [];
-  const pupil = extraMat('#16101a'), white = extraMat('#ffffff'), lidMat = material(o.face);
+  const pupil = extraMat('#16101a'), white = extraMat('#ffffff');
   for (const s of [-1, 1]) {
     const x = s * A.eyeX * 0.96, y = A.eyeY - 0.012;
     const r = facing(x, y);
@@ -559,29 +617,23 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // rabillo del delineado hacia fuera
     const wing = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.05, 4).translate(0, 0.025, 0), pupil);
     wing.position.set(s * E.rx * 1.02, E.ry * 0.28, 0.012);
-    wing.rotation.z = -s * (o.fem ? 1.05 : 1.35);
-    wing.scale.set(o.makeup === 5 ? 1.3 : 1, o.makeup === 5 ? 2 : o.fem ? 1.1 : 0.7, 0.3);
+    wing.rotation.z = -s * (o.makeup === 6 ? 1.05 : 1.2);
+    wing.scale.set(o.makeup === 6 ? 1.3 : 1, o.makeup === 6 ? 2 : 0.9, 0.3);
     eye.add(wing);
     // brillo inferior suave del iris
     const shine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 4, 16, PI * 0.6).rotateZ(PI * 1.2), extraMat('#' + iris.clone().lerp(new THREE.Color('#ffffff'), 0.6).getHexString()));
     shine.scale.set(E.rx * 0.82, E.ry * 0.82, 0.3);
     shine.position.z = 0.009;
     eye.add(shine);
-    if (o.fem) for (const k of [0, 1]) {
+    if ((o.makeup ?? 0) > 0) for (const k of [0, 1]) {
       const lash = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 4).translate(0, 0.025, 0), pupil);
       lash.position.set(s * E.rx * (0.82 + k * 0.05), E.ry * (0.62 - k * 0.32), 0.012);
       lash.rotation.z = -s * (0.9 + k * 0.5);
       lash.scale.z = 0.3;
       eye.add(lash);
     }
-    if (E.lid) {
-      const lid = new THREE.Mesh(paintCell(new THREE.SphereGeometry(1, 16, 8, 0, PI * 2, 0, PI * 0.5), C_SKIN, 0.3, 0.6), lidMat);
-      lid.scale.set(E.rx * 1.12, E.ry * 1.12, 0.03);
-      lid.position.set(0, -E.ry * (1 - E.lid) * 1.1, 0.02);
-      lid.scale.y = E.ry * 1.15;
-      eye.add(lid);
-    }
-    conform(eye, 0.007);
+    // ojos soñolientos: el párpado corta el ojo por arriba en recto
+    conform(eye, 0.007, E.lid ? E.ry * (1 - E.lid * 1.4) : undefined);
     decals.push(eye);
     // ojos de alegría: arco cerrado
     const hap = new THREE.Group();
@@ -597,7 +649,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // ceja
     if (B.t > 0) {
       const by = y + E.ry + 0.055 + B.dy, bx = x + s * 0.01;
-      const bg = new THREE.CapsuleGeometry(B.t * 0.8, B.l, 3, 8).rotateZ(PI / 2);
+      const bg = new THREE.CapsuleGeometry(B.t * 0.62, B.l, 3, 8).rotateZ(PI / 2);
       // afilada hacia fuera y con un leve arco
       const bp = bg.attributes.position;
       for (let i = 0; i < bp.count; i++) {
@@ -643,7 +695,10 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   switch (o.detail) {
     case 1: break;
     case 2: for (const s of [-1, 1]) for (let k = 0; k < 5; k++) decal(new THREE.CircleGeometry(0.011, 6), '#a0603a', s * (0.2 + (k % 3) * 0.045), cheekY + (k % 2 ? 0.03 : -0.01) - (k > 2 ? 0.035 : 0), 0, V(1, 1, 1), 0.006); break;
-    case 3: decal(new THREE.BoxGeometry(0.018, 0.2, 0.01), '#b8605a', 0.25, A.eyeY - 0.02, 0.35); break;
+    case 3: // cicatriz en la mejilla, con puntadas
+      decal(new THREE.CapsuleGeometry(0.008, 0.11, 2, 6), '#c47a70', 0.27, cheekY + 0.01, 0.5, V(1, 1, 0.4), 0.008);
+      for (const k of [-1, 0, 1]) decal(new THREE.CapsuleGeometry(0.004, 0.04, 2, 4), '#a8605a', 0.27 - k * 0.03 * Math.sin(0.5), cheekY + 0.01 + k * 0.03 * Math.cos(0.5), 0.5 + PI / 2, V(1, 1, 0.4), 0.01);
+      break;
     case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) decal(new THREE.BoxGeometry(0.17, 0.028, 0.01), '#3a6ab8', s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
     case 5: decal(new THREE.CircleGeometry(0.016, 10), '#3a2420', 0.2, mouthY + 0.01, 0, V(1, 1, 1), 0.006); break;
   }
@@ -855,7 +910,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   }
   // maquillaje
   const mk = o.makeup ?? 0;
-  if (mk === 1 || mk === 3) {
+  if (mk === 2 || mk === 4) {
     const shadow = new THREE.MeshBasicMaterial({ map: blushMat.map, color: accCol, transparent: true, opacity: 0.75, depthWrite: false });
     for (const s of [-1, 1]) {
       const x = s * A.eyeX * 0.96, y = A.eyeY - 0.012 + E.ry * 0.95;
@@ -865,7 +920,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       decals.push(m);
     }
   }
-  if (mk === 4) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
+  if (mk === 5) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
     const x = s * (A.eyeX + 0.06 + k * 0.035), y = A.eyeY - 0.1 - (k % 2) * 0.04;
     const m = new THREE.Mesh(star(0.014 + (k === 1 ? 0.006 : 0), 0.002), new THREE.MeshBasicMaterial({ color: '#fffbe8' }));
     const r = facing(x, y);
@@ -882,8 +937,10 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
   for (const h of finalHair) finish(new THREE.Mesh(h.geo, material(h.kit)));
   const mg = mergeGeoms(mouth);
-  const lips = o.makeup === 2 || o.makeup === 3;
+  const lips = o.makeup === 3 || o.makeup === 4;
   if (mg) finish(new THREE.Mesh(mg, lips ? extraMat('#d4486a') : material(o.face)));
+  const tg = mergeGeoms(teeth);
+  if (tg) finish(new THREE.Mesh(tg, material(o.face)));
   for (const d of decals) {
     d.updateMatrix();
     d.applyMatrix4(toBone);

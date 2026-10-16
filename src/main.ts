@@ -330,9 +330,7 @@ const renders = [
 document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {
   b.onclick = () => {
     const sex = Number(b.dataset.v) as 0 | 1;
-    if (sex !== state.sex) {
-      if (sex === 1) { state.face = 0; state.hair = 3; state.beard = 0; state.eyeShape = 1; } else { state.face = 1; state.hair = 1; state.eyeShape = 0; }
-    }
+    // mismo modelo para los dos: el sexo solo cambia el cuerpo (y nada de la cara)
     set('sex', sex, true);
   };
 });
