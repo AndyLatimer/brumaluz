@@ -451,6 +451,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const teeth: THREE.BufferGeometry[] = [];
   const arc = (r: number, t: number, a0: number, a1: number) => new THREE.TorusGeometry(r, t, 5, 14, a1 - a0).rotateZ(a0);
   const mp = onFace(0, mouthY, 0.012), mr = facing(0, mouthY);
+  const mouthZ = mp.z - 0.012;
   switch (o.mouth) {
     case 0:
       if (o.race === 'pelso') for (const sx of [-1, 1]) mouth.push(piece(arc(0.03, 0.011, PI * 1.05, PI * 1.95), C_DARK, compose(mp.clone().add(V(sx * 0.03, 0.022, 0)), mr, V(1, 1, 0.4))));
@@ -617,19 +618,20 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // rabillo del delineado hacia fuera
     const wing = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.05, 4).translate(0, 0.025, 0), pupil);
     wing.position.set(s * E.rx * 1.02, E.ry * 0.28, 0.012);
-    wing.rotation.z = -s * (o.makeup === 6 ? 1.05 : 1.2);
-    wing.scale.set(o.makeup === 6 ? 1.3 : 1, o.makeup === 6 ? 2 : 0.9, 0.3);
+    wing.rotation.z = -s * 1.05;
+    wing.scale.set(o.makeup === 6 ? 1.3 : 1, o.makeup === 6 ? 2 : 1.1, 0.3);
     eye.add(wing);
     // brillo inferior suave del iris
     const shine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 4, 16, PI * 0.6).rotateZ(PI * 1.2), extraMat('#' + iris.clone().lerp(new THREE.Color('#ffffff'), 0.6).getHexString()));
     shine.scale.set(E.rx * 0.82, E.ry * 0.82, 0.3);
     shine.position.z = 0.009;
     eye.add(shine);
-    if ((o.makeup ?? 0) > 0) for (const k of [0, 1]) {
+    const longLash = (o.makeup ?? 0) > 0;
+    for (const k of [0, 1]) {
       const lash = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 4).translate(0, 0.025, 0), pupil);
       lash.position.set(s * E.rx * (0.82 + k * 0.05), E.ry * (0.62 - k * 0.32), 0.012);
       lash.rotation.z = -s * (0.9 + k * 0.5);
-      lash.scale.z = 0.3;
+      lash.scale.set(1, longLash ? 1.5 : 1, 0.3);
       eye.add(lash);
     }
     // ojos soñolientos: el párpado corta el ojo por arriba en recto
@@ -649,7 +651,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // ceja
     if (B.t > 0) {
       const by = y + E.ry + 0.055 + B.dy, bx = x + s * 0.01;
-      const bg = new THREE.CapsuleGeometry(B.t * 0.62, B.l, 3, 8).rotateZ(PI / 2);
+      const bg = new THREE.CapsuleGeometry(B.t * 0.72, B.l, 3, 8).rotateZ(PI / 2);
       // afilada hacia fuera y con un leve arco
       const bp = bg.attributes.position;
       for (let i = 0; i < bp.count; i++) {
@@ -936,10 +938,23 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   finish(faceMesh);
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
   for (const h of finalHair) finish(new THREE.Mesh(h.geo, material(h.kit)));
-  const mg = mergeGeoms(mouth);
+  // la boca sigue la curva de la cara (en la cara "Dulce" los labios abultan y la tapaban)
+  const hugFace = (g: THREE.BufferGeometry | null) => {
+    if (!g) return g;
+    const p = g.attributes.position, memo = new Map<string, number>();
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), k = `${Math.round(x * 300)},${Math.round(y * 300)}`;
+      let sz = memo.get(k);
+      if (sz === undefined) { sz = surface(x, y).p.z; memo.set(k, sz); }
+      p.setZ(i, sz + 0.006 + Math.max(0, p.getZ(i) - mouthZ));
+    }
+    g.computeVertexNormals();
+    return g;
+  };
+  const mg = hugFace(mergeGeoms(mouth));
   const lips = o.makeup === 3 || o.makeup === 4;
   if (mg) finish(new THREE.Mesh(mg, lips ? extraMat('#d4486a') : material(o.face)));
-  const tg = mergeGeoms(teeth);
+  const tg = hugFace(mergeGeoms(teeth));
   if (tg) finish(new THREE.Mesh(tg, material(o.face)));
   for (const d of decals) {
     d.updateMatrix();

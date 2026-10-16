@@ -243,7 +243,6 @@ export class Character {
     if (this.opts.outfit) {
       for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
       if (outfit.cape) this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true));
-      if (d.sex === 1) this.addBust(outfit.kit, mat(outfit.kit, true));
     } else {
       // ropa de diario: torso, mangas y piernas combinables de los cuatro modelos
       const top = OUTFIT_KITS[d.top], arms = OUTFIT_KITS[d.arms], legs = OUTFIT_KITS[d.legs];
@@ -253,7 +252,6 @@ export class Character {
         this.addSkinned(legs, `${legs}_Leg${side}`, mat(legs, true));
       }
       if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1]; this.addRigid(k, `${k}_Cape`, mat(k, true)); }
-      if (d.sex === 1) this.addBust(top, mat(top, true));
     }
     if (outfit.hat) {
       // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
@@ -302,40 +300,6 @@ export class Character {
     m.bind(new THREE.Skeleton(bones, src.skeleton.boneInverses), src.bindMatrix);
     m.frustumCulled = false;
     return m;
-  }
-
-  /**
-   * Pecho de la mujer: dos volúmenes suaves sobre el torso, con el mismo color
-   * de tela que la prenda en ese punto, colgados del hueso del pecho.
-   */
-  private addBust(kit: Kit, material: THREE.Material) {
-    const src = kits[kit].scene.getObjectByName(`${kit}_Body`) as THREE.SkinnedMesh | undefined;
-    const chest = this.bones.get('chest');
-    if (!src || !chest) return;
-    const ci = src.skeleton.bones.findIndex((b) => b.name === 'chest');
-    const toBone = new THREE.Matrix4().multiplyMatrices(src.skeleton.boneInverses[ci], src.bindMatrix);
-    const probe = new THREE.Mesh(src.geometry, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
-    const rc = new THREE.Raycaster();
-    for (const s of [-1, 1]) {
-      const x = s * 0.075, y = 1.0;
-      rc.set(new THREE.Vector3(x, y, 2), new THREE.Vector3(0, 0, -1));
-      const hit = rc.intersectObject(probe)[0];
-      if (!hit || !hit.uv) continue;
-      // mismo punto de la textura que la prenda: el color encaja exacto
-      const g = new THREE.SphereGeometry(1, 20, 14);
-      const uv = g.attributes.uv as THREE.BufferAttribute;
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, hit.uv.x, hit.uv.y);
-      g.scale(0.105, 0.09, 0.06);
-      g.rotateY(s * 0.22);
-      g.rotateX(0.22);
-      g.translate(x, y - 0.01, hit.point.z - 0.036);
-      g.applyMatrix4(toBone);
-      this.owned.push(g);
-      const m = new THREE.Mesh(g, material);
-      m.castShadow = true;
-      chest.add(m);
-    }
-    probe.material.dispose();
   }
 
   /** Clona una pieza rígida (sombrero, arma) y la cuelga del mismo hueso en el esqueleto base. */
