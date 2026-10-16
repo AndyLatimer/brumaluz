@@ -7,7 +7,7 @@ export type ClassId = 'guerrero' | 'mago' | 'picaro' | 'clerigo' | 'explorador';
 export interface CharData {
   name: string;
   race: Race;
-  sex: 0 | 1; // 0 hombre, 1 mujer: solo para pronombres, no cambia el modelo
+  sex: 0 | 1; // 0 hombre, 1 mujer: el cuerpo es el mismo; al cambiarlo se ajusta la personalización
   height: number; // 0..1
   build: number; // 0..1
   skin: number;
@@ -118,7 +118,7 @@ export const CAPES = ['Sin capa', 'Capa corta', 'Capa de mago', 'Capa noble', 'C
 export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Diadema', 'Pluma'];
 export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda'];
 export const CITY_WEAR = ['Traje de clase', 'Ropa de diario'];
-export const MAKEUPS = ['Ninguno', 'Pestañas largas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno'];
+export const MAKEUPS = ['Ninguno', 'Pestañas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno'];
 export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036'];
 export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro'];
 
@@ -129,8 +129,8 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 0,
-    hair: 3, hairColor: 2, beard: 0, eyeShape: 1, eyeColor: 1, brows: 0, nose: 0, mouth: 0, detail: 0,
+    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 1,
+    hair: 1, hairColor: 2, beard: 0, eyeShape: 0, eyeColor: 1, brows: 0, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0, cityWear: 0,
   };
@@ -186,14 +186,14 @@ export function randomChar(): CharData {
     name: randomName(race), race, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: rnd(3),
-    hair: rnd(HAIR_STYLES.length), hairColor: rnd(HAIR_COLORS.length),
-    beard: Math.random() < 0.7 ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),
+    hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11][rnd(6)], hairColor: rnd(HAIR_COLORS.length),
+    beard: sex ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),
     brows: rnd(BROWS.length), nose: rnd(NOSES.length), mouth: rnd(MOUTHS.length), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
     cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),
     top: rnd(TOPS.length), arms: rnd(ARMS.length), legs: rnd(LEGS.length), cape: Math.random() < 0.6 ? 0 : rnd(CAPES.length),
     clothA: rnd(CLOTH.length), clothB: rnd(CLOTH.length),
     hairAcc: Math.random() < 0.5 ? 0 : rnd(HAIR_ACCS.length), acc: Math.random() < 0.6 ? 0 : rnd(ACCS.length),
-    makeup: Math.random() < 0.4 ? rnd(MAKEUPS.length) : 0, accColor: rnd(ACC_COLORS.length), cityWear: 0,
+    makeup: sex ? 1 + (Math.random() < 0.5 ? 0 : rnd(MAKEUPS.length - 1)) : 0, accColor: rnd(ACC_COLORS.length), cityWear: 0,
   };
 }

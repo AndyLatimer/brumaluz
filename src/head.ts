@@ -497,7 +497,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       }
       // distancia (en celdas) al borde de la zona: el grosor se afina hacia fuera
       const out: [number, number][] = [];
-      for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (!inn[r * W + c]) out.push([r, c]);
+      for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (!inn[r * W + c] || !node[r * W + c]) out.push([r, c]); // también donde la cara acaba (mandíbula)
       const pos: number[] = [], idx = new Map<number, number>();
       for (let k = 0; k < W * H; k++) {
         const nd = node[k];
@@ -618,20 +618,21 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // rabillo del delineado hacia fuera
     const wing = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.05, 4).translate(0, 0.025, 0), pupil);
     wing.position.set(s * E.rx * 1.02, E.ry * 0.28, 0.012);
-    wing.rotation.z = -s * 1.05;
-    wing.scale.set(o.makeup === 6 ? 1.3 : 1, o.makeup === 6 ? 2 : 1.1, 0.3);
+    // con pestañas, el rabillo es más largo y sube (el ojo «dulce» de antes)
+    const lashes = (o.makeup ?? 0) > 0;
+    wing.rotation.z = -s * (lashes ? 1.05 : 1.35);
+    wing.scale.set(o.makeup === 6 ? 1.3 : 1, o.makeup === 6 ? 2 : lashes ? 1.1 : 0.7, 0.3);
     eye.add(wing);
     // brillo inferior suave del iris
     const shine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 4, 16, PI * 0.6).rotateZ(PI * 1.2), extraMat('#' + iris.clone().lerp(new THREE.Color('#ffffff'), 0.6).getHexString()));
     shine.scale.set(E.rx * 0.82, E.ry * 0.82, 0.3);
     shine.position.z = 0.009;
     eye.add(shine);
-    const longLash = (o.makeup ?? 0) > 0;
-    for (const k of [0, 1]) {
+    if (lashes) for (const k of [0, 1]) {
       const lash = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 4).translate(0, 0.025, 0), pupil);
       lash.position.set(s * E.rx * (0.82 + k * 0.05), E.ry * (0.62 - k * 0.32), 0.012);
       lash.rotation.z = -s * (0.9 + k * 0.5);
-      lash.scale.set(1, longLash ? 1.5 : 1, 0.3);
+      lash.scale.set(1, o.makeup === 6 ? 1.4 : 1, 0.3);
       eye.add(lash);
     }
     // ojos soñolientos: el párpado corta el ojo por arriba en recto
@@ -651,7 +652,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     // ceja
     if (B.t > 0) {
       const by = y + E.ry + 0.055 + B.dy, bx = x + s * 0.01;
-      const bg = new THREE.CapsuleGeometry(B.t * 0.72, B.l, 3, 8).rotateZ(PI / 2);
+      const bg = new THREE.CapsuleGeometry(B.t * 0.8, B.l, 3, 8).rotateZ(PI / 2);
       // afilada hacia fuera y con un leve arco
       const bp = bg.attributes.position;
       for (let i = 0; i < bp.count; i++) {

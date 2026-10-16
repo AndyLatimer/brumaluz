@@ -215,8 +215,7 @@ export class Character {
       let m = headMats.get(kit);
       if (!m) {
         const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        // doble cara: por los huecos de los mechones se ve su interior, no el fondo
-        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6, side: THREE.DoubleSide }), true);
+        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6 }), true);
         headMats.set(kit, m);
         this.owned.push(m);
       }

@@ -330,7 +330,11 @@ const renders = [
 document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {
   b.onclick = () => {
     const sex = Number(b.dataset.v) as 0 | 1;
-    // mismo modelo para los dos: el sexo solo cambia el cuerpo (y nada de la cara)
+    // al cambiar de sexo se aplica una personalización de partida acorde (todo se puede cambiar después)
+    if (sex !== state.sex) {
+      if (sex === 1) Object.assign(state, { face: 0, hair: 3, beard: 0, eyeShape: 1, makeup: Math.max(state.makeup, 1) });
+      else Object.assign(state, { face: 1, hair: 1, eyeShape: 0, makeup: 0 });
+    }
     set('sex', sex, true);
   };
 });
