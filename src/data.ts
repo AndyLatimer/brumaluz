@@ -129,8 +129,8 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 1,
-    hair: 1, hairColor: 2, beard: 0, eyeShape: 0, eyeColor: 1, brows: 0, nose: 0, mouth: 0, detail: 0,
+    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
+    hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0, cityWear: 0,
   };
@@ -185,9 +185,9 @@ export function randomChar(): CharData {
   return {
     name: randomName(race), race, sex,
     height: Math.random(), build: Math.random(),
-    skin: rnd(R.skins.length), face: rnd(3),
+    skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11][rnd(6)], hairColor: rnd(HAIR_COLORS.length),
-    beard: sex ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),
+    beard: sex ? 0 : rnd(BEARDS.length), eyeShape: sex ? rnd(7) : [0, 2, 3, 7, 8][rnd(5)], eyeColor: rnd(EYE_COLORS.length),
     brows: rnd(BROWS.length), nose: rnd(NOSES.length), mouth: rnd(MOUTHS.length), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
     cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),
