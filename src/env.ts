@@ -11,6 +11,7 @@ export interface Env {
 
 export function buildEnv(scene: THREE.Scene): Env {
   const flames: THREE.Sprite[] = [];
+  const songbirds: { mesh: THREE.LineSegments; radius: number; height: number; speed: number; phase: number }[] = [];
 
   // ---------------- Cielo pintado ----------------
   const sky = new THREE.Mesh(
@@ -94,9 +95,39 @@ export function buildEnv(scene: THREE.Scene): Env {
   });
   scene.add(new THREE.Points(pg, pm));
 
+  // Bandada lejana: siluetas discretas que cruzan el cielo sobre las murallas.
+  const birdMaterial = new THREE.LineBasicMaterial({ color: '#624d50', transparent: true, opacity: 0.7, depthWrite: false });
+  for (let i = 0; i < 7; i++) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      -0.32, 0, 0, 0, 0.08, 0,
+      0, 0.08, 0, 0.32, 0, 0,
+    ], 3));
+    const mesh = new THREE.LineSegments(geometry, birdMaterial);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    songbirds.push({
+      mesh,
+      radius: 34 + Math.random() * 28,
+      height: 17 + Math.random() * 9,
+      speed: 0.035 + Math.random() * 0.02,
+      phase: Math.random() * PI * 2,
+    });
+  }
+
   return {
     update(t: number) {
       flames.forEach((f, i) => f.scale.setScalar(1.25 + Math.sin(t * 9 + i * 2) * 0.08 + Math.sin(t * 23 + i) * 0.05));
+      songbirds.forEach((bird, i) => {
+        const angle = t * bird.speed + bird.phase;
+        bird.mesh.position.set(Math.cos(angle) * bird.radius, bird.height + Math.sin(angle * 1.7 + i) * 1.2, Math.sin(angle) * bird.radius);
+        bird.mesh.rotation.y = -angle;
+        const positions = bird.mesh.geometry.attributes.position as THREE.BufferAttribute;
+        const flap = Math.sin(t * 9 + bird.phase) * 0.12;
+        positions.setY(1, 0.08 + flap);
+        positions.setY(2, 0.08 + flap);
+        positions.needsUpdate = true;
+      });
     },
   };
 }

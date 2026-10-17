@@ -44,9 +44,20 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
 ## Ciudad
 
 - Brumaluz está hecha con el pack **KayKit Medieval Hexagon** (Kay Lousberg, CC0) a escala ×4:
-  plaza con fuente, avenidas, barrio de casas, taberna, mercado, iglesia, herrería, castillo,
-  granja con molino, río con vado y bosques y montañas alrededor, rodeada de agua.
-- Las calles se eligen y giran solas según sus vecinos (`src/city.ts`).
+  plaza con fuente, avenidas, barrios residenciales, taberna, mercados, iglesia, herrería,
+  castillo, granja con molino, río con vado y bosques y montañas alrededor. Una muralla de
+  piedra rodea la capital y sus seis puertas conectan con las avenidas principales.
+- Las calles se eligen y giran solas según sus vecinos; las puertas y la muralla se generan
+  siguiendo el perímetro hexagonal y tienen colisión. El suelo continuo tiene colinas visibles
+  dentro y fuera de la muralla, con plataformas suavizadas bajo los edificios; la hierba low-poly
+  cubre también los claros entre casas y los islotes verdes de las calles, se mece con la brisa y
+  se inclina al paso del personaje. Hay flores silvestres, nenúfares y plantas de ribera, bancos con
+  colisión, puestos abastecidos junto a los comercios, bandadas de pájaros y un molino en movimiento.
+  Seis puntos de servicio estables (`city.vendorSpots`) permiten añadir vendedores y otros NPCs
+  más adelante sin rehacer la distribución.
+- Al entrar se oyen viento, agua del río, pájaros, murmullo lejano de ciudad y campanas ocasionales,
+  generados localmente con Web Audio; se pueden silenciar o reactivar desde el menú del juego. No se
+  descargan pistas externas.
 - Modo exploración: WASD o clic para moverse, Mayús para caminar, arrastrar para girar la cámara,
   rueda para acercar y E para saludar.
 

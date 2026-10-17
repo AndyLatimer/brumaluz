@@ -62,12 +62,15 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   // Reflejos e iluminación ambiental de un HDRI de atardecer
   scene.environmentIntensity = 0.4;
   const pmrem = new THREE.PMREMGenerator(renderer);
+  let hdrTexture: THREE.DataTexture | undefined;
   try {
-    const tex = loadEXR(sunsetExr);
-    scene.environment = pmrem.fromEquirectangular(tex).texture;
-    tex.dispose();
+    hdrTexture = loadEXR(sunsetExr);
+    scene.environment = pmrem.fromEquirectangular(hdrTexture).texture;
   } catch (e) {
     console.warn('Sin HDRI:', e);
+  } finally {
+    hdrTexture?.dispose();
+    pmrem.dispose();
   }
 
   // Postprocesado

@@ -429,6 +429,7 @@ body.playing #game-menu { display: block; position: fixed; top: 18px; right: 18p
 .game-menu-panel h2 { margin: 0 0 2px; color: var(--wood-2); font: 700 21px 'Cinzel Decorative', serif; }
 .game-language-switch { justify-self: end; margin: -38px 0 3px; }
 .game-menu-panel .btn { text-align: left; }
+.game-menu-panel #game-menu-sound[aria-pressed="false"] { opacity: .72; }
 .game-menu-panel .account-message { margin: 0; font-size: 14px; }
 body.playing #toast { left: 50%; }
 @media (max-width: 760px) {

@@ -11,6 +11,7 @@ import { buildEnv } from './env';
 import { Character, loadKits } from './character';
 import { setupStage, castShadows } from './render';
 import { buildCity, City } from './city';
+import { AmbientSoundscape } from './audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
   CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
@@ -50,6 +51,8 @@ let city: City;
 let char: Character;
 let pendingHop = false;
 let rebuildQueued = false;
+const ambientSoundscape = new AmbientSoundscape();
+let ambientEnabled = localStorage.getItem('brumaluz-ambient') !== 'off';
 
 function rebuildNow() {
   rebuildQueued = false;
@@ -181,6 +184,16 @@ function clickToMove(e: PointerEvent) {
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   const p = new THREE.Vector3();
   if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.1), p)) return;
+  let distance = ray.ray.origin.distanceTo(p);
+  for (let i = 0; i < 8; i++) {
+    ray.ray.at(distance, p);
+    const heightDifference = p.y - city.groundY(p.x, p.z);
+    if (Math.abs(heightDifference) < 0.05) break;
+    if (Math.abs(ray.ray.direction.y) < 1e-3) return;
+    distance += heightDifference / -ray.ray.direction.y;
+    if (distance < 0) return;
+  }
+  p.y = city.groundY(p.x, p.z);
   moveTarget = p;
   marker.position.set(p.x, city.groundY(p.x, p.z) + 0.03, p.z);
   marker.visible = true;
@@ -222,6 +235,7 @@ function updatePlay(dt: number) {
 function enterPlay() {
   mode = 'play';
   document.body.classList.add('playing');
+  void setAmbientEnabled(ambientEnabled);
   yaw = city.spawnYaw; pitch = 0.55; followDist = 12;
   camera.fov = 50;
   holder.rotation.y = city.spawnYaw + Math.PI;
@@ -231,6 +245,7 @@ function enterPlay() {
 }
 function exitPlay() {
   mode = 'create';
+  void ambientSoundscape.setEnabled(false);
   setGameMenuOpen(false, false);
   document.body.classList.remove('playing');
   keys.clear();
@@ -259,6 +274,7 @@ function refreshLanguageDependentUI() {
     button.title = t(button.dataset.language === 'es' ? 'Español' : 'English');
   }
   refreshUI();
+  $('#game-menu-sound').textContent = t(ambientEnabled ? 'Sonido ambiental: activado' : 'Sonido ambiental: desactivado');
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -290,6 +306,30 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
   keys.clear();
   if (open) $<HTMLButtonElement>('#game-menu-characters').focus();
   else if (restoreFocus) toggle.focus();
+}
+
+async function setAmbientEnabled(enabled: boolean) {
+  ambientEnabled = enabled;
+  const button = $<HTMLButtonElement>('#game-menu-sound');
+  button.textContent = t(enabled ? 'Sonido ambiental: activado' : 'Sonido ambiental: desactivado');
+  button.setAttribute('aria-pressed', String(enabled));
+  localStorage.setItem('brumaluz-ambient', enabled ? 'on' : 'off');
+  try {
+    await ambientSoundscape.setEnabled(enabled);
+  } catch (error) {
+    reportAmbientError(error);
+  }
+}
+
+function reportAmbientError(error: unknown) {
+  console.error('No se pudo iniciar el sonido ambiental:', error);
+  ambientEnabled = false;
+  void ambientSoundscape.setEnabled(false);
+  const button = $<HTMLButtonElement>('#game-menu-sound');
+  button.textContent = t('Sonido ambiental: desactivado');
+  button.setAttribute('aria-pressed', 'false');
+  $('#game-menu-message').textContent = t('No se pudo iniciar el sonido ambiental.');
+  localStorage.setItem('brumaluz-ambient', 'off');
 }
 
 function set<K extends keyof CharData>(key: K, value: CharData[K], hop = false) {
@@ -485,7 +525,11 @@ let toastValues: Record<string, string | number> = {};
 function renderToast() {
   if (!toastSourceTitle && !toastSourceText) return;
   const element = $('#toast');
-  element.innerHTML = `<h2>${t(toastSourceTitle, toastValues)}</h2><p>${t(toastSourceText, toastValues)}</p>`;
+  const heading = document.createElement('h2');
+  heading.textContent = t(toastSourceTitle, toastValues);
+  const message = document.createElement('p');
+  message.textContent = t(toastSourceText, toastValues);
+  element.replaceChildren(heading, message);
 }
 function toast(title: string, text: string, error = false, values: Record<string, string | number> = {}) {
   toastSourceTitle = title;
@@ -922,6 +966,7 @@ $('#sign-out').onclick = async () => {
 $('#new-character').onclick = startNewCharacter;
 $('#account-characters').onclick = () => { void returnToCharacters(); };
 $('#game-menu-toggle').onclick = () => setGameMenuOpen(!gameMenuOpen);
+$('#game-menu-sound').onclick = () => { void setAmbientEnabled(!ambientEnabled); };
 $('#game-menu-characters').onclick = () => { void returnToCharacters(); };
 $('#game-menu-logout').onclick = async () => {
   const logoutButton = $<HTMLButtonElement>('#game-menu-logout');
@@ -946,6 +991,13 @@ document.addEventListener('click', (event) => {
   }
 });
 $('#enter').onclick = async () => {
+  if (ambientEnabled) {
+    try {
+      await ambientSoundscape.prepare();
+    } catch (error) {
+      reportAmbientError(error);
+    }
+  }
   if (!(await saveCurrentCharacter())) return;
   spinVel = 0;
   focus = 'body';
@@ -987,7 +1039,7 @@ function testCity(): City {
   const ground = new THREE.Mesh(new THREE.CircleGeometry(6, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#c9b48a' }));
   ground.receiveShadow = true;
   root.add(ground);
-  return { root, collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  return { root, vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 const clock = new THREE.Clock();
 try {
@@ -1017,7 +1069,7 @@ renderer.setAnimationLoop(() => {
   }
   char.update(t);
   env.update(t);
-  city.update(t);
+  city.update(t, mode === 'play' ? holder.position : undefined);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
   if (TEST) renderer.render(scene, camera); else stage.render();
