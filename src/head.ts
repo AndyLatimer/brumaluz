@@ -441,11 +441,43 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     p.needsUpdate = true;
     return g;
   };
-  const skinParts: THREE.BufferGeometry[] = [];
-  const frontZ = (x: number, y: number) => {
-    const h = new THREE.Raycaster(V(x, y, 2), V(0, 0, -1)).intersectObject(headRay)[0];
-    return h ? h.point.z : 0.44;
+  /**
+   * Rayo contra la cabeza resuelto con su fórmula (sin recorrer triángulos):
+   * avanza hasta entrar y afina por bisección. Mil veces más rápido que el raycast.
+   */
+  const insideHead = (x: number, y: number, z: number) => {
+    const vx = x - HEAD_C.x, vy = y - HEAD_C.y, vz = z - HEAD_C.z, L = Math.hypot(vx, vy, vz);
+    return L < 1e-6 || L < headR(_dir.set(vx / L, vy / L, vz / L));
   };
+  const _dir = V(0, 0, 0);
+  const rayHead = (o: THREE.Vector3, d: THREE.Vector3): { point: THREE.Vector3; normal: THREE.Vector3 } | null => {
+    // entrada en la esfera que envuelve la cabeza
+    const ox = o.x - HEAD_C.x, oy = o.y - HEAD_C.y, oz = o.z - HEAD_C.z;
+    const bq = ox * d.x + oy * d.y + oz * d.z, cq = ox * ox + oy * oy + oz * oz - 0.56 * 0.56, disc = bq * bq - cq;
+    if (disc < 0) return null;
+    let t = Math.max(0, -bq - Math.sqrt(disc));
+    const tEnd = -bq + Math.sqrt(disc);
+    let prev = t, hit = false;
+    for (; t <= tEnd; t += 0.006) {
+      if (insideHead(o.x + d.x * t, o.y + d.y * t, o.z + d.z * t)) { hit = true; break; }
+      prev = t;
+    }
+    if (!hit) return null;
+    let a = prev, b = t;
+    for (let i = 0; i < 18; i++) { const m = (a + b) / 2; if (insideHead(o.x + d.x * m, o.y + d.y * m, o.z + d.z * m)) b = m; else a = m; }
+    const point = V(o.x + d.x * b, o.y + d.y * b, o.z + d.z * b);
+    // normal: gradiente numérico de la superficie
+    const F = (x: number, y: number, z: number) => { const vx = x - HEAD_C.x, vy = y - HEAD_C.y, vz = z - HEAD_C.z, L = Math.hypot(vx, vy, vz); return L - headR(_dir.set(vx / L, vy / L, vz / L)); };
+    const e = 0.002;
+    const normal = V(
+      F(point.x + e, point.y, point.z) - F(point.x - e, point.y, point.z),
+      F(point.x, point.y + e, point.z) - F(point.x, point.y - e, point.z),
+      F(point.x, point.y, point.z + e) - F(point.x, point.y, point.z - e),
+    ).normalize();
+    return { point, normal };
+  };
+  const skinParts: THREE.BufferGeometry[] = [];
+  const frontZ = (x: number, y: number) => rayHead(V(x, y, 2), V(0, 0, -1))?.point.z ?? 0.44;
   {
     // nariz: una pieza lisa, pequeña y medio hundida
     const NS: [number, number, number, number][] = [ // ancho, alto, fondo, giro
@@ -477,77 +509,109 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const p = V(T.pos[i * 3], y, T.pos[i * 3 + 2]).sub(CENTER).multiplyScalar(k).add(CENTER);
       T.pos.set([p.x, p.y, p.z], i * 3);
     }
-    hairPieces.push({ geo: toGeometry(T, hatShrink < 1), kit });
+    hairPieces.push({ geo: pushOut(settle(toGeometry(T, true), 0.02), 0.014), kit }); // el pelo base se asienta sobre el cráneo y nunca entra
   };
   const hairCell = C_HAIR;
   const blob = (r: number, p: THREE.Vector3, s: THREE.Vector3, rot = new THREE.Euler(), detail = 1) =>
     piece(new THREE.IcosahedronGeometry(r, detail), hairCell, compose(p, rot, s));
+  /**
+   * Mechón liso: un tubo que sigue una curva y se estrecha hasta una punta redonda.
+   * braid: ondas de trenzado; flat: aplastado de lado (cresta); taperStart: afina también el inicio.
+   */
+  const strand = (pts: THREE.Vector3[], r0: number, r1: number, opt: { braid?: number; flat?: number; taperStart?: boolean } = {}) => {
+    const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+    const N = 56, M = 18, fr = curve.computeFrenetFrames(N, false);
+    const pos: number[] = [], idx: number[] = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, c = curve.getPointAt(t);
+      let r = THREE.MathUtils.lerp(r0, r1, t);
+      if (t > 0.82) r *= Math.sqrt(Math.max(0, 1 - ((t - 0.82) / 0.18) ** 2)); // punta redonda
+      if (opt.taperStart && t < 0.15) r *= Math.sqrt(Math.max(0, 1 - ((0.15 - t) / 0.15) ** 2));
+      if (opt.braid) r *= 0.82 + 0.3 * Math.abs(Math.sin(PI * opt.braid * t));
+      const off = opt.braid ? Math.sin(PI * opt.braid * t) * r * 0.25 : 0;
+      for (let j = 0; j < M; j++) {
+        const a = (j / M) * PI * 2, cx = Math.cos(a) * r * (opt.flat ?? 1) + off, cy = Math.sin(a) * r;
+        pos.push(c.x + fr.normals[i].x * cy + fr.binormals[i].x * cx, c.y + fr.normals[i].y * cy + fr.binormals[i].y * cx, c.z + fr.normals[i].z * cy + fr.binormals[i].z * cx);
+      }
+    }
+    for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) {
+      const a = i * M + j, b = i * M + ((j + 1) % M), c2 = a + M, d = b + M;
+      idx.push(a, c2, b, b, c2, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const flat = g.toNonIndexed();
+    g.dispose();
+    smoothNormals(flat, 80);
+    return paintCell(flat, hairCell, 0.2, 0.8);
+  };
   const hasHat = o.hat !== 'none';
   switch (o.hair) {
     case 1: kitHair('Mage'); break;
     case 2: kitHair('Knight'); break;
     case 3: kitHair('Rogue'); break;
-    case 4: // coleta
+    case 4: // coleta: nudo en la nuca y una cola lisa que cae
       kitHair('Rogue');
-      // pegada a la nuca: nudo hundido en el pelo y cola que cae solapada
-      hairPieces.push({ geo: blob(0.11, V(0, 1.8, -0.46), V(1, 1, 1), new THREE.Euler(), 2), kit: o.face });
-      for (let k = 0; k < 4; k++) hairPieces.push({ geo: blob(0.12 - k * 0.016, V(0, 1.68 - k * 0.14, -0.53 - Math.sin(k * 0.6) * 0.04), V(1, 1.35, 1), new THREE.Euler(), 2), kit: o.face });
+      hairPieces.push({ geo: blob(0.1, V(0, 1.78, -0.47), V(1, 0.9, 0.85), new THREE.Euler(), 3), kit: o.face });
+      hairPieces.push({ geo: strand([V(0, 1.78, -0.5), V(0, 1.7, -0.62), V(0, 1.5, -0.67), V(0, 1.3, -0.63), V(0.02, 1.13, -0.58)], 0.1, 0.05), kit: o.face });
       break;
     case 5: // moño
       kitHair('Mage');
-      if (!hasHat) hairPieces.push({ geo: blob(0.19, V(0, 2.1, -0.24), V(1, 0.9, 1), new THREE.Euler(), 2), kit: o.face });
+      if (!hasHat) hairPieces.push({ geo: blob(0.19, V(0, 2.1, -0.24), V(1, 0.9, 1), new THREE.Euler(), 3), kit: o.face });
       break;
     case 6: // dos coletas
       kitHair('Rogue');
-      for (const s of [-1, 1]) for (let k = 0; k < 4; k++) hairPieces.push({ geo: blob(0.11 - k * 0.015, V(s * (0.5 + k * 0.03), 1.78 - k * 0.14, -0.18 - k * 0.03), V(1, 1.3, 1)), kit: o.face });
-      break;
-    case 7: // cresta: franja de pelo de la frente a la nuca
-      if (!hasHat) for (let k = 0; k < 12; k++) {
-        const a = 0.8 - k * 0.2;
-        const p = V(0, CENTER.y + Math.cos(a) * 0.5, CENTER.z + Math.sin(a) * 0.5);
-        hairPieces.push({ geo: blob(0.12, p, V(0.42, 1.2 - Math.abs(k - 4) * 0.035, 1.1), new THREE.Euler(a, 0, 0), 2), kit: o.face });
+      for (const sx of [-1, 1]) {
+        hairPieces.push({ geo: blob(0.075, V(sx * 0.44, 1.82, -0.17), V(1, 1, 1), new THREE.Euler(), 3), kit: o.face });
+        hairPieces.push({ geo: strand([V(sx * 0.45, 1.82, -0.18), V(sx * 0.57, 1.74, -0.2), V(sx * 0.63, 1.55, -0.22), V(sx * 0.62, 1.36, -0.2), V(sx * 0.57, 1.22, -0.17)], 0.085, 0.04), kit: o.face });
       }
       break;
-    case 8: // melena larga
-      kitHair('Rogue');
+    case 7: // cresta: una franja continua de la frente a la nuca
+      if (!hasHat) {
+        const pts: THREE.Vector3[] = [];
+        for (let k = 0; k <= 10; k++) { const a = 0.85 - k * 0.22; pts.push(V(0, HEAD_C.y + Math.cos(a) * 0.5, HEAD_C.z + Math.sin(a) * 0.5)); }
+        hairPieces.push({ geo: strand(pts, 0.12, 0.07, { flat: 0.42, taperStart: true }), kit: o.face });
+      }
+      break;
+    case 8: // melena larga: masa redondeada a la espalda y dos mechones lisos junto a la cara
+      kitHair('Mage');
       {
-        // una sola masa redondeada a la espalda y dos mechones junto a la cara
-        const back = new THREE.SphereGeometry(1, 22, 16);
+        const back = new THREE.SphereGeometry(1, 28, 20);
         const bp = back.attributes.position;
         for (let i = 0; i < bp.count; i++) { const y = bp.getY(i); bp.setX(i, bp.getX(i) * (1 - Math.max(0, -y) * 0.22)); bp.setZ(i, bp.getZ(i) * (1 - Math.max(0, -y) * 0.3)); }
-        hairPieces.push({ geo: piece(back, hairCell, compose(V(0, 1.24, -0.27), new THREE.Euler(-0.08, 0, 0), V(0.5, 0.56, 0.32))), kit: o.face });
-        for (const sx of [-1, 1]) hairPieces.push({ geo: piece(new THREE.SphereGeometry(1, 14, 12), hairCell, compose(V(sx * 0.42, 1.24, 0.06), new THREE.Euler(0.1, 0, sx * 0.1), V(0.085, 0.3, 0.11))), kit: o.face });
+        hairPieces.push({ geo: piece(back, hairCell, compose(V(0, 1.36, -0.3), new THREE.Euler(-0.1, 0, 0), V(0.53, 0.64, 0.34))), kit: o.face });
+        for (const sx of [-1, 1]) hairPieces.push({ geo: strand([V(sx * 0.42, 1.55, 0.02), V(sx * 0.45, 1.38, 0.07), V(sx * 0.44, 1.2, 0.08), V(sx * 0.4, 1.06, 0.06)], 0.075, 0.035), kit: o.face });
       }
       break;
-    case 9: // trenza
+    case 9: // trenza: un mechón con ondas de trenzado
       kitHair('Mage');
-      for (let k = 0; k < 6; k++) hairPieces.push({ geo: blob(0.1 - k * 0.008, V((k % 2 ? 0.035 : -0.035), 1.72 - k * 0.13, -0.45 - k * 0.025), V(1, 1.15, 0.95), new THREE.Euler(), 2), kit: o.face });
-      hairPieces.push({ geo: piece(new THREE.ConeGeometry(0.07, 0.16, 6).rotateX(PI), hairCell, compose(V(0, 0.95, -0.6), new THREE.Euler(), V(1, 1, 1))), kit: o.face });
+      hairPieces.push({ geo: strand([V(0, 1.78, -0.44), V(0, 1.6, -0.56), V(0, 1.36, -0.61), V(0, 1.12, -0.6), V(0, 0.96, -0.57)], 0.09, 0.045, { braid: 7 }), kit: o.face });
       break;
     case 10: // moños dobles
       kitHair('Rogue');
-      if (!hasHat) for (const sx of [-1, 1]) hairPieces.push({ geo: blob(0.15, V(sx * 0.33, 2.08, -0.12), V(1, 0.92, 1), new THREE.Euler(), 2), kit: o.face });
+      if (!hasHat) for (const sx of [-1, 1]) hairPieces.push({ geo: blob(0.15, V(sx * 0.33, 2.08, -0.12), V(1, 0.92, 1), new THREE.Euler(), 3), kit: o.face });
       break;
     case 11: // rizos: media melena con bucles alrededor
       kitHair('Rogue');
-      // bucles grandes y solapados pegados al borde de la melena
+      // bucles redondos y solapados en el borde de la melena (cada uno, un rizo)
       for (let k = 0; k < 13; k++) {
         const a = -PI * 0.6 + (k / 12) * PI * 1.2;
-        hairPieces.push({ geo: blob(0.125, V(Math.sin(a) * 0.43, 1.36 - (k % 2) * 0.05, -Math.cos(a) * 0.36 - 0.06), V(1, 1.15, 0.9), new THREE.Euler(), 2), kit: o.face });
+        hairPieces.push({ geo: blob(0.115, V(Math.sin(a) * 0.43, 1.37 - (k % 2) * 0.045, -Math.cos(a) * 0.36 - 0.06), V(1, 1.1, 0.85), new THREE.Euler(), 3), kit: o.face });
       }
       break;
     case 12: // coleta de lado
       kitHair('Mage');
-      hairPieces.push({ geo: blob(0.085, V(0.43, 1.8, -0.2), V(1, 1, 1)), kit: o.face });
-      for (let k = 0; k < 4; k++) hairPieces.push({ geo: blob(0.115 - k * 0.016, V(0.52 + k * 0.025, 1.66 - k * 0.15, -0.22 - k * 0.02), V(1, 1.35, 1), new THREE.Euler(), 2), kit: o.face });
+      hairPieces.push({ geo: blob(0.075, V(0.44, 1.8, -0.2), V(1, 1, 1), new THREE.Euler(), 3), kit: o.face });
+      hairPieces.push({ geo: strand([V(0.45, 1.8, -0.21), V(0.58, 1.7, -0.24), V(0.64, 1.48, -0.26), V(0.61, 1.27, -0.23), V(0.55, 1.12, -0.19)], 0.1, 0.045), kit: o.face });
       break;
   }
 
   // ---------- Boca ----------
   const surface = (x: number, y: number) => {
-    const rc = new THREE.Raycaster(V(x, y, 2), V(0, 0, -1));
-    const hit = rc.intersectObject(headRay)[0];
-    return hit ? { p: hit.point, n: hit.face!.normal.clone() } : { p: V(x, y, 0.45), n: V(0, 0, 1) };
+    const hit = rayHead(V(x, y, 2), V(0, 0, -1));
+    return hit ? { p: hit.point, n: hit.normal } : { p: V(x, y, 0.45), n: V(0, 0, 1) };
   };
   const onFace = (x: number, y: number, out = 0.004) => { const s = surface(x, y); return s.p.add(s.n.clone().multiplyScalar(out)); };
   const facing = (x: number, y: number) => { const n = surface(x, y).n; return new THREE.Euler(-Math.asin(THREE.MathUtils.clamp(n.y, -1, 1)), Math.atan2(n.x, n.z), 0); };
@@ -637,14 +701,13 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const conform = (grp: THREE.Object3D, lift: number, clampY?: number) => {
     grp.updateMatrix();
     const N = V(0, 0, 1).applyQuaternion(grp.quaternion), inv = grp.matrix.clone().invert();
-    const rc = new THREE.Raycaster(), memo = new Map<string, number>();
+    const memo = new Map<string, number>();
     const depth = (lx: number, ly: number) => {
       const k = `${Math.round(lx * 400)},${Math.round(ly * 400)}`;
       let dz = memo.get(k);
       if (dz === undefined) {
         const b = V(lx, ly, 0).applyMatrix4(grp.matrix);
-        rc.set(b.clone().addScaledVector(N, 0.25), N.clone().negate());
-        const hit = rc.intersectObject(headRay)[0];
+        const hit = rayHead(b.clone().addScaledVector(N, 0.25), N.clone().negate());
         dz = hit ? hit.point.applyMatrix4(inv).z : 0;
         memo.set(k, dz);
       }
@@ -834,7 +897,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const byKit = new Map<HeadKit, THREE.BufferGeometry[]>();
   for (const h of hairPieces) (byKit.get(h.kit) ?? byKit.set(h.kit, []).get(h.kit)!).push(h.geo);
   const finalHair: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
-  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finalHair.push({ geo: smoothNormals(pushOut(settle(subdiv(g, 55, 0.006), 0.012), 0.012), 55), kit }); /* asentado y nunca dentro */ }
+  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finalHair.push({ geo: subdiv(g, 55, 0.006), kit }); }
   const hairGeos = [...finalHair, ...extras].map((h) => h.geo);
   const topRay = new THREE.Group();
   for (const g of hairGeos) topRay.add(new THREE.Mesh(g, headRay.material));
