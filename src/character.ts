@@ -276,6 +276,7 @@ export class Character {
     for (const clip of base.animations) this.actions.set(clip.name, this.mixer.clipAction(clip));
     this.idle = this.actions.get(outfit.idle) ?? this.actions.get('Idle')!;
     this.idle.play();
+    this.applyBodyShape();
     this.mixer.addEventListener('finished', (e) => {
       if (e.action !== this.idle) { this.idle.reset().fadeIn(0.3).play(); e.action.fadeOut(0.3); }
     });
@@ -596,20 +597,21 @@ export class Character {
     const scale = (name: string, x: number, y: number, z: number) => {
       this.bones.get(name)?.scale.set(x, y, z);
     };
+    this.model.scale.set(UNIT, UNIT * (1 + height * 0.16), UNIT);
     const hipsX = 1 + build * 0.05, hipsZ = 1 + build * 0.06;
-    const spineX = 1 + build * 0.05, spineY = 1 + height * 0.035, spineZ = 1 + build * 0.08;
-    const chestX = 1 + build * 0.08, chestY = 1 + height * 0.025, chestZ = 1 + build * 0.1;
+    const spineX = 1 + build * 0.05, spineY = 1, spineZ = 1 + build * 0.08;
+    const chestX = 1 + build * 0.08, chestY = 1, chestZ = 1 + build * 0.1;
     scale('hips', hipsX, 1, hipsZ);
     scale('spine', spineX, spineY, spineZ);
     scale('chest', chestX, chestY, chestZ);
     scale('head', (1 + build * 0.015) / (hipsX * spineX * chestX), (1 + build * 0.01) / (spineY * chestY), (1 + build * 0.015) / (hipsZ * spineZ * chestZ));
     for (const side of ['l', 'r']) {
-      scale(`upperarm.${side}`, 1 + build * 0.05, 1 + height * 0.07, 1 + build * 0.05);
-      scale(`lowerarm.${side}`, 1 + build * 0.04, 1 + height * 0.05, 1 + build * 0.04);
-      scale(`upperleg.${side}`, 1 + build * 0.06, 1 + height * 0.14, 1 + build * 0.06);
-      scale(`lowerleg.${side}`, 1 + build * 0.05, 1 + height * 0.1, 1 + build * 0.05);
+      scale(`upperarm.${side}`, 1 + build * 0.05, 1, 1 + build * 0.05);
+      scale(`lowerarm.${side}`, 1 + build * 0.04, 1, 1 + build * 0.04);
+      scale(`upperleg.${side}`, 1 + build * 0.06, 1, 1 + build * 0.06);
+      scale(`lowerleg.${side}`, 1 + build * 0.05, 1, 1 + build * 0.05);
     }
-    this.model.position.y = -height * 0.025;
+    this.model.position.y = 0;
   }
 
   dispose() {

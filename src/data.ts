@@ -3,6 +3,8 @@ import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAI
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
 export type ClassId = 'guerrero' | 'mago' | 'picaro' | 'clerigo' | 'explorador';
+export type LocationId = 'brumaluz';
+export const LOCATIONS: Record<LocationId, string> = { brumaluz: 'Brumaluz' };
 export type AttributeId = 'fuerza' | 'intelecto' | 'corpulencia' | 'agilidad' | 'pericia' | 'presencia' | 'percepcion';
 
 export interface AttributeDef {
@@ -31,6 +33,9 @@ const noBonuses = (): AttributeBonuses => ({
 
 export interface CharData {
   name: string;
+  level: number;
+  experience: number;
+  location: LocationId;
   race: Race;
   attributePoints: AttributeBonuses;
   sex: 0 | 1; // 0 hombre, 1 mujer: el cuerpo es el mismo; al cambiarlo se ajusta la personalización
@@ -160,7 +165,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
+    name: '', level: 1, experience: 0, location: 'brumaluz', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0, cityWear: 0,
@@ -170,6 +175,11 @@ export function defaultChar(): CharData {
 /** Repara datos guardados de versiones anteriores. */
 export function sanitize(d: Record<string, unknown>): CharData {
   const out = { ...defaultChar(), ...d } as CharData;
+  const level = Number(out.level);
+  const experience = Number(out.experience);
+  out.level = Number.isSafeInteger(level) ? Math.max(level, 1) : 1;
+  out.experience = Number.isSafeInteger(experience) ? Math.max(experience, 0) : 0;
+  if (typeof out.location !== 'string' || !Object.prototype.hasOwnProperty.call(LOCATIONS, out.location)) out.location = 'brumaluz';
   if (!(out.race in RACES)) out.race = 'humano';
   if (!(out.cls in CLASSES)) out.cls = 'guerrero';
   if (out.sex !== 0 && out.sex !== 1) out.sex = 0;
@@ -190,6 +200,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.skin = clamp(out.skin, R.skins.length);
   out.face = clamp(out.face, FACE_KITS.length);
   out.hair = clamp(out.hair, HAIR_STYLES.length);
+  if (Number(out.beard) === 5) out.beard = 0;
   out.beard = clamp(out.beard, BEARDS.length);
   out.eyeShape = clamp(out.eyeShape, EYE_SHAPES.length);
   out.eyeColor = clamp(out.eyeColor, EYE_COLORS.length);
@@ -228,7 +239,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    name: randomName(race), race, attributePoints: noBonuses(), sex,
+    name: randomName(race), level: 1, experience: 0, location: 'brumaluz', race, attributePoints: noBonuses(), sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11][rnd(6)], hairColor: rnd(HAIR_COLORS.length),

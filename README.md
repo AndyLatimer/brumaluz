@@ -5,19 +5,22 @@ MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 ## Cuentas y personajes
 
 - Registro e inicio de sesión se gestionan con Supabase Auth; el proyecto no guarda contraseñas.
+- Al registrarse, cada usuario elige un nombre de usuario único (3-20 letras ASCII, números o guion bajo). El acceso sigue usando correo y contraseña; el nombre de usuario identifica al jugador, aparece en la selección de personajes y es visible para otros usuarios autenticados.
 - La interfaz está disponible en español e inglés; el idioma se cambia con las banderas de acceso y del menú del juego y queda guardado en el navegador.
 - El acceso permite solicitar un correo de recuperación y cambiar la contraseña desde el enlace enviado por Supabase Auth.
 - Los personajes se guardan en `public.characters`, protegidos por políticas RLS para que cada cuenta solo acceda a los suyos.
 - Tras iniciar sesión aparece la selección de personajes. Desde ahí se puede jugar con uno existente o crear otro. Cada cuenta puede tener un máximo de cinco personajes; para crear más, primero hay que borrar uno. El creador guarda el personaje al pulsar «Guardar y entrar».
+- Cada personaje guarda su nivel (comienza en 1), sus puntos de experiencia (comienzan en 0) y su última ubicación; la tarjeta de selección muestra el nivel y la zona guardada. Por ahora solo está disponible Brumaluz. Los personajes antiguos sin ubicación se asignan automáticamente a Brumaluz.
 - Cada tarjeta de personaje permite borrarlo de la base de datos, tras confirmar escribiendo exactamente su nombre.
 
 ### Configuración de Supabase
 
-1. Crea un proyecto en [Supabase](https://supabase.com/) y ejecuta [`supabase/schema.sql`](./supabase/schema.sql) en el SQL Editor del proyecto. Si ya configuraste Supabase, vuelve a ejecutar el archivo actualizado para activar el límite de cinco personajes en la base de datos.
-2. En **Auth → URL Configuration**, configura el Site URL y permite `http://localhost:5173/**` como Redirect URL de desarrollo (y `http://127.0.0.1:5173/**` si accedes usando esa dirección), además del dominio final al desplegar. Añade también la URL de producción para que los enlaces de recuperación puedan volver a la aplicación.
-3. En la configuración de Auth, decide si quieres exigir confirmación de correo. Si está activada, el usuario deberá confirmarlo antes de iniciar sesión.
-4. Copia `.env.example` como `.env.local` y rellena `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` con los valores de **Project URL** y la clave pública/publishable del proyecto.
-5. Reinicia `npm run dev`. En producción, configura esas mismas variables en el servicio de despliegue y vuelve a compilar.
+1. Crea un proyecto en [Supabase](https://supabase.com/) y ejecuta [`supabase/schema.sql`](./supabase/schema.sql) en el SQL Editor del proyecto. Si ya configuraste Supabase, vuelve a ejecutar el archivo actualizado para crear los perfiles, activar el límite de cinco personajes y añadir el registro automático de nombres de usuario.
+2. Los usuarios que ya existían recibirán un perfil sin nombre de usuario. Asígnales uno manualmente desde el SQL Editor: consulta sus cuentas con `select u.id, u.email, p.username from auth.users u left join public.profiles p on p.user_id = u.id order by u.created_at;` y para cada persona ejecuta `update public.profiles set username = 'NombreElegido' where user_id = 'UUID';`. El índice único no distingue mayúsculas de minúsculas; usa nombres de 3-20 letras ASCII, números o guion bajo. No se debe modificar `auth.users` para hacer esta asignación.
+3. En **Auth → URL Configuration**, configura el Site URL y permite `http://localhost:5173/**` como Redirect URL de desarrollo (y `http://127.0.0.1:5173/**` si accedes usando esa dirección), además del dominio final al desplegar. Añade también la URL de producción para que los enlaces de recuperación puedan volver a la aplicación.
+4. En la configuración de Auth, decide si quieres exigir confirmación de correo. Si está activada, el usuario deberá confirmarlo antes de iniciar sesión.
+5. Copia `.env.example` como `.env.local` y rellena `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` con los valores de **Project URL** y la clave pública/publishable del proyecto.
+6. Reinicia `npm run dev`. En producción, configura esas mismas variables en el servicio de despliegue y vuelve a compilar.
 
 La clave publishable es para el navegador y está protegida por las políticas RLS de la base de datos. **No uses ni publiques una `service_role` o secret key en la web.** La autenticación real necesita el proyecto de Supabase y su esquema; sin esa configuración, el sitio muestra qué falta y no ofrece un acceso simulado.
 

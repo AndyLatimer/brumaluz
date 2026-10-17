@@ -41,6 +41,15 @@
       </svg>
     </button>
   </div>
+  <aside id="account-details" aria-label="Cuenta">
+    <p id="account-username"></p>
+    <p id="account-email"></p>
+    <button id="sign-out" type="button" class="sign-out-icon" aria-label="Cerrar sesión" title="Cerrar sesión">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4m4-4H9" />
+      </svg>
+    </button>
+  </aside>
   <main id="account-gate" aria-live="polite">
     <section id="auth-screen" class="account-card frame">
       <div class="account-brand"><span class="account-crest">✦</span><span>Crónicas de Brumaluz</span></div>
@@ -52,6 +61,10 @@
         <button type="button" data-auth-mode="register" role="tab" aria-selected="false">Crear cuenta</button>
       </div>
       <form id="auth-form">
+        <div id="username-field" hidden>
+          <label for="auth-username">Nombre de usuario</label>
+          <input id="auth-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" />
+        </div>
         <label for="auth-email">Correo electrónico</label>
         <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254" />
         <label for="auth-password">Contraseña</label>
@@ -85,17 +98,11 @@
     <section id="character-screen" class="account-card frame" hidden>
       <div class="account-brand">
         <span class="account-crest">✦</span><span>Crónicas de Brumaluz</span>
-        <button id="sign-out" type="button" class="sign-out-icon" aria-label="Cerrar sesión" title="Cerrar sesión">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4m4-4H9" />
-          </svg>
-        </button>
       </div>
       <div class="account-heading">
         <div>
           <p class="account-eyebrow">Tu aventura continúa</p>
           <h2>Tus personajes <span id="character-count" class="character-count" aria-label="Personajes guardados"></span></h2>
-          <p id="account-email" class="account-intro"></p>
         </div>
       </div>
       <p id="character-message" class="account-message" role="status"></p>
@@ -138,9 +145,6 @@
         <h3>Linaje</h3>
         <div class="cards" id="races"></div>
         <p class="desc" id="raceDesc"></p>
-        <h3>Atributos</h3>
-        <p id="attributePointsLeft" class="attribute-points-left" aria-live="polite"></p>
-        <div id="raceStats" class="race-stats"></div>
         <h3>Sexo</h3>
         <div class="seg" id="sex">
           <button data-v="0">Hombre</button>
@@ -149,6 +153,9 @@
         <h3>Cuerpo</h3>
         <label class="slider"><span>Altura</span><input type="range" id="height" min="0" max="1" step="0.01" /></label>
         <label class="slider"><span>Complexión</span><input type="range" id="build" min="0" max="1" step="0.01" /></label>
+        <h3>Atributos</h3>
+        <p id="attributePointsLeft" class="attribute-points-left" aria-live="polite"></p>
+        <div id="raceStats" class="race-stats"></div>
       </section>
       <section data-page="rostro">
         <h3>Tono de piel</h3>
@@ -160,8 +167,10 @@
         <div class="swatches small" id="eyeColor"></div>
         <h3>Cejas</h3>
         <div class="stepper" data-key="brows"></div>
-        <h3>Nariz</h3>
-        <div class="stepper" data-key="nose"></div>
+        <div id="noseBox">
+          <h3>Nariz</h3>
+          <div class="stepper" data-key="nose"></div>
+        </div>
         <h3>Boca</h3>
         <div class="stepper" data-key="mouth"></div>
         <h3>Barba</h3>

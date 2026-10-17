@@ -1,3 +1,69 @@
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  username text check (
+    username is null or (
+      char_length(username) between 3 and 20
+      and username collate pg_catalog."C" !~ '[^A-Za-z0-9_]'
+    )
+  )
+);
+
+create unique index if not exists profiles_username_unique
+  on public.profiles (lower(username collate pg_catalog."C"))
+  where username is not null;
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "Authenticated users can read profiles" on public.profiles;
+create policy "Authenticated users can read profiles"
+  on public.profiles for select to authenticated
+  using (true);
+
+revoke all on table public.profiles from anon, authenticated;
+grant select on public.profiles to authenticated;
+
+insert into public.profiles (user_id)
+select id from auth.users
+on conflict (user_id) do nothing;
+
+create or replace function public.create_profile_for_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  requested_username text;
+begin
+  requested_username := new.raw_user_meta_data ->> 'username';
+
+  if requested_username is null
+    or char_length(requested_username) not between 3 and 20
+    or requested_username collate pg_catalog."C" ~ '[^A-Za-z0-9_]' then
+    raise exception 'USERNAME_INVALID';
+  end if;
+
+  if exists (
+    select 1 from public.profiles
+    where lower(username collate pg_catalog."C") = lower(requested_username collate pg_catalog."C")
+  ) then
+    raise exception 'USERNAME_ALREADY_TAKEN';
+  end if;
+
+  insert into public.profiles (user_id, username)
+  values (new.id, requested_username);
+
+  return new;
+end;
+$$;
+
+revoke all on function public.create_profile_for_new_user() from public;
+
+drop trigger if exists on_auth_user_created_profile on auth.users;
+create trigger on_auth_user_created_profile
+  after insert on auth.users
+  for each row execute function public.create_profile_for_new_user();
+
 create table if not exists public.characters (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -6,6 +72,14 @@ create table if not exists public.characters (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+update public.characters
+set data = jsonb_set(
+  jsonb_set(data, '{level}', '1'::jsonb, true),
+  '{experience}', '0'::jsonb, true
+)
+where jsonb_typeof(data) = 'object'
+  and (not (data ? 'level') or not (data ? 'experience'));
 
 create unique index if not exists characters_user_name_unique
   on public.characters (user_id, lower(name));

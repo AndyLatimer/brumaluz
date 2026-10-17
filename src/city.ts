@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { loadGLB } from './load';
 import cityUrl from './assets/models/city.glb?url';
+import type { LocationId } from './data';
 
 // ---------------------------------------------------------------------------
 // Brumaluz: ciudad de casillas hexagonales con el pack "KayKit Medieval
@@ -65,6 +66,7 @@ export interface CityVendorSpot {
 
 export interface City {
   root: THREE.Group;
+  locationId: LocationId;
   /** Puntos despejados delante de los servicios, listos para alojar NPCs. */
   vendorSpots: CityVendorSpot[];
   /** Corrige un movimiento para no atravesar edificios ni agua. */
@@ -269,7 +271,7 @@ export async function buildCity(): Promise<City> {
     if (d >= 10) {
       const p = rnd();
       used.add(k);
-      if (d >= 11 && p < 0.55) P(['mountain_A_grass_trees', 'mountain_B_grass_trees', 'mountain_C_grass', 'hills_A_trees', 'hills_B_trees'][Math.floor(rnd() * 5)], q, r, Math.floor(rnd() * 6) * PI / 3);
+      if (d >= 11 && p < 0.55) P(['mountain_A_grass_trees', 'mountain_B_grass_trees', 'hills_A_trees', 'hills_B_trees'][Math.floor(rnd() * 4)], q, r, Math.floor(rnd() * 6) * PI / 3);
       else if (p < 0.8) P(['trees_A_large', 'trees_B_large', 'trees_A_medium', 'trees_B_medium'][Math.floor(rnd() * 4)], q, r, Math.floor(rnd() * 6) * PI / 3);
       else P(['hill_single_A', 'hill_single_B', 'hills_C_trees'][Math.floor(rnd() * 3)], q, r, rnd() * 6);
     } else if (d >= 7 && rnd() < 0.45) {
@@ -586,12 +588,12 @@ export async function buildCity(): Promise<City> {
     const centerGeometry = new THREE.SphereGeometry(0.055, 6, 4);
     const stems = new THREE.InstancedMesh(stemGeometry, new THREE.MeshStandardMaterial({ color: '#64843d', roughness: 1 }), blooms.length);
     const petals = new THREE.InstancedMesh(petalGeometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 }), blooms.length * 5);
-    const centers = new THREE.InstancedMesh(centerGeometry, new THREE.MeshStandardMaterial({ color: '#f3c75a', roughness: 0.85 }), blooms.length);
+    const centers = new THREE.InstancedMesh(centerGeometry, new THREE.MeshStandardMaterial({ color: '#806548', roughness: 0.85 }), blooms.length);
     const flowerMatrix = new THREE.Matrix4();
     const flowerPosition = new THREE.Vector3();
     const flowerRotation = new THREE.Quaternion();
     const flowerScale = new THREE.Vector3(1, 1, 1);
-    const palette = ['#f0c85b', '#e6858f', '#b6a0d1', '#f4ead0'].map((color) => new THREE.Color(color));
+    const palette = ['#d3a0a0', '#9c8bb2', '#e3ddd1', '#91a8a2'].map((color) => new THREE.Color(color));
     blooms.forEach((flower, i) => {
       flowerRotation.identity();
       flowerPosition.set(flower.x, flower.y + 0.15, flower.z);
@@ -710,6 +712,7 @@ export async function buildCity(): Promise<City> {
 
   return {
     root,
+    locationId: 'brumaluz',
     vendorSpots,
     collide,
     groundY,

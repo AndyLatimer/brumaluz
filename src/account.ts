@@ -6,6 +6,20 @@ export const MAX_CHARACTERS_PER_ACCOUNT = 5;
 interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          user_id: string;
+          username: string | null;
+        };
+        Insert: {
+          user_id: string;
+          username?: string | null;
+        };
+        Update: {
+          username?: string | null;
+        };
+        Relationships: [];
+      };
       characters: {
         Row: {
           id: string;
@@ -56,8 +70,12 @@ export function accountConfigError() {
   return 'Falta configurar VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY en .env.local.';
 }
 
-export async function signUp(email: string, password: string) {
-  const { data, error } = await requireClient().auth.signUp({ email, password });
+export async function signUp(username: string, email: string, password: string) {
+  const { data, error } = await requireClient().auth.signUp({
+    email,
+    password,
+    options: { data: { username } },
+  });
   if (error) throw error;
   return data;
 }
@@ -106,6 +124,16 @@ export async function listCharacters(userId: string) {
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return data;
+}
+
+export async function getProfileUsername(userId: string) {
+  const { data, error } = await requireClient()
+    .from('profiles')
+    .select('username')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.username ?? null;
 }
 
 export async function saveCharacter(userId: string, id: string | null, character: CharData) {

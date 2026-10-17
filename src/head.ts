@@ -67,9 +67,9 @@ const HEAD_SHAPES: Record<HeadKit, { rx: number; ryDown: number; nLow: number }>
 };
 
 export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Coleta de lado'];
-export const BEARDS = ['Ninguna', 'Barba completa', 'Barba corta', 'Perilla', 'Bigote', 'Patillas'];
+export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla', 'Bigote'];
 export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados'];
-export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Enfadadas', 'Preocupadas'];
+export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas'];
 export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón'];
 export const MOUTHS = ['Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo'];
 export const DETAILS = ['Ninguno', 'Rubor', 'Pecas', 'Cicatriz', 'Pintura de guerra', 'Lunar'];
@@ -325,7 +325,7 @@ const EYE = [
   // masculinos: más pequeños, párpado recto y brillos discretos
   { rx: 0.047, ry: 0.054, tilt: 0.06, lid: 0.12, hl: 0.7 }, { rx: 0.053, ry: 0.044, tilt: 0.2, lid: 0.16, hl: 0.65 },
 ] as { rx: number; ry: number; tilt: number; lid: number; hl?: number }[];
-/** Cejas: grosor, largo, altura extra, giro (+ = enfadada), curva. */
+/** Cejas: grosor, largo, altura extra, giro (+ = preocupada), curva. */
 const BROW = [
   { t: 0.022, l: 0.15, dy: 0, rot: 0.05, arc: 0.2 }, { t: 0.012, l: 0.14, dy: 0.008, rot: 0.04, arc: 0.3 }, { t: 0.034, l: 0.17, dy: -0.004, rot: 0, arc: 0.1 },
   { t: 0.02, l: 0.14, dy: 0.04, rot: 0.02, arc: 0.45 }, { t: 0.026, l: 0.16, dy: -0.01, rot: 0.38, arc: 0 }, { t: 0.022, l: 0.15, dy: 0.015, rot: -0.32, arc: 0.1 },
@@ -478,19 +478,18 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   };
   const skinParts: THREE.BufferGeometry[] = [];
   const frontZ = (x: number, y: number) => rayHead(V(x, y, 2), V(0, 0, -1))?.point.z ?? 0.44;
-  {
+  if (!beast) {
     // nariz: una pieza lisa, pequeña y medio hundida
     const NS: [number, number, number, number][] = [ // ancho, alto, fondo, giro
       [0.042, 0.036, 0.034, 0], [0.062, 0.055, 0.05, 0], [0.045, 0.04, 0.038, -0.45],
       [0.07, 0.04, 0.04, 0], [0.042, 0.058, 0.05, 0.35], [0.05, 0.048, 0.045, 0],
     ];
     const [nw, nh, nd, nr] = NS[o.nose] ?? NS[0];
-    const k = beast ? 0.6 : 1;
     const g = new THREE.SphereGeometry(1, 20, 14);
-    g.scale(nw * k, nh * k, nd * k);
+    g.scale(nw, nh, nd);
     g.rotateX(nr);
     const zf = frontZ(0, nose.y);
-    g.translate(0, nose.y + (nr < 0 ? 0.008 : 0), zf + nd * k * 0.35);
+    g.translate(0, nose.y + (nr < 0 ? 0.008 : 0), zf + nd * 0.35);
     skinParts.push(paintCell(g, C_SKIN, 0.35, 0.55));
   }
   const extras: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
@@ -638,58 +637,123 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   // ---------- Barba ----------
   const beardGeos: THREE.BufferGeometry[] = [];
-  // Copia de la propia cara en la zona de la barba, engordada hacia fuera: tan lisa
-  // como la cara y envuelve la barbilla. La zona es una distancia al borde (sd > 0
-  // dentro); en el borde la copia se hunde bajo la piel y el contorno sale limpio.
   if (o.beard > 0) {
     const my = mouthY;
-    const shell = (sd: (x: number, y: number, z: number) => number, T: number, fall: number) => {
-      // la cara subdividida dos veces: triángulos finos para un contorno suave
-      const src = headGeo.clone();
-      smoothNormals(src, 85);
-      const p = src.attributes.position, n = src.attributes.normal;
-      // normales promediadas por posición: sin grietas entre triángulos
-      const acc = new Map<string, THREE.Vector3>(), key = (i: number) => `${p.getX(i).toFixed(4)},${p.getY(i).toFixed(4)},${p.getZ(i).toFixed(4)}`;
-      for (let i = 0; i < p.count; i++) { const k = key(i); (acc.get(k) ?? acc.set(k, V(0, 0, 0)).get(k)!).add(V(n.getX(i), n.getY(i), n.getZ(i))); }
-      const out: number[] = [];
-      for (let t = 0; t < p.count / 3; t++) {
-        const ds = [0, 1, 2].map((k) => sd(p.getX(t * 3 + k), p.getY(t * 3 + k), p.getZ(t * 3 + k)));
-        if (Math.max(...ds) < -0.025) continue;
-        for (let k = 0; k < 3; k++) {
-          const i = t * 3 + k, d = acc.get(key(i))!.clone().normalize();
-          const th = -0.012 + (T + 0.012) * THREE.MathUtils.smoothstep(ds[k], -0.012, fall);
-          out.push(p.getX(i) + d.x * th, p.getY(i) + d.y * th, p.getZ(i) + d.z * th);
-        }
+    const beardPatch = (distance: (x: number, y: number) => number, wrapSides = false) => {
+      const xMin = -0.48, xMax = 0.48, yMin = 1.02, yMax = 1.68, nx = 120, ny = 110;
+      const dx = (xMax - xMin) / nx, dy = (yMax - yMin) / ny;
+      type Sample = { x: number; y: number; d: number };
+      const grid: Sample[] = [];
+      for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
+        const x = xMin + i * dx, y = yMin + j * dy;
+        const d = distance(x, y);
+        grid.push({ x, y, d: d > -0.02 && !wrapSides && !rayHead(V(x, y, 2), V(0, 0, -1)) ? -0.02 : d });
       }
-      src.dispose();
-      if (!out.length) return;
+      const positions: number[] = [], indices: number[] = [];
+      const vertexIds = new Map<string, number>();
+      const vertex = (x: number, y: number) => {
+        const key = `${x.toFixed(5)},${y.toFixed(5)}`;
+        const existing = vertexIds.get(key);
+        if (existing !== undefined) return existing;
+        let point: THREE.Vector3;
+        if (wrapSides) {
+          const longitude = THREE.MathUtils.clamp(x / 0.48, -1, 1) * 1.35;
+          const latitude = Math.asin(THREE.MathUtils.clamp((y - HEAD_C.y) / 0.48, -0.99, 0.99));
+          const direction = V(Math.sin(longitude) * Math.cos(latitude), Math.sin(latitude), Math.cos(longitude) * Math.cos(latitude)).normalize();
+          point = HEAD_C.clone().addScaledVector(direction, headR(direction) + 0.009);
+        } else {
+          const hit = rayHead(V(x, y, 2), V(0, 0, -1));
+          if (!hit) return null;
+          point = hit.point.addScaledVector(hit.normal, 0.009);
+        }
+        const id = positions.length / 3;
+        positions.push(point.x, point.y, point.z);
+        vertexIds.set(key, id);
+        return id;
+      };
+      const addTriangle = (a: Sample, b: Sample, c: Sample) => {
+        const input = [a, b, c], polygon: Sample[] = [];
+        for (let i = 0; i < input.length; i++) {
+          const current = input[i], previous = input[(i + input.length - 1) % input.length];
+          const currentInside = current.d >= 0, previousInside = previous.d >= 0;
+          if (currentInside !== previousInside) {
+            const t = previous.d / (previous.d - current.d);
+            polygon.push({
+              x: THREE.MathUtils.lerp(previous.x, current.x, t),
+              y: THREE.MathUtils.lerp(previous.y, current.y, t),
+              d: 0,
+            });
+          }
+          if (currentInside) polygon.push(current);
+        }
+        for (let i = 1; i < polygon.length - 1; i++) {
+          const triangle = [
+            vertex(polygon[0].x, polygon[0].y),
+            vertex(polygon[i].x, polygon[i].y),
+            vertex(polygon[i + 1].x, polygon[i + 1].y),
+          ];
+          if (triangle.every((id) => id !== null)) indices.push(...triangle as number[]);
+        }
+      };
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+        const a = grid[j * (nx + 1) + i], b = grid[j * (nx + 1) + i + 1];
+        const c = grid[(j + 1) * (nx + 1) + i + 1], d = grid[(j + 1) * (nx + 1) + i];
+        if (Math.max(a.d, b.d, c.d, d.d) < 0) continue;
+        addTriangle(a, b, c);
+        addTriangle(a, c, d);
+      }
+      if (!indices.length) return;
       const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
-      g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array((out.length / 3) * 2).fill(0), 2));
+      g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      g.setIndex(indices);
       g.computeVertexNormals();
-      paintCell(g, hairCell, 0.45, 0.55);
-      smoothNormals(g, 60);
+      paintCell(g, hairCell, 0.35, 0.7);
       beardGeos.push(g);
     };
     const sm = THREE.MathUtils.smoothstep;
-    const front = (z: number) => z > -0.05; // sólo la parte delantera (no la nuca)
-    const mouthHole = (x: number, y: number) => Math.hypot(x / 1.35, (y - my - 0.005) * 1.1) - 0.06;
-    const jaw = (x: number, y: number, z: number) => {
-      if (!front(z)) return -1;
-      const top = my - 0.05 + 0.11 * sm(Math.abs(x), 0.1, 0.36);
-      return Math.min(top - y, mouthHole(x, y), 0.47 - Math.abs(x));
+    const smoothMin = (a: number, b: number, k: number) => {
+      const h = Math.max(k - Math.abs(a - b), 0) / k;
+      return Math.min(a, b) - h * h * k * 0.25;
     };
-    const stache = (x: number, y: number, z: number) => {
-      if (z < 0.2) return -1;
-      const yc = my + 0.048 - x * x * 1.3, hh = 0.024 * (1 - sm(Math.abs(x), 0.08, 0.2)) + 0.004;
-      return Math.min(hh - Math.abs(y - yc), 0.2 - Math.abs(x));
+    const mouthHole = (x: number, y: number) => Math.hypot(x / 1.25, (y - my) * 1.1) - 0.065;
+    const jaw = (x: number, y: number, height: number, width: number) => {
+      const ax = Math.abs(x);
+      const top = my - height + (height + 0.035) * Math.pow(Math.min(ax / width, 1), 2);
+      return smoothMin(smoothMin(top - y, width - ax, 0.045), mouthHole(x, y), 0.02);
+    };
+    const stache = (x: number, y: number) => {
+      const ax = Math.abs(x);
+      const yc = my + 0.04 - x * x * 0.8;
+      const thickness = 0.026 * (1 - sm(ax, 0.055, 0.16)) + 0.003;
+      return Math.min(thickness - Math.abs(y - yc), 0.175 - ax);
     };
     switch (o.beard) {
-      case 1: shell((x, y, z) => Math.max(jaw(x, y, z), stache(x, y, z)), 0.045, 0.05); break;
-      case 2: shell(jaw, 0.02, 0.03); break;
-      case 3: shell((x, y, z) => (z < 0.1 ? -1 : 0.085 - Math.hypot(x, (y - (my - 0.12)) * 0.85)), 0.035, 0.035); break;
-      case 4: shell(stache, 0.024, 0.016); break;
-      case 5: shell((x, y, z) => Math.min(Math.abs(x) - 0.36, 0.09 - Math.abs(z - 0.03), y - my, A.eyeY - 0.04 - y), 0.022, 0.02); break;
+      case 1:
+        beardPatch((x, y) => Math.max(jaw(x, y, 0.05, 0.46), stache(x, y)));
+        break;
+      case 2:
+        beardPatch((x, y) => {
+          const ax = Math.abs(x), width = 0.46;
+          const top = my - 0.05 + 0.08 * Math.pow(Math.min(ax / width, 1), 1.5);
+          const outline = smoothMin(top - y, width - ax, 0.045);
+          const mouthOpening = Math.hypot(x / 1.15, (y - my) * 1.2) - 0.06;
+          const cheekAndChin = smoothMin(outline, mouthOpening, 0.02);
+          return Math.max(cheekAndChin, stache(x, y));
+        }, true);
+        break;
+      case 3:
+        beardPatch((x, y) => Math.max(
+          stache(x, y),
+          (() => {
+            const centerY = my - 0.17;
+            const vertical = (y - centerY) / 0.105, horizontal = x / 0.075;
+            return (1 - horizontal * horizontal - vertical * vertical) * 0.055;
+          })(),
+        ));
+        break;
+      case 4:
+        beardPatch(stache);
+        break;
     }
   }
 
@@ -1138,4 +1202,3 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     anchors: { ear: (s) => headAt(V(s, -0.2, -0.05), -0.01), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest },
   };
 }
-

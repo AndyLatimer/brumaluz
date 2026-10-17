@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  accountConfigError, currentSession, getAccountClient, listCharacters, onAuthChange,
+  accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
   requestPasswordReset, saveCharacter as persistCharacter, signIn, signOut, signUp, updatePassword, type SavedCharacter,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './account';
@@ -9,13 +9,14 @@ import { applyLanguage, getLanguage, setLanguage, t } from './i18n';
 import { world } from './paint';
 import { buildEnv } from './env';
 import { Character, loadKits } from './character';
+import { createCharacterPortrait } from './portrait';
 import { setupStage, castShadows } from './render';
 import { buildCity, City } from './city';
 import { AmbientSoundscape } from './audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
   CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
-  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, HAIR_ACCS, ACCS, MAKEUPS, CITY_WEAR, ACC_COLORS, ACC_COLOR_NAMES,
+  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, HAIR_ACCS, ACCS, MAKEUPS, CITY_WEAR, ACC_COLORS, ACC_COLOR_NAMES, LOCATIONS,
 } from './data';
 
 
@@ -25,6 +26,7 @@ if (!state.name) state.name = randomName(state.race);
 
 let activeCharacterId: string | null = null;
 let currentUser: User | null = null;
+let currentUsername: string | null = null;
 let cachedCharacters: SavedCharacter[] = [];
 let accountSyncId = 0;
 let savingCharacter = false;
@@ -233,6 +235,7 @@ function updatePlay(dt: number) {
 }
 
 function enterPlay() {
+  state.location = city.locationId;
   mode = 'play';
   document.body.classList.add('playing');
   void setAmbientEnabled(ambientEnabled);
@@ -450,19 +453,23 @@ function refreshUI() {
   (Object.keys(ATTRIBUTES) as AttributeId[]).forEach((key) => {
     const row = document.createElement('div');
     row.className = 'race-stat';
-    row.title = t(ATTRIBUTES[key].desc);
     const label = document.createElement('span');
+    label.className = 'race-stat-name';
     label.textContent = t(ATTRIBUTES[key].label);
     const value = document.createElement('strong');
+    value.className = 'race-stat-score';
     const racialBonus = RACES[state.race].bonuses[key];
     const allocated = state.attributePoints[key];
     const bonus = racialBonus + allocated;
     const total = ATTRIBUTE_BASE_VALUE + bonus;
-    value.textContent = `${ATTRIBUTE_BASE_VALUE}${bonus ? ` +${bonus} (${total})` : ''}`;
-    value.className = bonus ? 'attribute-bonus' : '';
-    value.title = t('Base {base} · bonificación racial +{racial} · puntos asignados +{allocated} · máximo {max}', {
+    value.textContent = bonus ? `${ATTRIBUTE_BASE_VALUE} +${bonus} = ${total}` : String(ATTRIBUTE_BASE_VALUE);
+    if (bonus) value.classList.add('attribute-bonus');
+    value.setAttribute('aria-label', t('Base {base} · bonificación racial +{racial} · puntos asignados +{allocated} · máximo {max}', {
       base: ATTRIBUTE_BASE_VALUE, racial: racialBonus, allocated, max: ATTRIBUTE_MAX_VALUE,
-    });
+    }));
+    const description = document.createElement('span');
+    description.className = 'race-stat-description';
+    description.textContent = t(ATTRIBUTES[key].desc);
     const controls = document.createElement('span');
     controls.className = 'attribute-controls';
     const remove = document.createElement('button');
@@ -484,7 +491,7 @@ function refreshUI() {
       refreshUI();
     };
     controls.append(remove, add);
-    row.append(label, value, controls);
+    row.append(label, value, controls, description);
     stats.appendChild(row);
   });
   $('#classDesc').textContent = t(CLASSES[state.cls].desc);
@@ -493,6 +500,7 @@ function refreshUI() {
   $<HTMLInputElement>('#build').value = String(state.build);
   const R = RACES[state.race];
   $('#traitBox').hidden = !R.traitLabel;
+  $('#noseBox').hidden = state.race === 'pelso' || state.race === 'lagto';
   if (R.traitLabel) $('#traitLabel').textContent = state.race === 'lagto' ? t('Cresta del linaje') : t(R.traitLabel);
   $('#hairNote').textContent = state.race === 'pelso' ? t('El color también tiñe las orejas y la cola.') : '';
   if (document.activeElement !== nameInput) nameInput.value = state.name;
@@ -623,6 +631,7 @@ function showCharacterScreen() {
   $('#account-gate').hidden = false;
   $('#auth-screen').hidden = true;
   $('#character-screen').hidden = false;
+  $('#account-username').textContent = currentUsername ?? t('Nombre de usuario pendiente de asignación');
   $('#account-email').textContent = currentUser?.email ?? '';
   $('#character-message').classList.remove('error');
 }
@@ -648,16 +657,31 @@ function displayCharacters(characters: SavedCharacter[]) {
     record.className = 'character-card';
     const info = document.createElement('div');
     info.className = 'character-info';
-    const sigil = document.createElement('span');
-    sigil.className = 'character-sigil';
-    sigil.textContent = '✦';
+    const copy = document.createElement('div');
+    copy.className = 'character-copy';
     const name = document.createElement('strong');
     name.textContent = saved.name;
     const detail = document.createElement('span');
     detail.className = 'character-detail';
     const data = characterFromRecord(saved);
     detail.textContent = `${t(RACES[data.race].label)} · ${t(CLASSES[data.cls].label)}`;
-    info.append(sigil, name, detail);
+    const portrait = createCharacterPortrait(data, renderer);
+    portrait.className = 'character-portrait';
+    portrait.setAttribute('aria-hidden', 'true');
+    const level = document.createElement('span');
+    level.className = 'character-level';
+    level.textContent = `${t('Nivel')} ${data.level}`;
+    const location = document.createElement('span');
+    location.className = 'character-location';
+    const locationIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    locationIcon.setAttribute('viewBox', '0 0 24 24');
+    locationIcon.setAttribute('aria-hidden', 'true');
+    locationIcon.innerHTML = '<path d="m12 2.8 8 4.6v9.2l-8 4.6-8-4.6V7.4l8-4.6Z"/><path d="M8 16V9.5l4-2.3 4 2.3V16M6.5 16h11M10 11h.01M14 11h.01M11 16v-2.5h2V16"/>';
+    const locationName = t(LOCATIONS[data.location]);
+    location.append(locationIcon, document.createTextNode(locationName));
+    location.setAttribute('aria-label', t('Ubicación: {location}', { location: locationName }));
+    copy.append(name, detail, level, location);
+    info.append(portrait, copy);
     const actions = document.createElement('div');
     actions.className = 'character-actions';
     const play = document.createElement('button');
@@ -760,15 +784,30 @@ function loadCharacter(saved: SavedCharacter) {
 
 async function loadCharacterSelection(user: User) {
   const syncId = ++accountSyncId;
+  currentUsername = null;
   currentUser = user;
   showCharacterScreen();
+  $('#account-username').textContent = t('Cargando…');
   $('#character-list').replaceChildren();
   $('#character-message').textContent = t('Cargando tus personajes…');
   try {
-    const characters = await listCharacters(user.id);
+    const [charactersResult, usernameResult] = await Promise.allSettled([
+      listCharacters(user.id),
+      getProfileUsername(user.id),
+    ]);
     if (syncId !== accountSyncId || currentUser?.id !== user.id) return;
-    $('#character-message').textContent = '';
-    displayCharacters(characters);
+    if (charactersResult.status === 'rejected') throw charactersResult.reason;
+    displayCharacters(charactersResult.value);
+    if (usernameResult.status === 'fulfilled') {
+      currentUsername = usernameResult.value;
+      $('#account-username').textContent = currentUsername ?? t('Nombre de usuario pendiente de asignación');
+      $('#character-message').textContent = '';
+      $('#character-message').classList.remove('error');
+    } else {
+      $('#account-username').textContent = t('No se pudo cargar el nombre de usuario');
+      $('#character-message').textContent = errorMessage(usernameResult.reason);
+      $('#character-message').classList.add('error');
+    }
   } catch (error) {
     if (syncId !== accountSyncId) return;
     $('#character-message').textContent = errorMessage(error);
@@ -781,6 +820,7 @@ async function syncAccount(sessionUser: User | null) {
     if (mode === 'play') exitPlay();
     accountSyncId++;
     currentUser = null;
+    currentUsername = null;
     activeCharacterId = null;
     showAuthScreen();
     return;
@@ -790,6 +830,11 @@ async function syncAccount(sessionUser: User | null) {
 }
 
 function errorMessage(error: unknown) {
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (error.message.includes('USERNAME_ALREADY_TAKEN') || error.message.includes('profiles_username_unique')) {
+      return t('Ese nombre de usuario ya está en uso. Elige otro.');
+    }
+  }
   if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
     return t('Ya tienes un personaje con ese nombre. Elige otro.');
   }
@@ -830,7 +875,11 @@ async function saveCurrentCharacter() {
 }
 
 async function returnToCharacters() {
-  if (mode === 'play') exitPlay();
+  if (mode === 'play') {
+    state.location = city.locationId;
+    if (!(await saveCurrentCharacter())) return;
+    exitPlay();
+  }
   if (currentUser) await loadCharacterSelection(currentUser);
 }
 
@@ -854,8 +903,12 @@ document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]').forEach((button
     });
     const confirmField = $<HTMLDivElement>('#confirm-password-field');
     const confirmInput = $<HTMLInputElement>('#auth-confirm-password');
+    const usernameField = $<HTMLDivElement>('#username-field');
+    const usernameInput = $<HTMLInputElement>('#auth-username');
     confirmField.hidden = authMode !== 'register';
     confirmInput.required = authMode === 'register';
+    usernameField.hidden = authMode !== 'register';
+    usernameInput.required = authMode === 'register';
     $('#forgot-password').hidden = authMode !== 'login';
     $<HTMLInputElement>('#auth-password').autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
     $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
@@ -866,10 +919,16 @@ document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]').forEach((button
 
 authForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  const username = $<HTMLInputElement>('#auth-username').value.trim();
   const email = $<HTMLInputElement>('#auth-email').value.trim();
   const password = $<HTMLInputElement>('#auth-password').value;
   const message = $('#auth-message');
   const submit = $<HTMLButtonElement>('#auth-submit');
+  if (authMode === 'register' && !/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+    message.textContent = t('El nombre de usuario debe tener entre 3 y 20 caracteres: letras, números o guion bajo.');
+    message.classList.add('error');
+    return;
+  }
   if (authMode === 'register' && password !== $<HTMLInputElement>('#auth-confirm-password').value) {
     message.textContent = t('Las contraseñas no coinciden.');
     message.classList.add('error');
@@ -880,7 +939,7 @@ authForm.addEventListener('submit', async (event) => {
   message.textContent = authMode === 'register' ? t('Creando tu cuenta…') : t('Iniciando sesión…');
   try {
     if (authMode === 'register') {
-      const result = await signUp(email, password);
+      const result = await signUp(username, email, password);
       if (!result.session) {
         $('[data-auth-mode="login"]').click();
         message.textContent = t('Cuenta creada. Revisa tu correo para confirmar la dirección y luego inicia sesión.');
@@ -970,18 +1029,20 @@ $('#game-menu-sound').onclick = () => { void setAmbientEnabled(!ambientEnabled);
 $('#game-menu-characters').onclick = () => { void returnToCharacters(); };
 $('#game-menu-logout').onclick = async () => {
   const logoutButton = $<HTMLButtonElement>('#game-menu-logout');
-  const charactersButton = $<HTMLButtonElement>('#game-menu-characters');
   logoutButton.disabled = true;
-  charactersButton.disabled = true;
   $('#game-menu-message').textContent = t('Cerrando sesión…');
   try {
+    if (mode === 'play') {
+      state.location = city.locationId;
+      if (!(await saveCurrentCharacter())) return;
+    }
     await signOut();
     await syncAccount(null);
   } catch (error) {
     $('#game-menu-message').textContent = errorMessage(error);
     $('#game-menu-message').classList.add('error');
+  } finally {
     logoutButton.disabled = false;
-    charactersButton.disabled = false;
   }
 };
 document.addEventListener('click', (event) => {
@@ -1039,7 +1100,7 @@ function testCity(): City {
   const ground = new THREE.Mesh(new THREE.CircleGeometry(6, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#c9b48a' }));
   ground.receiveShadow = true;
   root.add(ground);
-  return { root, vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  return { root, locationId: 'brumaluz', vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 const clock = new THREE.Clock();
 try {
