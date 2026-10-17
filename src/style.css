@@ -197,6 +197,7 @@ body.characters-visible #account-details {
 .text-button:focus-visible { outline: 2px solid #a17438; outline-offset: 2px; border-radius: 4px; }
 .account-message { min-height: 1.4em; margin: 8px 0; color: #356b3b; font-size: 15px; }
 .account-message.error { color: #9f3429; }
+#character-message:empty { display: none; }
 .account-submit { width: 100%; margin-top: 8px; }
 .btn:disabled { cursor: default; opacity: .55; transform: none; filter: none; }
 .character-limit-message { margin: 0 0 8px; font-size: 14px; }
@@ -254,6 +255,7 @@ body.characters-visible #account-details {
 }
 .frame::before { top: -15px; left: 50%; transform: translateX(-50%); }
 .frame::after { bottom: -15px; left: 50%; transform: translateX(-50%); }
+#panel::before { left: var(--tab-marker-left, 10%); transition: left .2s ease; }
 #account-gate .account-card { position: relative; z-index: 1; background: linear-gradient(145deg, rgba(255,252,242,.98), rgba(229,211,176,.97)); }
 body.auth-visible #scene, body.characters-visible #scene { display: none; }
 body.auth-visible #panel, body.characters-visible #panel,
@@ -370,13 +372,15 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
   display: flex; gap: 12px; align-items: center; padding: 12px 14px;
 }
 .bottom-actions { display: flex; gap: 8px; align-items: center; }
+.name-field { display: flex; flex-direction: column; gap: 3px; }
+.name-field label { color: #ffe2a0; font: 700 11px 'Cinzel', serif; letter-spacing: .06em; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .namebox { display: flex; align-items: center; background: #fffaf0; border: 2px solid #b9945a; border-radius: 10px; overflow: hidden; }
 #name { border: 0; outline: 0; background: transparent; padding: 11px 12px; width: 220px; font-family: 'Cinzel', serif; font-weight: 700; font-size: 16px; color: var(--ink); user-select: text; }
 #name::placeholder { color: #a88a66; font-weight: 500; }
 #dice { appearance: none; border: 0; border-left: 2px solid #b9945a; background: #f1e2c2; cursor: pointer; width: 42px; height: 44px; font-size: 20px; color: var(--ink-soft); }
 #dice:hover { background: #ffe7a8; }
 
-#hint { position: fixed; bottom: 8px; left: calc(50% + var(--panel-w) / 2 + 12px); transform: translateX(-50%); z-index: 4; color: #fff3da; font-size: 13px; opacity: .8; text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
+#hint { position: fixed; bottom: 2px; left: calc(50% + var(--panel-w) / 2 + 12px); transform: translateX(-50%); z-index: 4; color: #fff3da; font-size: 13px; opacity: .8; text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
 
 #toast {
   position: fixed; top: 50%; left: calc(50% + var(--panel-w) / 2 + 12px); transform: translate(-50%, -50%) scale(.9); z-index: 20; opacity: 0; pointer-events: none;
@@ -422,7 +426,8 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
   #bottom { left: 16px; right: 16px; bottom: 14px; transform: none; padding: 8px; gap: 7px; flex-direction: column; align-items: stretch; }
   .bottom-actions { justify-content: stretch; }
   .bottom-actions button { flex: 1; }
-  .namebox { flex: 1; min-width: 0; }
+  .name-field { min-width: 0; }
+  .namebox { width: 100%; }
   #name { width: 100%; font-size: 14px; }
   .btn.gold { padding: 11px 12px; font-size: 13px; white-space: nowrap; }
   #tools { top: auto; bottom: calc(86px + 38vh + 16px); right: 16px; flex-direction: column; }

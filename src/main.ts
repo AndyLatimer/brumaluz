@@ -511,6 +511,9 @@ function refreshUI() {
 function selectTab(name: string) {
   const wasOutfit = tab === 'clase';
   tab = name;
+  const tabButtons = [...document.querySelectorAll<HTMLButtonElement>('#tabs button')];
+  const selectedIndex = tabButtons.findIndex((button) => button.dataset.tab === name);
+  if (selectedIndex >= 0) $('#panel').style.setProperty('--tab-marker-left', `${(selectedIndex + 0.5) * 100 / tabButtons.length}%`);
   document.querySelectorAll<HTMLElement>('#tabs button').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
   document.querySelectorAll<HTMLElement>('#pages section').forEach((s) => s.classList.toggle('active', s.dataset.page === name));
   focus = name === 'rostro' || name === 'cabello' ? 'face' : 'body';
@@ -617,6 +620,7 @@ function showEditor() {
   document.querySelectorAll<HTMLElement>('#tabs button').forEach((button) => button.classList.toggle('active', button.dataset.tab === 'raza'));
   document.querySelectorAll<HTMLElement>('#pages section').forEach((section) => section.classList.toggle('active', section.dataset.page === 'raza'));
   tab = 'raza';
+  $('#panel').style.setProperty('--tab-marker-left', '10%');
   focus = 'body';
   zoom = 1;
   refreshUI();
