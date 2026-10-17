@@ -1,0 +1,242 @@
+export type Language = 'es' | 'en';
+
+const translations: Record<string, string> = {
+  'Encendiendo los faroles de Brumaluz…': 'Lighting the lanterns of Brumaluz…',
+  'Un nuevo capítulo': 'A New Chapter',
+  'Inicia sesión o crea una cuenta para entrar en el mundo de Brumaluz.': 'Sign in or create an account to enter the world of Brumaluz.',
+  'Acceso a la cuenta': 'Account access',
+  'Idioma': 'Language',
+  'Español': 'Spanish',
+  'Spanish': 'Español',
+  'Iniciar sesión': 'Sign in',
+  'Crear cuenta': 'Create account',
+  'Recuperar contraseña': 'Reset password',
+  'Correo electrónico': 'Email address',
+  'Contraseña': 'Password',
+  'Repite la contraseña': 'Confirm password',
+  '¿Olvidaste tu contraseña?': 'Forgot your password?',
+  'Te enviaremos un enlace para restablecer la contraseña de tu cuenta.': 'We’ll email you a link to reset your account password.',
+  'Enviar enlace': 'Send link',
+  'Volver a iniciar sesión': 'Back to sign in',
+  'Elige una contraseña nueva para tu cuenta.': 'Choose a new password for your account.',
+  'Nueva contraseña': 'New password',
+  'Repite la nueva contraseña': 'Confirm new password',
+  'Cambiar contraseña': 'Change password',
+  'Cerrar sesión': 'Sign out',
+  'Tu aventura continúa': 'Your adventure continues',
+  'Tus personajes': 'Your characters',
+  'Personajes guardados': 'Saved characters',
+  'Crear personaje': 'Create character',
+  'Acción irreversible': 'Irreversible action',
+  'Borrar personaje': 'Delete character',
+  'Escribe el nombre del personaje para confirmar:': 'Type the character’s name to confirm:',
+  'Cancelar': 'Cancel',
+  'Borrar definitivamente': 'Delete permanently',
+  'Crónicas de Brumaluz': 'Chronicles of Brumaluz',
+  'Creación de personaje': 'Character creation',
+  'Raza': 'Race',
+  'Rostro': 'Face',
+  'Cabello': 'Hair',
+  'Ropa': 'Clothing',
+  'Clase': 'Class',
+  'Linaje': 'Ancestry',
+  'Atributos': 'Attributes',
+  'Sexo': 'Gender',
+  'Hombre': 'Male',
+  'Mujer': 'Female',
+  'Cuerpo': 'Body',
+  'Altura': 'Height',
+  'Complexión': 'Build',
+  'Tono de piel': 'Skin tone',
+  'Cara': 'Face shape',
+  'Ojos': 'Eyes',
+  'Cejas': 'Eyebrows',
+  'Nariz': 'Nose',
+  'Boca': 'Mouth',
+  'Barba': 'Beard',
+  'Detalles': 'Details',
+  'Maquillaje': 'Makeup',
+  'Orejas': 'Ears',
+  'Peinado': 'Hairstyle',
+  'Color de pelo': 'Hair color',
+  'Adorno': 'Hair accessory',
+  'Torso': 'Torso',
+  'Mangas': 'Sleeves',
+  'Piernas': 'Legs',
+  'Color principal': 'Primary color',
+  'Color secundario': 'Secondary color',
+  'Complementos': 'Accessories',
+  'Color de complementos': 'Accessory color',
+  'Para pasear por la ciudad': 'Outfit for exploring the city',
+  'El color de complementos tiñe también el adorno del pelo y el maquillaje.': 'The accessory color also tints the hair accessory and makeup.',
+  'Vocación': 'Calling',
+  'Volver a tus personajes': 'Back to your characters',
+  'Mis personajes': 'My characters',
+  'Personaje aleatorio': 'Random character',
+  'Aleatorio': 'Random',
+  'Saludar': 'Wave',
+  'Nombre del personaje': 'Character name',
+  'Nombre aleatorio': 'Random name',
+  'Guardar y entrar': 'Save and enter',
+  'Arrastra para girar · Rueda para acercar': 'Drag to rotate · Scroll to zoom',
+  'Abrir menú': 'Open menu',
+  'Cerrar menú': 'Close menu',
+  'Menú': 'Menu',
+  'Selección de personaje': 'Character selection',
+  'Salir del juego': 'Log out',
+  'Aún no tienes personajes. Crea uno para comenzar tu aventura.': 'You have no characters yet. Create one to begin your adventure.',
+  'Jugar': 'Play',
+  'Borrar': 'Delete',
+  'Has alcanzado el máximo de {max} personajes por cuenta. Borra uno para crear otro.': 'You’ve reached the limit of {max} characters per account. Delete one to create another.',
+  'Puedes tener hasta {max} personajes en tu cuenta.': 'You can have up to {max} characters in your account.',
+  'Vas a borrar definitivamente a {name}. Esta acción no se puede deshacer.': 'You are about to permanently delete {name}. This action cannot be undone.',
+  'Borrando personaje…': 'Deleting character…',
+  'Cargando tus personajes…': 'Loading your characters…',
+  'Un momento…': 'One moment…',
+  'Tu nombre necesita entre 3 y 16 letras.': 'Your name must be between 3 and 16 letters.',
+  'No se pudo guardar': 'Could not save',
+  'Las contraseñas no coinciden.': 'Passwords do not match.',
+  'Creando tu cuenta…': 'Creating your account…',
+  'Iniciando sesión…': 'Signing in…',
+  'Cuenta creada. Revisa tu correo para confirmar la dirección y luego inicia sesión.': 'Account created. Check your email to confirm your address, then sign in.',
+  'Enviando el enlace…': 'Sending the link…',
+  'Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Revisa también la carpeta de spam.': 'If an account exists for that email, you’ll receive a password reset link. Check your spam folder too.',
+  'El enlace de recuperación no es válido o ha caducado. Solicita uno nuevo.': 'This recovery link is invalid or has expired. Request a new one.',
+  'Actualizando la contraseña…': 'Updating your password…',
+  'Contraseña actualizada correctamente.': 'Password updated successfully.',
+  'Cerrando sesión…': 'Signing out…',
+  '¡Te damos la bienvenida, {name}!': 'Welcome, {name}!',
+  'Tu aventura en Brumaluz comienza ahora.': 'Your adventure in Brumaluz begins now.',
+  'Copia .env.example como .env.local, añade los datos del proyecto y reinicia Vite.': 'Copy .env.example to .env.local, add your project credentials, and restart Vite.',
+  'Falta configurar VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY en .env.local.': 'VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are missing from .env.local.',
+  'Cada cuenta puede tener un máximo de 5 personajes. Borra uno antes de crear otro.': 'Each account can have a maximum of 5 characters. Delete one before creating another.',
+  'No se pudo cargar Brumaluz: ': 'Could not load Brumaluz: ',
+  'Puntos para repartir: {remaining} de {total}': 'Points to assign: {remaining} of {total}',
+  'Base {base} · bonificación racial +{racial} · puntos asignados +{allocated} · máximo {max}': 'Base {base} · ancestry bonus +{racial} · points assigned +{allocated} · maximum {max}',
+  'Quitar un punto de {attribute}': 'Remove one point from {attribute}',
+  'Añadir un punto a {attribute}': 'Add one point to {attribute}',
+  'El color también tiñe las orejas y la cola.': 'The color also tints the ears and tail.',
+  'Anterior': 'Previous',
+  'Siguiente': 'Next',
+  'Base': 'Base',
+  'Humano': 'Human',
+  'Elfo': 'Elf',
+  "Lagto'": "Lagto'",
+  'Pelso': 'Pelso',
+  'Guerrero': 'Warrior',
+  'Mago': 'Mage',
+  'Pícaro': 'Rogue',
+  'Clérigo': 'Cleric',
+  'Explorador': 'Ranger',
+  'Fuerza': 'Strength',
+  'Intelecto': 'Intellect',
+  'Corpulencia': 'Constitution',
+  'Agilidad': 'Agility',
+  'Pericia': 'Proficiency',
+  'Presencia': 'Presence',
+  'Percepción': 'Perception',
+  'Aumenta el daño general en combate.': 'Increases overall combat damage.',
+  'Aumenta la reserva y el poder de la magia.': 'Increases your magic pool and spell power.',
+  'Aumenta la vida máxima y la resistencia al daño.': 'Increases maximum health and damage resistance.',
+  'Aumenta la velocidad de movimiento y, ligeramente, la velocidad de ataque.': 'Increases movement speed and, slightly, attack speed.',
+  'Mejora la artesanía y la alquimia: velocidad de creación y probabilidad de obtener mejores objetos.': 'Improves crafting and alchemy: crafting speed and the chance of getting better items.',
+  'Mejora el comercio, la negociación y las interacciones sociales.': 'Improves trade, negotiation, and social interactions.',
+  'Ayuda a rastrear, encontrar recursos y descubrir objetos.': 'Helps track, find resources, and discover items.',
+  'Nacidos en Brumaluz o llegados de tierras lejanas, los humanos destacan por su ingenio y por encontrar su propio camino en cualquier oficio.': 'Born in Brumaluz or arrived from distant lands, humans are known for their ingenuity and their ability to find their own path in any trade.',
+  'Desde hace generaciones, los elfos protegen los bosques que abrazan Brumaluz. Su larga vida y conocimiento de la naturaleza los han convertido en hábiles alquimistas.': 'For generations, elves have protected the forests surrounding Brumaluz. Their long lives and knowledge of nature have made them skilled alchemists.',
+  'Los Lagto’ hacen su hogar en montañas pedregosas, entre grietas estrechas y cavernas donde apenas llega la luz. Recios y pacientes, conocen los pasos ocultos de la roca mejor que nadie.': 'The Lagto’ make their home in rocky mountains, among narrow crevices and caves where little light reaches. Hardy and patient, they know the hidden passages in the rock better than anyone.',
+  'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos. Se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.': 'The Pelso’ always find the warmest spots, though they rarely stay still for long. Led by passion and impulse, they live intensely—and sometimes get into trouble they later turn into a good story.',
+  'Caballeros, mercenarios o luchadores por cuenta propia: hay muchos caminos para un guerrero. Su honor no está en el título ni en las promesas, sino en las acciones que lleva a cabo.': 'Knights, mercenaries, or independent fighters: there are many paths for a warrior. Their honor lies not in titles or promises, but in their actions.',
+  'Los magos buscan comprender las fuerzas que dan forma al mundo. Algunos estudian durante años; otros aprenden a base de probar, fallar y volver a intentarlo. La magia exige curiosidad, disciplina… y aceptar que no siempre sale como uno espera.': 'Mages seek to understand the forces that shape the world. Some study for years; others learn by trying, failing, and trying again. Magic demands curiosity, discipline… and the acceptance that things do not always go as expected.',
+  'Los pícaros conocen los atajos, las puertas traseras y el valor de escuchar antes de hablar. Algunos viven del ingenio, otros del sigilo o de saber a quién acudir; todos prefieren tener un plan de salida.': 'Rogues know the shortcuts, the back doors, and the value of listening before speaking. Some rely on wit, others on stealth or knowing whom to ask; all prefer to have an exit plan.',
+  'Los clérigos encuentran en la fe una fuente de poder y propósito. Algunos ofrecen consuelo y curación; otros defienden sus creencias con firmeza.': 'Clerics find a source of power and purpose in faith. Some offer comfort and healing; others stand firmly by their beliefs.',
+  'Los exploradores se sienten en casa lejos de los caminos transitados. Rastreadores, guías o viajeros solitarios, aprenden a leer el terreno y a arreglárselas con lo que encuentran.': 'Rangers feel at home far from well-travelled roads. Trackers, guides, or solitary wanderers, they learn to read the land and make do with what they find.',
+  'Marfil': 'Ivory', 'Melocotón': 'Peach', 'Miel': 'Honey', 'Canela': 'Cinnamon', 'Cacao': 'Cocoa', 'Ébano': 'Ebony',
+  'Alba': 'Dawn', 'Pétalo': 'Petal', 'Rosa': 'Rose', 'Lavanda': 'Lavender', 'Crepúsculo': 'Twilight', 'Trigo': 'Wheat',
+  'Junco': 'Reed', 'Laguna': 'Lagoon', 'Musgo': 'Moss', 'Arena': 'Sand', 'Río': 'River', 'Brasa': 'Ember',
+  'Negro': 'Black', 'Castaño': 'Brown', 'Azul': 'Blue', 'Verde': 'Green', 'Ámbar': 'Amber', 'Violeta': 'Violet', 'Rubí': 'Ruby', 'Gris': 'Gray',
+  'Azabache': 'Jet black', 'Castaño oscuro': 'Dark brown', 'Cobrizo': 'Auburn', 'Rubio': 'Blonde', 'Pelirrojo': 'Red', 'Plata': 'Silver', 'Grafito': 'Graphite',
+  'Carmesí': 'Crimson', 'Azul real': 'Royal blue', 'Bosque': 'Forest', 'Púrpura': 'Purple', 'Oro': 'Gold', 'Carbón': 'Charcoal', 'Lino': 'Linen', 'Turquesa': 'Turquoise', 'Calabaza': 'Pumpkin', 'Fucsia': 'Fuchsia', 'Rosa palo': 'Dusty pink', 'Menta': 'Mint', 'Cielo': 'Sky', 'Crema': 'Cream',
+  'Rojo': 'Red', 'Blanco': 'White', 'Lila': 'Lilac',
+  'Ninguno': 'None', 'Flor': 'Flower', 'Lazo': 'Ribbon', 'Horquilla de estrella': 'Star pin', 'Corona de flores': 'Flower crown', 'Diadema': 'Headband', 'Pluma': 'Feather',
+  'Sin capa': 'No cape', 'Capa corta': 'Short cape', 'Capa de mago': 'Mage cape', 'Capa noble': 'Noble cape', 'Capa de piel': 'Fur cape',
+  'Gafas redondas': 'Round glasses', 'Bufanda': 'Scarf', 'Colgante': 'Pendant', 'Pendientes': 'Earrings', 'Monóculo': 'Monocle', 'Gafas y bufanda': 'Glasses and scarf',
+  'Traje de clase': 'Class outfit', 'Ropa de diario': 'Everyday clothes',
+  'Pestañas': 'Eyelashes', 'Sombra de ojos': 'Eyeshadow', 'Labios': 'Lip color', 'Sombra y labios': 'Eyeshadow and lips', 'Brillitos': 'Glitter', 'Rabillo gatuno': 'Cat-eye liner',
+  'Túnica con capucha': 'Hooded tunic', 'Abrigo de botones': 'Buttoned coat', 'Cota acolchada': 'Padded armor', 'Jubón de cazador': 'Hunter’s jerkin',
+  'Guantes de cuero': 'Leather gloves', 'Mangas con puños': 'Cuffed sleeves', 'Guanteletes': 'Gauntlets', 'Mangas con pelo': 'Fur-trimmed sleeves',
+  'Calzas y zapatos': 'Trousers and shoes', 'Botas de viaje': 'Travel boots', 'Grebas': 'Greaves', 'Botas de pelo': 'Fur boots',
+  'Rapado': 'Shaved', 'Corto con flequillo': 'Short with bangs', 'Despeinado': 'Tousled', 'Media melena': 'Mid-length', 'Coleta': 'Ponytail', 'Moño': 'Bun', 'Dos coletas': 'Twin ponytails', 'Cresta': 'Mohawk', 'Melena larga': 'Long hair', 'Trenza': 'Braid', 'Moños dobles': 'Twin buns', 'Rizos': 'Curls', 'Coleta de lado': 'Side ponytail',
+  'Barba completa': 'Full beard', 'Barba corta': 'Short beard', 'Perilla': 'Goatee', 'Bigote': 'Mustache', 'Patillas': 'Sideburns',
+  'Normales': 'Normal', 'Grandes': 'Large', 'Pequeños': 'Small', 'Rasgados': 'Narrow', 'Dulces': 'Gentle', 'Soñolientos': 'Sleepy', 'Redondos': 'Round', 'Varoniles': 'Masculine', 'Afilados': 'Sharp',
+  'Naturales': 'Natural', 'Finas': 'Thin', 'Gruesas': 'Thick', 'Altas': 'Raised', 'Enfadadas': 'Angry', 'Preocupadas': 'Worried',
+  'Pequeña': 'Small', 'Grande': 'Large', 'Respingona': 'Upturned', 'Ancha': 'Wide', 'Aguileña': 'Aquiline', 'Botón': 'Button',
+  'Sonrisa': 'Smile', 'Sonrisa abierta': 'Open smile', 'Seria': 'Serious', 'Sorpresa': 'Surprised', 'Pícara': 'Mischievous', 'Colmillo': 'Fang',
+  'Rubor': 'Blush', 'Pecas': 'Freckles', 'Cicatriz': 'Scar', 'Pintura de guerra': 'War paint', 'Lunar': 'Beauty mark',
+  'Largas': 'Long', 'Cortas': 'Short', 'Caídas': 'Drooping', 'Puntiagudas': 'Pointed', 'Redondas': 'Round', 'Dobladas': 'Folded', 'Púas': 'Spikes', 'Cuernos': 'Horns', 'Aleta': 'Fin', 'Ninguna': 'None',
+  'Cresta del linaje': 'Crest',
+  'Serio': 'Serious', 'Noble': 'Noble', 'Dulce': 'Sweet', 'Cuadrada': 'Square',
+  'Ya tienes un personaje con ese nombre. Elige otro.': 'You already have a character with that name. Choose another.',
+  'Correo o contraseña incorrectos.': 'Incorrect email or password.',
+  'Confirma tu correo antes de iniciar sesión.': 'Confirm your email before signing in.',
+  'Ya existe una cuenta con ese correo.': 'An account with that email already exists.',
+  'Ha ocurrido un error inesperado. Inténtalo de nuevo.': 'An unexpected error occurred. Please try again.',
+};
+
+const reverseTranslations = new Map(Object.entries(translations).map(([source, translated]) => [translated, source]));
+const textSources = new WeakMap<Text, string>();
+const attributeSources = new WeakMap<Element, Map<string, string>>();
+
+let language: Language = localStorage.getItem('brumaluz-language') === 'en' ? 'en' : 'es';
+
+export function getLanguage() {
+  return language;
+}
+
+export function setLanguage(next: Language) {
+  language = next;
+  localStorage.setItem('brumaluz-language', next);
+  applyLanguage(document);
+  document.dispatchEvent(new CustomEvent('brumaluz-language-change', { detail: next }));
+}
+
+export function t(source: string, values: Record<string, string | number> = {}) {
+  let translated = language === 'en'
+    ? translations[source] ?? source
+    : reverseTranslations.get(source) ?? source;
+  for (const [key, value] of Object.entries(values)) translated = translated.replaceAll(`{${key}}`, String(value));
+  return translated;
+}
+
+export function applyLanguage(root: ParentNode) {
+  document.documentElement.lang = language;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const text = node as Text;
+    const source = textSources.get(text) ?? reverseTranslations.get(text.data.trim()) ?? text.data;
+    textSources.set(text, source);
+    const translated = language === 'en' ? translations[source.trim()] : reverseTranslations.get(source.trim());
+    if (translated) {
+      const leading = source.match(/^\s*/)?.[0] ?? '';
+      const trailing = source.match(/\s*$/)?.[0] ?? '';
+      text.data = `${leading}${translated}${trailing}`;
+    } else if (language === 'es') {
+      text.data = source;
+    }
+  }
+  const elements = root instanceof Document ? root.querySelectorAll('*') : root.querySelectorAll('*');
+  for (const element of elements) {
+    const sources = attributeSources.get(element) ?? new Map<string, string>();
+    for (const attribute of ['title', 'placeholder', 'aria-label', 'aria-description']) {
+      const value = element.getAttribute(attribute);
+      if (value === null) continue;
+      const source = sources.get(attribute) ?? value;
+      sources.set(attribute, source);
+      const translated = language === 'en' ? translations[source] : reverseTranslations.get(source);
+      if (translated) element.setAttribute(attribute, translated);
+      else if (language === 'es') element.setAttribute(attribute, source);
+    }
+    attributeSources.set(element, sources);
+  }
+}

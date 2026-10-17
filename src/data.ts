@@ -3,10 +3,36 @@ import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAI
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
 export type ClassId = 'guerrero' | 'mago' | 'picaro' | 'clerigo' | 'explorador';
+export type AttributeId = 'fuerza' | 'intelecto' | 'corpulencia' | 'agilidad' | 'pericia' | 'presencia' | 'percepcion';
+
+export interface AttributeDef {
+  label: string;
+  desc: string;
+}
+
+export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
+  fuerza: { label: 'Fuerza', desc: 'Aumenta el daño general en combate.' },
+  intelecto: { label: 'Intelecto', desc: 'Aumenta la reserva y el poder de la magia.' },
+  corpulencia: { label: 'Corpulencia', desc: 'Aumenta la vida máxima y la resistencia al daño.' },
+  agilidad: { label: 'Agilidad', desc: 'Aumenta la velocidad de movimiento y, ligeramente, la velocidad de ataque.' },
+  pericia: { label: 'Pericia', desc: 'Mejora la artesanía y la alquimia: velocidad de creación y probabilidad de obtener mejores objetos.' },
+  presencia: { label: 'Presencia', desc: 'Mejora el comercio, la negociación y las interacciones sociales.' },
+  percepcion: { label: 'Percepción', desc: 'Ayuda a rastrear, encontrar recursos y descubrir objetos.' },
+};
+
+export type AttributeBonuses = Record<AttributeId, number>;
+export const ATTRIBUTE_POINTS_AVAILABLE = 2;
+export const ATTRIBUTE_BASE_VALUE = 5;
+export const ATTRIBUTE_MAX_VALUE = 15;
+
+const noBonuses = (): AttributeBonuses => ({
+  fuerza: 0, intelecto: 0, corpulencia: 0, agilidad: 0, pericia: 0, presencia: 0, percepcion: 0,
+});
 
 export interface CharData {
   name: string;
   race: Race;
+  attributePoints: AttributeBonuses;
   sex: 0 | 1; // 0 hombre, 1 mujer: el cuerpo es el mismo; al cambiarlo se ajusta la personalización
   height: number; // 0..1
   build: number; // 0..1
@@ -43,6 +69,7 @@ export interface CharData {
 export interface RaceDef {
   label: string;
   desc: string;
+  bonuses: AttributeBonuses;
   skins: string[];
   skinNames: string[];
   traitLabel: string | null;
@@ -56,14 +83,16 @@ const HUMAN_SKIN_NAMES = ['Marfil', 'Melocotón', 'Miel', 'Canela', 'Cacao', 'É
 export const RACES: Record<Race, RaceDef> = {
   humano: {
     label: 'Humano',
-    desc: 'Gente de Brumaluz: artesanos, mercaderes y soñadores. Se adaptan a cualquier oficio.',
+    desc: 'Nacidos en Brumaluz o llegados de tierras lejanas, los humanos destacan por su ingenio y por encontrar su propio camino en cualquier oficio.',
+    bonuses: { ...noBonuses(), pericia: 3, presencia: 2 },
     skins: HUMAN_SKINS, skinNames: HUMAN_SKIN_NAMES,
     traitLabel: null, traits: [],
     names: [['Al', 'Ber', 'Cor', 'Dar', 'El', 'Gar', 'Is', 'Mar', 'Rod', 'Tor', 'Ali', 'Ro'], ['ric', 'an', 'ina', 'mundo', 'wen', 'eth', 'iel', 'do', 'berto', 'lia', 'sa']],
   },
   elfo: {
     label: 'Elfo',
-    desc: 'Guardianes de los bosques que rodean la ciudad. Esbeltos, longevos y amantes de la música.',
+    desc: 'Desde hace generaciones, los elfos protegen los bosques que abrazan Brumaluz. Su larga vida y conocimiento de la naturaleza los han convertido en hábiles alquimistas.',
+    bonuses: { ...noBonuses(), intelecto: 2, pericia: 2, agilidad: 1 },
     skins: ['#fbe0cc', '#f2cdb0', '#e8c4c8', '#c9b4d8', '#9f8fc6', '#d4bc94'],
     skinNames: ['Alba', 'Pétalo', 'Rosa', 'Lavanda', 'Crepúsculo', 'Trigo'],
     traitLabel: 'Orejas', traits: ['Largas', 'Cortas', 'Caídas'],
@@ -71,7 +100,8 @@ export const RACES: Record<Race, RaceDef> = {
   },
   lagto: {
     label: "Lagto'",
-    desc: 'Gente lagarto de los pantanos del sur. Pescadores, alquimistas y los mejores nadadores del reino.',
+    desc: 'Los Lagto’ hacen su hogar en montañas pedregosas, entre grietas estrechas y cavernas donde apenas llega la luz. Recios y pacientes, conocen los pasos ocultos de la roca mejor que nadie.',
+    bonuses: { ...noBonuses(), fuerza: 2, corpulencia: 3 },
     skins: ['#7cc06a', '#4fae94', '#a8c25a', '#e0a050', '#5d93c8', '#c86a5a'],
     skinNames: ['Junco', 'Laguna', 'Musgo', 'Arena', 'Río', 'Brasa'],
     traitLabel: 'Cresta', traits: ['Púas', 'Cuernos', 'Aleta', 'Ninguna'],
@@ -79,7 +109,8 @@ export const RACES: Record<Race, RaceDef> = {
   },
   pelso: {
     label: 'Pelso',
-    desc: 'Gente gato de orejas suaves y cola inquieta. Curiosos, ágiles y expertos en encontrar el rincón más soleado.',
+    desc: 'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos. Se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
+    bonuses: { ...noBonuses(), fuerza: 1, corpulencia: 1, agilidad: 2, percepcion: 1 },
     skins: HUMAN_SKINS, skinNames: HUMAN_SKIN_NAMES,
     traitLabel: 'Orejas', traits: ['Puntiagudas', 'Redondas', 'Dobladas'],
     names: [['Mi', 'Nu', 'Pi', 'Ro', 'Ca', 'Mo', 'Tis', 'Lu', 'Fe'], ['sha', 'ru', 'lo', 'mi', 'ki', 'fu', 'sia', 'nya', 'rra']],
@@ -97,11 +128,11 @@ export interface ClassDef {
 }
 
 export const CLASSES: Record<ClassId, ClassDef> = {
-  guerrero: { label: 'Guerrero', desc: 'Armadura, yelmo, espada y escudo. Protege las murallas y a sus amigos.', primary: 0, secondary: 4 },
-  mago: { label: 'Mago', desc: 'Estudia las runas en la torre del reloj. Su bastón brilla con magia arcana.', primary: 3, secondary: 10 },
-  picaro: { label: 'Pícaro', desc: 'Se mueve entre tejados y callejones. Dagas gemelas y muchos secretos.', primary: 2, secondary: 5 },
-  clerigo: { label: 'Clérigo', desc: 'Sanador del templo del Sol. Varita, libro sagrado y mucha paciencia.', primary: 7, secondary: 4 },
-  explorador: { label: 'Explorador', desc: 'Cazador de los caminos con gorro de oso y ballesta. Conoce cada sendero.', primary: 1, secondary: 5 },
+  guerrero: { label: 'Guerrero', desc: 'Caballeros, mercenarios o luchadores por cuenta propia: hay muchos caminos para un guerrero. Su honor no está en el título ni en las promesas, sino en las acciones que lleva a cabo.', primary: 0, secondary: 4 },
+  mago: { label: 'Mago', desc: 'Los magos buscan comprender las fuerzas que dan forma al mundo. Algunos estudian durante años; otros aprenden a base de probar, fallar y volver a intentarlo. La magia exige curiosidad, disciplina… y aceptar que no siempre sale como uno espera.', primary: 3, secondary: 10 },
+  picaro: { label: 'Pícaro', desc: 'Los pícaros conocen los atajos, las puertas traseras y el valor de escuchar antes de hablar. Algunos viven del ingenio, otros del sigilo o de saber a quién acudir; todos prefieren tener un plan de salida.', primary: 2, secondary: 5 },
+  clerigo: { label: 'Clérigo', desc: 'Los clérigos encuentran en la fe una fuente de poder y propósito. Algunos ofrecen consuelo y curación; otros defienden sus creencias con firmeza.', primary: 7, secondary: 4 },
+  explorador: { label: 'Explorador', desc: 'Los exploradores se sienten en casa lejos de los caminos transitados. Rastreadores, guías o viajeros solitarios, aprenden a leer el terreno y a arreglárselas con lo que encuentran.', primary: 1, secondary: 5 },
 };
 
 export const HAIR_COLORS = ['#2a1d16', '#5a3a22', '#8a5a2b', '#c48a3f', '#e8c97e', '#b23a22', '#e4e0d8', '#3a3a4a', '#5a86c8', '#8a5fb8', '#4f9a6a', '#d8608a'];
@@ -129,7 +160,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', race: 'humano', sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
+    name: '', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0, cityWear: 0,
@@ -143,6 +174,18 @@ export function sanitize(d: Record<string, unknown>): CharData {
   if (!(out.cls in CLASSES)) out.cls = 'guerrero';
   if (out.sex !== 0 && out.sex !== 1) out.sex = 0;
   const R = RACES[out.race];
+  const rawPoints = d.attributePoints && typeof d.attributePoints === 'object'
+    ? d.attributePoints as Record<string, unknown>
+    : {};
+  let remainingPoints = ATTRIBUTE_POINTS_AVAILABLE;
+  out.attributePoints = noBonuses();
+  for (const key of Object.keys(ATTRIBUTES) as AttributeId[]) {
+    const value = Number(rawPoints[key]);
+    const maxPoints = Math.max(ATTRIBUTE_MAX_VALUE - ATTRIBUTE_BASE_VALUE - R.bonuses[key], 0);
+    const points = Number.isFinite(value) ? Math.min(Math.max(Math.floor(value), 0), remainingPoints, maxPoints) : 0;
+    out.attributePoints[key] = points;
+    remainingPoints -= points;
+  }
   const clamp = (n: unknown, len: number) => Math.min(Math.max((Number(n) | 0), 0), Math.max(len - 1, 0));
   out.skin = clamp(out.skin, R.skins.length);
   out.face = clamp(out.face, FACE_KITS.length);
@@ -161,7 +204,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.top = clamp(out.top, TOPS.length);
   out.arms = clamp(out.arms, ARMS.length);
   out.legs = clamp(out.legs, LEGS.length);
-  out.cape = clamp(out.cape, CAPES.length);
+  out.cape = 0;
   out.clothA = clamp(out.clothA, CLOTH.length);
   out.clothB = clamp(out.clothB, CLOTH.length);
   out.hairAcc = clamp(out.hairAcc, HAIR_ACCS.length);
@@ -169,8 +212,10 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.makeup = clamp(out.makeup, MAKEUPS.length);
   out.accColor = clamp(out.accColor, ACC_COLORS.length);
   out.cityWear = clamp(out.cityWear, CITY_WEAR.length);
-  out.height = Math.min(Math.max(Number(out.height) || 0.5, 0), 1);
-  out.build = Math.min(Math.max(Number(out.build) || 0.5, 0), 1);
+  const height = Number(out.height);
+  const build = Number(out.build);
+  out.height = Math.min(Math.max(Number.isFinite(height) ? height : 0.5, 0), 1);
+  out.build = Math.min(Math.max(Number.isFinite(build) ? build : 0.5, 0), 1);
   for (const k of Object.keys(out)) if (!(k in defaultChar())) delete (out as unknown as Record<string, unknown>)[k];
   return out;
 }
@@ -183,7 +228,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    name: randomName(race), race, sex,
+    name: randomName(race), race, attributePoints: noBonuses(), sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11][rnd(6)], hairColor: rnd(HAIR_COLORS.length),
@@ -191,7 +236,7 @@ export function randomChar(): CharData {
     brows: rnd(BROWS.length), nose: rnd(NOSES.length), mouth: rnd(MOUTHS.length), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
     cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),
-    top: rnd(TOPS.length), arms: rnd(ARMS.length), legs: rnd(LEGS.length), cape: Math.random() < 0.6 ? 0 : rnd(CAPES.length),
+    top: rnd(TOPS.length), arms: rnd(ARMS.length), legs: rnd(LEGS.length), cape: 0,
     clothA: rnd(CLOTH.length), clothB: rnd(CLOTH.length),
     hairAcc: Math.random() < 0.5 ? 0 : rnd(HAIR_ACCS.length), acc: Math.random() < 0.6 ? 0 : rnd(ACCS.length),
     makeup: sex ? 1 + (Math.random() < 0.5 ? 0 : rnd(MAKEUPS.length - 1)) : 0, accColor: rnd(ACC_COLORS.length), cityWear: 0,

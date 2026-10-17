@@ -9,10 +9,116 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
-<body>
+<body class="auth-visible">
   <canvas id="scene"></canvas>
 
   <div id="loading"><div class="crest">✦</div><p>Encendiendo los faroles de Brumaluz…</p></div>
+
+  <div id="account-backdrop" aria-hidden="true">
+    <span class="account-moon"></span>
+    <span class="account-mountains"></span>
+    <span class="account-town">
+      <i class="account-tower"></i>
+      <i class="account-house account-house-one"></i>
+      <i class="account-house account-house-two"></i>
+      <i class="account-house account-house-three"></i>
+    </span>
+  </div>
+  <div id="account-language-switch" class="language-switch" aria-label="Idioma">
+    <button type="button" data-language="es" aria-label="Español">
+      <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+        <path fill="#AA151B" d="M0 0h30v20H0z" />
+        <path fill="#F1BF00" d="M0 5h30v10H0z" />
+      </svg>
+    </button>
+    <button type="button" data-language="en" aria-label="English">
+      <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+        <path fill="#012169" d="M0 0h30v20H0z" />
+        <path stroke="#FFF" stroke-width="5" d="m0 0 30 20M30 0 0 20" />
+        <path stroke="#C8102E" stroke-width="2" d="m0 0 30 20M30 0 0 20" />
+        <path stroke="#FFF" stroke-width="8" d="M15 0v20M0 10h30" />
+        <path stroke="#C8102E" stroke-width="4" d="M15 0v20M0 10h30" />
+      </svg>
+    </button>
+  </div>
+  <main id="account-gate" aria-live="polite">
+    <section id="auth-screen" class="account-card frame">
+      <div class="account-brand"><span class="account-crest">✦</span><span>Crónicas de Brumaluz</span></div>
+      <h2 id="auth-title">Un nuevo capítulo</h2>
+      <p id="auth-intro" class="account-intro">Inicia sesión o crea una cuenta para entrar en el mundo de Brumaluz.</p>
+      <div id="auth-config-error" class="account-message error" hidden></div>
+      <div class="auth-switch" role="tablist" aria-label="Acceso a la cuenta">
+        <button type="button" class="active" data-auth-mode="login" role="tab" aria-selected="true">Iniciar sesión</button>
+        <button type="button" data-auth-mode="register" role="tab" aria-selected="false">Crear cuenta</button>
+      </div>
+      <form id="auth-form">
+        <label for="auth-email">Correo electrónico</label>
+        <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+        <label for="auth-password">Contraseña</label>
+        <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="8" />
+        <div id="confirm-password-field" hidden>
+          <label for="auth-confirm-password">Repite la contraseña</label>
+          <input id="auth-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" />
+        </div>
+        <p id="auth-message" class="account-message" role="status"></p>
+        <button id="auth-submit" class="btn gold account-submit" type="submit">Iniciar sesión</button>
+        <button id="forgot-password" class="text-button" type="button">¿Olvidaste tu contraseña?</button>
+      </form>
+      <form id="recovery-request-form" class="recovery-form" hidden>
+        <p class="account-intro">Te enviaremos un enlace para restablecer la contraseña de tu cuenta.</p>
+        <label for="recovery-email">Correo electrónico</label>
+        <input id="recovery-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+        <p id="recovery-request-message" class="account-message" role="status"></p>
+        <button id="recovery-request-submit" class="btn gold account-submit" type="submit">Enviar enlace</button>
+        <button id="recovery-back-to-login" class="text-button" type="button">Volver a iniciar sesión</button>
+      </form>
+      <form id="password-update-form" class="recovery-form" hidden>
+        <p class="account-intro">Elige una contraseña nueva para tu cuenta.</p>
+        <label for="new-password">Nueva contraseña</label>
+        <input id="new-password" name="newPassword" type="password" autocomplete="new-password" required minlength="8" />
+        <label for="confirm-new-password">Repite la nueva contraseña</label>
+        <input id="confirm-new-password" name="confirmNewPassword" type="password" autocomplete="new-password" required minlength="8" />
+        <p id="password-update-message" class="account-message" role="status"></p>
+        <button id="password-update-submit" class="btn gold account-submit" type="submit">Cambiar contraseña</button>
+      </form>
+    </section>
+    <section id="character-screen" class="account-card frame" hidden>
+      <div class="account-brand">
+        <span class="account-crest">✦</span><span>Crónicas de Brumaluz</span>
+        <button id="sign-out" type="button" class="sign-out-icon" aria-label="Cerrar sesión" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4m4-4H9" />
+          </svg>
+        </button>
+      </div>
+      <div class="account-heading">
+        <div>
+          <p class="account-eyebrow">Tu aventura continúa</p>
+          <h2>Tus personajes <span id="character-count" class="character-count" aria-label="Personajes guardados"></span></h2>
+          <p id="account-email" class="account-intro"></p>
+        </div>
+      </div>
+      <p id="character-message" class="account-message" role="status"></p>
+      <div id="character-list" class="character-list"></div>
+      <p id="character-limit-message" class="account-intro character-limit-message"></p>
+      <button id="new-character" type="button" class="btn gold account-submit">Crear personaje</button>
+    </section>
+  </main>
+
+  <div id="delete-dialog-backdrop" class="dialog-backdrop" hidden>
+    <section class="delete-dialog frame" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
+      <p class="account-eyebrow">Acción irreversible</p>
+      <h2 id="delete-dialog-title">Borrar personaje</h2>
+      <p id="delete-dialog-description" class="account-intro"></p>
+      <label for="delete-character-name">Escribe el nombre del personaje para confirmar:</label>
+      <input id="delete-character-name" type="text" autocomplete="off" spellcheck="false" />
+      <p id="delete-dialog-message" class="account-message error" role="alert"></p>
+      <div class="delete-dialog-actions">
+        <button id="cancel-delete" type="button" class="btn ghost">Cancelar</button>
+        <button id="confirm-delete" type="button" class="btn danger" disabled>Borrar definitivamente</button>
+      </div>
+    </section>
+  </div>
 
   <header id="title">
     <h1>Crónicas de Brumaluz</h1>
@@ -32,6 +138,9 @@
         <h3>Linaje</h3>
         <div class="cards" id="races"></div>
         <p class="desc" id="raceDesc"></p>
+        <h3>Atributos</h3>
+        <p id="attributePointsLeft" class="attribute-points-left" aria-live="polite"></p>
+        <div id="raceStats" class="race-stats"></div>
         <h3>Sexo</h3>
         <div class="seg" id="sex">
           <button data-v="0">Hombre</button>
@@ -82,8 +191,6 @@
         <div class="stepper" data-key="arms"></div>
         <h3>Piernas</h3>
         <div class="stepper" data-key="legs"></div>
-        <h3>Capa</h3>
-        <div class="stepper" data-key="cape"></div>
         <h3>Color principal</h3>
         <div class="swatches" id="clothA"></div>
         <h3>Color secundario</h3>
@@ -109,6 +216,7 @@
   </aside>
 
   <div id="tools">
+    <button id="account-characters" class="btn ghost" title="Volver a tus personajes">♙ Mis personajes</button>
     <button id="random" class="btn ghost" title="Personaje aleatorio">🎲 Aleatorio</button>
     <button id="wave" class="btn ghost" title="Saludar">👋 Saludar</button>
   </div>
@@ -118,14 +226,39 @@
       <input id="name" maxlength="16" placeholder="Nombre del personaje" autocomplete="off" spellcheck="false" />
       <button id="dice" title="Nombre aleatorio">⟳</button>
     </div>
-    <button id="enter" class="btn gold">Entrar en Brumaluz</button>
+    <div class="bottom-actions">
+      <button id="enter" class="btn gold">Guardar y entrar</button>
+    </div>
   </footer>
 
-  <div id="hud" class="frame">
-    <div class="who"><strong id="hudName"></strong><span id="hudClass"></span></div>
-    <button id="back" class="btn ghost" title="Volver al creador de personaje">✎ Creador</button>
+  <div id="game-menu" class="game-menu">
+    <button id="game-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="game-menu-panel">
+      <span aria-hidden="true">☰</span>
+    </button>
+    <section id="game-menu-panel" class="game-menu-panel frame" aria-labelledby="game-menu-title" hidden>
+      <h2 id="game-menu-title">Menú</h2>
+      <div class="language-switch game-language-switch" aria-label="Idioma">
+        <button type="button" data-language="es" aria-label="Español">
+          <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+            <path fill="#AA151B" d="M0 0h30v20H0z" />
+            <path fill="#F1BF00" d="M0 5h30v10H0z" />
+          </svg>
+        </button>
+        <button type="button" data-language="en" aria-label="English">
+          <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+            <path fill="#012169" d="M0 0h30v20H0z" />
+            <path stroke="#FFF" stroke-width="5" d="m0 0 30 20M30 0 0 20" />
+            <path stroke="#C8102E" stroke-width="2" d="m0 0 30 20M30 0 0 20" />
+            <path stroke="#FFF" stroke-width="8" d="M15 0v20M0 10h30" />
+            <path stroke="#C8102E" stroke-width="4" d="M15 0v20M0 10h30" />
+          </svg>
+        </button>
+      </div>
+      <button id="game-menu-characters" class="btn ghost" type="button">Selección de personaje</button>
+      <button id="game-menu-logout" class="btn ghost" type="button">Salir del juego</button>
+      <p id="game-menu-message" class="account-message" role="status"></p>
+    </section>
   </div>
-  <div id="controls">WASD o clic para moverte · Mayús para caminar · Arrastra para mirar · E para saludar</div>
 
   <div id="hint">Arrastra para girar · Rueda para acercar</div>
   <div id="toast"></div>

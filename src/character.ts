@@ -183,9 +183,7 @@ export class Character {
     this.root.add(this.model);
 
     // Proporciones
-    const h = 0.94 + d.height * 0.12, w = 0.92 + d.build * 0.18;
-    const k = UNIT * h;
-    this.model.scale.set(k * w, k, k * w);
+    this.model.scale.setScalar(UNIT);
 
     // Colores
     const skin = R.skins[d.skin];
@@ -206,6 +204,12 @@ export class Character {
         matCache.set(k, m);
         this.owned.push(m);
       }
+      return m;
+    };
+    const capeMat = (kit: Kit) => {
+      const m = mat(kit, true).clone();
+      m.side = THREE.DoubleSide;
+      this.owned.push(m);
       return m;
     };
 
@@ -241,7 +245,8 @@ export class Character {
     // Piezas
     if (this.opts.outfit) {
       for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
-      if (outfit.cape) { this.addRigid(outfit.kit, `${outfit.kit}_Cape`, mat(outfit.kit, true)); this.addMantle(outfit.kit, outfit.kit, mat(outfit.kit, true)); }
+      // Capas desactivadas temporalmente; restaurar esta línea para reactivarlas:
+      // if (outfit.cape) { const cm = capeMat(outfit.kit); this.addRigid(outfit.kit, `${outfit.kit}_Cape`, cm); this.addMantle(outfit.kit, outfit.kit, cm); }
     } else {
       // ropa de diario: torso, mangas y piernas combinables de los cuatro modelos
       const top = OUTFIT_KITS[d.top], arms = OUTFIT_KITS[d.arms], legs = OUTFIT_KITS[d.legs];
@@ -250,7 +255,8 @@ export class Character {
         this.addSkinned(arms, `${arms}_Arm${side}`, mat(arms, true));
         this.addSkinned(legs, `${legs}_Leg${side}`, mat(legs, true));
       }
-      if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1]; this.addRigid(k, `${k}_Cape`, mat(k, true)); this.addMantle(top, k, mat(k, true)); }
+      // Restaurar esta línea junto con el selector de capa para habilitar capas en ropa diaria:
+      // if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1], cm = capeMat(k); this.addRigid(k, `${k}_Cape`, cm); this.addMantle(top, k, cm); }
     }
     if (outfit.hat) {
       // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
@@ -347,6 +353,44 @@ export class Character {
     const m = new THREE.Mesh(g, material);
     m.castShadow = true;
     chest.add(m);
+    const columns = 8, rows = 4, positions: number[] = [], uvs: number[] = [], indices: number[] = [];
+    const panelWidth = rx * 0.82;
+    const capeU = ((cell % 8) + 0.5) / 8, capeV = (Math.floor(cell / 8) + 0.5) / 8;
+    for (let row = 0; row <= rows; row++) {
+      const t = row / rows;
+      const panelY = y - 0.08 - t * 0.22;
+      const side = hitAt(new THREE.Vector3(2, panelY, 0), new THREE.Vector3(-1, 0, 0), 0)?.x ?? rx;
+      const width = Math.min(panelWidth, side * 0.88) * (1 - t * 0.32);
+      for (let col = 0; col <= columns; col++) {
+        const u = col / columns, x = (u * 2 - 1) * width;
+        const panelYDrop = t * (1 - Math.abs(u * 2 - 1)) * 0.04;
+        const vertexY = panelY - panelYDrop;
+        const curvedZ = rzF * Math.sqrt(Math.max(0.2, 1 - (x / (rx * 1.12)) ** 2));
+        const front = hitAt(new THREE.Vector3(x, vertexY, 2), new THREE.Vector3(0, 0, -1), 0)?.z ?? curvedZ;
+        positions.push(x, vertexY, front + 0.085);
+        uvs.push(capeU, capeV);
+        if (row < rows && col < columns) {
+          const a = row * (columns + 1) + col, b = a + columns + 1;
+          indices.push(a, b, a + 1, b, b + 1, a + 1);
+        }
+      }
+    }
+    const panel = new THREE.BufferGeometry();
+    panel.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    panel.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    panel.setIndex(indices);
+    panel.computeVertexNormals();
+    panel.applyMatrix4(toBone);
+    this.owned.push(panel);
+    const drapeMaterial = (material as THREE.MeshStandardMaterial).clone();
+    drapeMaterial.color.setScalar(0.78);
+    drapeMaterial.polygonOffset = true;
+    drapeMaterial.polygonOffsetFactor = -1;
+    drapeMaterial.polygonOffsetUnits = -1;
+    this.owned.push(drapeMaterial);
+    const drape = new THREE.Mesh(panel, drapeMaterial);
+    drape.castShadow = true;
+    chest.add(drape);
     // broche dorado
     const bg = new THREE.SphereGeometry(0.045, 14, 10).scale(1, 1, 0.5).translate(0, y - 0.06, zf + 0.07).applyMatrix4(toBone);
     this.owned.push(bg);
@@ -529,6 +573,8 @@ export class Character {
     const dt = this.lastT < 0 ? 0 : Math.min(t - this.lastT, 0.1);
     this.lastT = t;
     this.mixer.update(dt);
+    // Animation tracks reset bone scales, so reapply the chosen proportions afterward.
+    this.applyBodyShape();
     if (this.tail) this.tail.forEach((g, i) => { g.rotation.y = Math.sin(t * 1.6 - i * 0.6) * 0.16; g.rotation.x = Math.sin(t * 1.1 - i * 0.5) * 0.05; });
     this.ears.forEach((e, i) => { e.rotation.x = (e.userData.rx ??= e.rotation.x) - Math.max(0, Math.sin(t * 0.7 + i * 0.4) - 0.97) * 8; });
     if (this.glow) this.glow.scale.setScalar(0.45 + Math.sin(t * 3) * 0.05);
@@ -542,6 +588,28 @@ export class Character {
     const joy = t < this.happyUntil && t > this.happyUntil - 1.45;
     for (const e of this.eyes) e.o.visible = !joy;
     for (const h of this.happy) h.visible = joy;
+  }
+
+  private applyBodyShape() {
+    const height = this.d.height * 2 - 1;
+    const build = this.d.build * 2 - 1;
+    const scale = (name: string, x: number, y: number, z: number) => {
+      this.bones.get(name)?.scale.set(x, y, z);
+    };
+    const hipsX = 1 + build * 0.05, hipsZ = 1 + build * 0.06;
+    const spineX = 1 + build * 0.05, spineY = 1 + height * 0.035, spineZ = 1 + build * 0.08;
+    const chestX = 1 + build * 0.08, chestY = 1 + height * 0.025, chestZ = 1 + build * 0.1;
+    scale('hips', hipsX, 1, hipsZ);
+    scale('spine', spineX, spineY, spineZ);
+    scale('chest', chestX, chestY, chestZ);
+    scale('head', (1 + build * 0.015) / (hipsX * spineX * chestX), (1 + build * 0.01) / (spineY * chestY), (1 + build * 0.015) / (hipsZ * spineZ * chestZ));
+    for (const side of ['l', 'r']) {
+      scale(`upperarm.${side}`, 1 + build * 0.05, 1 + height * 0.07, 1 + build * 0.05);
+      scale(`lowerarm.${side}`, 1 + build * 0.04, 1 + height * 0.05, 1 + build * 0.04);
+      scale(`upperleg.${side}`, 1 + build * 0.06, 1 + height * 0.14, 1 + build * 0.06);
+      scale(`lowerleg.${side}`, 1 + build * 0.05, 1 + height * 0.1, 1 + build * 0.05);
+    }
+    this.model.position.y = -height * 0.025;
   }
 
   dispose() {

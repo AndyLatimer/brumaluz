@@ -1,4 +1,11 @@
 import * as THREE from 'three';
+import {
+  accountConfigError, currentSession, getAccountClient, listCharacters, onAuthChange,
+  requestPasswordReset, saveCharacter as persistCharacter, signIn, signOut, signUp, updatePassword, type SavedCharacter,
+  deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
+} from './account';
+import type { User } from '@supabase/supabase-js';
+import { applyLanguage, getLanguage, setLanguage, t } from './i18n';
 import { world } from './paint';
 import { buildEnv } from './env';
 import { Character, loadKits } from './character';
@@ -6,23 +13,21 @@ import { setupStage, castShadows } from './render';
 import { buildCity, City } from './city';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
-  CharData, Race, ClassId, RACES, CLASSES, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
-  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, CAPES, HAIR_ACCS, ACCS, MAKEUPS, CITY_WEAR, ACC_COLORS, ACC_COLOR_NAMES,
+  CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
+  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, HAIR_ACCS, ACCS, MAKEUPS, CITY_WEAR, ACC_COLORS, ACC_COLOR_NAMES,
 } from './data';
 
 
 // ---------------- Estado ----------------
-const SAVE_KEY = 'brumaluz.personaje';
 let state: CharData = defaultChar();
-try {
-  const saved = localStorage.getItem(SAVE_KEY);
-  if (saved) state = sanitize(JSON.parse(saved));
-} catch { /* sin almacenamiento: empezamos de cero */ }
 if (!state.name) state.name = randomName(state.race);
 
-function save() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch { /* ignorar */ }
-}
+let activeCharacterId: string | null = null;
+let currentUser: User | null = null;
+let cachedCharacters: SavedCharacter[] = [];
+let accountSyncId = 0;
+let savingCharacter = false;
+let passwordRecoveryUser: User | null = null;
 
 // ---------------- Render ----------------
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
@@ -55,7 +60,6 @@ function rebuildNow() {
   char.update(clock.getElapsedTime());
   if (pendingHop) char.hop();
   pendingHop = false;
-  save();
 }
 /** Reconstruye como mucho una vez por fotograma (los deslizadores disparan mucho). */
 function rebuild(hop = false) {
@@ -153,7 +157,13 @@ canvas.addEventListener('wheel', (e) => {
 // ---------------- Exploración ----------------
 const keys = new Set<string>();
 window.addEventListener('keydown', (e) => {
-  if (mode !== 'play' || (e.target as HTMLElement).tagName === 'INPUT') return;
+  if (mode !== 'play') return;
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    if (!e.repeat) setGameMenuOpen(!gameMenuOpen);
+    return;
+  }
+  if (gameMenuOpen || (e.target as HTMLElement).tagName === 'INPUT') return;
   keys.add(e.code);
   if (e.code === 'KeyE') char.wave();
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
@@ -212,8 +222,6 @@ function updatePlay(dt: number) {
 function enterPlay() {
   mode = 'play';
   document.body.classList.add('playing');
-  $('#hudName').textContent = state.name;
-  $('#hudClass').textContent = `${RACES[state.race].label} · ${CLASSES[state.cls].label}`;
   yaw = city.spawnYaw; pitch = 0.55; followDist = 12;
   camera.fov = 50;
   holder.rotation.y = city.spawnYaw + Math.PI;
@@ -223,6 +231,7 @@ function enterPlay() {
 }
 function exitPlay() {
   mode = 'create';
+  setGameMenuOpen(false, false);
   document.body.classList.remove('playing');
   keys.clear();
   moveTarget = null;
@@ -240,6 +249,49 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySe
 const RACE_ICONS: Record<Race, string> = { humano: '🛡️', elfo: '🌿', lagto: '🦎', pelso: '🐱' };
 const CLASS_ICONS: Record<ClassId, string> = { guerrero: '⚔️', mago: '✨', picaro: '🗡️', clerigo: '☀️', explorador: '🏹' };
 
+applyLanguage(document);
+
+function refreshLanguageDependentUI() {
+  const language = getLanguage();
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-language]')) {
+    const selected = button.dataset.language === language;
+    button.setAttribute('aria-pressed', String(selected));
+    button.title = t(button.dataset.language === 'es' ? 'Español' : 'English');
+  }
+  refreshUI();
+  if (currentUser) displayCharacters(cachedCharacters);
+  $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
+  $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
+  if (characterPendingDeletion) {
+    $('#delete-dialog-description').textContent = t('Vas a borrar definitivamente a {name}. Esta acción no se puede deshacer.', { name: characterPendingDeletion.name });
+  }
+  renderToast();
+}
+
+for (const button of document.querySelectorAll<HTMLButtonElement>('[data-language]')) {
+  button.onclick = () => setLanguage(button.dataset.language === 'en' ? 'en' : 'es');
+  const selected = button.dataset.language === getLanguage();
+  button.setAttribute('aria-pressed', String(selected));
+  button.title = t(button.dataset.language === 'es' ? 'Español' : 'English');
+}
+document.addEventListener('brumaluz-language-change', refreshLanguageDependentUI);
+
+let gameMenuOpen = false;
+
+function setGameMenuOpen(open: boolean, restoreFocus = true) {
+  gameMenuOpen = open;
+  const toggle = $<HTMLButtonElement>('#game-menu-toggle');
+  const panel = $('#game-menu-panel');
+  panel.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  toggle.setAttribute('aria-label', t(open ? 'Cerrar menú' : 'Abrir menú'));
+  $('#game-menu-message').textContent = '';
+  $('#game-menu-message').classList.remove('error');
+  keys.clear();
+  if (open) $<HTMLButtonElement>('#game-menu-characters').focus();
+  else if (restoreFocus) toggle.focus();
+}
+
 function set<K extends keyof CharData>(key: K, value: CharData[K], hop = false) {
   state[key] = value;
   state = sanitize(state as unknown as Record<string, unknown>);
@@ -253,7 +305,7 @@ function cards<T extends string>(el: HTMLElement, items: Record<T, { label: stri
     const b = document.createElement('button');
     b.className = 'card';
     b.dataset.k = k;
-    b.innerHTML = `<span class="ic">${icons[k]}</span>${items[k].label}`;
+    b.innerHTML = `<span class="ic">${icons[k]}</span>${t(items[k].label)}`;
     b.onclick = () => onPick(k);
     el.appendChild(b);
   });
@@ -267,8 +319,8 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairCo
       const b = document.createElement('button');
       b.className = 'sw' + (state[key] === i ? ' active' : '');
       b.style.background = c;
-      b.title = ns[i] ?? '';
-      b.setAttribute('aria-label', ns[i] ?? c);
+      b.title = t(ns[i] ?? '');
+      b.setAttribute('aria-label', t(ns[i] ?? c));
       b.onclick = () => set(key, i);
       el.appendChild(b);
     });
@@ -277,14 +329,14 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairCo
 
 function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'top' | 'arms' | 'legs' | 'cape' | 'hairAcc' | 'acc' | 'makeup' | 'cityWear', list: () => string[]) {
   const el = $(`.stepper[data-key="${key}"]`);
-  el.innerHTML = `<button aria-label="Anterior">‹</button><div class="val"></div><button aria-label="Siguiente">›</button>`;
+  el.innerHTML = `<button aria-label="${t('Anterior')}">‹</button><div class="val"></div><button aria-label="${t('Siguiente')}">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
   prev.onclick = () => { const l = list(); set(key, (state[key] + l.length - 1) % l.length); };
   next.onclick = () => { const l = list(); set(key, (state[key] + 1) % l.length); };
   return () => {
     const l = list();
     if (!l.length) return;
-    (el.querySelector('.val') as HTMLElement).innerHTML = `${l[state[key]]}<small>${state[key] + 1} / ${l.length}</small>`;
+    (el.querySelector('.val') as HTMLElement).innerHTML = `${t(l[state[key]])}<small>${state[key] + 1} / ${l.length}</small>`;
   };
 }
 
@@ -319,7 +371,6 @@ const renders = [
   stepper('top', () => TOPS),
   stepper('arms', () => ARMS),
   stepper('legs', () => LEGS),
-  stepper('cape', () => CAPES),
   stepper('acc', () => ACCS),
   stepper('cityWear', () => CITY_WEAR),
   swatches($('#clothA'), () => CLOTH, 'clothA', () => CLOTH_NAMES),
@@ -344,21 +395,66 @@ for (const key of ['height', 'build'] as const) {
 }
 
 const nameInput = $<HTMLInputElement>('#name');
-nameInput.oninput = () => { state.name = nameInput.value; save(); };
-$('#dice').onclick = () => { state.name = randomName(state.race); refreshUI(); save(); };
+nameInput.oninput = () => { state.name = nameInput.value; };
+$('#dice').onclick = () => { state.name = randomName(state.race); refreshUI(); };
 
 function refreshUI() {
   document.querySelectorAll<HTMLElement>('#races .card').forEach((c) => c.classList.toggle('active', c.dataset.k === state.race));
   document.querySelectorAll<HTMLElement>('#classes .card').forEach((c) => c.classList.toggle('active', c.dataset.k === state.cls));
-  $('#raceDesc').textContent = RACES[state.race].desc;
-  $('#classDesc').textContent = CLASSES[state.cls].desc;
+  $('#raceDesc').textContent = t(RACES[state.race].desc);
+  const stats = $('#raceStats');
+  stats.replaceChildren();
+  const assigned = Object.values(state.attributePoints).reduce((sum, points) => sum + points, 0);
+  const remaining = ATTRIBUTE_POINTS_AVAILABLE - assigned;
+  $('#attributePointsLeft').textContent = t('Puntos para repartir: {remaining} de {total}', { remaining, total: ATTRIBUTE_POINTS_AVAILABLE });
+  (Object.keys(ATTRIBUTES) as AttributeId[]).forEach((key) => {
+    const row = document.createElement('div');
+    row.className = 'race-stat';
+    row.title = t(ATTRIBUTES[key].desc);
+    const label = document.createElement('span');
+    label.textContent = t(ATTRIBUTES[key].label);
+    const value = document.createElement('strong');
+    const racialBonus = RACES[state.race].bonuses[key];
+    const allocated = state.attributePoints[key];
+    const bonus = racialBonus + allocated;
+    const total = ATTRIBUTE_BASE_VALUE + bonus;
+    value.textContent = `${ATTRIBUTE_BASE_VALUE}${bonus ? ` +${bonus} (${total})` : ''}`;
+    value.className = bonus ? 'attribute-bonus' : '';
+    value.title = t('Base {base} · bonificación racial +{racial} · puntos asignados +{allocated} · máximo {max}', {
+      base: ATTRIBUTE_BASE_VALUE, racial: racialBonus, allocated, max: ATTRIBUTE_MAX_VALUE,
+    });
+    const controls = document.createElement('span');
+    controls.className = 'attribute-controls';
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '−';
+    remove.disabled = allocated === 0;
+    remove.setAttribute('aria-label', t('Quitar un punto de {attribute}', { attribute: t(ATTRIBUTES[key].label) }));
+    remove.onclick = () => {
+      state.attributePoints[key] -= 1;
+      refreshUI();
+    };
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.textContent = '+';
+    add.disabled = remaining === 0 || ATTRIBUTE_BASE_VALUE + bonus >= ATTRIBUTE_MAX_VALUE;
+    add.setAttribute('aria-label', t('Añadir un punto a {attribute}', { attribute: t(ATTRIBUTES[key].label) }));
+    add.onclick = () => {
+      state.attributePoints[key] += 1;
+      refreshUI();
+    };
+    controls.append(remove, add);
+    row.append(label, value, controls);
+    stats.appendChild(row);
+  });
+  $('#classDesc').textContent = t(CLASSES[state.cls].desc);
   document.querySelectorAll<HTMLElement>('#sex button').forEach((b) => b.classList.toggle('active', Number(b.dataset.v) === state.sex));
   $<HTMLInputElement>('#height').value = String(state.height);
   $<HTMLInputElement>('#build').value = String(state.build);
   const R = RACES[state.race];
   $('#traitBox').hidden = !R.traitLabel;
-  if (R.traitLabel) $('#traitLabel').textContent = R.traitLabel;
-  $('#hairNote').textContent = state.race === 'pelso' ? 'El color también tiñe las orejas y la cola.' : '';
+  if (R.traitLabel) $('#traitLabel').textContent = state.race === 'lagto' ? t('Cresta del linaje') : t(R.traitLabel);
+  $('#hairNote').textContent = state.race === 'pelso' ? t('El color también tiñe las orejas y la cola.') : '';
   if (document.activeElement !== nameInput) nameInput.value = state.name;
   renders.forEach((r) => r());
 }
@@ -383,31 +479,505 @@ $('#random').onclick = () => {
 $('#wave').onclick = () => char.wave();
 
 let toastTimer = 0;
-function toast(title: string, text: string, error = false) {
-  const t = $('#toast');
-  t.innerHTML = `<h2>${title}</h2><p>${text}</p>`;
-  t.classList.toggle('error', error);
-  t.classList.add('show');
+let toastSourceTitle = '';
+let toastSourceText = '';
+let toastValues: Record<string, string | number> = {};
+function renderToast() {
+  if (!toastSourceTitle && !toastSourceText) return;
+  const element = $('#toast');
+  element.innerHTML = `<h2>${t(toastSourceTitle, toastValues)}</h2><p>${t(toastSourceText, toastValues)}</p>`;
+}
+function toast(title: string, text: string, error = false, values: Record<string, string | number> = {}) {
+  toastSourceTitle = title;
+  toastSourceText = text;
+  toastValues = values;
+  renderToast();
+  const element = $('#toast');
+  element.classList.toggle('error', error);
+  element.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => t.classList.remove('show'), 3200);
+  toastTimer = window.setTimeout(() => element.classList.remove('show'), 3200);
 }
 
-$('#enter').onclick = () => {
+function showAuthScreen(message = '') {
+  syncBackdropTime();
+  document.body.classList.add('auth-visible');
+  document.body.classList.remove('characters-visible');
+  $('#account-gate').hidden = false;
+  $('#auth-screen').hidden = false;
+  $('#character-screen').hidden = true;
+  $('#auth-title').textContent = t('Un nuevo capítulo');
+  $('#auth-intro').textContent = t('Inicia sesión o crea una cuenta para entrar en el mundo de Brumaluz.');
+  $('#auth-intro').hidden = false;
+  $('.auth-switch').hidden = false;
+  authForm.hidden = false;
+  $('#recovery-request-form').hidden = true;
+  $('#password-update-form').hidden = true;
+  if (authMode !== 'login') $('[data-auth-mode="login"]').click();
+  $('#auth-message').textContent = message;
+  $('#auth-message').classList.remove('error');
+}
+
+function showRecoveryRequestScreen() {
+  syncBackdropTime();
+  document.body.classList.add('auth-visible');
+  document.body.classList.remove('characters-visible');
+  $('#account-gate').hidden = false;
+  $('#auth-screen').hidden = false;
+  $('#character-screen').hidden = true;
+  $('#auth-title').textContent = t('Recuperar contraseña');
+  $('#auth-intro').hidden = true;
+  $('.auth-switch').hidden = true;
+  authForm.hidden = true;
+  $('#password-update-form').hidden = true;
+  $('#recovery-request-form').hidden = false;
+  $<HTMLInputElement>('#recovery-email').value = $<HTMLInputElement>('#auth-email').value.trim();
+  $('#recovery-request-message').textContent = '';
+  $('#recovery-request-message').classList.remove('error');
+  $<HTMLInputElement>('#recovery-email').focus();
+}
+
+function showPasswordUpdateScreen(user: User) {
+  passwordRecoveryUser = user;
+  currentUser = user;
+  syncBackdropTime();
+  document.body.classList.add('auth-visible');
+  document.body.classList.remove('characters-visible');
+  $('#account-gate').hidden = false;
+  $('#auth-screen').hidden = false;
+  $('#character-screen').hidden = true;
+  $('#auth-title').textContent = t('Nueva contraseña');
+  $('#auth-intro').hidden = true;
+  $('.auth-switch').hidden = true;
+  authForm.hidden = true;
+  $('#recovery-request-form').hidden = true;
+  $('#password-update-form').hidden = false;
+  $<HTMLInputElement>('#new-password').value = '';
+  $<HTMLInputElement>('#confirm-new-password').value = '';
+  $('#password-update-message').textContent = '';
+  $('#password-update-message').classList.remove('error');
+  $<HTMLInputElement>('#new-password').focus();
+}
+
+function showEditor() {
+  document.body.classList.remove('auth-visible', 'characters-visible');
+  $('#account-gate').hidden = true;
+  document.querySelectorAll<HTMLElement>('#tabs button').forEach((button) => button.classList.toggle('active', button.dataset.tab === 'raza'));
+  document.querySelectorAll<HTMLElement>('#pages section').forEach((section) => section.classList.toggle('active', section.dataset.page === 'raza'));
+  tab = 'raza';
+  focus = 'body';
+  zoom = 1;
+  refreshUI();
+  rebuildNow();
+  layout();
+}
+
+function showCharacterScreen() {
+  syncBackdropTime();
+  document.body.classList.remove('auth-visible');
+  document.body.classList.add('characters-visible');
+  $('#account-gate').hidden = false;
+  $('#auth-screen').hidden = true;
+  $('#character-screen').hidden = false;
+  $('#account-email').textContent = currentUser?.email ?? '';
+  $('#character-message').classList.remove('error');
+}
+
+function syncBackdropTime() {
+  const hour = new Date().getHours();
+  document.body.classList.toggle('daytime', hour >= 6 && hour < 18);
+}
+
+function displayCharacters(characters: SavedCharacter[]) {
+  cachedCharacters = characters;
+  const list = $('#character-list');
+  list.replaceChildren();
+  $('#character-count').textContent = `(${characters.length}/${MAX_CHARACTERS_PER_ACCOUNT})`;
+  if (!characters.length) {
+    const empty = document.createElement('p');
+    empty.className = 'account-intro';
+    empty.textContent = t('Aún no tienes personajes. Crea uno para comenzar tu aventura.');
+    list.appendChild(empty);
+  }
+  for (const saved of characters) {
+    const record = document.createElement('article');
+    record.className = 'character-card';
+    const info = document.createElement('div');
+    info.className = 'character-info';
+    const sigil = document.createElement('span');
+    sigil.className = 'character-sigil';
+    sigil.textContent = '✦';
+    const name = document.createElement('strong');
+    name.textContent = saved.name;
+    const detail = document.createElement('span');
+    detail.className = 'character-detail';
+    const data = characterFromRecord(saved);
+    detail.textContent = `${t(RACES[data.race].label)} · ${t(CLASSES[data.cls].label)}`;
+    info.append(sigil, name, detail);
+    const actions = document.createElement('div');
+    actions.className = 'character-actions';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'btn gold';
+    play.textContent = t('Jugar');
+    play.onclick = () => {
+      loadCharacter(saved);
+      showEditor();
+      enterPlay();
+    };
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn danger';
+    remove.textContent = t('Borrar');
+    remove.setAttribute('aria-label', `${t('Borrar')} ${saved.name}`);
+    remove.onclick = () => openDeleteDialog(saved);
+    actions.append(play, remove);
+    record.append(info, actions);
+    list.appendChild(record);
+  }
+  const atCharacterLimit = characters.length >= MAX_CHARACTERS_PER_ACCOUNT;
+  $<HTMLButtonElement>('#new-character').disabled = atCharacterLimit;
+  $('#character-limit-message').textContent = atCharacterLimit
+    ? t('Has alcanzado el máximo de {max} personajes por cuenta. Borra uno para crear otro.', { max: MAX_CHARACTERS_PER_ACCOUNT })
+    : t('Puedes tener hasta {max} personajes en tu cuenta.', { max: MAX_CHARACTERS_PER_ACCOUNT });
+}
+
+let characterPendingDeletion: SavedCharacter | null = null;
+let deletingCharacter = false;
+
+function openDeleteDialog(character: SavedCharacter) {
+  characterPendingDeletion = character;
+  $('#delete-dialog-description').textContent = t('Vas a borrar definitivamente a {name}. Esta acción no se puede deshacer.', { name: character.name });
+  deleteNameInput.disabled = false;
+  deleteNameInput.value = '';
+  $('#delete-dialog-message').textContent = '';
+  $<HTMLButtonElement>('#confirm-delete').disabled = true;
+  $('#delete-dialog-backdrop').hidden = false;
+  $<HTMLInputElement>('#delete-character-name').focus();
+}
+
+function closeDeleteDialog() {
+  if (deletingCharacter) return;
+  characterPendingDeletion = null;
+  $('#delete-dialog-backdrop').hidden = true;
+}
+
+const deleteNameInput = $<HTMLInputElement>('#delete-character-name');
+const deleteConfirmButton = $<HTMLButtonElement>('#confirm-delete');
+deleteNameInput.oninput = () => {
+  deleteConfirmButton.disabled = !characterPendingDeletion || deleteNameInput.value !== characterPendingDeletion.name;
+  $('#delete-dialog-message').textContent = '';
+};
+$('#cancel-delete').onclick = closeDeleteDialog;
+$('#delete-dialog-backdrop').addEventListener('click', (event) => {
+  if (event.target === $('#delete-dialog-backdrop')) closeDeleteDialog();
+});
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !$('#delete-dialog-backdrop').hidden) closeDeleteDialog();
+});
+deleteConfirmButton.onclick = async () => {
+  const selected = characterPendingDeletion;
+  const user = currentUser;
+  if (!selected || !user || deleteNameInput.value !== selected.name || deleteConfirmButton.disabled) return;
+
+  deleteConfirmButton.disabled = true;
+  deleteNameInput.disabled = true;
+  deletingCharacter = true;
+  $('#cancel-delete').setAttribute('disabled', 'true');
+  $('#delete-dialog-message').textContent = t('Borrando personaje…');
+  try {
+    await removeCharacter(user.id, selected.id);
+    deletingCharacter = false;
+    if (activeCharacterId === selected.id) activeCharacterId = null;
+    closeDeleteDialog();
+    if (currentUser?.id === user.id) await loadCharacterSelection(user);
+  } catch (error) {
+    deletingCharacter = false;
+    deleteNameInput.disabled = false;
+    $('#delete-dialog-message').textContent = errorMessage(error);
+    $('#cancel-delete').removeAttribute('disabled');
+    deleteConfirmButton.disabled = deleteNameInput.value !== selected.name;
+  }
+};
+
+function characterFromRecord(saved: SavedCharacter) {
+  if (!saved.data || typeof saved.data !== 'object' || Array.isArray(saved.data)) {
+    throw new Error(`Los datos guardados de ${saved.name} no tienen un formato válido.`);
+  }
+  const character = sanitize(saved.data as Record<string, unknown>);
+  character.name = saved.name;
+  return character;
+}
+
+function loadCharacter(saved: SavedCharacter) {
+  state = characterFromRecord(saved);
+  activeCharacterId = saved.id;
+}
+
+async function loadCharacterSelection(user: User) {
+  const syncId = ++accountSyncId;
+  currentUser = user;
+  showCharacterScreen();
+  $('#character-list').replaceChildren();
+  $('#character-message').textContent = t('Cargando tus personajes…');
+  try {
+    const characters = await listCharacters(user.id);
+    if (syncId !== accountSyncId || currentUser?.id !== user.id) return;
+    $('#character-message').textContent = '';
+    displayCharacters(characters);
+  } catch (error) {
+    if (syncId !== accountSyncId) return;
+    $('#character-message').textContent = errorMessage(error);
+    $('#character-message').classList.add('error');
+  }
+}
+
+async function syncAccount(sessionUser: User | null) {
+  if (!sessionUser) {
+    if (mode === 'play') exitPlay();
+    accountSyncId++;
+    currentUser = null;
+    activeCharacterId = null;
+    showAuthScreen();
+    return;
+  }
+  if (currentUser && currentUser.id !== sessionUser.id && mode === 'play') exitPlay();
+  await loadCharacterSelection(sessionUser);
+}
+
+function errorMessage(error: unknown) {
+  if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+    return t('Ya tienes un personaje con ese nombre. Elige otro.');
+  }
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    const message = error.message;
+    if (message.includes('Invalid login credentials')) return t('Correo o contraseña incorrectos.');
+    if (message.includes('Email not confirmed')) return t('Confirma tu correo antes de iniciar sesión.');
+    if (message.includes('User already registered')) return t('Ya existe una cuenta con ese correo.');
+    return t(message);
+  }
+  return t('Ha ocurrido un error inesperado. Inténtalo de nuevo.');
+}
+
+function validCharacterName() {
   const name = state.name.trim();
   if (!/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]{3,16}$/.test(name)) {
     toast('Un momento…', 'Tu nombre necesita entre 3 y 16 letras.', true);
     nameInput.focus();
-    return;
+    return false;
   }
   state.name = name[0].toUpperCase() + name.slice(1);
-  save();
+  nameInput.value = state.name;
+  return true;
+}
+
+async function saveCurrentCharacter() {
+  if (savingCharacter || !currentUser || !validCharacterName()) return false;
+  savingCharacter = true;
+  try {
+    activeCharacterId = await persistCharacter(currentUser.id, activeCharacterId, state);
+    return true;
+  } catch (error) {
+    toast('No se pudo guardar', errorMessage(error), true);
+    return false;
+  } finally {
+    savingCharacter = false;
+  }
+}
+
+async function returnToCharacters() {
+  if (mode === 'play') exitPlay();
+  if (currentUser) await loadCharacterSelection(currentUser);
+}
+
+function startNewCharacter() {
+  if (!currentUser || $<HTMLButtonElement>('#new-character').disabled) return;
+  state = defaultChar();
+  state.name = randomName(state.race);
+  activeCharacterId = null;
+  showEditor();
+}
+
+const authForm = $<HTMLFormElement>('#auth-form');
+let authMode: 'login' | 'register' = 'login';
+document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]').forEach((button) => {
+  button.onclick = () => {
+    authMode = button.dataset.authMode === 'register' ? 'register' : 'login';
+    document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]').forEach((option) => {
+      const active = option === button;
+      option.classList.toggle('active', active);
+      option.setAttribute('aria-selected', String(active));
+    });
+    const confirmField = $<HTMLDivElement>('#confirm-password-field');
+    const confirmInput = $<HTMLInputElement>('#auth-confirm-password');
+    confirmField.hidden = authMode !== 'register';
+    confirmInput.required = authMode === 'register';
+    $('#forgot-password').hidden = authMode !== 'login';
+    $<HTMLInputElement>('#auth-password').autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
+    $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
+    $('#auth-message').textContent = '';
+    $('#auth-message').classList.remove('error');
+  };
+});
+
+authForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const email = $<HTMLInputElement>('#auth-email').value.trim();
+  const password = $<HTMLInputElement>('#auth-password').value;
+  const message = $('#auth-message');
+  const submit = $<HTMLButtonElement>('#auth-submit');
+  if (authMode === 'register' && password !== $<HTMLInputElement>('#auth-confirm-password').value) {
+    message.textContent = t('Las contraseñas no coinciden.');
+    message.classList.add('error');
+    return;
+  }
+  submit.disabled = true;
+  message.classList.remove('error');
+  message.textContent = authMode === 'register' ? t('Creando tu cuenta…') : t('Iniciando sesión…');
+  try {
+    if (authMode === 'register') {
+      const result = await signUp(email, password);
+      if (!result.session) {
+        $('[data-auth-mode="login"]').click();
+        message.textContent = t('Cuenta creada. Revisa tu correo para confirmar la dirección y luego inicia sesión.');
+      } else {
+        await syncAccount(result.user);
+      }
+    } else {
+      const result = await signIn(email, password);
+      await syncAccount(result.user);
+    }
+  } catch (error) {
+    message.textContent = errorMessage(error);
+    message.classList.add('error');
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+$('#forgot-password').onclick = showRecoveryRequestScreen;
+$('#recovery-back-to-login').onclick = () => showAuthScreen();
+
+$('#recovery-request-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const emailInput = $<HTMLInputElement>('#recovery-email');
+  const submit = $<HTMLButtonElement>('#recovery-request-submit');
+  const message = $('#recovery-request-message');
+  submit.disabled = true;
+  message.classList.remove('error');
+  message.textContent = t('Enviando el enlace…');
+  try {
+    await requestPasswordReset(emailInput.value.trim(), `${window.location.origin}${window.location.pathname}`);
+    message.textContent = t('Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Revisa también la carpeta de spam.');
+  } catch (error) {
+    message.textContent = errorMessage(error);
+    message.classList.add('error');
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+$<HTMLFormElement>('#password-update-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const password = $<HTMLInputElement>('#new-password').value;
+  const confirmPassword = $<HTMLInputElement>('#confirm-new-password').value;
+  const submit = $<HTMLButtonElement>('#password-update-submit');
+  const message = $('#password-update-message');
+  if (password !== confirmPassword) {
+    message.textContent = t('Las contraseñas no coinciden.');
+    message.classList.add('error');
+    return;
+  }
+  if (!passwordRecoveryUser) {
+    message.textContent = t('El enlace de recuperación no es válido o ha caducado. Solicita uno nuevo.');
+    message.classList.add('error');
+    return;
+  }
+  submit.disabled = true;
+  message.classList.remove('error');
+  message.textContent = t('Actualizando la contraseña…');
+  try {
+    await updatePassword(password);
+    const user = passwordRecoveryUser;
+    passwordRecoveryUser = null;
+    await syncAccount(user);
+    $('#character-message').textContent = t('Contraseña actualizada correctamente.');
+  } catch (error) {
+    message.textContent = errorMessage(error);
+    message.classList.add('error');
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+$('#sign-out').onclick = async () => {
+  try {
+    await signOut();
+    await syncAccount(null);
+  } catch (error) {
+    $('#character-message').textContent = errorMessage(error);
+    $('#character-message').classList.add('error');
+  }
+};
+$('#new-character').onclick = startNewCharacter;
+$('#account-characters').onclick = () => { void returnToCharacters(); };
+$('#game-menu-toggle').onclick = () => setGameMenuOpen(!gameMenuOpen);
+$('#game-menu-characters').onclick = () => { void returnToCharacters(); };
+$('#game-menu-logout').onclick = async () => {
+  const logoutButton = $<HTMLButtonElement>('#game-menu-logout');
+  const charactersButton = $<HTMLButtonElement>('#game-menu-characters');
+  logoutButton.disabled = true;
+  charactersButton.disabled = true;
+  $('#game-menu-message').textContent = t('Cerrando sesión…');
+  try {
+    await signOut();
+    await syncAccount(null);
+  } catch (error) {
+    $('#game-menu-message').textContent = errorMessage(error);
+    $('#game-menu-message').classList.add('error');
+    logoutButton.disabled = false;
+    charactersButton.disabled = false;
+  }
+};
+document.addEventListener('click', (event) => {
+  const menu = $('#game-menu');
+  if (gameMenuOpen && event.target instanceof Node && !menu.contains(event.target)) {
+    setGameMenuOpen(false, false);
+  }
+});
+$('#enter').onclick = async () => {
+  if (!(await saveCurrentCharacter())) return;
   spinVel = 0;
   focus = 'body';
   enterPlay();
   setTimeout(() => char.wave(), 60);
-  toast(`¡Te damos la bienvenida, ${state.name}!`, 'Pasea por la ciudad: WASD o clic para moverte, arrastra para mirar.');
+  toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: state.name });
 };
-$('#back').onclick = () => exitPlay();
+
+async function initializeAccountAccess() {
+  try {
+    if (!getAccountClient()) {
+      $('#auth-config-error').textContent = `${t(accountConfigError())} ${t('Copia .env.example como .env.local, añade los datos del proyecto y reinicia Vite.')}`;
+      $('#auth-config-error').hidden = false;
+      $('.auth-switch').hidden = true;
+      authForm.hidden = true;
+      return;
+    }
+    onAuthChange((event, _session, user) => {
+      if (event === 'PASSWORD_RECOVERY' && user) {
+        showPasswordUpdateScreen(user);
+        return;
+      }
+      if (passwordRecoveryUser && event !== 'SIGNED_OUT') return;
+      void syncAccount(user);
+    });
+    await syncAccount((await currentSession())?.user ?? null);
+  } catch (error) {
+    showAuthScreen();
+    $('#auth-message').textContent = errorMessage(error);
+    $('#auth-message').classList.add('error');
+  }
+}
 
 // ---------------- Bucle ----------------
 /** ?test: sin ciudad ni posproceso, para revisar personajes rápido (capturas automáticas). */
@@ -424,7 +994,7 @@ try {
   await loadKits();
   city = TEST ? testCity() : await buildCity();
 } catch (e) {
-  $('#loading p').textContent = 'No se pudo cargar Brumaluz: ' + (e instanceof Error ? e.message : String(e));
+  $('#loading p').textContent = t('No se pudo cargar Brumaluz: ') + (e instanceof Error ? e.message : String(e));
   throw e;
 }
 scene.add(city.root);
@@ -454,6 +1024,14 @@ renderer.setAnimationLoop(() => {
 });
 
 requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide'), 400));
+syncBackdropTime();
+window.setInterval(syncBackdropTime, 60_000);
+if (TEST) {
+  $('#account-gate').hidden = true;
+  document.body.classList.remove('auth-visible', 'characters-visible');
+} else {
+  void initializeAccountAccess();
+}
 
 // Gancho de depuración para pruebas desde la consola.
 (window as unknown as { brumaluz: object }).brumaluz = {
