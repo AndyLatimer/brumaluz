@@ -526,6 +526,10 @@ test('queen title uses the same reserved phoenix styling in the picker and remot
     await second.page.locator('.title-button.staff-title .phoenix').waitFor();
     await first.page.locator(`[data-player-id="${b.character.id}"] .staff-title`).filter({hasText:'Reina de Pompelín'}).waitFor();
     assert.equal(await first.page.locator(`[data-player-id="${b.character.id}"] .phoenix`).count(),1);
+    await hoverActor(first.page,first.page.locator(`[data-player-id="${b.character.id}"]`));
+    await first.page.locator('#target-frame .target-kind.staff-title').waitFor();
+    assert.equal(await first.page.locator('#target-frame .target-kind').textContent(),'Reina de Pompelín');
+    assert.equal(await first.page.locator('#target-frame .target-kind .phoenix').count(),1);
     assert.deepEqual([...first.errors,...second.errors],[]);
   } finally {await first.context.close(); await second.context.close();}
 });
@@ -552,14 +556,32 @@ test('target frame shows hovered players and NPC types, live vitals, camera aim 
     assert.equal(await frame.getAttribute('data-target-id'),b.character.id);
     assert.equal(await frame.locator('.target-name').textContent(),'Elara');
     assert.equal(await frame.locator('.target-username').textContent(),'~moon_account');
-    assert.equal(await frame.locator('.target-kind').textContent(),'Mago');
+    assert.equal(await frame.locator('.target-kind').textContent(),'Recién llegado');
+    assert.equal(await frame.locator('.target-emblem').getAttribute('aria-label'),'Mago');
     assert.equal(await frame.locator('.target-level').textContent(),'Nivel 12');
     assert.equal(await frame.locator('.class-icon').count(),1);
     assert.equal(await frame.getByRole('meter',{name:'Vida',exact:true}).getAttribute('aria-valuenow'),'80');
     assert.equal(await frame.getByRole('meter',{name:'Maná',exact:true}).getAttribute('aria-valuemax'),'70');
     world.players.get(b.user.id).vitals = { health: 17, maxHealth: 196, overheal: 0, resource: 9, maxResource: 129, resourceKind:'mana' };
     await first.page.waitForFunction(()=>document.querySelector('.target-health').getAttribute('aria-valuenow')==='17');
-    assert.equal(await frame.locator('.target-resource span').textContent(),'Maná 9 / 129');
+    assert.equal(await frame.locator('.target-resource span').textContent(),'9 / 129');
+    assert.equal(await frame.locator('.target-health span').textContent(),'17 / 196');
+    const hudStyle = await frame.evaluate(el => {
+      const style = selector => getComputedStyle(document.querySelector(selector));
+      const bounds = el.getBoundingClientRect();
+      return {
+        font: style('.target-heading').fontFamily === style('.hud-name-row').fontFamily
+          && style('.target-meter span').fontFamily === style('.hud-bar span').fontFamily,
+        level: style('.target-level').color === style('.hud-name-row span').color
+          && style('.target-level').backgroundColor === 'rgba(0, 0, 0, 0)'
+          && style('.target-level').borderTopWidth === '0px',
+        compact: bounds.width <= 310 && bounds.height < 90 && document.querySelector('.target-emblem').getBoundingClientRect().width <= 38,
+      };
+    });
+    assert.deepEqual(hudStyle,{font:true,level:true,compact:true});
+    world.players.get(b.user.id).data.title = 'none';
+    await first.page.waitForFunction(()=>document.querySelector('.target-kind').hidden);
+    assert.equal(await frame.locator('.target-username').textContent(),'~moon_account','No title does not hide the player account');
     await first.page.mouse.move(1278,798);
     await frame.waitFor({state:'hidden'});
     await first.page.evaluate(()=>{
@@ -587,7 +609,8 @@ test('target frame shows hovered players and NPC types, live vitals, camera aim 
     assert.equal(await frame.locator('.target-name').textContent(),'Testículos, the Debugger');
     assert.equal(await frame.locator('.class-icon').count(),0,'NPC has a type icon, not a character class');
     assert.equal(await frame.locator('.target-emblem svg').count(),1);
-    assert.equal(await frame.locator('.target-username').textContent(),'Personaje no jugador');
+    assert.equal(await frame.locator('.target-username').textContent(),'');
+    assert.equal(await frame.locator('.target-username').isVisible(),false);
     for (const width of [320,390,1280]) {
       await first.page.setViewportSize({width,height:844});
       await first.page.evaluate(({x,z})=>{
@@ -609,6 +632,91 @@ test('target frame shows hovered players and NPC types, live vitals, camera aim 
     await frame.waitFor({state:'hidden'});
     assert.deepEqual([...first.errors,...second.errors],[]);
   } finally { await first.context.close(); await second.context.close(); }
+});
+
+test('target aim tolerates camera pitch, zoom and character heights but not walls or turning away', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',-6.4), b = fixture('Elara','elfo',-5.4);
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    await remote(first.page,b.character.id);
+    const frame = first.page.locator('#target-frame');
+    for (const height of [0,1]) {
+      world.players.get(b.user.id).data.height = height;
+      await first.page.waitForFunction(height=>window.brumaluz.players()[0].height===height,height);
+      for (const [pitch, zoom] of [[.15,6],[.55,12],[1.05,20]]) {
+        await first.page.evaluate(({pitch,zoom})=>{
+          const p=window.brumaluz.players()[0].root.position;
+          window.brumaluz.move(p.x,p.z+3);
+          window.brumaluz.view(0,pitch,zoom);
+        },{pitch,zoom});
+        await first.page.mouse.move(1278,798);
+        await first.page.waitForTimeout(1000);
+        assert.equal(await frame.isVisible(),true,`Camera aim works at height=${height}, pitch=${pitch}, zoom=${zoom}`);
+        assert.equal(await frame.getAttribute('data-target-id'),b.character.id);
+      }
+    }
+    await first.page.evaluate(()=>{
+      const p=window.brumaluz.players()[0].root.position;
+      window.brumaluz.move(p.x-3,p.z);
+      window.brumaluz.view(0,.55,12);
+    });
+    await first.page.waitForTimeout(1200);
+    await frame.waitFor({state:'hidden'});
+    const plate=first.page.locator(`[data-player-id="${b.character.id}"]`);
+    const box=await plate.boundingBox();
+    assert.ok(box);
+    await first.page.mouse.move(box.x+box.width/2,box.y+box.height+15);
+    await frame.waitFor({state:'visible'});
+    assert.equal(await frame.getAttribute('data-target-id'),b.character.id,'Hover can select around the head instead of hitting its exact triangles');
+    await first.page.mouse.move(box.x+box.width/2+5,box.y+box.height+40);
+    await first.page.waitForTimeout(350);
+    assert.equal(await frame.isVisible(),true,'Small cursor movements keep the same target');
+    await first.page.mouse.move(1278,798);
+    await frame.waitFor({state:'hidden'});
+    await first.page.evaluate(()=>{
+      const target=window.brumaluz.players()[0].root;
+      const city=window.brumaluz.city().root;
+      let source;
+      city.traverse(object=>{
+        if(!source && object.isMesh && !object.isInstancedMesh && !object.isSkinnedMesh && !Array.isArray(object.material)) source=object;
+      });
+      const wall=source.clone(false);
+      wall.geometry=source.geometry.clone();
+      for(const key of Object.keys(wall.geometry.attributes)) wall.geometry.deleteAttribute(key);
+      wall.geometry.setIndex(null);
+      wall.geometry.clearGroups();
+      wall.geometry.boundingBox=null;
+      wall.geometry.boundingSphere=null;
+      wall.geometry.setFromPoints([
+        {x:-100,y:-20,z:0},{x:100,y:-20,z:0},{x:100,y:80,z:0},
+        {x:-100,y:-20,z:0},{x:100,y:80,z:0},{x:-100,y:80,z:0},
+      ]);
+      wall.geometry.computeVertexNormals();
+      wall.material=source.material.clone();
+      wall.material.side=2;
+      wall.material.vertexColors=false;
+      wall.position.copy(target.position);
+      wall.position.z+=1.5;
+      wall.rotation.set(0,0,0);wall.scale.set(1,1,1);
+      wall.name='target-occlusion-test';
+      city.add(wall);
+      window.brumaluz.move(target.position.x,target.position.z+3);
+      window.brumaluz.view(0,.55,12);
+    });
+    await first.page.waitForTimeout(1200);
+    assert.equal(await frame.isVisible(),false,'Relaxed camera aim cannot see through a wall');
+    await first.page.evaluate(()=>{
+      const wall=window.brumaluz.city().root.getObjectByName('target-occlusion-test');
+      wall.removeFromParent();wall.geometry.dispose();wall.material.dispose();
+    });
+    await first.page.waitForTimeout(1200);
+    assert.equal(await frame.isVisible(),true,'Target is reacquired after removing the wall');
+    await first.page.evaluate(()=>window.brumaluz.view(Math.PI,.55,12));
+    await first.page.waitForTimeout(1200);
+    await frame.waitFor({state:'hidden'});
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
 });
 
 test('closing Social during a delayed refresh cannot populate a different window', { timeout: 120000 }, async () => {

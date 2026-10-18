@@ -8,7 +8,6 @@ const translations: Record<string, string> = {
   'Depuración': 'Debug',
   'Comerciante': 'Merchant',
   'Habitante': 'Townsfolk',
-  'Personaje no jugador': 'Non-player character',
   'Mostrar chat temporalmente': 'Show chat temporarily',
   'Activando sonido ambiental…': 'Starting ambient sound…',
   'Tus amigos': 'Your friends',
