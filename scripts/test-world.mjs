@@ -395,14 +395,18 @@ test('graphics controls stay clear of account information and map population fit
       assert.deepEqual(layout, { separated: true, inCorner: true });
     }
     await player.enter();
-    for (const [width, height] of [[1280, 800], [390, 844]]) {
+    for (const [width, height] of [[1280, 800], [390, 844], [320, 844]]) {
       await player.page.setViewportSize({ width, height });
       await player.page.locator('.minimap-player-count').waitFor({ state: 'visible' });
       assert.equal(await player.page.locator('.minimap-player-count').textContent(), '1');
       const fits = await player.page.locator('.minimap-plate').evaluate((plate) => {
         const badge = plate.querySelector('.minimap-players').getBoundingClientRect();
         const bounds = plate.getBoundingClientRect();
-        return plate.scrollWidth <= plate.clientWidth && badge.left >= bounds.left && badge.right <= bounds.right && bounds.right <= innerWidth;
+        const coords = plate.querySelector('.minimap-coords').getBoundingClientRect();
+        const zone = plate.querySelector('.minimap-zone').getBoundingClientRect();
+        return plate.scrollWidth <= plate.clientWidth && badge.left >= bounds.left && badge.right <= bounds.right && bounds.right <= innerWidth
+          && coords.top >= Math.max(zone.bottom,badge.bottom) && bounds.left>=0
+          && plate.querySelector('.minimap-location-icon') !== null;
       });
       assert.equal(fits, true);
     }
@@ -715,6 +719,37 @@ test('target aim tolerates camera pitch, zoom and character heights but not wall
     await first.page.evaluate(()=>window.brumaluz.view(Math.PI,.55,12));
     await first.page.waitForTimeout(1200);
     await frame.waitFor({state:'hidden'});
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
+});
+
+test('target details enforce the 10 metre player-distance limit for camera and cursor', { timeout: 120000 }, async () => {
+  const world=backend(), a=fixture('Alric','humano',-6.4), b=fixture('Elara','elfo',-5.4);
+  const first=await openPlayer(world,a), second=await openPlayer(world,b);
+  try {
+    await first.enter();await second.enter();await remote(first.page,b.character.id);
+    const frame=first.page.locator('#target-frame');
+    for (const method of ['camera','cursor']) {
+      for (const distance of [9.99,10.01,25,9.99]) {
+        await first.page.evaluate(({distance,method})=>{
+          const p=window.brumaluz.players()[0].root.position;
+          window.brumaluz.move(p.x+(method==='cursor'?distance:0),p.z+(method==='camera'?distance:0));
+          window.brumaluz.view(0,.55,30);
+        },{distance,method});
+        await first.page.mouse.move(1278,798);
+        await first.page.waitForTimeout(1500);
+        if(method==='cursor') {
+          const plate=first.page.locator(`[data-player-id="${b.character.id}"]`);
+          await hoverActor(first.page,plate);
+          await first.page.waitForTimeout(250);
+        }
+        const actual=await first.page.evaluate(()=>{
+          const p=window.brumaluz.players()[0].root.position, me=window.brumaluz.char().root.parent.position;
+          return p.distanceTo(me);
+        });
+        assert.equal(await frame.isVisible(),distance<10,`${method}: actual distance ${actual.toFixed(3)}m must respect the 10m boundary`);
+      }
+    }
     assert.deepEqual([...first.errors,...second.errors],[]);
   } finally {await first.context.close();await second.context.close();}
 });

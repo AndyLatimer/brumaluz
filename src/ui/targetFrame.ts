@@ -12,6 +12,7 @@ const NPC_TYPES = {
 } as const;
 
 export type NpcType = keyof typeof NPC_TYPES;
+const TARGET_RANGE = 10;
 export interface TargetDetails {
   id: string;
   root: THREE.Object3D;
@@ -136,7 +137,7 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
       const now = performance.now();
       if (now < nextCheck) return;
       nextCheck = now + 100;
-      const candidates = targets.filter((target) => target.root.position.distanceToSquared(origin) <= 45 * 45);
+      const candidates = targets.filter((target) => target.root.position.distanceToSquared(origin) <= TARGET_RANGE * TARGET_RANGE);
       camera.updateMatrixWorld();
       const target = pick(candidates, origin);
       selectedId = target?.id ?? null;
