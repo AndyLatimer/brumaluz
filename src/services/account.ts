@@ -77,6 +77,7 @@ interface Database {
       vendor_buy: { Args: { p_character_id: string; p_vendor: string; p_item: string }; Returns: Json };
       vendor_sell: { Args: { p_character_id: string; p_vendor: string; p_slot: number }; Returns: Json };
       use_item: { Args: { p_character_id: string; p_slot: number }; Returns: Json };
+      move_inventory_item: { Args: { p_character_id: string; p_from: number; p_to: number; p_expected_from: Json; p_expected_to: Json }; Returns: Json };
       spend_attribute_points: { Args: { p_character_id: string; p_points: Json }; Returns: Json };
       set_character_title: { Args: { p_character_id: string; p_title: string }; Returns: Json };
       my_titles: { Args: Record<string, never>; Returns: Json };
@@ -213,6 +214,7 @@ const SERVER_ERRORS: Record<string, string> = {
   ACTION_DISABLED: 'Esta acción está desactivada en el servidor.',
   NOT_ENOUGH_MONEY: 'No tienes suficientes pelines.',
   INVENTORY_FULL: 'Tu mochila está llena.',
+  INVENTORY_CHANGED: 'Tu mochila ha cambiado. Vuelve a mover el objeto.',
   ITEM_NOT_FOR_SALE: 'Ese vendedor no vende ese objeto.',
   INVALID_VENDOR: 'Ese personaje no comercia.',
   INVALID_ITEM: 'Ese objeto no existe.',
@@ -252,6 +254,13 @@ export async function tradeAction(character: string, action: string, trade?: str
   }).abortSignal(AbortSignal.timeout(10000));
   if(error) throw new Error(error.message);
   return data;
+}
+
+export async function moveInventoryItem(character: string, from: number, to: number, source: { id: string; count: number; bound?: boolean }, target: { id: string; count: number; bound?: boolean } | null) {
+  return asRecord(await serverCall(requireClient().rpc('move_inventory_item', {
+    p_character_id: character, p_from: from, p_to: to,
+    p_expected_from: { ...source }, p_expected_to: target ? { ...target } : null,
+  })));
 }
 
 /** Crea un personaje: el servidor solo acepta nombre, linaje, clase, apariencia y reparto inicial; el resto lo fija él. */

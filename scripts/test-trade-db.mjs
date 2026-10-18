@@ -190,6 +190,72 @@ test('private atomic trades (all schema, fixtures and mutations roll back)',{tim
       const used=(await db.query('select public.use_item($1,1) v',[chars[0]])).rows[0].v;
       assert.equal(used.inventory[0].bound,true);assert.equal(used.inventory[1].count,3);
     });
+    await t.test('inventory moves persist exact stacks, swap occupied slots and reject stale or foreign moves',async()=>{
+      await reset();
+      const move=async(from,to,source,target,owner=0)=>{
+        await as(owner);
+        return (await db.query('select public.move_inventory_item($1,$2,$3,$4,$5) v',[chars[0],from,to,source,target])).rows[0].v;
+      };
+      const source=base(0).inventory[0],bound=base(0).inventory[1];
+      let moved=await move(0,24,source,null);
+      assert.equal(moved.inventory[0],null);assert.deepEqual(moved.inventory[24],source);
+      moved=await move(24,1,source,bound);
+      assert.deepEqual(moved.inventory[24],bound);assert.deepEqual(moved.inventory[1],source);
+      assert.equal(moved.wallet.pelines,100);
+      await reject(()=>move(1,2,{...source,count:9},null),/INVENTORY_CHANGED/);
+      await reject(()=>move(24,2,{...bound,bound:false},null),/INVENTORY_CHANGED/);
+      await reject(()=>move(1,24,source,null),/INVENTORY_CHANGED/);
+      await reject(()=>move(1,25,source,null),/INVALID_ITEM/);
+      await reject(()=>move(1,1,source,source),/INVALID_ITEM/);
+      await reject(()=>move(null,2,source,null),/INVALID_ITEM/);
+      await reject(()=>move(2,3,source,null),/INVALID_ITEM/);
+      await reject(()=>move(1,2,source,null,1),/CHARACTER_NOT_FOUND/);
+      const persisted=(await admin('select data from public.characters where id=$1',[chars[0]])).rows[0].data;
+      assert.deepEqual(persisted.inventory[24],bound);assert.deepEqual(persisted.inventory[1],source);
+      await admin('set local role anon');
+      await reject(()=>db.query('select public.move_inventory_item($1,1,2,$2,null)',[chars[0],source]),/permission denied/);
+    });
+    await t.test('inventory rearrangement clears the moving player offer and both acceptances',async()=>{
+      await reset();const id=await opened();
+      await rpc(0,'offer',id,null,offer([item(0,2)],10),0);
+      await rpc(1,'accept',id,null,null,1);
+      await as(0);
+      await db.query('select public.move_inventory_item($1,0,3,$2,null)',[chars[0],base(0).inventory[0]]);
+      const value=await rpc(0,'state',id);
+      assert.equal(value.trade.revision,2);
+      assert.deepEqual(value.trade.own,offer());
+      assert.equal(value.trade.peerAccepted,false);
+      await reject(()=>rpc(1,'accept',id,null,null,1),/TRADE_CHANGED/);
+    });
+    await t.test('default stack is 50 for buying and trading, with no loss of legacy stacks',async()=>{
+      await reset();
+      await admin('update public.characters set data=$2 where id=$1',[chars[0],{...base(0),inventory:[{id:'pan_duro',count:50}]}]);
+      await as(0);
+      const bought=(await db.query("select public.vendor_buy($1,'testiculos','pan_duro') v",[chars[0]])).rows[0].v;
+      assert.equal(bought.inventory[0].count,50);assert.equal(bought.inventory[1].count,1);
+      const legacy=(await admin("select public.game_add_item($1,'pan_duro') v",[{...base(0),inventory:[{id:'pan_duro',count:99}]}])).rows[0].v;
+      assert.equal(legacy.inventory[0].count,99);assert.equal(legacy.inventory[1].count,1);
+      await reject(()=>admin("select public.game_add_item($1,'pan_duro')",[{...base(0),inventory:Array.from({length:25},()=>({id:'pan_duro',count:50}))}]),/INVENTORY_FULL/);
+      await reset();
+      await admin('update public.characters set data=$2 where id=$1',[chars[0],{...base(0),inventory:[{id:'pan_duro',count:10}]}]);
+      await admin('update public.characters set data=$2 where id=$1',[chars[1],{...base(1),inventory:[{id:'pan_duro',count:49}]}]);
+      const id=await opened();
+      await rpc(0,'offer',id,null,offer([item(0,10)]),0);
+      await rpc(0,'accept',id,null,null,1);
+      const value=await rpc(1,'accept',id,null,null,1);
+      assert.equal(value.inventory[0].count,50);assert.equal(value.inventory[1].count,9);
+    });
+    await t.test('explicit catalog stack limit overrides the default',async()=>{
+      await reset();
+      await admin('savepoint small_stack');
+      try {
+        await admin(`create or replace function public.game_item(p_item text) returns jsonb
+          language sql immutable set search_path='' as $$
+          select case when p_item='pan_duro' then jsonb_build_object('value',4,'stack',2) else null end $$`);
+        const value=(await admin("select public.game_add_item($1,'pan_duro') v",[{...base(0),inventory:[{id:'pan_duro',count:2}]}])).rows[0].v;
+        assert.equal(value.inventory[0].count,2);assert.equal(value.inventory[1].count,1);
+      }finally{await db.query('rollback to small_stack');await db.query('release savepoint small_stack');}
+    });
     await t.test('catalog binding rejects legacy unbound stacks and newly bought items inherit catalog binding',async()=>{
       await reset();const id=await opened();
       await admin('savepoint bound_catalog');

@@ -285,6 +285,7 @@ async function chatReady(world, player) {
   assert.ok(world.chatSockets.has(player.user.id),'Mock live chat subscription must be ready');
 }
 async function revealChat(page) {
+  await page.locator('.chat-peek').waitFor({state:'visible'});
   const box=await page.locator('.chat-peek').boundingBox();
   assert.ok(box,'Chat corner handle must be available');
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
@@ -1348,18 +1349,71 @@ test('video graphics selector shares access mode and reloads in both directions'
   } finally { await player.context.close(); }
 });
 
+test('inventory drag moves and swaps complete stacks persistently without using or merging items', {timeout:120000},async()=>{
+  const world=backend(),a=fixture('Alric','humano',100);
+  a.character.data.inventory=[{id:'pan_duro',count:4,bound:true},{id:'pan_duro',count:7},{id:'pocion_vida_minuscula',count:3}];
+  const player=await openPlayer(world,a),page=player.page;
+  let requests=0,failMove=false;
+  await page.route('**/rest/v1/rpc/move_inventory_item',async route=>{
+    const args=route.request().postDataJSON(),inv=a.character.data.inventory;
+    assert.equal(args.p_character_id,a.character.id);
+    assert.deepEqual(args.p_expected_from,inv[args.p_from]);
+    assert.deepEqual(args.p_expected_to,inv[args.p_to]??null);
+    if(failMove) return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'INVENTORY_CHANGED'})});
+    [inv[args.p_from],inv[args.p_to]]=[inv[args.p_to]??null,inv[args.p_from]];
+    requests++;
+    await route.fulfill({contentType:'application/json',body:JSON.stringify(a.character.data)});
+  });
+  try {
+    await player.enter();await page.keyboard.press('KeyI');
+    const slot=i=>page.locator(`.inv-grid [data-index="${i}"]`);
+    await slot(0).dragTo(page.locator('.ab-slot').first());
+    assert.equal(await page.locator('.ab-slot').first().getAttribute('data-item-id'),'pan_duro');
+    await slot(0).dragTo(slot(10));
+    await page.waitForFunction(()=>document.querySelector('.inv-grid [data-index="10"]')?.dataset.itemId==='pan_duro');
+    assert.equal(await slot(0).getAttribute('data-item-id'),null);
+    assert.equal(await slot(10).getAttribute('data-item-bound'),'true');
+    await slot(10).dragTo(slot(1));
+    await page.waitForFunction(()=>document.querySelector('.inv-grid [data-index="1"]')?.dataset.itemBound==='true');
+    assert.equal(await slot(1).locator('i').textContent(),'4');
+    assert.equal(await slot(10).locator('i').textContent(),'7');
+    await slot(2).dragTo(slot(1));
+    await page.waitForFunction(()=>document.querySelector('.inv-grid [data-index="1"]')?.dataset.itemId==='pocion_vida_minuscula');
+    assert.equal(await slot(2).getAttribute('data-item-bound'),'true');
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'inventory-reordered.png')});
+    assert.equal(requests,3);
+    assert.equal(a.character.data.inventory.filter(Boolean).reduce((n,s)=>n+s.count,0),14);
+    failMove=true;
+    await slot(1).dragTo(slot(3));
+    await page.locator('#toast').filter({hasText:'Tu mochila ha cambiado. Vuelve a mover el objeto.'}).waitFor({state:'visible'});
+    assert.equal(await slot(1).getAttribute('data-item-id'),'pocion_vida_minuscula');
+    assert.equal(await slot(3).getAttribute('data-item-id'),null);
+    await page.reload();
+    await page.locator('.character-card .btn.gold').first().waitFor();await player.enter();
+    await page.keyboard.press('KeyI');
+    assert.equal(await slot(1).getAttribute('data-item-id'),'pocion_vida_minuscula');
+    assert.equal(await slot(10).locator('i').textContent(),'7');
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
 test('default chat width follows the action bar while manual size persists', { timeout: 120000 }, async () => {
   const player = await openPlayer(backend(), fixture('Alric', 'humano', 100)), page = player.page;
   try {
+    await page.evaluate(()=>localStorage.setItem('brumaluz-chat-size',JSON.stringify({w:354,h:210})));
+    await page.reload();
+    await page.locator('.character-card .btn.gold').first().waitFor();
     await player.enter();
-    for (const width of [1280, 1920, 1440]) {
+    for (const width of [1200, 1280, 1490, 1920, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.waitForFunction(() => {
         const bar = document.querySelector('#action-bar').getBoundingClientRect();
         const chat = document.querySelector('#chat').getBoundingClientRect();
-        return Math.abs(chat.left - bar.right - 12) <= 1 && Math.abs(chat.right - innerWidth + 12) <= 1;
+        return Math.abs(chat.left - bar.right - 12) <= 1 && Math.abs(chat.right - innerWidth + 12) <= 1
+          && Math.abs(chat.bottom - bar.bottom) <= 1;
       });
-      assert.equal(await page.evaluate(() => localStorage.getItem('brumaluz-chat-size')), null);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('brumaluz-chat-size')).w),354,'Legacy width does not prevent automatic layout');
+      if(width===1490 && process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'chat-default-1490.png')});
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForFunction(() => {
@@ -1373,6 +1427,7 @@ test('default chat width follows the action bar while manual size persists', { t
     await page.mouse.move(handle.x - 73, handle.y - 33, { steps: 5 });
     await page.mouse.up();
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brumaluz-chat-size')));
+    assert.equal(stored.version,2);
     assert.ok(stored.w > 300);
     await page.setViewportSize({ width: 1920, height: 900 });
     assert.equal(Math.round((await page.locator('#chat').boundingBox()).width), Math.round(stored.w));
@@ -1382,6 +1437,30 @@ test('default chat width follows the action bar while manual size persists', { t
     assert.equal(Math.round((await page.locator('#chat').boundingBox()).width), Math.round(stored.w));
     assert.deepEqual(player.errors, []);
   } finally { await player.context.close(); }
+});
+
+test('chat corner button waits until opacity finishes fading, and hides again on new messages', {timeout:120000},async()=>{
+  const world=backend(),a=fixture('Alric','humano',100),player=await openPlayer(world,a),page=player.page;
+  try {
+    await player.enter();await chatReady(world,a);
+    await page.mouse.move(0,0);
+    await page.waitForTimeout(200);
+    await page.locator('#chat').evaluate(el=>el.classList.add('faded'));
+    await page.waitForTimeout(1500);
+    const opacity=await page.locator('#chat').evaluate(el=>Number(getComputedStyle(el).opacity));
+    assert.ok(opacity>0 && opacity<.82,'Chat is still fading');
+    assert.equal(await page.locator('.chat-peek').isVisible(),false,'Button does not precede the end of the fade');
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'chat-fading-no-button.png')});
+    await page.locator('.chat-peek').waitFor({state:'visible'});
+    assert.equal(await page.locator('#chat').evaluate(el=>Number(getComputedStyle(el).opacity)),0);
+    world.chatSockets.get(a.user.id)({id:9991,channel:'general',sender_user:a.user.id,sender_name:'Alric',sender_account:'Alric',sender_title:'recien_llegado',created_at:new Date().toISOString(),body:'Wake the chat'});
+    await page.locator('.chat-log').getByText('Wake the chat',{exact:true}).waitFor();
+    await page.locator('.chat-peek').waitFor({state:'hidden'});
+    await page.locator('#game-menu-toggle').click();
+    await page.locator('.chat-peek').waitFor({state:'visible'});
+    assert.equal(await page.locator('#chat').evaluate(el=>Number(getComputedStyle(el).opacity)),0);
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
 });
 
 test('chat minimizes into a bottom tab, restores size, and corner preview stays temporary', {timeout:120000}, async()=>{

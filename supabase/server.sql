@@ -451,7 +451,7 @@ $$;
 -- ---------- Objetos, dinero y vendedores ----------
 -- Los precios y efectos replican src/data/items.ts: si cambias uno, cambia el otro.
 
--- Catálogo: value = precio de compra en pelines (el vendedor paga la mitad), stack = máximo por hueco (opcional; por defecto 99).
+-- Catálogo: value = precio de compra en pelines (el vendedor paga la mitad), stack = máximo por hueco (opcional; por defecto 50).
 create or replace function public.game_item(p_item text)
 returns jsonb
 language sql
@@ -518,7 +518,7 @@ set search_path = ''
 as $$
 declare
   inv jsonb := public.game_inventory(d);
-  stack int := coalesce((public.game_item(p_item) ->> 'stack')::int, 99);
+  stack int := coalesce((public.game_item(p_item) ->> 'stack')::int, 50);
   slot jsonb;
   i int;
 begin
@@ -1543,3 +1543,37 @@ revoke all on function public.game_trade_valid(public.player_trades),public.game
   public.game_trade_remove(jsonb,jsonb),public.game_trade_add(jsonb,jsonb) from public,anon,authenticated;
 revoke all on function public.trade_action(uuid,text,uuid,uuid,jsonb,int) from public,anon;
 grant execute on function public.trade_action(uuid,text,uuid,uuid,jsonb,int) to authenticated;
+
+create or replace function public.move_inventory_item(p_character_id uuid, p_from int, p_to int,
+  p_expected_from jsonb, p_expected_to jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  c public.characters; inv jsonb; source jsonb; target jsonb; actual jsonb; expected jsonb; i int;
+begin
+  -- Same lock order as trade_action: a move must invalidate any accepted slot-based offer.
+  perform pg_catalog.pg_advisory_xact_lock(731029,3);
+  c:=public.game_lock_character(p_character_id);
+  if p_from is null or p_to is null or p_from not between 0 and 24 or p_to not between 0 and 24
+    or p_from=p_to then raise exception 'INVALID_ITEM'; end if;
+  inv:=public.game_inventory(c.data); source:=inv->p_from; target:=inv->p_to;
+  if jsonb_typeof(source) is distinct from 'object' then raise exception 'INVALID_ITEM'; end if;
+  for i in 0..1 loop
+    actual:=case when i=0 then source else target end;
+    expected:=case when i=0 then p_expected_from else p_expected_to end;
+    if jsonb_typeof(actual)='object' then
+      if jsonb_typeof(expected) is distinct from 'object'
+        or actual->>'id' is distinct from expected->>'id'
+        or actual->>'count' is distinct from expected->>'count'
+        or coalesce((actual->>'bound')::boolean,false) is distinct from coalesce((expected->>'bound')::boolean,false)
+        then raise exception 'INVENTORY_CHANGED'; end if;
+    elsif coalesce(expected,'null'::jsonb)<>'null'::jsonb then raise exception 'INVENTORY_CHANGED'; end if;
+  end loop;
+  inv:=jsonb_set(jsonb_set(inv,array[p_from::text],target),array[p_to::text],source);
+  update public.player_trades set revision=revision+1,accepted_a=false,accepted_b=false,
+    offer_a=case when a=p_character_id then '{"items":[],"pelines":0}'::jsonb else offer_a end,
+    offer_b=case when b=p_character_id then '{"items":[],"pelines":0}'::jsonb else offer_b end
+    where status in ('invited','open') and p_character_id in(a,b);
+  return public.game_store(c.id,c.data||jsonb_build_object('inventory',inv));
+end $$;
+revoke all on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) from public,anon;
+grant execute on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) to authenticated;

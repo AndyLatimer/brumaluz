@@ -348,6 +348,28 @@ test('binding follows the usable stack on the quick bar and separates vendor sal
     assert.deepEqual(h.errors,[]);
   }finally{await h.close();}
 });
+test('local purchases follow the 50 default, explicit overrides and bound stack separation',async()=>{
+  const h=await harness();
+  try {
+    const result=await h.page.evaluate(async()=>{
+      const {defaultChar}=await import('/src/data/data.ts');
+      const {ITEMS,itemStack}=await import('/src/data/items.ts');
+      const {simulateBuy}=await import('/src/services/devActions.ts');
+      const d=defaultChar();d.wallet.pelines=100;
+      d.inventory=[{id:'pan_duro',count:3,bound:true},{id:'pan_duro',count:49},...Array(23).fill(null)];
+      simulateBuy(d,'testiculos','pan_duro');simulateBuy(d,'testiculos','pan_duro');
+      const normal=d.inventory.map(s=>s?.count??null);
+      ITEMS.pan_duro.stack=2;
+      try {
+        d.inventory=[{id:'pan_duro',count:2},...Array(24).fill(null)];
+        simulateBuy(d,'testiculos','pan_duro');
+        return {normal:normal.slice(0,3),override:d.inventory.slice(0,2).map(s=>s.count),fallback:itemStack('not-defined')};
+      }finally{delete ITEMS.pan_duro.stack;}
+    });
+    assert.deepEqual(result,{normal:[3,50,1],override:[2,1],fallback:50});
+    assert.deepEqual(h.errors,[]);
+  }finally{await h.close();}
+});
 test('malformed trade snapshots surface an error without replacing the current offer',async()=>{
   const h=await harness();
   try {

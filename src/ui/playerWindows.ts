@@ -87,7 +87,7 @@ function inventoryHeading(icon: keyof typeof INVENTORY_ICONS, label: string) {
   return heading;
 }
 
-export function renderInventory(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onUse?: (slot: number) => void) {
+export function renderInventory(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onUse?: (slot: number) => void, onMove?: (from: number, to: number) => void) {
   container.replaceChildren();
   const wrap = el('div', 'inv');
 
@@ -129,6 +129,7 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   capacity.setAttribute('aria-label', t('{used} de {total} huecos ocupados', { used, total: INVENTORY_UNLOCKED }));
   head.append(inventoryHeading('bag', 'Mochila'), capacity);
   const grid = el('div', 'inv-grid');
+  let source: number | null = null;
   for (let i = 0; i < INVENTORY_UNLOCKED; i++) {
     const item = d.inventory[i];
     const def = item ? itemDef(item.id) : undefined;
@@ -144,13 +145,36 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
       if (item.count > 1) cell.append(el('i', undefined, String(item.count)));
       if (onUse && def?.usable) {
         cell.classList.add('usable');
-        cell.onclick = () => onUse(i);
+        cell.onclick = () => { if (source === null) onUse(i); };
+      }
+      if (onMove || def?.usable) {
         cell.draggable = true;
         cell.ondragstart = (e) => {
+          source = i;
+          cell.classList.add('dragging');
           e.dataTransfer?.setData(DRAG_ITEM_TYPE, JSON.stringify({ id: item.id }));
-          e.dataTransfer!.effectAllowed = 'copy';
+          e.dataTransfer!.effectAllowed = 'copyMove';
+        };
+        cell.ondragend = () => {
+          source = null;
+          grid.querySelectorAll('.dragging,.drop-target').forEach(el => el.classList.remove('dragging','drop-target'));
         };
       }
+    }
+    if (onMove) {
+      cell.ondragover = e => {
+        if (source === null || source === i) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        cell.classList.add('drop-target');
+      };
+      cell.ondragleave = () => cell.classList.remove('drop-target');
+      cell.ondrop = e => {
+        e.preventDefault(); cell.classList.remove('drop-target');
+        if (source === null || source === i) return;
+        const from = source; source = null;
+        onMove(from,i);
+      };
     }
     grid.append(cell);
   }

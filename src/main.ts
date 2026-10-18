@@ -3,7 +3,7 @@ import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
   requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles,
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
-  buyFromVendor, sellToVendor, useItem, sendChatMessage, subscribeChat,
+  buyFromVendor, sellToVendor, useItem, moveInventoryItem, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
@@ -743,6 +743,15 @@ async function vendorTransaction(call: (id: string, vendorId: string) => Promise
 const buyItem = (item: string) => vendorTransaction((id, v) => buyFromVendor(id, v, item), () => simulateBuy(state, vendor!.id, item), item);
 const sellItem = (slot: number) => vendorTransaction((id, v) => sellToVendor(id, v, slot), () => simulateSell(state, slot));
 
+async function moveInventorySlot(from: number, to: number) {
+  const source = state.inventory[from], target = state.inventory[to];
+  if (!source || from === to || dead) return;
+  const moved = await runOnServer(id => moveInventoryItem(id,from,to,source,target), () => {
+    [state.inventory[from],state.inventory[to]] = [target,source];
+  });
+  if (moved && openWindow === 'inventory') setWindow('inventory',false);
+}
+
 /** Usa un objeto de la mochila (clic en el hueco). */
 async function useInventoryItem(slot: number) {
   if (dead) return;
@@ -1175,7 +1184,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
-  if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot));
+  if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to));
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
     setWindow(null);

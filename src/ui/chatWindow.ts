@@ -292,27 +292,28 @@ async function submit(raw: string) {
 }
 function initResize() {
   const el = root();
-  const saved = store.get<{ w: number; h: number } | null>('size', null);
+  const saved = store.get<{ w: number; h: number; version?: number } | null>('size', null);
+  let actionBarWidth = 0;
   const apply = (w: number, h: number) => {
     w = Math.min(Math.max(w, MIN_SIZE.w), Math.round(innerWidth * 0.7));
     h = Math.min(Math.max(h, MIN_SIZE.h), Math.round(innerHeight * 0.7));
     el.style.setProperty('--chat-w', `${w}px`);
     el.style.setProperty('--chat-h', `${h}px`);
+    el.classList.toggle('beside-action-bar', actionBarWidth > 0 && w <= innerWidth / 2 - actionBarWidth / 2 - 24 + 1);
     return { w, h };
   };
-  let customSize = saved !== null;
-  let actionBarWidth = 0;
+  let customSize = saved?.version === 2 && Number.isFinite(saved.w) && Number.isFinite(saved.h);
   const defaultWidth = () => {
     const available = innerWidth / 2 - actionBarWidth / 2 - 24;
     return actionBarWidth > 0 && available >= MIN_SIZE.w ? available : 300;
   };
-  let size = saved ? apply(saved.w, saved.h) : apply(defaultWidth(), 210);
+  let size = apply(customSize ? saved!.w : defaultWidth(), saved && Number.isFinite(saved.h) ? saved.h : 210);
   const actionBar = document.querySelector<HTMLElement>('#action-bar')!;
   new ResizeObserver(() => {
     const width = actionBar.getBoundingClientRect().width;
     if (width <= 0) return;
     actionBarWidth = width;
-    if (!customSize && !start) size = apply(defaultWidth(), size.h);
+    if (!start) size = apply(customSize ? size.w : defaultWidth(), size.h);
   }).observe(actionBar);
   const handle = $<HTMLElement>('.chat-resize');
   let start: { x: number; y: number; w: number; h: number } | null = null;
@@ -326,7 +327,7 @@ function initResize() {
     size = apply(start.w + (start.x - e.clientX), start.h + (start.y - e.clientY));
   };
   handle.onpointerup = handle.onpointercancel = () => {
-    if (start) { start = null; customSize = true; store.set('size', size); }
+    if (start) { start = null; customSize = true; store.set('size', { ...size, version: 2 }); }
   };
   window.addEventListener('resize', () => { size = apply(customSize ? size.w : defaultWidth(), size.h); });
 }
@@ -377,10 +378,28 @@ export function initChat(h: ChatHooks) {
   const peek = document.createElement('button');
   peek.type = 'button';
   peek.className = 'chat-peek';
+  peek.hidden = true;
   peek.setAttribute('aria-controls', 'chat');
   peek.setAttribute('aria-label', t('Mostrar chat temporalmente'));
   peek.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4zM8 8h8m-8 4h5"/></svg><span>Chat</span><span aria-hidden="true">↑</span>';
   document.body.append(peek);
+  let visibilityFrame = 0;
+  const updatePeek = () => {
+    visibilityFrame = 0;
+    const hidden = document.body.classList.contains('ui-menu-open')
+      || (chat.classList.contains('faded') && !chat.classList.contains('collapsed'));
+    peek.hidden = !hidden || chat.classList.contains('hover-revealed') || chat.matches(':focus-within')
+      || Number(getComputedStyle(chat).opacity) > 0;
+  };
+  const queuePeek = () => {
+    if (!visibilityFrame) visibilityFrame = requestAnimationFrame(updatePeek);
+  };
+  const observer = new MutationObserver(queuePeek);
+  observer.observe(chat, { attributes: true, attributeFilter: ['class'] });
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  chat.addEventListener('transitionend', event => { if (event.target === chat && event.propertyName === 'opacity') updatePeek(); });
+  chat.addEventListener('transitioncancel', queuePeek);
+  queuePeek();
   peek.addEventListener('pointerenter', () => {
     chat.classList.add('hover-revealed', 'peek-expanded');
     wake();

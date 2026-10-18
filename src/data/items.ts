@@ -58,7 +58,7 @@ export const ITEMS: Record<string, ItemDef> = {
   },
 };
 
-export const DEFAULT_STACK = 99;
+export const DEFAULT_STACK = 50;
 export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];
 export const itemLabel = (id: string) => ITEMS[id]?.label ?? id;
