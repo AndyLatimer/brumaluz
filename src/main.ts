@@ -19,6 +19,7 @@ import { createCharacterPortrait } from './character/portrait';
 import { setupStage, castShadows } from './world/render';
 import { createGraphics } from './world/graphics';
 import { RemotePlayers } from './world/players';
+import { renderSocial } from './ui/socialWindow';
 import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
@@ -975,7 +976,9 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
-let openWindow: 'inventory' | 'sheet' | 'vendor' | null = null;
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social';
+let openWindow: PlayerWindow | null = null;
+let closeSocial: (() => void) | null = null;
 
 function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
   playerMenuOpen = open;
@@ -992,7 +995,9 @@ function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
 let pointDraft: Partial<Record<AttributeId, number>> = {};
 const draftTotal = () => Object.values(pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
 
-function setWindow(win: 'inventory' | 'sheet' | 'vendor' | null, closeMenu = true) {
+function setWindow(win: PlayerWindow | null, closeMenu = true) {
+  closeSocial?.();
+  closeSocial = null;
   if (win !== openWindow) pointDraft = {};
   openWindow = win;
   document.body.classList.toggle('window-open', !!win);
@@ -1003,11 +1008,15 @@ function setWindow(win: 'inventory' | 'sheet' | 'vendor' | null, closeMenu = tru
   if (!win) { vendor = null; return; }
   if (closeMenu) setPlayerMenuOpen(false, false);
   const body = $('#window-body');
-  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'inventory' ? 'Inventario' : 'Ficha de personaje');
-  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor');
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
+  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory');
   if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot));
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
+  else if (win === 'social') closeSocial = renderSocial(body, (username) => {
+    setWindow(null);
+    focusChat(`/w ~${username} `);
+  });
   else renderSheet(body, state, renderer, async (title) => {
     const stillCurrent = characterContext();
     await runOnServer((id) => setCharacterTitle(id, title), () => { state.title = title; });
@@ -1052,7 +1061,7 @@ $('#window-confirm').onclick = async () => {
 
 $('#player-menu-toggle').onclick = () => setPlayerMenuOpen(!playerMenuOpen);
 for (const b of document.querySelectorAll<HTMLButtonElement>('#player-menu-panel [data-window]')) {
-  b.onclick = () => setWindow(b.dataset.window as 'inventory' | 'sheet');
+  b.onclick = () => setWindow(b.dataset.window as PlayerWindow);
 }
 $('#window-close').onclick = () => setWindow(null);
 $('#window-backdrop').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget) setWindow(null); });

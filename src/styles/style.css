@@ -737,6 +737,17 @@ body.window-open .minimap { z-index: 61; }
 .minimap-tip { position: absolute; transform: translate(-50%, -150%); padding: 2px 7px; border-radius: 6px; background: rgba(20,12,6,.92); border: 1px solid #8be07a; color: #c9f5c0; font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 2; }
 .minimap.off .minimap-frame, .minimap.off .minimap-zoom { display: none; }
 .minimap.off .minimap-plate { margin-top: 0; }
+.social-window { display: grid; gap: 12px; min-width: 0; }
+.social-add { display: flex; flex-wrap: wrap; gap: 8px; }
+.social-add input { flex: 1; min-width: 120px; padding: 8px 10px; border: 1px solid var(--gold-lo); border-radius: 6px; background: rgba(255,250,235,.8); color: var(--ink); font: inherit; }
+.social-lists { display: grid; gap: 16px; }
+.social-lists h3 { margin: 0 0 7px; color: var(--wood-2); font-size: 17px; }
+.social-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(156,111,42,.25); }
+.social-row > div:first-child { display: grid; gap: 3px; overflow-wrap: anywhere; }
+.social-online { color: #356c32; font-size: 13px; }
+.social-offline, .social-empty { color: var(--ink-soft); font-size: 13px; }
+.social-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.social-actions .btn { padding: 5px 10px; font-size: 13px; }
 @media (max-width: 760px) { .minimap { --map: 150px; } }
 @media (max-width: 1000px) { body.playing .minimap { bottom: 76px; } }
 .ab-slot { position: relative; display: grid; place-items: center; width: 46px; height: 46px; border: 2px solid rgba(185,148,90,.55); border-radius: 9px; background: rgba(0,0,0,.35); cursor: default; transition: transform .1s, border-color .15s; }

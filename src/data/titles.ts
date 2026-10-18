@@ -3,6 +3,7 @@ export const TITLES = {
   none: { label: 'Sin título' },
   recien_llegado: { label: 'Recién llegado' },
   rey_de_pompelin: { label: 'Rey de Pompelín', reserved: true },
+  reina_de_pompelin: { label: 'Reina de Pompelín', reserved: true },
 } as const satisfies Record<string, { label: string; reserved?: boolean }>;
 
 export type TitleId = keyof typeof TITLES;

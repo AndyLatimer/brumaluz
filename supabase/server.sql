@@ -20,6 +20,15 @@ insert into public.server_config (key, value) values
   ('staff_titles', '{"rey_de_pompelin": ["manuelperezardanuy@gmail.com"]}'::jsonb) -- títulos reservados: título -> emails autorizados
 on conflict (key) do nothing;
 
+update public.server_config
+set value = jsonb_set(value, '{reina_de_pompelin}', (
+  select jsonb_agg(distinct email)
+  from jsonb_array_elements(
+    coalesce(value -> 'reina_de_pompelin', '[]'::jsonb) || '["veronicaluxen17@gmail.com"]'::jsonb
+  ) as emails(email)
+))
+where key = 'staff_titles';
+
 -- ---------- Fórmulas (internas) ----------
 
 create or replace function public.game_race_bonus(p_race text, p_attr text)
@@ -880,6 +889,112 @@ $$;
 revoke all on function public.game_public_character(jsonb), public.game_world_snapshot(uuid) from public, anon, authenticated;
 revoke all on function public.world_join(uuid, uuid), public.world_sync(uuid, uuid, jsonb), public.world_leave(uuid, uuid) from public, anon;
 grant execute on function public.world_join(uuid, uuid), public.world_sync(uuid, uuid, jsonb), public.world_leave(uuid, uuid) to authenticated;
+
+-- ---------- Amigos por cuenta ----------
+create table if not exists public.friendships (
+  user_low uuid not null references auth.users(id) on delete cascade,
+  user_high uuid not null references auth.users(id) on delete cascade,
+  requested_by uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted')),
+  created_at timestamptz not null default now(),
+  primary key (user_low, user_high),
+  check (user_low < user_high),
+  check (requested_by in (user_low, user_high))
+);
+create index if not exists friendships_high_idx on public.friendships(user_high);
+create index if not exists friendships_pending_sender_idx on public.friendships(requested_by) where status = 'pending';
+alter table public.friendships enable row level security;
+revoke all on table public.friendships from public, anon, authenticated;
+
+create or replace function public.friends_list()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  result jsonb;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'userId', p.user_id, 'username', p.username,
+    'status', case when f.status = 'accepted' then 'friend' when f.requested_by = uid then 'outgoing' else 'incoming' end,
+    'online', w.user_id is not null,
+    'characterName', c.name, 'location', c.data ->> 'location'
+  ) order by lower(p.username)), '[]'::jsonb) into result
+  from public.friendships f
+  join public.profiles p on p.user_id = case when f.user_low = uid then f.user_high else f.user_low end
+  left join public.world_players w on w.user_id = p.user_id and f.status = 'accepted' and w.seen_at > now() - interval '15 seconds'
+  left join public.characters c on c.id = w.character_id
+  where uid in (f.user_low, f.user_high);
+  return result;
+end;
+$$;
+
+create or replace function public.friend_request(p_username text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  target uuid;
+  lo uuid;
+  hi uuid;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  if not exists (select 1 from public.profiles where user_id = uid and username is not null) then
+    raise exception 'FRIEND_USERNAME_REQUIRED';
+  end if;
+  select user_id into target from public.profiles
+    where lower(username collate pg_catalog."C") = lower(btrim(coalesce(p_username, '')) collate pg_catalog."C");
+  if target is null then raise exception 'PLAYER_NOT_FOUND'; end if;
+  if target = uid then raise exception 'FRIEND_SELF'; end if;
+  lo := least(uid, target); hi := greatest(uid, target);
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 2));
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(lo::text || hi::text, 3));
+  if exists (select 1 from public.friendships where user_low = lo and user_high = hi) then
+    raise exception 'FRIEND_ALREADY_EXISTS';
+  end if;
+  if (select count(*) from public.friendships where requested_by = uid and status = 'pending') >= 50 then
+    raise exception 'FRIEND_REQUEST_LIMIT';
+  end if;
+  insert into public.friendships(user_low, user_high, requested_by) values(lo, hi, uid);
+end;
+$$;
+
+create or replace function public.friend_update(p_user_id uuid, p_action text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  lo uuid := least(uid, p_user_id);
+  hi uuid := greatest(uid, p_user_id);
+  f public.friendships;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  if p_user_id is null or p_user_id = uid or p_action is null or p_action not in ('accept', 'remove') then
+    raise exception 'INVALID_FRIEND_ACTION';
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(lo::text || hi::text, 3));
+  select * into f from public.friendships where user_low = lo and user_high = hi for update;
+  if not found then raise exception 'FRIEND_NOT_FOUND'; end if;
+  if p_action = 'accept' then
+    if f.status <> 'pending' or f.requested_by = uid then raise exception 'INVALID_FRIEND_ACTION'; end if;
+    update public.friendships set status = 'accepted' where user_low = lo and user_high = hi;
+  else
+    delete from public.friendships where user_low = lo and user_high = hi;
+  end if;
+end;
+$$;
+
+revoke all on function public.friends_list(), public.friend_request(text), public.friend_update(uuid, text) from public, anon;
+grant execute on function public.friends_list(), public.friend_request(text), public.friend_update(uuid, text) to authenticated;
 
 -- ---------- Chat multijugador ----------
 -- Los mensajes solo se crean con chat_send (el cliente no puede insertar): el servidor limpia el texto,

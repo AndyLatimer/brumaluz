@@ -85,6 +85,9 @@ interface Database {
       world_join: { Args: { p_character_id: string; p_session_id: string }; Returns: Json };
       world_sync: { Args: { p_character_id: string; p_session_id: string; p_state: Json }; Returns: Json };
       world_leave: { Args: { p_character_id: string; p_session_id: string }; Returns: undefined };
+      friends_list: { Args: Record<string, never>; Returns: Json };
+      friend_request: { Args: { p_username: string }; Returns: undefined };
+      friend_update: { Args: { p_user_id: string; p_action: string }; Returns: undefined };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -176,6 +179,12 @@ export async function getProfileUsername(userId: string) {
 }
 
 const SERVER_ERRORS: Record<string, string> = {
+  FRIEND_SELF: 'No puedes añadirte a ti mismo.',
+  FRIEND_USERNAME_REQUIRED: 'Necesitas un nombre de cuenta para enviar solicitudes de amistad.',
+  FRIEND_ALREADY_EXISTS: 'Ya sois amigos o existe una solicitud pendiente.',
+  FRIEND_REQUEST_LIMIT: 'Tienes demasiadas solicitudes enviadas. Cancela alguna antes de continuar.',
+  FRIEND_NOT_FOUND: 'Esta amistad o solicitud ya no existe.',
+  INVALID_FRIEND_ACTION: 'Esta solicitud ya no se puede aceptar.',
   WORLD_SESSION_REPLACED: 'Tu cuenta ha entrado al mundo desde otra pestaña o equipo.',
   INVALID_WORLD_STATE: 'El servidor ha rechazado el movimiento del personaje.',
   CHARACTER_LIMIT_REACHED: `Cada cuenta puede tener un máximo de ${MAX_CHARACTERS_PER_ACCOUNT} personajes. Borra uno antes de crear otro.`,
@@ -291,6 +300,38 @@ export function syncWorld(characterId: string, sessionId: string, state: { x: nu
 
 export async function leaveWorld(characterId: string, sessionId: string) {
   await serverCall(requireClient().rpc('world_leave', { p_character_id: characterId, p_session_id: sessionId }).abortSignal(AbortSignal.timeout(8000)));
+}
+
+export interface FriendEntry {
+  userId: string;
+  username: string;
+  status: 'friend' | 'incoming' | 'outgoing';
+  online: boolean;
+  characterName: string | null;
+  location: string | null;
+}
+export async function listFriends(): Promise<FriendEntry[]> {
+  const result = await serverCall(requireClient().rpc('friends_list').abortSignal(AbortSignal.timeout(8000)));
+  if (!Array.isArray(result)) throw new Error('Respuesta social no válida.');
+  return result.map((value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+      || typeof value.userId !== 'string' || typeof value.username !== 'string'
+      || !['friend', 'incoming', 'outgoing'].includes(String(value.status))
+      || typeof value.online !== 'boolean'
+      || (value.characterName !== null && typeof value.characterName !== 'string')
+      || (value.location !== null && typeof value.location !== 'string')) throw new Error('Respuesta social no válida.');
+    return {
+      userId: value.userId, username: value.username,
+      status: value.status === 'friend' ? 'friend' : value.status === 'incoming' ? 'incoming' : 'outgoing',
+      online: value.online, characterName: value.characterName, location: value.location,
+    };
+  });
+}
+export async function requestFriend(username: string) {
+  await serverCall(requireClient().rpc('friend_request', { p_username: username }).abortSignal(AbortSignal.timeout(8000)));
+}
+export async function updateFriend(userId: string, action: 'accept' | 'remove') {
+  await serverCall(requireClient().rpc('friend_update', { p_user_id: userId, p_action: action }).abortSignal(AbortSignal.timeout(8000)));
 }
 export type ChatChannel = 'general' | 'zone' | 'whisper';
 export interface ChatMessage {

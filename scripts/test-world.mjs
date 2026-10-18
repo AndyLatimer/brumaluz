@@ -37,9 +37,10 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), accounts: new Map(), friends: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
 }
 async function openPlayer(world, account, compatible = true) {
+  world.accounts.set(account.user.id, account);
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const errors = [];
@@ -54,15 +55,40 @@ async function openPlayer(world, account, compatible = true) {
     if (path === '/rest/v1/characters') return fulfill(account.characters || [account.character]);
     if (path === '/rest/v1/chat_messages') return fulfill([]);
     const fn = path.split('/').at(-1);
-    const args = request.postDataJSON();
+    const args = request.postDataJSON() || {};
     const character = (account.characters || [account.character]).find((c) => c.id === args.p_character_id) || account.character;
     const data = { ...character.data };
     if (world.rpcDelay.has(fn)) await new Promise((resolve) => setTimeout(resolve, world.rpcDelay.get(fn)));
     if (fn === 'character_enter') return fulfill(data);
     if (fn === 'create_character') return fulfill(randomUUID());
-    if (fn === 'set_character_title') return fulfill({ ...data, title: args.p_title });
-    if (fn === 'my_titles') return fulfill([]);
+    if (fn === 'set_character_title') { character.data.title = args.p_title; return fulfill({ ...data, title: args.p_title }); }
+    if (fn === 'my_titles') return fulfill(account.titles || []);
     const key = account.user.id;
+    if (fn === 'friends_list') {
+      const entries = [];
+      for (const relation of world.friends.values()) {
+        if (![relation.from, relation.to].includes(key)) continue;
+        const target = world.accounts.get(relation.from === key ? relation.to : relation.from);
+        const player = relation.accepted ? world.players.get(target.user.id) : null;
+        entries.push({ userId: target.user.id, username: target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, location: player ? 'brumaluz' : null });
+      }
+      return fulfill(entries);
+    }
+    if (fn === 'friend_request') {
+      const target = [...world.accounts.values()].find((a) => a.character.name.toLowerCase() === args.p_username.toLowerCase());
+      if (!target) return fulfill({message:'PLAYER_NOT_FOUND'},400);
+      if (target.user.id === key) return fulfill({message:'FRIEND_SELF'},400);
+      const pair = [key,target.user.id].sort().join(':');
+      if (world.friends.has(pair)) return fulfill({message:'FRIEND_ALREADY_EXISTS'},400);
+      world.friends.set(pair,{from:key,to:target.user.id,accepted:false});
+      return route.fulfill({status:204});
+    }
+    if (fn === 'friend_update') {
+      const pair = [key,args.p_user_id].sort().join(':');
+      if (args.p_action === 'accept') world.friends.get(pair).accepted = true;
+      else world.friends.delete(pair);
+      return route.fulfill({status:204});
+    }
     if (fn === 'world_leave') {
       if (world.players.get(key)?.session === args.p_session_id) world.players.delete(key);
       return route.fulfill({ status: 204 });
@@ -342,4 +368,93 @@ test('graphics controls stay clear of account information and map population fit
     assert.equal(await player.page.locator('#multiplayer-status').count(), 0);
     assert.deepEqual(player.errors, []);
   } finally { await player.context.close(); }
+});
+
+async function social(page) {
+  await page.locator('#player-menu-toggle').click();
+  await page.locator('[data-window="social"]').click();
+  await page.locator('.social-add button').waitFor();
+  await page.waitForFunction(() => !document.querySelector('.social-add button').disabled);
+}
+async function socialRequest(page, username) {
+  await page.locator('.social-add input').fill(username);
+  await page.locator('.social-add button').click();
+}
+
+test('Social supports requests, acceptance, online presence, whisper, cancellation and removal across accounts', { timeout: 180000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4), b = fixture('Elara', 'elfo', -5.4);
+  const first = await openPlayer(world, a), second = await openPlayer(world, b);
+  try {
+    await first.enter(); await second.enter();
+    await social(first.page); await social(second.page);
+    await socialRequest(first.page, 'Nobody');
+    await first.page.locator('.social-window .account-message.error').waitFor();
+    assert.match(await first.page.locator('.social-window .account-message').textContent(), /No existe/);
+    await socialRequest(first.page, 'Elara');
+    await first.page.locator('[data-social="outgoing"] .social-row').waitFor();
+    await second.page.locator('[data-social="incoming"] .social-row').waitFor({timeout:15000});
+    await second.page.getByRole('button', {name:'Rechazar',exact:true}).click();
+    await first.page.locator('[data-social="outgoing"] .social-row').waitFor({state:'detached',timeout:15000});
+    await socialRequest(first.page, 'Elara');
+    await first.page.getByRole('button', {name:'Cancelar solicitud',exact:true}).click();
+    await first.page.locator('[data-social="outgoing"] .social-row').waitFor({state:'detached'});
+    await socialRequest(first.page, 'Elara');
+    await second.page.getByRole('button', {name:'Aceptar',exact:true}).click({timeout:15000});
+    await first.page.locator('[data-social="friend"] .social-row').waitFor({timeout:15000});
+    assert.match(await first.page.locator('.social-online').textContent(), /Conectado · Elara · Brumaluz/);
+    await first.page.getByRole('button', {name:'Susurrar',exact:true}).click();
+    assert.equal(await first.page.locator('.chat-input').inputValue(), '/w ~Elara ');
+    assert.equal(await first.page.locator('#window-backdrop').isVisible(), false);
+    await second.page.locator('#window-close').click();
+    await leave(second.page);
+    await first.page.locator('.chat-input').blur();
+    await social(first.page);
+    assert.equal(await first.page.locator('.social-offline').textContent(), 'Desconectado');
+    first.page.once('dialog', dialog => dialog.accept());
+    await first.page.getByRole('button', {name:'Eliminar amigo',exact:true}).click();
+    await first.page.locator('[data-social="friend"] .social-row').waitFor({state:'detached'});
+    assert.equal(world.friends.size,0);
+    await first.page.setViewportSize({width:390,height:844});
+    const fits = await first.page.locator('.social-window').evaluate(el => el.getBoundingClientRect().right <= innerWidth && el.scrollWidth <= el.clientWidth);
+    assert.equal(fits,true);
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close(); await second.context.close();}
+});
+
+test('queen title uses the same reserved phoenix styling in the picker and remote nameplate', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',-6.4), b = fixture('Elara','elfo',-5.4);
+  b.titles = ['reina_de_pompelin'];
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    await second.page.locator('#player-menu-toggle').click();
+    await second.page.locator('[data-window="sheet"]').click();
+    await second.page.locator('.title-button').click();
+    const queen = second.page.locator('.title-option').filter({hasText:'Reina de Pompelín'});
+    assert.equal(await queen.locator('.phoenix').count(),1);
+    assert.equal(await second.page.locator('.title-option').filter({hasText:'Rey de Pompelín'}).count(),0);
+    await queen.click();
+    await second.page.locator('.title-button.staff-title .phoenix').waitFor();
+    await first.page.locator(`[data-player-id="${b.character.id}"] .staff-title`).filter({hasText:'Reina de Pompelín'}).waitFor();
+    assert.equal(await first.page.locator(`[data-player-id="${b.character.id}"] .phoenix`).count(),1);
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close(); await second.context.close();}
+});
+
+test('closing Social during a delayed refresh cannot populate a different window', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',-6.4);
+  const player = await openPlayer(world,a);
+  try {
+    await player.enter();
+    world.rpcDelay.set('friends_list',1500);
+    await player.page.locator('#player-menu-toggle').click();
+    await player.page.locator('[data-window="social"]').click();
+    await player.page.locator('#window-close').click();
+    await player.page.locator('#player-menu-toggle').click();
+    await player.page.locator('[data-window="sheet"]').click();
+    await player.page.waitForTimeout(1800);
+    assert.equal(await player.page.locator('.social-window').count(),0);
+    assert.equal(await player.page.locator('.sheet-name-row strong').textContent(),'Alric');
+    assert.deepEqual(player.errors,[]);
+  } finally {await player.context.close();}
 });

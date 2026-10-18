@@ -38,6 +38,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
     async function user(id) {
       await client.query('reset role');
       await client.query("select set_config('request.jwt.claim.sub', $1, true)", [id]);
+      await client.query("select set_config('request.jwt.claims', jsonb_build_object('sub',id,'email',email)::text, true) from auth.users where id=$1", [id]);
       await client.query('set local role authenticated');
     }
     async function rpc(fn, args) {
@@ -171,6 +172,88 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await rpc('world_join', [ca2, replacement]);
       await client.query('delete from public.characters where id=$1', [ca2]);
       await rpc('world_leave', [ca2, replacement]);
+    });
+    await t.test('friend requests require consent, expose presence only to accepted friends, and are account-wide', async () => {
+      await client.query('reset role');
+      const outsider = randomUUID();
+      await client.query('insert into auth.users(id, raw_user_meta_data) values($1,$2)', [outsider, { username: `test_${outsider.replaceAll('-', '').slice(0, 12)}` }]);
+      const { rows } = await client.query('select user_id,username from public.profiles where user_id=any($1::uuid[])', [[a,b]]);
+      const aname = rows.find((row) => row.user_id === a).username;
+      const bname = rows.find((row) => row.user_id === b).username;
+      await user(a);
+      await rejected(() => client.query('select * from public.friendships'), /permission denied/);
+      await rejected(() => rpc('friend_request', [aname]), /FRIEND_SELF/);
+      await rejected(() => rpc('friend_request', ['nonexistent_account_xyz']), /PLAYER_NOT_FOUND/);
+      await rpc('friend_request', [` ${bname.toUpperCase()} `]);
+      await rejected(() => rpc('friend_request', [bname]), /FRIEND_ALREADY_EXISTS/);
+      await rejected(() => rpc('friend_update', [b, 'accept']), /INVALID_FRIEND_ACTION/);
+      const pending = (await rpc('friends_list', []))[0];
+      assert.equal(pending.status, 'outgoing');
+      assert.equal(pending.online, false);
+      assert.equal(pending.characterName, null);
+      await user(outsider);
+      assert.deepEqual(await rpc('friends_list', []), []);
+      await rejected(() => rpc('friend_update', [a, 'accept']), /FRIEND_NOT_FOUND/);
+      await rejected(() => rpc('friend_update', [a, 'invalid']), /INVALID_FRIEND_ACTION/);
+      await rejected(() => rpc('friend_update', [null, 'accept']), /INVALID_FRIEND_ACTION/);
+      await user(b);
+      assert.equal((await rpc('friends_list', []))[0].status, 'incoming');
+      await rejected(() => rpc('friend_request', [aname]), /FRIEND_ALREADY_EXISTS/);
+      await rpc('friend_update', [a, 'accept']);
+      await user(a);
+      const friend = (await rpc('friends_list', []))[0];
+      assert.equal(friend.status, 'friend');
+      assert.equal(friend.online, true);
+      assert.equal(friend.characterName, 'Elara');
+      assert.equal(friend.location, location);
+      assert.equal('email' in friend, false);
+      await client.query('reset role');
+      await client.query("update public.world_players set seen_at=now()-interval '16 seconds' where user_id=$1", [b]);
+      await user(a);
+      assert.equal((await rpc('friends_list', []))[0].online, false);
+      await rpc('friend_update', [b, 'remove']);
+      await user(b);
+      assert.deepEqual(await rpc('friends_list', []), []);
+      await rpc('friend_request', [aname]);
+      await rpc('friend_update', [a, 'remove']);
+      await user(a);
+      assert.deepEqual(await rpc('friends_list', []), []);
+      await rpc('friend_request', [bname]);
+      await user(b);
+      await rpc('friend_update', [a, 'remove']);
+      await rejected(() => rpc('friend_update', [a, 'accept']), /FRIEND_NOT_FOUND/);
+      await client.query('set local role anon');
+      for (const [fn,args] of [['friends_list',[]],['friend_request',[aname]],['friend_update',[a,'accept']]]) {
+        await rejected(() => rpc(fn,args), /permission denied/);
+      }
+      await client.query('reset role');
+      await client.query('update public.profiles set username=null where user_id=$1',[outsider]);
+      await user(outsider);
+      await rejected(() => rpc('friend_request',[bname]), /FRIEND_USERNAME_REQUIRED/);
+    });
+    await t.test('friend requests cap the number of outstanding invitations', async () => {
+      await client.query('reset role');
+      const {rows: targets} = await client.query("insert into auth.users(id,raw_user_meta_data) select id,jsonb_build_object('username','cap_'||substr(replace(id::text,'-',''),1,12)) from (select gen_random_uuid() as id from generate_series(1,50)) fixtures returning id");
+      await client.query("insert into public.friendships(user_low,user_high,requested_by) select least($1::uuid,id),greatest($1::uuid,id),$1 from unnest($2::uuid[]) as ids(id)",[a,targets.map(row=>row.id)]);
+      const {rows:[profile]} = await client.query('select username from public.profiles where user_id=$1',[b]);
+      await user(a);
+      await rejected(() => rpc('friend_request',[profile.username]), /FRIEND_REQUEST_LIMIT/);
+    });
+    await t.test('queen title keeps the king configuration and is authorized server-side by email', async () => {
+      await client.query('reset role');
+      const { rows:[config] } = await client.query("select value from public.server_config where key='staff_titles'");
+      assert.ok(config.value.reina_de_pompelin.includes('veronicaluxen17@gmail.com'));
+      assert.ok(config.value.rey_de_pompelin.length > 0);
+      const email = `test_${a}@example.test`;
+      await client.query('update auth.users set email=$1 where id=$2', [email,a]);
+      await client.query("update public.server_config set value=jsonb_set(value,'{reina_de_pompelin}', $1) where key='staff_titles'", [JSON.stringify([email])]);
+      await user(a);
+      assert.ok((await rpc('my_titles', [])).includes('reina_de_pompelin'));
+      const data = await rpc('set_character_title', [ca,'reina_de_pompelin']);
+      assert.equal(data.title,'reina_de_pompelin');
+      await user(b);
+      assert.equal((await rpc('my_titles', [])).includes('reina_de_pompelin'),false);
+      await rejected(() => rpc('set_character_title', [cb,'reina_de_pompelin']), /INVALID_TITLE/);
     });
   } finally {
     await client.query('rollback');
