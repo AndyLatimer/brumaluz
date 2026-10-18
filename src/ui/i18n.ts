@@ -3,6 +3,9 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Tus amigos': 'Your friends',
+  '({n} conectados)': '({n} online)',
+  'Solo puedes susurrar a amigos conectados.': 'You can only whisper to online friends.',
   'Amigos en total': 'Total friends',
   'Amigos conectados': 'Friends online',
   'Grupo': 'Party',

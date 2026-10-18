@@ -71,18 +71,6 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
     selectTab(index);
     tabButtons[index].focus();
   };
-  const introduction = document.createElement('header');
-  introduction.className = 'social-introduction';
-  const crest = document.createElement('span');
-  crest.className = 'social-crest';
-  crest.append(icon('friend'));
-  const welcome = document.createElement('div');
-  const title = document.createElement('h3');
-  title.textContent = t('Compañeros de aventuras');
-  const subtitle = document.createElement('p');
-  subtitle.textContent = t('Los mejores caminos se recorren en compañía.');
-  welcome.append(title, subtitle);
-  introduction.append(crest, welcome);
   const overview = document.createElement('div');
   overview.className = 'social-overview';
   const invitation = document.createElement('section');
@@ -101,11 +89,21 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   input.placeholder = t('Nombre de cuenta');
   input.setAttribute('aria-label', t('Nombre de cuenta'));
   input.autocomplete = 'off';
+  const field = document.createElement('div');
+  field.className = 'social-account-field';
+  const prefix = document.createElement('span');
+  prefix.className = 'social-account-prefix';
+  prefix.textContent = '~';
+  prefix.setAttribute('aria-hidden', 'true');
+  field.append(prefix, input);
+  input.addEventListener('input', () => {
+    if (input.value.startsWith('~')) input.value = input.value.replace(/^~+/, '');
+  });
   const send = document.createElement('button');
   send.className = 'btn gold';
   send.type = 'submit';
   send.append(icon('friend'), document.createTextNode(t('Añadir amigo')));
-  form.append(input, send);
+  form.append(field, send);
   const help = document.createElement('p');
   help.id = 'social-invitation-help';
   help.className = 'social-help';
@@ -117,22 +115,24 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   message.setAttribute('role', 'status');
   const lists = document.createElement('div');
   lists.className = 'social-lists';
-  friendsPanel.append(introduction, overview, invitation, message, lists);
+  friendsPanel.append(overview, invitation, message, lists);
   root.append(tabs, friendsPanel, groupPanel);
   container.append(root);
   let closed = false;
   let busy = false;
   let lastEntries = '';
+  const sectionSignatures = new Map<string, string>();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   function status(text: string, error = false) {
-    message.textContent = t(text);
+    const translated = t(text);
+    if (message.textContent !== translated) message.textContent = translated;
     message.classList.toggle('error', error);
   }
   function setBusy(value: boolean) {
     busy = value;
     lists.setAttribute('aria-busy', String(value));
-    for (const control of friendsPanel.querySelectorAll<HTMLButtonElement>('button')) control.disabled = value;
+    for (const control of friendsPanel.querySelectorAll<HTMLButtonElement>('button')) control.disabled = value || control.dataset.unavailable === 'true';
   }
   function button(text: string, kind: keyof typeof ICONS, action: () => void) {
     const el = document.createElement('button');
@@ -143,12 +143,10 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
     return el;
   }
   function display(entries: FriendEntry[]) {
-    lists.replaceChildren();
     const friends = entries.filter((entry) => entry.status === 'friend');
     overview.replaceChildren();
     for (const [label, count, kind] of [
-      ['Amigos en total', friends.length, 'friend'],
-      ['Amigos conectados', friends.filter((entry) => entry.online).length, 'accept'],
+      ['Tus amigos', friends.length, 'friend'],
       ['Solicitudes recibidas', entries.filter((entry) => entry.status === 'incoming').length, 'incoming'],
     ] as const) {
       const stat = document.createElement('div');
@@ -158,14 +156,24 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
       const caption = document.createElement('span');
       caption.textContent = t(label);
       stat.append(icon(kind), number, caption);
+      if (kind === 'friend') {
+        const connected = document.createElement('small');
+        connected.className = 'social-connected-total';
+        connected.textContent = t('({n} conectados)', { n: friends.filter((entry) => entry.online).length });
+        stat.append(connected);
+      }
       overview.append(stat);
     }
     for (const [kind, label] of [['friend', 'Amigos'], ['incoming', 'Solicitudes recibidas'], ['outgoing', 'Solicitudes enviadas']] as const) {
-      const section = document.createElement('section');
+      const rows = entries.filter((entry) => entry.status === kind).sort((a, b) => Number(b.online) - Number(a.online) || a.username.localeCompare(b.username));
+      const signature = JSON.stringify(rows);
+      if (sectionSignatures.get(kind) === signature) continue;
+      sectionSignatures.set(kind, signature);
+      const section = lists.querySelector<HTMLElement>(`[data-social="${kind}"]`) ?? document.createElement('section');
+      section.replaceChildren();
       section.dataset.social = kind;
       section.className = 'social-section';
       const heading = document.createElement('h3');
-      const rows = entries.filter((entry) => entry.status === kind).sort((a, b) => Number(b.online) - Number(a.online) || a.username.localeCompare(b.username));
       const count = document.createElement('span');
       count.className = 'social-count';
       count.textContent = String(rows.length);
@@ -221,7 +229,13 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
         const actions = document.createElement('div');
         actions.className = 'social-actions';
         if (kind === 'friend') {
-          actions.append(button('Susurrar', 'whisper', () => whisper(entry.username)));
+          const whisperButton = button('Susurrar', 'whisper', () => {
+            if (entry.online) whisper(entry.username);
+          });
+          whisperButton.dataset.unavailable = String(!entry.online);
+          whisperButton.disabled = !entry.online;
+          if (!entry.online) whisperButton.title = t('Solo puedes susurrar a amigos conectados.');
+          actions.append(whisperButton);
           actions.append(button('Eliminar amigo', 'remove', () => {
             if (window.confirm(t('¿Eliminar a {name} de tus amigos?', { name: entry.username }))) void change(() => updateFriend(entry.userId, 'remove'));
           }));
@@ -232,14 +246,14 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
         row.append(avatar, info, actions);
         section.append(row);
       }
-      lists.append(section);
+      if (!section.isConnected) lists.append(section);
     }
   }
   async function refresh() {
     try {
       const entries = await listFriends();
       if (closed) return;
-      const signature = JSON.stringify(entries);
+      const signature = JSON.stringify([...entries].sort((a, b) => a.userId.localeCompare(b.userId)));
       if (signature !== lastEntries) {
         display(entries);
         lastEntries = signature;
@@ -250,13 +264,15 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
     }
   }
   function schedule() {
+    clearTimeout(timer);
     if (!closed) timer = setTimeout(() => void poll(), 5000);
   }
   async function poll() {
     if (closed) return;
-    setBusy(true);
+    const initial = !lastEntries;
+    if (initial) setBusy(true);
     await refresh();
-    setBusy(false);
+    if (initial) setBusy(false);
     schedule();
   }
   async function change(action: () => Promise<void>) {

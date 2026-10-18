@@ -37,7 +37,7 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), accounts: new Map(), friends: new Map(), history: [], fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), accounts: new Map(), friends: new Map(), history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
 }
 async function openPlayer(world, account, compatible = true) {
   world.accounts.set(account.user.id, account);
@@ -45,7 +45,22 @@ async function openPlayer(world, account, compatible = true) {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await context.routeWebSocket(/supabase\.co/, (socket) => socket.close());
+  await context.routeWebSocket(/supabase\.co/, (socket) => {
+    socket.onMessage((raw) => {
+      const frame = JSON.parse(raw.toString());
+      const array = Array.isArray(frame);
+      const [joinRef, ref, topic, event, payload] = array ? frame : [frame.join_ref,frame.ref,frame.topic,frame.event,frame.payload];
+      const send = (event, payload) => socket.send(JSON.stringify(array ? [joinRef,ref,topic,event,payload] : {join_ref:joinRef,ref,topic,event,payload}));
+      if (event === 'phx_join') {
+        send('phx_reply',{status:'ok',response:{postgres_changes:(payload.config?.postgres_changes || []).map((filter)=>({...filter,id:1}))}});
+        world.chatSockets.set(account.user.id,(row) => send('postgres_changes',{ids:[1],data:{schema:'public',table:'chat_messages',type:'INSERT',commit_timestamp:row.created_at,columns:[],record:row,errors:null}}));
+      } else if (event === 'phx_leave') {
+        world.chatSockets.delete(account.user.id);
+        send('phx_reply',{status:'ok',response:{}});
+      } else if (event === 'heartbeat') send('phx_reply',{status:'ok',response:{}});
+    });
+    socket.onClose(() => world.chatSockets.delete(account.user.id));
+  });
   await context.route(/https:\/\/[^/]+\.supabase\.co\//, async (route) => {
     const request = route.request(), path = new URL(request.url()).pathname;
     const fulfill = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -141,6 +156,10 @@ async function leave(page) {
   await page.locator('#game-menu-characters').click();
   await page.waitForFunction(() => !document.body.classList.contains('playing'));
   await page.locator('.character-card .btn.gold').first().waitFor({ state: 'visible' });
+}
+async function chatReady(world, player) {
+  for (let attempt = 0; attempt < 100 && !world.chatSockets.has(player.user.id); attempt++) await new Promise(resolve=>setTimeout(resolve,50));
+  assert.ok(world.chatSockets.has(player.user.id),'Mock live chat subscription must be ready');
 }
 
 test('independent accounts see real remote models, appearance, names, movement and departure in both graphics modes', { timeout: 240000 }, async () => {
@@ -395,7 +414,7 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await socialRequest(first.page, 'Nobody');
     await first.page.locator('.social-window .account-message.error').waitFor();
     assert.match(await first.page.locator('.social-window .account-message').textContent(), /No existe/);
-    await socialRequest(first.page, 'Elara');
+    await socialRequest(first.page, '~Elara');
     await first.page.locator('[data-social="outgoing"] .social-row').waitFor();
     await second.page.locator('[data-social="incoming"] .social-row').waitFor({timeout:15000});
     await second.page.getByRole('button', {name:'Rechazar',exact:true}).click();
@@ -409,7 +428,10 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     assert.equal(await first.page.locator('.social-online').textContent(),'Conectado');
     assert.equal(await first.page.locator('.social-details dt').allTextContents().then(labels=>labels.join(',')),'Personaje,Ubicación');
     assert.deepEqual(await first.page.locator('.social-details dd').allTextContents(),['Elara','Brumaluz']);
-    assert.deepEqual(await first.page.locator('.social-stat strong').allTextContents(),['1','1','0']);
+    assert.deepEqual(await first.page.locator('.social-stat strong').allTextContents(),['1','0']);
+    assert.equal(await first.page.locator('.social-connected-total').textContent(),'(1 conectados)');
+    assert.equal(await first.page.locator('.social-introduction').count(),0);
+    assert.equal(await first.page.locator('.social-account-prefix').textContent(),'~');
     assert.equal(await first.page.locator('[data-social="friend"] .social-count').textContent(),'1');
     assert.equal(await first.page.locator('.social-avatar .class-icon').count(),1);
     assert.equal(await first.page.locator('.social-avatar').getAttribute('aria-label'),'Mago');
@@ -434,6 +456,7 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await first.page.locator('.chat-input').blur();
     await social(first.page);
     assert.equal(await first.page.locator('.social-offline').textContent(), 'Desconectado');
+    assert.equal(await first.page.getByRole('button',{name:'Susurrar',exact:true}).isDisabled(),true);
     assert.equal(await first.page.locator('.social-avatar .class-icon').count(),0);
     first.page.once('dialog', dialog => dialog.accept());
     await first.page.getByRole('button', {name:'Eliminar amigo',exact:true}).click();
@@ -587,7 +610,13 @@ test('nearby player mute persists after reload and filters public messages, whis
     ];
     await first.page.reload();
     await first.enter();
-    await first.page.locator('.chat-log').getByText('History loaded',{exact:true}).waitFor();
+    await first.page.waitForFunction(() => document.body.classList.contains('playing'));
+    await chatReady(world,a);
+    world.chatSockets.get(a.user.id)({...message,id:4,channel:'general',body:'Muted public message'});
+    world.chatSockets.get(a.user.id)({...message,id:5,channel:'whisper',recipient_user:a.user.id,recipient_name:'Alric',body:'Muted whisper'});
+    world.chatSockets.get(a.user.id)({...message,id:6,channel:'general',sender_user:a.user.id,sender_name:'Alric',sender_account:'Alric',body:'Live message loaded'});
+    await first.page.locator('.chat-log').getByText('Live message loaded',{exact:true}).waitFor();
+    assert.doesNotMatch(await first.page.locator('.chat-log').textContent(),/History loaded/);
     assert.doesNotMatch(await first.page.locator('.chat-log').textContent(),/Muted whisper|Muted public message/);
     assert.equal(await first.page.locator('.speech-bubble').filter({hasText:'Muted public message'}).count(),0);
     await nearbyInteractions(first.page,'Elara');
@@ -595,6 +624,9 @@ test('nearby player mute persists after reload and filters public messages, whis
     await first.page.getByRole('button',{name:'Silenciar chat',exact:true}).waitFor();
     await leave(first.page);
     await first.enter();
+    await chatReady(world,a);
+    world.chatSockets.get(a.user.id)({...message,id:7,channel:'general',body:'Muted public message'});
+    world.chatSockets.get(a.user.id)({...message,id:8,channel:'whisper',recipient_user:a.user.id,recipient_name:'Alric',body:'Muted whisper'});
     await first.page.locator('.chat-log').getByText('Muted public message',{exact:true}).waitFor();
     await first.page.locator('.chat-log').getByText('Muted whisper',{exact:true}).waitFor();
     assert.deepEqual([...first.errors,...second.errors],[]);
@@ -637,7 +669,7 @@ test('friend requests notify outside Social, mark both menu levels and announce 
     await social(second.page);
     assert.equal(await second.page.locator('[data-social="incoming"] .class-icon').count(),0);
     assert.equal(await second.page.locator('[data-social="incoming"] .social-avatar').textContent(),'');
-    assert.deepEqual(await second.page.locator('.social-stat strong').allTextContents(),['0','0','1']);
+    assert.deepEqual(await second.page.locator('.social-stat strong').allTextContents(),['0','1']);
     await second.page.getByRole('tab',{name:'Grupo',exact:true}).click();
     await second.page.getByText('Próximamente podrás formar un grupo con otros aventureros.',{exact:true}).waitFor();
     assert.equal(await second.page.locator('#social-friends-panel').isVisible(),false);
@@ -657,4 +689,91 @@ test('friend requests notify outside Social, mark both menu levels and announce 
     assert.equal(await first.page.locator('.friend-request-badge').count(),0);
     assert.deepEqual([...first.errors,...second.errors],[]);
   } finally {await first.context.close();await second.context.close();}
+});
+
+test('periodic Social refresh preserves controls, focused input and unchanged friend cards without flickering', {timeout:120000}, async () => {
+  const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  world.friends.set([a.user.id,b.user.id].sort().join(':'),{from:a.user.id,to:b.user.id,accepted:true});
+  try {
+    await first.enter(); await second.enter();
+    await social(first.page);
+    await first.page.locator('.social-online').waitFor();
+    await first.page.locator('#social-username').fill('DraftName');
+    await first.page.locator('#social-username').focus();
+    world.rpcDelay.set('friends_list',600);
+    await first.page.evaluate(()=>{
+      const row=document.querySelector('.social-row');
+      row.dataset.retained='true';
+      const root=document.querySelector('.social-window');
+      root.dataset.disableChanges='0';
+      new MutationObserver(records=>{
+        const count=records.filter(record=>record.attributeName==='disabled').length;
+        root.dataset.disableChanges=String(Number(root.dataset.disableChanges)+count);
+      }).observe(root,{subtree:true,attributes:true,attributeFilter:['disabled']});
+    });
+    await first.page.waitForTimeout(6200);
+    assert.equal(await first.page.locator('.social-row').getAttribute('data-retained'),'true');
+    assert.equal(await first.page.locator('.social-window').getAttribute('data-disable-changes'),'0');
+    assert.equal(await first.page.locator('#social-username').inputValue(),'DraftName');
+    assert.equal(await first.page.locator('#social-username').evaluate(el=>el===document.activeElement),true);
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
+});
+
+test('menus hide the action bar except Inventory and chat can be revealed by hover without restoring old history', {timeout:120000}, async () => {
+  const world = backend(), a = fixture('Alric','humano',100);
+  world.history=[{id:1,channel:'general',zone:null,sender_user:a.user.id,sender_name:'Alric',sender_account:'Alric',sender_title:'recien_llegado',recipient_user:null,recipient_name:null,created_at:new Date().toISOString(),body:'Old server history'}];
+  const player=await openPlayer(world,a);
+  let historyRequests=0;
+  player.page.on('request',request=>{if(new URL(request.url()).pathname==='/rest/v1/chat_messages')historyRequests++;});
+  try {
+    await player.enter();
+    await chatReady(world,a);
+    world.chatSockets.get(a.user.id)({...world.history[0],id:2,body:'First connection message'});
+    await player.page.locator('.chat-log').getByText('First connection message',{exact:true}).waitFor();
+    assert.doesNotMatch(await player.page.locator('.chat-log').textContent(),/Old server history/);
+    for(const menu of ['#game-menu-toggle','#player-menu-toggle']){
+      await player.page.locator(menu).click();
+      assert.equal(await player.page.locator('#action-bar').isVisible(),false);
+      assert.equal(await player.page.locator('#minimap').isVisible(),false);
+      assert.equal(await player.page.locator('#chat').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+      await player.page.locator(menu).click();
+    }
+    await social(player.page);
+    assert.equal(await player.page.locator('#action-bar').isVisible(),false);
+    const chatBox=await player.page.locator('#chat').boundingBox();
+    await player.page.mouse.move(chatBox.x+chatBox.width-10,chatBox.y+10);
+    await player.page.waitForFunction(()=>getComputedStyle(document.querySelector('#chat')).opacity==='1');
+    assert.equal(await player.page.locator('#chat').evaluate(el=>getComputedStyle(el).pointerEvents),'auto');
+    await player.page.mouse.move(5,5);
+    await player.page.waitForFunction(()=>getComputedStyle(document.querySelector('#chat')).opacity==='0');
+    await player.page.locator('#window-close').click();
+    await player.page.keyboard.press('KeyI');
+    assert.equal(await player.page.locator('#action-bar').isVisible(),true);
+    await player.page.keyboard.press('Escape');
+    await player.page.keyboard.press('KeyC');
+    assert.equal(await player.page.locator('#action-bar').isVisible(),false);
+    await player.page.keyboard.press('Escape');
+    await player.page.keyboard.press('KeyO');
+    assert.equal(await player.page.locator('#action-bar').isVisible(),false);
+    await player.page.keyboard.press('Escape');
+    assert.equal(await player.page.locator('#action-bar').isVisible(),true);
+    await player.page.locator('#chat').evaluate(el=>el.classList.add('faded'));
+    await player.page.mouse.move(chatBox.x+chatBox.width-10,chatBox.y+10);
+    await player.page.waitForFunction(()=>!document.querySelector('#chat').classList.contains('faded'));
+    const scrollbar=await player.page.locator('.chat-log').evaluate(el=>getComputedStyle(el).scrollbarColor);
+    assert.equal(scrollbar,'rgb(185, 148, 90) rgb(40, 26, 16)');
+    await player.page.mouse.move(5,5);
+    await leave(player.page);
+    assert.doesNotMatch(await player.page.locator('.chat-log').textContent(),/First connection message/);
+    world.history.unshift({...world.history[0],id:3,body:'Message while disconnected'});
+    await player.enter();
+    await chatReady(world,a);
+    world.chatSockets.get(a.user.id)({...world.history[0],id:4,body:'Second connection message'});
+    await player.page.locator('.chat-log').getByText('Second connection message',{exact:true}).waitFor();
+    assert.doesNotMatch(await player.page.locator('.chat-log').textContent(),/Old server history|First connection message|Message while disconnected/);
+    assert.equal(historyRequests,0);
+    assert.deepEqual(player.errors,[]);
+  } finally {await player.context.close();}
 });

@@ -348,6 +348,13 @@ export function initChat(h: ChatHooks) {
   document.addEventListener('brumaluz-language-change', () => { setSendChannel(sendChannel); rebuild(); });
   // Sin mensajes nuevos ni uso, el chat se apaga poco a poco hasta ocultarse; cualquier mensaje o interacción lo devuelve.
   const chat = root();
+  window.addEventListener('pointermove', (event) => {
+    if (!document.body.classList.contains('playing') || document.body.classList.contains('dead')) return;
+    const bounds = chat.getBoundingClientRect();
+    const hovered = event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+    chat.classList.toggle('hover-revealed', hovered);
+    if (hovered) wake();
+  }, { passive: true });
   for (const type of ['pointerenter', 'pointerdown', 'focusin', 'wheel']) chat.addEventListener(type, wake, { passive: true });
   window.setInterval(() => {
     if (performance.now() - lastActivity > FADE_AFTER_MS && !chat.matches(':hover, :focus-within')) chat.classList.add('faded');

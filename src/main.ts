@@ -3,7 +3,7 @@ import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
   requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles,
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
-  buyFromVendor, sellToVendor, useItem, sendChatMessage, fetchChatHistory, subscribeChat,
+  buyFromVendor, sellToVendor, useItem, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
@@ -882,9 +882,6 @@ function startChat() {
     return;
   }
   const id = ++chatSeq;
-  void fetchChatHistory().then((list) => { if (id === chatSeq) list.forEach(chatReceive); }).catch((error) => {
-    if (id === chatSeq) chatSystem(errorMessage(error), true);
-  });
   const off = subscribeChat((m) => { if (id === chatSeq) chatReceive(m); });
   chatUnsubscribe = off;
 }
@@ -1000,6 +997,7 @@ let gameMenuOpen = false;
 function setGameMenuOpen(open: boolean, restoreFocus = true) {
   if (open) playerInteractions.close();
   gameMenuOpen = open;
+  refreshOverlayHud();
   if (open) { setPlayerMenuOpen(false, false); setWindow(null, false); }
   const toggle = $<HTMLButtonElement>('#game-menu-toggle');
   const panel = $('#game-menu-panel');
@@ -1019,9 +1017,15 @@ type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
+function refreshOverlayHud() {
+  document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || !!openWindow || optionsOpen);
+  document.body.classList.toggle('inventory-open', openWindow === 'inventory');
+}
+
 function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
   if (open) playerInteractions.close();
   playerMenuOpen = open;
+  refreshOverlayHud();
   if (open) { setGameMenuOpen(false, false); setWindow(null, false); }
   const toggle = $<HTMLButtonElement>('#player-menu-toggle');
   $('#player-menu-panel').hidden = !open;
@@ -1041,6 +1045,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   closeSocial = null;
   if (win !== openWindow) pointDraft = {};
   openWindow = win;
+  refreshOverlayHud();
   document.body.classList.toggle('window-open', !!win);
   document.body.classList.toggle('window-full', !!win);
   $('#window-backdrop').hidden = !win;
@@ -1148,6 +1153,7 @@ let optionsOpen = false;
 function setOptionsOpen(open: boolean) {
   if (open) playerInteractions.close();
   optionsOpen = open;
+  refreshOverlayHud();
   $('#options-backdrop').hidden = !open;
   keys.clear();
   if (open) {
