@@ -2245,15 +2245,15 @@ test('players trade through the actual interaction menu, offer quantities privat
     await second.page.getByText('¿Quieres intercambiar objetos y pelines con Alric?',{exact:true}).waitFor();
     await second.page.getByRole('button',{name:'Rechazar',exact:true}).waitFor();
     await second.page.getByRole('button',{name:'Aceptar',exact:true}).click();
-    await first.page.getByText('Tu mochila intercambiable',{exact:true}).waitFor();
+    await first.page.getByText('Tu mochila',{exact:true}).waitFor();
     assert.equal(await first.page.locator('.trade-item').count(),1);
     assert.equal(await first.page.locator('.trade-peer-offer .trade-offer-item').count(),0);
-    await first.page.getByLabel('Ofrecer Pan duro (1)',{exact:true}).fill('4');
+    for(let i=0;i<4;i++) await first.page.getByRole('button',{name:'Añadir: Ofrecer Pan duro (1)',exact:true}).click();
     await first.page.getByLabel('Pelines ofrecidos',{exact:true}).fill('30');
-    await first.page.getByRole('button',{name:'Actualizar oferta',exact:true}).click();
+    await first.page.getByRole('button',{name:'Ofertar',exact:true}).click();
     await second.page.locator('.trade-peer-offer').getByText('Pan duro ×4',{exact:true}).waitFor();
-    await second.page.getByLabel('Ofrecer Poción de maná minúscula (1)',{exact:true}).fill('3');
-    await second.page.getByRole('button',{name:'Actualizar oferta',exact:true}).click();
+    for(let i=0;i<3;i++) await second.page.getByRole('button',{name:'Añadir: Ofrecer Poción de maná minúscula (1)',exact:true}).click();
+    await second.page.getByRole('button',{name:'Ofertar',exact:true}).click();
     await first.page.locator('.trade-peer-offer').getByText('Poción de maná minúscula ×3',{exact:true}).waitFor();
     for(const width of [1280,390,320]) {
       await first.page.setViewportSize({width,height:844});
@@ -2261,9 +2261,10 @@ test('players trade through the actual interaction menu, offer quantities privat
       if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`trade-${width}.png`)});
     }
     await first.page.getByRole('button',{name:'Aceptar intercambio',exact:true}).click();
-    await second.page.getByText('✓ El otro jugador ha aceptado.',{exact:true}).waitFor();
+    await second.page.locator('.trade-peer-offer.accepted').getByText('Intercambio aceptado',{exact:true}).waitFor();
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await second.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'trade-accepted-1280.png')});
     await first.page.getByRole('button',{name:'Atrás',exact:true}).click();
-    await first.page.getByText('Revisa ambas ofertas antes de aceptar.',{exact:true}).waitFor();
+    await first.page.locator('[data-own-state]').getByText('Oferta enviada',{exact:true}).waitFor();
     await first.page.getByRole('button',{name:'Aceptar intercambio',exact:true}).click();
     await second.page.getByRole('button',{name:'Aceptar intercambio',exact:true}).click();
     await first.page.getByText('¡Intercambio completado!',{exact:true}).waitFor();

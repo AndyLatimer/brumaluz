@@ -3,6 +3,22 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Tu mochila': 'Your backpack',
+  '{n} disponibles': '{n} available',
+  'Disponible: {n}': 'Available: {n}',
+  'Quitar: {item}': 'Remove: {item}',
+  'Añadir: {item}': 'Add: {item}',
+  'Todo: {item}': 'All: {item}',
+  'Todo': 'All',
+  'Ofertar': 'Send offer',
+  'Aceptada': 'Accepted',
+  'Oferta recibida': 'Offer received',
+  'Esperando oferta': 'Waiting for offer',
+  'Oferta enviada': 'Offer sent',
+  'Sin ofertar': 'Not sent',
+  'Sin oferta': 'No offer',
+  'Sin objetos intercambiables': 'No tradable items',
+  'Intercambio aceptado': 'Trade accepted',
   'Interactuar': 'Interact',
   'Invitación de intercambio': 'Trade invitation',
   '¿Quieres intercambiar objetos y pelines con {name}?': 'Would you like to trade items and pelines with {name}?',

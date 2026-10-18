@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { join } from 'node:path';
 import { test, before, after } from 'node:test';
 import { chromium } from 'playwright';
 
@@ -71,25 +72,113 @@ test('trade UI shows only own tradable inventory, illustrated peer offer, quanti
     assert.equal(await h.page.locator('.trade-offer-item').count(),1);
     assert.equal(await h.page.locator('.trade-item .item-art').count(),1);
     assert.match(await h.page.locator('.trade-peer-offer').innerText(),/Minuscule mana potion ×2/);
-    await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).fill('4');
+    for(let i=0;i<4;i++) await h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true}).click();
+    assert.equal(await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).textContent(),'4');
+    assert.equal(await h.page.locator('.trade-item input').count(),0);
     await h.page.getByLabel('Offered pelines',{exact:true}).fill('30');
     assert.equal(await h.page.getByRole('button',{name:'Accept trade',exact:true}).isDisabled(),true);
     h.setDelay(250);
-    await h.page.getByRole('button',{name:'Update offer',exact:true}).click();
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
     await h.page.locator('.trade-window[aria-busy="true"]').waitFor();
     await h.page.locator('.trade-window[aria-busy="false"]').waitFor();
     const sent=h.calls.find(c=>c.p_action==='offer');
     assert.deepEqual(sent.p_offer,{items:[{slot:0,id:'pan_duro',count:4}],pelines:30});
     await h.page.getByRole('button',{name:'Accept trade',exact:true}).click();
-    await h.page.getByText('✓ You accepted. Back withdraws your acceptance.',{exact:true}).waitFor();
+    await h.page.locator('[data-own-state]').getByText('Accepted',{exact:true}).waitFor();
+    assert.equal(await h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true}).isDisabled(),true);
+    assert.equal(await h.page.getByLabel('Offered pelines',{exact:true}).isDisabled(),true);
     await h.page.getByRole('button',{name:'Back',exact:true}).click();
-    await h.page.getByText('Review both offers before accepting.',{exact:true}).waitFor();
+    await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
     assert.equal(h.state.trade.status,'open');assert.equal(h.state.trade.accepted,false);
     h.state.trade.peerAccepted=true;
-    await h.page.getByText('✓ The other player has accepted.',{exact:true}).waitFor();
+    await h.page.locator('.trade-peer-offer.accepted').getByText('Trade accepted',{exact:true}).waitFor();
     assert.deepEqual(await h.page.evaluate(()=>window.notifications),['The other player has accepted the trade.']);
     await h.page.getByRole('button',{name:'Accept trade',exact:true}).click();
     await h.page.getByText('Trade completed!',{exact:true}).waitFor();
+    assert.deepEqual(h.errors,[]);
+  }finally{await h.close();}
+});
+test('quantity buttons clamp to stack and purse limits, and reverting a draft unlocks acceptance',async()=>{
+  const h=await harness();
+  try {
+    const plus=h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true});
+    const minus=h.page.getByRole('button',{name:'Remove: Offer Stale bread (1)',exact:true});
+    const all=h.page.getByRole('button',{name:'All: Offer Stale bread (1)',exact:true});
+    const amount=h.page.getByLabel('Offer Stale bread (1)',{exact:true});
+    assert.equal(await minus.isDisabled(),true);
+    assert.equal(await h.page.getByRole('button',{name:'Send offer',exact:true}).isDisabled(),true);
+    await all.click();
+    assert.equal(await amount.textContent(),'10');
+    assert.equal(await plus.isDisabled(),true);
+    assert.equal(await all.isDisabled(),true);
+    assert.equal(await h.page.locator('.trade-item.selected').count(),1);
+    await minus.click();
+    assert.equal(await amount.textContent(),'9');
+    for(let i=0;i<9;i++) await minus.click();
+    assert.equal(await minus.isDisabled(),true);
+    assert.equal(await h.page.locator('.trade-item.selected').count(),0);
+    assert.equal(await h.page.getByRole('button',{name:'Accept trade',exact:true}).isEnabled(),true);
+    await h.page.getByRole('button',{name:'All: Offered pelines',exact:true}).click();
+    assert.equal(await h.page.getByLabel('Offered pelines',{exact:true}).inputValue(),'100');
+    assert.equal(await h.page.getByRole('button',{name:'Add: Offered pelines',exact:true}).isDisabled(),true);
+    await h.page.getByRole('button',{name:'Remove: Offered pelines',exact:true}).click();
+    assert.equal(await h.page.getByLabel('Offered pelines',{exact:true}).inputValue(),'99');
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
+    await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
+    assert.equal(h.calls.find(call=>call.p_action==='offer').p_offer.pelines,99);
+    assert.deepEqual(h.errors,[]);
+  }finally{await h.close();}
+});
+test('peer offer changes keep an unsent selection and show acceptance as a distinct visual state',async()=>{
+  const h=await harness();
+  try {
+    await h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true}).click();
+    await h.page.locator('[data-own-state]').getByText('Not sent',{exact:true}).waitFor();
+    h.state.trade.peerAccepted=true;
+    await h.page.locator('.trade-peer-offer.accepted .trade-accept-seal').waitFor();
+    assert.equal(await h.page.locator('.trade-peer-offer .trade-offer-state').textContent(),'Accepted');
+    h.state.trade.peerAccepted=false;h.state.trade.revision++;h.state.trade.peer.pelines=15;
+    await h.page.locator('.trade-peer-offer .trade-offer-coins').getByText('15 Pelines',{exact:true}).waitFor();
+    assert.equal(await h.page.locator('.trade-peer-offer .trade-offer-state').textContent(),'Offer received');
+    assert.equal(await h.page.locator('.trade-accept-seal').count(),0);
+    assert.equal(await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).textContent(),'1');
+    assert.equal(await h.page.getByRole('button',{name:'Accept trade',exact:true}).isDisabled(),true);
+    assert.equal(await h.page.getByRole('button',{name:'Send offer',exact:true}).isEnabled(),true);
+    await h.page.evaluate(async()=>{const {setLanguage}=await import('/src/ui/i18n.ts');setLanguage('es');});
+    assert.equal(await h.page.getByLabel('Ofrecer Pan duro (1)',{exact:true}).textContent(),'1');
+    await h.page.locator('[data-own-state]').getByText('Sin ofertar',{exact:true}).waitFor();
+    await h.page.evaluate(async()=>{const {setLanguage}=await import('/src/ui/i18n.ts');setLanguage('en');});
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
+    await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
+    assert.equal(h.calls.find(call=>call.p_action==='offer').p_revision,1);
+    assert.doesNotMatch(await h.page.locator('.trade-window').innerText(),/Only pelines|Every change|Review both|Unsent changes/);
+    assert.deepEqual(h.errors,[]);
+  }finally{await h.close();}
+});
+test('full backpack cards and accepted offer fit desktop and small screens',async()=>{
+  const h=await harness();
+  try {
+    h.state.inventory=Array.from({length:25},(_,i)=>({id:i%2?'pocion_estamina_minuscula':'pan_duro',count:99}));
+    h.state.trade.revision++;h.state.trade.peerAccepted=true;
+    await h.page.locator('.trade-item').nth(24).waitFor({state:'attached'});
+    for(const width of [1280,768,390,320]) {
+      await h.page.setViewportSize({width,height:844});
+      assert.equal(await h.page.locator('.trade-window').evaluate(el=>el.scrollWidth<=el.clientWidth),true,`No overflow at ${width}px`);
+      assert.equal(await h.page.locator('.trade-inventory').evaluate(el=>el.scrollHeight>el.clientHeight),true);
+      await h.page.locator('.trade-title').scrollIntoViewIfNeeded();
+      const acceptRect=await h.page.getByRole('button',{name:'Accept trade',exact:true}).boundingBox();
+      assert.ok(acceptRect.y>=0 && acceptRect.y+acceptRect.height<=844,'Actions stay within the viewport');
+      if(width<=700) {
+        const chip=h.page.locator('.trade-mobile-state.accepted');
+        await chip.waitFor({state:'visible'});
+        assert.match(await chip.textContent(),/ElaraAccepted/);
+        await h.page.locator('.trade-peer-offer').scrollIntoViewIfNeeded();
+        const chipRect=await chip.boundingBox();
+        assert.ok(chipRect.y>=0 && chipRect.y+chipRect.height<=844,'Peer acceptance stays visible while scrolling');
+        await h.page.locator('.trade-title').scrollIntoViewIfNeeded();
+      }
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await h.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`trade-polish-full-${width}.png`)});
+    }
     assert.deepEqual(h.errors,[]);
   }finally{await h.close();}
 });
@@ -100,7 +189,7 @@ test('Spanish invitation, cancellation, mobile layout and bound tooltip labels',
     await h.page.evaluate(()=>{window.tradeUI.setCharacter(null);window.tradeUI.setCharacter('self');});
     await h.page.getByRole('dialog',{name:'Invitación de intercambio',exact:true}).waitFor();
     await h.page.getByRole('button',{name:'Aceptar',exact:true}).click();
-    await h.page.getByText('Tu mochila intercambiable',{exact:true}).waitFor();
+    await h.page.getByText('Tu mochila',{exact:true}).waitFor();
     assert.equal(await h.page.evaluate(()=>document.querySelector('.trade-window').getBoundingClientRect().right<=innerWidth),true);
     const binding=await h.page.evaluate(async()=>{
       const {sanitizeInventory}=await import('/src/data/inventory.ts');
@@ -140,20 +229,21 @@ test('an incoming invitation appears automatically and can be rejected without o
 test('explicit errors, invalid quantities, reset acceptance on offer changes and range cancellation',async()=>{
   const h=await harness();
   try {
-    await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).fill('1.5');
-    await h.page.getByRole('button',{name:'Update offer',exact:true}).click();
+    await h.page.getByLabel('Offered pelines',{exact:true}).fill('1.5');
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
     await h.page.getByText('Enter valid whole quantities and pelines only.',{exact:true}).waitFor();
     assert.equal(h.calls.filter(c=>c.p_action==='offer').length,0);
-    await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).fill('2');
+    await h.page.getByLabel('Offered pelines',{exact:true}).fill('0');
+    for(let i=0;i<2;i++) await h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true}).click();
     h.setFailure('INVENTORY_FULL');
-    await h.page.getByRole('button',{name:'Update offer',exact:true}).click();
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
     await h.page.getByText('There is not enough space in one of the backpacks.',{exact:true}).waitFor();
     h.setFailure(null);
-    await h.page.getByRole('button',{name:'Update offer',exact:true}).click();
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
     await h.page.getByRole('button',{name:'Accept trade',exact:true}).click();
-    await h.page.getByText('✓ You accepted. Back withdraws your acceptance.',{exact:true}).waitFor();
+    await h.page.locator('[data-own-state]').getByText('Accepted',{exact:true}).waitFor();
     h.state.trade.revision++;h.state.trade.accepted=false;h.state.trade.peerAccepted=false;
-    await h.page.getByText('Review both offers before accepting.',{exact:true}).waitFor();
+    await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
     h.state.trade.status='cancelled';h.state.trade.reason='TRADE_UNAVAILABLE';
     await h.page.getByText('Trade ended: you moved out of range or someone disconnected.',{exact:true}).waitFor();
   }finally{await h.close();}
@@ -218,10 +308,10 @@ test('late poll cannot overwrite mutation; stopped character ignores stale callb
     await h.page.waitForTimeout(1200);
     assert.equal(h.held(),true);
     await h.page.getByRole('button',{name:'Accept trade',exact:true}).click();
-    await h.page.getByText('✓ You accepted. Back withdraws your acceptance.',{exact:true}).waitFor();
+    await h.page.locator('[data-own-state]').getByText('Accepted',{exact:true}).waitFor();
     h.release();
     await h.page.waitForTimeout(100);
-    assert.equal(await h.page.getByText('✓ You accepted. Back withdraws your acceptance.',{exact:true}).count(),1);
+    assert.equal(await h.page.locator('[data-own-state]').getByText('Accepted',{exact:true}).count(),1);
     h.setDelay(350);
     await h.page.getByRole('button',{name:'Back',exact:true}).click();
     await h.page.evaluate(()=>window.tradeUI.setCharacter(null));

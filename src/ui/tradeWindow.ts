@@ -57,6 +57,50 @@ export function createTradeWindow(hooks: {
     busy=value; panel.setAttribute('aria-busy',String(value)); panel.classList.toggle('trade-busy',value);
     content.querySelectorAll<HTMLInputElement|HTMLButtonElement>('button,input').forEach(el=>el.disabled=value || el.dataset.locked==='true');
   }
+  function quantity(label: string, value: number, max: number, locked: boolean, change: (value: number) => void, editable = false) {
+    const control=document.createElement('div'); control.className='trade-quantity';
+    const number=editable ? document.createElement('input') : document.createElement('output');
+    number.setAttribute('aria-label',label);
+    if(number instanceof HTMLInputElement) {
+      number.type='number'; number.min='0'; number.max=String(max); number.step='1'; number.value=String(value);
+      number.dataset.locked=String(locked);
+      number.oninput=()=>{ value=number.value==='' ? NaN : Number(number.value); change(value); refresh(); };
+    }
+    const minus=button('−',()=>update((Number.isFinite(value) ? value : 0)-1));
+    const plus=button('+',()=>update((Number.isFinite(value) ? value : 0)+1));
+    const all=button('Todo',()=>update(max));
+    minus.setAttribute('aria-label',t('Quitar: {item}',{item:label}));
+    plus.setAttribute('aria-label',t('Añadir: {item}',{item:label}));
+    all.setAttribute('aria-label',t('Todo: {item}',{item:label}));
+    function refresh() {
+      if(!(number instanceof HTMLInputElement)) number.textContent=String(value);
+      for(const [el,limit] of [[minus,value<=0],[plus,value>=max],[all,value===max]] as const) {
+        el.dataset.locked=String(locked || limit);
+        el.disabled=busy || locked || limit;
+      }
+    }
+    function update(next: number) {
+      value=Math.max(0,Math.min(max,next));
+      if(number instanceof HTMLInputElement) number.value=String(value);
+      change(value); refresh();
+    }
+    control.append(minus,number,plus,all); refresh();
+    return control;
+  }
+  const hasOffer=(offer: TradeOffer)=>offer.items.length>0 || offer.pelines>0;
+  function offerItems(offer: TradeOffer) {
+    const list=document.createElement('div'); list.className='trade-offer-list';
+    for(const entry of offer.items) {
+      const row=document.createElement('div'); row.className='trade-offer-item';
+      const icon=document.createElement('span'); icon.innerHTML=itemIcon(entry.id); setItemTooltip(icon,entry.id); icon.tabIndex=0;
+      const label=document.createElement('span'); label.textContent=`${t(itemLabel(entry.id))} ×${entry.count}`;
+      row.append(icon,label); list.append(row);
+    }
+    if(!offer.items.length) { const empty=line('Sin objetos'); empty.className='trade-empty'; list.append(empty); }
+    const coins=document.createElement('p'); coins.className='trade-offer-coins';
+    coins.innerHTML=currencyIcon('pelines'); coins.append(` ${offer.pelines} ${t('Pelines')}`); list.append(coins);
+    return list;
+  }
   function render() {
     const tr=current?.trade;
     if(!tr || dismissed===tr.id) { backdrop.hidden=true; return; }
@@ -91,62 +135,84 @@ export function createTradeWindow(hooks: {
       if(wasHidden) actions.querySelector<HTMLButtonElement>('button')?.focus();
       return;
     }
-    content.append(line('Solo pelines y objetos intercambiables. Cada cambio retira ambas aceptaciones.'));
+    const peerLabel=tr.peerAccepted ? 'Aceptada' : hasOffer(tr.peer) ? 'Oferta recibida' : 'Esperando oferta';
+    const mobileState=document.createElement('div'); mobileState.className='trade-mobile-state';
+    mobileState.classList.toggle('accepted',tr.peerAccepted);
+    mobileState.append(line(tr.peerName,'strong'),line(peerLabel,'span'));
+    content.append(mobileState);
     const columns=document.createElement('div'); columns.className='trade-columns';
-    const mine=document.createElement('section'); mine.append(line('Tu mochila intercambiable','h3'));
+    const mine=document.createElement('section'); mine.className='trade-own';
+    mine.append(line('Tu mochila','h3'));
     const grid=document.createElement('div'); grid.className='trade-inventory';
     current!.inventory.forEach((stack,slot)=>{
       if(!stack || stack.bound || itemDef(stack.id)?.bound || !itemDef(stack.id)) return;
-      const cell=document.createElement('label'); cell.className='trade-item';
+      const cell=document.createElement('div'); cell.className='trade-item';
       const icon=document.createElement('span'); icon.innerHTML=itemIcon(stack.id); setItemTooltip(icon,stack.id,stack.bound);
-      const label=document.createElement('span'); label.textContent=`${t(itemLabel(stack.id))} ×${stack.count}`;
-      const input=document.createElement('input'); input.type='number'; input.min='0'; input.max=String(stack.count); input.step='1';
-      input.dataset.locked=String(tr.accepted);
-      input.value=String(draft.items.find(item=>item.slot===slot)?.count ?? 0);
-      input.setAttribute('aria-label',`${t('Ofrecer')} ${t(itemLabel(stack.id))} (${slot+1})`);
-      input.oninput=()=>{
-        dirty=true; draft.items=draft.items.filter(item=>item.slot!==slot);
-        if(input.value!=='' && Number(input.value)!==0) draft.items.push({slot,id:stack.id,count:Number(input.value)});
+      icon.className='trade-item-icon'; icon.tabIndex=0;
+      const info=document.createElement('div'); info.className='trade-item-info';
+      info.append(line(itemLabel(stack.id),'strong'));
+      const owned=document.createElement('small'); owned.textContent=t('{n} disponibles',{n:stack.count}); info.append(owned);
+      const selected=draft.items.find(item=>item.slot===slot)?.count ?? 0;
+      cell.classList.toggle('selected',selected>0);
+      const control=quantity(`${t('Ofrecer')} ${t(itemLabel(stack.id))} (${slot+1})`,selected,stack.count,tr.accepted,count=>{
+        draft.items=draft.items.filter(item=>item.slot!==slot);
+        if(count>0) draft.items.push({slot,id:stack.id,count});
+        cell.classList.toggle('selected',count>0);
         markDirty();
-      };
-      cell.append(icon,label,input); grid.append(cell);
+      });
+      cell.append(icon,info,control); grid.append(cell);
     });
+    if(!grid.children.length) grid.append(line('Sin objetos intercambiables'));
     mine.append(grid);
-    const money=document.createElement('label'); money.className='trade-money';
-    money.innerHTML=currencyIcon('pelines'); money.append(`${t('Pelines')} (${current!.wallet?.pelines ?? 0}) `);
-    const input=document.createElement('input'); input.type='number'; input.min='0'; input.step='1';
-    input.dataset.locked=String(tr.accepted);
-    input.max=String(current!.wallet?.pelines ?? 0); input.value=String(draft.pelines);
-    input.setAttribute('aria-label',t('Pelines ofrecidos'));
-    input.oninput=()=>{draft.pelines=input.value==='' ? NaN : Number(input.value);dirty=true;markDirty();};
-    money.append(input); mine.append(money);
-    const save=button('Actualizar oferta',()=>void act('offer',draft)); save.dataset.tradeSave=''; save.dataset.locked=String(tr.accepted); mine.append(save);
-    const peer=document.createElement('section'); peer.className='trade-peer-offer'; peer.append(line('Su oferta','h3'));
-    for(const entry of tr.peer.items) {
-      const row=document.createElement('div'); row.className='trade-offer-item';
-      const icon=document.createElement('span'); icon.innerHTML=itemIcon(entry.id); setItemTooltip(icon,entry.id);
-      const label=document.createElement('span'); label.textContent=`${t(itemLabel(entry.id))} ×${entry.count}`;
-      row.append(icon,label); peer.append(row);
+    const money=document.createElement('div'); money.className='trade-money';
+    const purse=document.createElement('div'); purse.innerHTML=currencyIcon('pelines');
+    const balance=document.createElement('span'); balance.append(line('Pelines','strong'));
+    const available=document.createElement('small'); available.textContent=t('Disponible: {n}',{n:current!.wallet.pelines}); balance.append(available);
+    purse.append(balance); money.append(purse);
+    money.append(quantity(t('Pelines ofrecidos'),draft.pelines,current!.wallet.pelines,tr.accepted,value=>{draft.pelines=value;markDirty();},true));
+    mine.append(money);
+    const save=button('Ofertar',()=>void act('offer',draft)); save.dataset.tradeSave=''; save.className='trade-primary'; mine.append(save);
+    const own=document.createElement('div'); own.className='trade-own-offer';
+    const ownHeading=document.createElement('header'); ownHeading.append(line('Tu oferta','h3'));
+    const ownState=document.createElement('span'); ownState.className='trade-offer-state'; ownState.dataset.ownState='';
+    ownState.setAttribute('role','status');
+    ownHeading.append(ownState); own.append(ownHeading,offerItems(tr.own)); mine.append(own);
+    const peer=document.createElement('section'); peer.className='trade-peer-offer';
+    peer.classList.toggle('accepted',tr.peerAccepted);
+    peer.classList.toggle('offered',hasOffer(tr.peer));
+    const peerHeading=document.createElement('header'); peerHeading.append(line('Su oferta','h3'));
+    const peerState=line(peerLabel,'span');
+    peerState.className=`trade-offer-state${tr.peerAccepted ? ' accepted' : hasOffer(tr.peer) ? ' offered' : ''}`;
+    peerState.setAttribute('role','status');
+    peerHeading.append(peerState); peer.append(peerHeading,offerItems(tr.peer));
+    if(tr.peerAccepted) {
+      const seal=document.createElement('div'); seal.className='trade-accept-seal';
+      const check=document.createElement('span'); check.textContent='✓'; check.setAttribute('aria-hidden','true');
+      seal.append(check,line('Intercambio aceptado','strong')); peer.append(seal);
     }
-    if(!tr.peer.items.length) peer.append(line('Sin objetos'));
-    const coins=document.createElement('p'); coins.innerHTML=currencyIcon('pelines'); coins.append(` ${tr.peer.pelines} ${t('Pelines')}`); peer.append(coins);
-    peer.append(line(tr.peerAccepted ? '✓ El otro jugador ha aceptado.' : 'Esperando su aceptación…'));
     columns.append(mine,peer); content.append(columns);
-    const ownSummary=line('Tu oferta','h3'); content.append(ownSummary);
-    const summary=document.createElement('p');
-    summary.textContent=[...tr.own.items.map(item=>`${t(itemLabel(item.id))} ×${item.count}`),`${tr.own.pelines} ${t('Pelines')}`].join(' · ');
-    content.append(summary,line(tr.accepted ? '✓ Has aceptado. Atrás retira tu aceptación.' : 'Revisa ambas ofertas antes de aceptar.'));
     const footer=document.createElement('footer');
     const accept=button('Aceptar intercambio',()=>void act('accept')); accept.dataset.tradeAccept='';
+    accept.className='trade-primary';
     accept.dataset.locked=String(dirty || tr.accepted);
     footer.append(accept,button('Atrás',()=>void act('back')),button('Cancelar',()=>void act('cancel')));
     content.append(footer); markDirty(); setBusy(busy);
     if(wasHidden) content.querySelector<HTMLButtonElement>('button')?.focus();
   }
   function markDirty() {
+    const tr=current?.trade;
+    const ordered=(offer: TradeOffer)=>JSON.stringify({pelines:offer.pelines,items:[...offer.items].sort((a,b)=>a.slot-b.slot)});
+    dirty=!!tr && ordered(draft)!==ordered(tr.own);
     const accept=content.querySelector<HTMLButtonElement>('[data-trade-accept]');
     if(accept) { accept.dataset.locked=String(dirty || !!current?.trade?.accepted); accept.disabled=busy || accept.dataset.locked==='true'; }
-    if(dirty) announce(t('Cambios sin enviar. Pulsa Actualizar oferta.'));
+    const save=content.querySelector<HTMLButtonElement>('[data-trade-save]');
+    if(save) { save.dataset.locked=String(!dirty || !!tr?.accepted); save.disabled=busy || save.dataset.locked==='true'; }
+    const state=content.querySelector<HTMLElement>('[data-own-state]');
+    if(state && tr) {
+      state.textContent=t(tr.accepted ? 'Aceptada' : dirty ? 'Sin ofertar' : hasOffer(tr.own) ? 'Oferta enviada' : 'Sin oferta');
+      state.classList.toggle('accepted',tr.accepted);
+      state.classList.toggle('pending',dirty);
+    }
   }
   function receive(value: TradeState, force=false) {
     const before=current?.trade, next=value.trade;
@@ -154,7 +220,9 @@ export function createTradeWindow(hooks: {
     const changed=!before || before.id!==next?.id || before.revision!==next?.revision;
     const redraw=force || changed || before?.status!==next?.status || before?.accepted!==next?.accepted || before?.peerAccepted!==next?.peerAccepted;
     current=value;
-    if(next && (changed || force)) { draft=structuredClone(next.own); dirty=false; }
+    if(next && (force || before?.id!==next.id || JSON.stringify(before.own)!==JSON.stringify(next.own))) {
+      draft=structuredClone(next.own); dirty=false;
+    }
     if(value.wallet && next?.status==='completed' && before?.status!=='completed') hooks.inventory(value);
     if(redraw) render();
   }
@@ -190,6 +258,7 @@ export function createTradeWindow(hooks: {
     }
     if(version===generation) timer=setTimeout(()=>void poll(),1000);
   }
+  document.addEventListener('brumaluz-language-change',()=>{if(!backdrop.hidden) render();});
   return {
     get isOpen(){return !backdrop.hidden;},
     setCharacter(id: string | null) {
