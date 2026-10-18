@@ -94,6 +94,9 @@ let char: Character;
 let pendingHop = false;
 let rebuildQueued = false;
 const ambientSoundscape = new AmbientSoundscape();
+if (import.meta.hot) import.meta.hot.dispose(() => {
+  void ambientSoundscape.dispose().catch((error: unknown) => console.error('No se pudo cerrar el sonido ambiental:', error));
+});
 let ambientEnabled = localStorage.getItem('brumaluz-ambient') !== 'off';
 const settings = loadSettings();
 function applyVolumes() {

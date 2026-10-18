@@ -821,6 +821,11 @@ test('chat minimizes into a bottom tab, restores size, and corner preview stays 
     const expanded=await player.page.locator('#chat').boundingBox();
     await player.page.getByRole('button',{name:'Minimizar chat',exact:true}).click();
     const minimized=await player.page.locator('#chat').boundingBox();
+    const iconCentered=await player.page.locator('.chat-collapse').evaluate(button=>{
+      const bounds=button.getBoundingClientRect(), icon=button.querySelector('i').getBoundingClientRect();
+      return Math.abs(bounds.left+bounds.right-icon.left-icon.right)<1 && Math.abs(bounds.top+bounds.bottom-icon.top-icon.bottom)<1;
+    });
+    assert.equal(iconCentered,true,'Restore icon must be centered in its button');
     assert.ok(minimized.height<=40 && minimized.width<=120);
     assert.equal(Math.round(minimized.y+minimized.height),788);
     assert.equal(await player.page.locator('.chat-log').isVisible(),false);
@@ -865,9 +870,12 @@ test('ambient sound switch changes actual output and respects volume and repeate
     const enabled=await sample();
     assert.ok(enabled>0.0001,`Enabled ambient must produce sound, got RMS ${enabled}`);
     await player.page.locator('#opt-ambient').click();
-    await player.page.waitForTimeout(2400);
+    await player.page.waitForTimeout(150);
     const disabled=await sample();
-    assert.ok(disabled<enabled/20,`Disabled ambient must be silent: ${disabled} vs ${enabled}`);
+    assert.equal(disabled,0,'Disabled ambient must be exactly silent, not merely quieter');
+    assert.equal(await player.page.evaluate(()=>window.__audioContexts[0].testMaster.gain.value),0);
+    await player.page.locator('#opt-master-volume').fill('100');
+    assert.equal(await sample(),0,'Changing volume must not reactivate disabled ambience');
     await player.page.locator('#opt-ambient').click();
     await player.page.waitForTimeout(1800);
     assert.ok(await sample()>0.0001);

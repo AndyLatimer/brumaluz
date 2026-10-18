@@ -6,6 +6,7 @@ export class AmbientSoundscape {
   private active = false;
   private level = 1;
   private generation = 0;
+  private connected = false;
 
   get enabled() {
     return this.active;
@@ -31,8 +32,10 @@ export class AmbientSoundscape {
     this.bellTimer = undefined;
     if (!enabled) {
       if (this.master && this.context) {
-        this.master.gain.cancelAndHoldAtTime(this.context.currentTime);
-        this.master.gain.setTargetAtTime(0, this.context.currentTime, 0.08);
+        this.master.gain.cancelScheduledValues(this.context.currentTime);
+        this.master.gain.setValueAtTime(0, this.context.currentTime);
+        if (this.connected) this.master.disconnect(this.context.destination);
+        this.connected = false;
       }
       return;
     }
@@ -40,9 +43,18 @@ export class AmbientSoundscape {
     await this.context!.resume();
     if (generation !== this.generation || !this.active) return;
     if (this.context!.state !== 'running') throw new Error('No se pudo iniciar el sonido ambiental.');
+    if (!this.connected) {
+      this.master!.connect(this.context!.destination);
+      this.connected = true;
+    }
     this.master!.gain.cancelAndHoldAtTime(this.context!.currentTime);
     this.master!.gain.setTargetAtTime(0.72 * this.level, this.context!.currentTime, 0.15);
     this.scheduleBirds();
+  }
+
+  async dispose() {
+    await this.setEnabled(false);
+    if (this.context && this.context.state !== 'closed') await this.context.close();
   }
 
   private createSoundscape() {
@@ -50,7 +62,6 @@ export class AmbientSoundscape {
     this.context = context;
     this.master = context.createGain();
     this.master.gain.value = 0;
-    this.master.connect(context.destination);
 
     const buffer = context.createBuffer(1, context.sampleRate * 4, context.sampleRate);
     const noise = buffer.getChannelData(0);

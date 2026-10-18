@@ -165,7 +165,7 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
         const connected = document.createElement('small');
         connected.className = 'social-connected-total';
         connected.textContent = t('({n} conectados)', { n: friends.filter((entry) => entry.online).length });
-        stat.append(connected);
+        caption.append(' ', connected);
       }
       overview.append(stat);
     }

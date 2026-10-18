@@ -683,9 +683,9 @@ body.playing .chat.hover-revealed, body.playing .chat:focus-within { opacity: 1;
 .chat-filter[data-kind="system"][aria-pressed="true"] { color: var(--gold); }
 .chat-filter[data-kind="npc"][aria-pressed="true"] { color: #a8e6a1; }
 .chat-filter[data-kind="combat"][aria-pressed="true"] { color: #ff9a8a; }
-.chat-collapse { position: relative; width: 22px; height: 18px; flex: none; border: 1px solid rgba(185,148,90,.5); border-radius: 6px; background: transparent; cursor: pointer; }
-.chat-collapse i { position: absolute; left: 5px; right: 5px; bottom: 5px; height: 2px; background: #fff0d7; }
-.chat.collapsed .chat-collapse i { bottom: 8px; box-shadow: 0 -4px 0 #fff0d7; }
+.chat-collapse { position: relative; display: grid; place-items: center; appearance: none; padding: 0; width: 24px; height: 24px; flex: none; border: 1px solid rgba(185,148,90,.5); border-radius: 6px; background: transparent; cursor: pointer; }
+.chat-collapse i { display: block; width: 10px; height: 2px; background: #fff0d7; }
+.chat.collapsed:not(.peek-expanded) .chat-collapse i { width: 10px; height: 8px; border: 1px solid #fff0d7; border-top-width: 2px; border-radius: 1px; background: none; }
 .chat-collapse[data-unread]::after { content: attr(data-unread); position: absolute; top: -8px; right: -6px; min-width: 15px; padding: 1px 3px; border-radius: 8px; background: #c0392b; color: #fff; font: 700 10px/13px sans-serif; text-align: center; }
 body.playing .chat.collapsed:not(.peek-expanded) { height: 36px; width: 112px; bottom: 12px; opacity: 1; }
 .chat.collapsed:not(.peek-expanded) .chat-log, .chat.collapsed:not(.peek-expanded) .chat-form, .chat.collapsed:not(.peek-expanded) .chat-resize, .chat.collapsed:not(.peek-expanded) .chat-filters { display: none; }
@@ -775,7 +775,6 @@ body.window-open .minimap { z-index: 61; }
 .social-stat strong { color: var(--wood-2); font: 700 26px/1 'Cinzel', serif; }
 .social-stat span { color: var(--ink-soft); font-size: 12px; }
 .social-connected-total { color: #426637; font: 700 13px 'Alegreya', serif; }
-.social-stat-incoming::after { content: ''; height: 17px; }
 .social-invitation { padding: 13px 15px; border: 1px solid #ad844b77; border-radius: 12px; background: linear-gradient(135deg, #fff7e580, #dfc28b33); box-shadow: inset 0 1px #fff7df; }
 .social-invitation label { display: block; margin-bottom: 8px; color: var(--wood-2); font: 700 13px 'Cinzel', serif; }
 .social-add { display: flex; flex-wrap: wrap; gap: 8px; }
