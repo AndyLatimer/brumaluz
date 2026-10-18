@@ -406,7 +406,7 @@ test('graphics controls stay clear of account information and map population fit
         const zone = plate.querySelector('.minimap-zone').getBoundingClientRect();
         return plate.scrollWidth <= plate.clientWidth && badge.left >= bounds.left && badge.right <= bounds.right && bounds.right <= innerWidth
           && coords.top >= Math.max(zone.bottom,badge.bottom) && bounds.left>=0
-          && plate.querySelector('.minimap-location-icon') !== null;
+          && plate.querySelector('.minimap-location-icon') !== null && bounds.width <= 140 && bounds.height <= 42;
       });
       assert.equal(fits, true);
     }
