@@ -1,4 +1,7 @@
-import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
+import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from '../character/head';
+import { emptyWallet, sanitizeWallet, type Wallet } from './currency';
+import { DEFAULT_TITLE, isTitleId, type TitleId } from './titles';
+import { emptyEquipment, emptyInventory, sanitizeEquipment, sanitizeInventory, type Equipment, type InventorySlots } from './inventory';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
@@ -33,8 +36,14 @@ const noBonuses = (): AttributeBonuses => ({
 
 export interface CharData {
   name: string;
+  title: TitleId; // título mostrado junto al nombre (ver titles.ts)
   level: number;
-  experience: number;
+  experience: number; // experiencia acumulada dentro del nivel actual
+  health: number; // vida actual; -1 = al máximo
+  resource: number; // maná o estamina actual según la clase; -1 = al máximo
+  wallet: Wallet; // monedas (ver currency.ts)
+  inventory: InventorySlots;
+  equipment: Equipment;
   location: LocationId;
   race: Race;
   attributePoints: AttributeBonuses;
@@ -70,6 +79,8 @@ export interface CharData {
 
 export interface RaceDef {
   label: string;
+  /** Forma femenina del nombre (si difiere de `label`). */
+  feminine?: string;
   desc: string;
   bonuses: AttributeBonuses;
   skins: string[];
@@ -100,6 +111,7 @@ export const coatMark = (skin: string) => PELSO_COATS.find((c) => c.base === ski
 export const RACES: Record<Race, RaceDef> = {
   humano: {
     label: 'Humano',
+    feminine: 'Humana',
     desc: 'Nacidos en Brumaluz o llegados de tierras lejanas, los humanos destacan por su ingenio y por encontrar su propio camino en cualquier oficio.',
     bonuses: { ...noBonuses(), pericia: 3, presencia: 2 },
     skins: HUMAN_SKINS, skinNames: HUMAN_SKIN_NAMES,
@@ -108,6 +120,7 @@ export const RACES: Record<Race, RaceDef> = {
   },
   elfo: {
     label: 'Elfo',
+    feminine: 'Elfa',
     desc: 'Desde hace generaciones, los elfos protegen los bosques que abrazan Brumaluz. Su larga vida y conocimiento de la naturaleza los han convertido en hábiles alquimistas.',
     bonuses: { ...noBonuses(), intelecto: 2, pericia: 2, agilidad: 1 },
     skins: ['#fbe0cc', '#f2cdb0', '#e8c4c8', '#c9b4d8', '#9f8fc6', '#d4bc94'],
@@ -126,6 +139,7 @@ export const RACES: Record<Race, RaceDef> = {
   },
   pelso: {
     label: 'Pelso',
+    feminine: 'Pelsa',
     desc: 'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos. Se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
     bonuses: { ...noBonuses(), fuerza: 1, corpulencia: 1, agilidad: 2, percepcion: 1 },
     skins: PELSO_COATS.map((c) => c.base), skinNames: PELSO_COATS.map((c) => c.name),
@@ -139,20 +153,26 @@ export const EYE_COLOR_NAMES = ['Negro', 'Castaño', 'Azul', 'Verde', 'Ámbar', 
 
 export interface ClassDef {
   label: string;
+  /** Forma femenina del nombre (si difiere de `label`). */
+  feminine?: string;
   desc: string;
   primary: number;
   secondary: number;
 }
 
 export const CLASSES: Record<ClassId, ClassDef> = {
-  guerrero: { label: 'Guerrero', desc: 'Caballeros, mercenarios o luchadores por cuenta propia: hay muchos caminos para un guerrero. Su honor no está en el título ni en las promesas, sino en las acciones que lleva a cabo.', primary: 0, secondary: 4 },
-  mago: { label: 'Mago', desc: 'Los magos buscan comprender las fuerzas que dan forma al mundo. Algunos estudian durante años; otros aprenden a base de probar, fallar y volver a intentarlo. La magia exige curiosidad, disciplina… y aceptar que no siempre sale como uno espera.', primary: 3, secondary: 10 },
-  picaro: { label: 'Pícaro', desc: 'Los pícaros conocen los atajos, las puertas traseras y el valor de escuchar antes de hablar. Algunos viven del ingenio, otros del sigilo o de saber a quién acudir; todos prefieren tener un plan de salida.', primary: 2, secondary: 5 },
-  clerigo: { label: 'Clérigo', desc: 'Los clérigos encuentran en la fe una fuente de poder y propósito. Algunos ofrecen consuelo y curación; otros defienden sus creencias con firmeza.', primary: 7, secondary: 4 },
-  explorador: { label: 'Explorador', desc: 'Los exploradores se sienten en casa lejos de los caminos transitados. Rastreadores, guías o viajeros solitarios, aprenden a leer el terreno y a arreglárselas con lo que encuentran.', primary: 1, secondary: 5 },
+  guerrero: { label: 'Guerrero', feminine: 'Guerrera', desc: 'Caballeros, mercenarios o luchadores por cuenta propia: hay muchos caminos para un guerrero. Su honor no está en el título ni en las promesas, sino en las acciones que lleva a cabo.', primary: 0, secondary: 4 },
+  mago: { label: 'Mago', feminine: 'Maga', desc: 'Los magos buscan comprender las fuerzas que dan forma al mundo. Algunos estudian durante años; otros aprenden a base de probar, fallar y volver a intentarlo. La magia exige curiosidad, disciplina… y aceptar que no siempre sale como uno espera.', primary: 3, secondary: 10 },
+  picaro: { label: 'Pícaro', feminine: 'Pícara', desc: 'Los pícaros conocen los atajos, las puertas traseras y el valor de escuchar antes de hablar. Algunos viven del ingenio, otros del sigilo o de saber a quién acudir; todos prefieren tener un plan de salida.', primary: 2, secondary: 5 },
+  clerigo: { label: 'Clérigo', feminine: 'Clériga', desc: 'Los clérigos encuentran en la fe una fuente de poder y propósito. Algunos ofrecen consuelo y curación; otros defienden sus creencias con firmeza.', primary: 7, secondary: 4 },
+  explorador: { label: 'Explorador', feminine: 'Exploradora', desc: 'Los exploradores se sienten en casa lejos de los caminos transitados. Rastreadores, guías o viajeros solitarios, aprenden a leer el terreno y a arreglárselas con lo que encuentran.', primary: 1, secondary: 5 },
 };
 
-export const HAIR_COLORS = ['#2a1d16', '#5a3a22', '#8a5a2b', '#c48a3f', '#e8c97e', '#b23a22', '#e4e0d8', '#3a3a4a', '#5a86c8', '#8a5fb8', '#4f9a6a', '#d8608a'];
+/** Nombre de raza o clase con el género del personaje (sex 1 = femenino). */
+export const raceLabel = (d: Pick<CharData, 'race' | 'sex'>) => (d.sex === 1 && RACES[d.race].feminine) || RACES[d.race].label;
+export const classLabel = (d: Pick<CharData, 'cls' | 'sex'>) => (d.sex === 1 && CLASSES[d.cls].feminine) || CLASSES[d.cls].label;
+
+export const HAIR_COLORS =  ['#2a1d16', '#5a3a22', '#8a5a2b', '#c48a3f', '#e8c97e', '#b23a22', '#e4e0d8', '#3a3a4a', '#5a86c8', '#8a5fb8', '#4f9a6a', '#d8608a'];
 export const HAIR_NAMES = ['Azabache', 'Castaño oscuro', 'Castaño', 'Cobrizo', 'Rubio', 'Pelirrojo', 'Plata', 'Grafito', 'Azul', 'Violeta', 'Verde', 'Rosa'];
 export const CLOTH = ['#a8302e', '#3a64a8', '#2e8a4e', '#6a4aa8', '#d8a838', '#7a4a2a', '#34343e', '#ece4d0', '#2e8a8a', '#d0642a', '#c43a7a', '#e8a0b4', '#9ed4b8', '#9cc4ec', '#bca8e0', '#f2d6a0', '#c4b49a'];
 export const CLOTH_NAMES = ['Carmesí', 'Azul real', 'Bosque', 'Púrpura', 'Oro', 'Castaño', 'Carbón', 'Lino', 'Turquesa', 'Calabaza', 'Fucsia', 'Rosa palo', 'Menta', 'Cielo', 'Lavanda', 'Crema', 'Arena'];
@@ -173,7 +193,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', level: 1, experience: 0, location: 'brumaluz', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
+    name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     cape: 0, clothA: 7, clothB: 5, hairAcc: 0, hairAccColor: 0, acc: 0, makeup: 0, makeupColor: 2, accColor: 0,
@@ -183,10 +203,17 @@ export function defaultChar(): CharData {
 /** Repara datos guardados de versiones anteriores. */
 export function sanitize(d: Record<string, unknown>): CharData {
   const out = { ...defaultChar(), ...d } as CharData;
+  if (!isTitleId(out.title)) out.title = DEFAULT_TITLE;
   const level = Number(out.level);
   const experience = Number(out.experience);
   out.level = Number.isSafeInteger(level) ? Math.max(level, 1) : 1;
   out.experience = Number.isSafeInteger(experience) ? Math.max(experience, 0) : 0;
+  out.health = Number.isFinite(Number(out.health)) ? Math.max(Math.round(Number(out.health)), -1) : -1;
+  out.resource = Number.isFinite(Number(out.resource)) ? Math.max(Math.round(Number(out.resource)), -1) : -1;
+  out.wallet = sanitizeWallet(d.wallet, d.gold);
+  delete (out as unknown as Record<string, unknown>).gold;
+  out.inventory = sanitizeInventory(out.inventory);
+  out.equipment = sanitizeEquipment(out.equipment);
   if (typeof out.location !== 'string' || !Object.prototype.hasOwnProperty.call(LOCATIONS, out.location)) out.location = 'brumaluz';
   if (!(out.race in RACES)) out.race = 'humano';
   if (!(out.cls in CLASSES)) out.cls = 'guerrero';
@@ -245,7 +272,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    name: randomName(race), level: 1, experience: 0, location: 'brumaluz', race, attributePoints: noBonuses(), sex,
+    name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', race, attributePoints: noBonuses(), sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11, 12, 13][rnd(8)], hairColor: rnd(HAIR_COLORS.length),

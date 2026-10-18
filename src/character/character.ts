@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { loadGLB } from './load';
+import { loadGLB } from '../world/load';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import mageUrl from './assets/models/Mage.glb?url';
-import knightUrl from './assets/models/Knight.glb?url';
-import rogueUrl from './assets/models/Rogue.glb?url';
-import barbarianUrl from './assets/models/Barbarian.glb?url';
-import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from './data';
+import mageUrl from '../assets/models/Mage.glb?url';
+import knightUrl from '../assets/models/Knight.glb?url';
+import rogueUrl from '../assets/models/Rogue.glb?url';
+import barbarianUrl from '../assets/models/Barbarian.glb?url';
+import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
 import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
-import { softDot } from './paint';
+import { softDot } from '../world/paint';
 
 // ---------------------------------------------------------------------------
 // Personajes a partir del pack "KayKit Adventurers" (Kay Lousberg, CC0).
@@ -274,7 +274,9 @@ export class Character {
     this.idle.play();
     this.applyBodyShape();
     this.mixer.addEventListener('finished', (e) => {
-      if (e.action !== this.idle) { this.idle.reset().fadeIn(0.3).play(); e.action.fadeOut(0.3); }
+      if (e.action !== this.oneShot) return;
+      this.oneShot = null;
+      this.playGait(e.action);
     });
 
     // Sombra de contacto suave
@@ -549,27 +551,65 @@ export class Character {
   // ---------------- Animación ----------------
   private play(name: string) {
     const a = this.actions.get(name);
-    if (!a) return;
+    if (!a) return 0;
+    const from = this.oneShot ?? this.gaitAction();
+    this.oneShot = a;
     a.reset();
     a.setLoop(THREE.LoopOnce, 1);
     a.clampWhenFinished = true;
-    a.fadeIn(0.25).play();
-    this.idle.fadeOut(0.25);
+    a.play();
+    if (from !== a) from.crossFadeTo(a, 0.2, false);
+    return a.getClip().duration;
   }
   private gait: 'idle' | 'walk' | 'run' = 'idle';
+  private oneShot: THREE.AnimationAction | null = null;
+  private gaitAction(gait = this.gait) {
+    return gait === 'idle' ? this.idle : this.actions.get(gait === 'walk' ? 'Walking_A' : 'Running_A') ?? this.idle;
+  }
+  private playGait(from?: THREE.AnimationAction) {
+    const action = this.gaitAction();
+    action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+    if (from && from !== action) from.crossFadeTo(action, 0.28, false);
+    else action.fadeIn(0.28);
+  }
   /** Cambia entre reposo, caminar y correr con transición suave. */
   setGait(g: 'idle' | 'walk' | 'run') {
     if (g === this.gait) return;
-    const pick = (x: string) => (x === 'idle' ? this.idle : this.actions.get(x === 'walk' ? 'Walking_A' : 'Running_A')!);
-    const from = pick(this.gait), to = pick(g);
-    this.mixer.stopAllAction();
-    from.play();
-    to.reset().setLoop(THREE.LoopRepeat, Infinity).play();
-    from.crossFadeTo(to, 0.2, false);
+    const from = this.gaitAction();
     this.gait = g;
+    if (this.oneShot) return;
+    this.playGait(from);
   }
   wave() { this.play('Cheer'); this.happyReq = true; }
   hop() { this.play(this.opts.outfit && this.d.cls === 'mago' ? 'Spellcast_Raise' : 'Interact'); }
+  private jumpAction: THREE.AnimationAction | null = null;
+  private jumpTime = -1;
+  private jumpLength = 0;
+  /** El salto se mezcla por encima de la locomoción con un peso suave, para que no parezca un clip aparte. */
+  jump() {
+    const act = this.actions.get('Jump_Full_Short');
+    if (!act) return 0;
+    if (this.jumpTime >= 0) return this.jumpLength;
+    const speed = act.getClip().duration / 0.62;
+    act.reset().setLoop(THREE.LoopOnce, 1);
+    act.clampWhenFinished = true;
+    act.timeScale = speed;
+    act.play();
+    act.setEffectiveWeight(0);
+    this.jumpAction = act;
+    this.jumpTime = 0;
+    this.jumpLength = act.getClip().duration / speed;
+    return this.jumpLength;
+  }
+  private updateJump(dt: number) {
+    if (this.jumpTime < 0 || !this.jumpAction) return;
+    this.jumpTime += dt;
+    const p = this.jumpTime / this.jumpLength;
+    if (p >= 1) { this.jumpAction.stop(); this.jumpAction = null; this.jumpTime = -1; return; }
+    const smooth = (a: number, b: number, x: number) => { const k = Math.min(Math.max((x - a) / (b - a), 0), 1); return k * k * (3 - 2 * k); };
+    const envelope = smooth(0, 0.2, p) * (1 - smooth(0.55, 0.95, p));
+    this.jumpAction.setEffectiveWeight(envelope * 0.4);
+  }
 
   /** Centro aproximado de la cara, para encuadrar la cámara. */
   headWorld(target = new THREE.Vector3()) {
@@ -579,6 +619,7 @@ export class Character {
   update(t: number) {
     const dt = this.lastT < 0 ? 0 : Math.min(t - this.lastT, 0.1);
     this.lastT = t;
+    this.updateJump(dt);
     this.mixer.update(dt);
     // Animation tracks reset bone scales, so reapply the chosen proportions afterward.
     this.applyBodyShape();

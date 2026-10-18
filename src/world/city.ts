@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { loadGLB } from './load';
-import cityUrl from './assets/models/city.glb?url';
-import type { LocationId } from './data';
+import cityUrl from '../assets/models/city.glb?url';
+import type { LocationId } from '../data/data';
 
 // ---------------------------------------------------------------------------
 // Brumaluz: ciudad de casillas hexagonales con el pack "KayKit Medieval
@@ -57,7 +57,7 @@ const BLOCK: Record<string, number> = {
 };
 
 interface Placement { model: string; x: number; z: number; ry: number; s?: number; y?: number }
-interface Collider { x: number; z: number; r: number }
+interface Collider { x: number; z: number; r: number; hx?: number; hz?: number; cos?: number; sin?: number }
 export interface CityVendorSpot {
   id: string;
   role: 'merchant' | 'innkeeper' | 'healer' | 'smith' | 'miller' | 'lumber';
@@ -108,8 +108,8 @@ export async function buildCity(): Promise<City> {
   const rawTerrainHeightAtWorld = (x: number, z: number) =>
     0.35 * Math.sin(x * 0.035) * Math.cos(z * 0.04)
     + 0.2 * Math.sin((x + z * 0.65) * 0.045)
-    + 8 * Math.exp(-(((x + 40) / 25) ** 2 + ((z - 9) / 21) ** 2))
-    + 6.8 * Math.exp(-(((x - 34) / 24) ** 2 + ((z + 29) / 20) ** 2));
+    + 1.8 * Math.exp(-(((x + 40) / 25) ** 2 + ((z - 9) / 21) ** 2))
+    + 1.5 * Math.exp(-(((x - 34) / 24) ** 2 + ((z + 29) / 20) ** 2));
   const nearestFoundation = (x: number, z: number) => {
     let nearest: typeof foundations[number] | undefined;
     let distance = Infinity;
@@ -203,7 +203,6 @@ export async function buildCity(): Promise<City> {
   roads.add(key(0, -7)); used.delete(key(0, -7));
   // Granja con molino al este
   building('windmill', 6, -1);
-  for (const [q, r] of [[5, -2], [6, -2], [5, -1], [4, -2], [6, 0]] as [number, number][]) if (!used.has(key(q, r))) { used.add(key(q, r)); P('grain', q, r, 0); }
   building('lumbermill', -6, 1);
   building('barracks', -5, -3);
   building('archeryrange', -6, 0);
@@ -417,8 +416,8 @@ export async function buildCity(): Promise<City> {
         float brumaluzTerrainHeight(vec2 p) {
           return 0.35 * sin(p.x * 0.035) * cos(p.y * 0.04)
             + 0.2 * sin((p.x + p.y * 0.65) * 0.045)
-            + 8.0 * exp(-pow((p.x + 40.0) / 25.0, 2.0) - pow((p.y - 9.0) / 21.0, 2.0))
-            + 6.8 * exp(-pow((p.x - 34.0) / 24.0, 2.0) - pow((p.y + 29.0) / 20.0, 2.0));
+            + 1.8 * exp(-pow((p.x + 40.0) / 25.0, 2.0) - pow((p.y - 9.0) / 21.0, 2.0))
+            + 1.5 * exp(-pow((p.x - 34.0) / 24.0, 2.0) - pow((p.y + 29.0) / 20.0, 2.0));
         }`,
       );
       shader.vertexShader = shader.vertexShader.replace(
@@ -663,10 +662,45 @@ export async function buildCity(): Promise<City> {
   const grassMatrix = new THREE.Matrix4();
 
   // ---------- Colisiones ----------
+  // Cajas orientadas calculadas con la geometría real de cada modelo (los círculos solo para arboledas y colinas).
   const colliders: Collider[] = [];
+  const CIRCLE_ONLY = /^(trees_|hills_|hill_|mountain_)/;
+  const NO_COLLISION = /^(hex_|cloud|water|flag_|bucket_)/;
+  const footprints = new Map<string, { cx: number; cz: number; hx: number; hz: number } | null>();
+  const footprintOf = (name: string) => {
+    if (footprints.has(name)) return footprints.get(name)!;
+    const model = models.get(name);
+    let result: { cx: number; cz: number; hx: number; hz: number } | null = null;
+    if (model) {
+      model.updateMatrixWorld(true);
+      const box = new THREE.Box3();
+      model.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh || /fan|wheel/.test(mesh.name)) return;
+        mesh.geometry.computeBoundingBox();
+        box.union(mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrixWorld));
+      });
+      if (!box.isEmpty()) result = { cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, hx: (box.max.x - box.min.x) / 2, hz: (box.max.z - box.min.z) / 2 };
+    }
+    footprints.set(name, result);
+    return result;
+  };
+  const addBox = (p: Placement, cx: number, cz: number, hx: number, hz: number) => {
+    const k = S * (p.s ?? 1), cos = Math.cos(p.ry), sin = Math.sin(p.ry);
+    const lx = cx * k, lz = cz * k;
+    colliders.push({ x: p.x + lx * cos + lz * sin, z: p.z - lx * sin + lz * cos, r: 0, hx: hx * k, hz: hz * k, cos, sin });
+  };
   for (const p of place) {
-    const r = BLOCK[p.model];
-    if (r) colliders.push({ x: p.x, z: p.z, r: r * (p.s ?? 1) });
+    if (NO_COLLISION.test(p.model)) continue;
+    if (p.model === 'tree_single_A' || p.model === 'tree_single_B') { colliders.push({ x: p.x, z: p.z, r: 0.55 }); continue; }
+    if (CIRCLE_ONLY.test(p.model)) { colliders.push({ x: p.x, z: p.z, r: BLOCK[p.model] * (p.s ?? 1) }); continue; }
+    const f = footprintOf(p.model);
+    if (!f) continue;
+    if (p.model === 'wall_straight_gate') {
+      // dos pilares laterales y el hueco central (|x| < 0.5) libre
+      for (const side of [-1, 1]) addBox(p, f.cx + side * 0.75, f.cz, 0.25, f.hz);
+    } else if (p.model === 'wall_straight') addBox(p, f.cx, f.cz, f.hx + 0.05, f.hz);
+    else addBox(p, f.cx, f.cz, f.hx, f.hz);
   }
   for (const bench of parkBenches) colliders.push({ x: bench.x, z: bench.z, r: 0.9 });
   const blockedTile = (x: number, z: number) => {
@@ -675,12 +709,32 @@ export async function buildCity(): Promise<City> {
     return hexDist(q, r) > R_LAND || t === 'water' || t === 'river';
   };
   const ME = 0.45; // radio del personaje
+  const pushOut = (out: THREE.Vector3, c: Collider) => {
+    const dx = out.x - c.x, dz = out.z - c.z;
+    if (c.hx === undefined || c.hz === undefined || c.cos === undefined || c.sin === undefined) {
+      const d = Math.hypot(dx, dz), min = c.r + ME;
+      if (d < min && d > 1e-4) { out.x = c.x + (dx / d) * min; out.z = c.z + (dz / d) * min; }
+      return;
+    }
+    const lx = dx * c.cos - dz * c.sin, lz = dx * c.sin + dz * c.cos;
+    const nx = THREE.MathUtils.clamp(lx, -c.hx, c.hx), nz = THREE.MathUtils.clamp(lz, -c.hz, c.hz);
+    const ox = lx - nx, oz = lz - nz;
+    let px: number, pz: number;
+    const d = Math.hypot(ox, oz);
+    if (d > 1e-4) {
+      if (d >= ME) return;
+      px = nx + (ox / d) * ME; pz = nz + (oz / d) * ME;
+    } else {
+      // centro dentro de la caja: sacarlo por la cara más cercana
+      const gx = c.hx - Math.abs(lx), gz = c.hz - Math.abs(lz);
+      if (gx < gz) { px = Math.sign(lx || 1) * (c.hx + ME); pz = lz; } else { px = lx; pz = Math.sign(lz || 1) * (c.hz + ME); }
+    }
+    out.x = c.x + px * c.cos + pz * c.sin;
+    out.z = c.z - px * c.sin + pz * c.cos;
+  };
   const collide = (from: THREE.Vector3, to: THREE.Vector3) => {
     const out = to.clone();
-    for (let it = 0; it < 2; it++) for (const c of colliders) {
-      const dx = out.x - c.x, dz = out.z - c.z, d = Math.hypot(dx, dz), min = c.r + ME;
-      if (d < min && d > 1e-4) { out.x = c.x + (dx / d) * min; out.z = c.z + (dz / d) * min; }
-    }
+    for (let it = 0; it < 3; it++) for (const c of colliders) pushOut(out, c);
     const steepStep = Math.abs(terrainHeightAtWorld(out.x, out.z) - terrainHeightAtWorld(from.x, from.z)) > 0.55;
     if (blockedTile(out.x, out.z) || steepStep) {
       // deslizar por el eje que sí está libre

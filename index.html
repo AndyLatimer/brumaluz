@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/styles/style.css" />
 </head>
 <body class="auth-visible">
   <canvas id="scene"></canvas>
@@ -242,33 +242,115 @@
     </div>
   </footer>
 
+  <div id="nameplate" class="nameplate" aria-hidden="true" hidden><strong id="nameplate-name"></strong><span id="nameplate-title"></span></div>
+
+  <div id="player-hud" class="player-hud" aria-label="Estado del personaje">
+    <div id="hud-class-icon" class="hud-class-icon" aria-hidden="true"></div>
+    <div class="hud-bars">
+      <div class="hud-name-row"><strong id="hud-name"></strong><span id="hud-level"></span></div>
+      <div class="hud-bar hud-health" role="progressbar" aria-label="Vida"><i id="hud-health-fill"></i><span id="hud-health-text"></span></div>
+      <div class="hud-bar hud-resource" id="hud-resource" role="progressbar"><i id="hud-resource-fill"></i><span id="hud-resource-text"></span></div>
+      <div class="hud-bar hud-xp" role="progressbar" aria-label="Experiencia"><i id="hud-xp-fill"></i><span id="hud-xp-text"></span></div>
+    </div>
+  </div>
+
   <div id="game-menu" class="game-menu">
     <button id="game-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="game-menu-panel">
       <span aria-hidden="true">☰</span>
     </button>
     <section id="game-menu-panel" class="game-menu-panel frame" aria-labelledby="game-menu-title" hidden>
       <h2 id="game-menu-title">Menú</h2>
-      <div class="language-switch game-language-switch" aria-label="Idioma">
-        <button type="button" data-language="es" aria-label="Español">
-          <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
-            <path fill="#AA151B" d="M0 0h30v20H0z" />
-            <path fill="#F1BF00" d="M0 5h30v10H0z" />
-          </svg>
-        </button>
-        <button type="button" data-language="en" aria-label="English">
-          <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
-            <path fill="#012169" d="M0 0h30v20H0z" />
-            <path stroke="#FFF" stroke-width="5" d="m0 0 30 20M30 0 0 20" />
-            <path stroke="#C8102E" stroke-width="2" d="m0 0 30 20M30 0 0 20" />
-            <path stroke="#FFF" stroke-width="8" d="M15 0v20M0 10h30" />
-            <path stroke="#C8102E" stroke-width="4" d="M15 0v20M0 10h30" />
-          </svg>
-        </button>
-      </div>
-      <button id="game-menu-sound" class="btn ghost" type="button" aria-pressed="true">Sonido ambiental: activado</button>
+      <button id="game-menu-options" class="btn ghost" type="button">Opciones</button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Ayuda</button>
       <button id="game-menu-characters" class="btn ghost" type="button">Selección de personaje</button>
       <button id="game-menu-logout" class="btn ghost" type="button">Salir del juego</button>
       <p id="game-menu-message" class="account-message" role="status"></p>
+    </section>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="cur-flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd35a"/><stop offset=".55" stop-color="#ff8a2a"/><stop offset="1" stop-color="#e03a1e"/></linearGradient></defs></svg>
+  <div id="player-menu" class="player-menu">
+    <button id="player-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú de personaje" aria-expanded="false" aria-controls="player-menu-panel" title="Menú de personaje|Tab">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="pm-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d09a3c"/></linearGradient></defs><path class="pm-bust" d="M16 5.5a5.2 5.2 0 1 1 0 10.4 5.2 5.2 0 0 1 0-10.4ZM5.5 27c0-5.6 4.4-9.2 10.5-9.2S26.5 21.4 26.5 27Z"/><path class="pm-spark" d="M26 3l1.2 3 3 1.2-3 1.2L26 11.4l-1.2-3-3-1.2 3-1.2Z"/></svg>
+    </button>
+    <section id="player-menu-panel" class="game-menu-panel frame" aria-labelledby="player-menu-title" hidden>
+      <h2 id="player-menu-title">Personaje</h2>
+      <button class="btn ghost" type="button" data-window="inventory">Inventario</button>
+      <button class="btn ghost" type="button" data-window="sheet">Ficha de personaje</button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Habilidades</button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Profesiones</button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Enciclopedia</button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Social</button>
+    </section>
+  </div>
+
+  <div id="window-backdrop" class="dialog-backdrop" hidden>
+    <section class="game-window frame" role="dialog" aria-modal="true" aria-labelledby="window-title">
+      <h2 id="window-title"></h2>
+      <div id="window-body"></div>
+      <div class="options-actions">
+        <button id="window-close" type="button" class="btn ghost">Cerrar</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="options-backdrop" class="dialog-backdrop" hidden>
+    <section class="options-dialog frame" role="dialog" aria-modal="true" aria-labelledby="options-title">
+      <h2 id="options-title">Opciones</h2>
+      <div class="options-tabs" role="tablist">
+        <button type="button" role="tab" class="options-tab" data-tab="video" aria-selected="true">Vídeo</button>
+        <button type="button" role="tab" class="options-tab" data-tab="sound" aria-selected="false">Sonido</button>
+        <button type="button" role="tab" class="options-tab" data-tab="controls" aria-selected="false">Controles</button>
+      </div>
+      <div class="options-pane" data-pane="video" role="tabpanel">
+        <p class="options-label">Idioma</p>
+        <div class="language-switch options-language-switch" aria-label="Idioma">
+          <button type="button" data-language="es" aria-label="Español">
+            <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+              <path fill="#AA151B" d="M0 0h30v20H0z" />
+              <path fill="#F1BF00" d="M0 5h30v10H0z" />
+            </svg>
+          </button>
+          <button type="button" data-language="en" aria-label="English">
+            <svg viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+              <path fill="#012169" d="M0 0h30v20H0z" />
+              <path stroke="#FFF" stroke-width="5" d="m0 0 30 20M30 0 0 20" />
+              <path stroke="#C8102E" stroke-width="2" d="m0 0 30 20M30 0 0 20" />
+              <path stroke="#FFF" stroke-width="8" d="M15 0v20M0 10h30" />
+              <path stroke="#C8102E" stroke-width="4" d="M15 0v20M0 10h30" />
+            </svg>
+          </button>
+        </div>
+        <p class="options-label">Placas de nombre</p>
+        <div class="options-row">
+          <span class="options-label">Mostrar nombre y título sobre el personaje</span>
+          <button id="opt-nameplates" class="switch" type="button" role="switch" aria-checked="true" aria-label="Mostrar placas de nombre"><i></i></button>
+        </div>
+      </div>
+      <div class="options-pane" data-pane="sound" role="tabpanel" hidden>
+        <div class="options-row">
+          <span class="options-label">Sonido ambiental</span>
+          <button id="opt-ambient" class="switch" type="button" role="switch" aria-checked="true" aria-label="Sonido ambiental"><i></i></button>
+        </div>
+        <div class="options-row slider-row">
+          <label class="options-label" for="opt-ambient-volume">Volumen ambiental</label>
+          <input id="opt-ambient-volume" class="opt-slider" type="range" min="0" max="100" step="1" />
+          <output id="opt-ambient-value" for="opt-ambient-volume"></output>
+        </div>
+        <div class="options-row slider-row">
+          <label class="options-label" for="opt-master-volume">Volumen general</label>
+          <input id="opt-master-volume" class="opt-slider" type="range" min="0" max="100" step="1" />
+          <output id="opt-master-value" for="opt-master-volume"></output>
+        </div>
+        <p class="options-hint">El volumen general afecta a todos los sonidos del juego, como el combate.</p>
+        <p id="options-message" class="account-message" role="status"></p>
+      </div>
+      <div class="options-pane" data-pane="controls" role="tabpanel" hidden>
+        <div id="controls-view"></div>
+      </div>
+      <div class="options-actions">
+        <button id="options-close" type="button" class="btn ghost">Cerrar</button>
+      </div>
     </section>
   </div>
 

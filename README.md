@@ -61,8 +61,29 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
 - Al entrar se oyen viento, agua del río, pájaros, murmullo lejano de ciudad y campanas ocasionales,
   generados localmente con Web Audio; se pueden silenciar o reactivar desde el menú del juego. No se
   descargan pistas externas.
-- Modo exploración: WASD o clic para moverse, Mayús para caminar, arrastrar para girar la cámara,
-  rueda para acercar y E para saludar.
+- Modo exploración: WASD se mueve respecto a la cámara (W hacia donde miras, A/D a los lados, S hacia ti) con aceleración y frenada suaves; el personaje se orienta hacia donde va. Arrastrar con el ratón orbita la cámara libremente (el vertical se mantiene), rueda para acercar con zoom suave, clic para moverse, Mayús alterna correr/caminar,
+  espacio para saltar y E para saludar.
+- Opciones (menú del juego): Vídeo (idioma), Sonido (sonido ambiental, volumen ambiental y volumen general; se guardan en el navegador) y Controles (teclado ilustrado).
+  **Cada vez que se añada o cambie un control hay que reflejarlo en `CONTROLS` de `src/ui/controls.ts`**; la ventana se genera a partir de esa lista. No hay reasignación de teclas.
+- Menú de personaje (`Tab`, icono a la izquierda del menú del juego): Inventario (mochila de 25 huecos + 1 bloqueado con «+» para futuras ampliaciones, 10 ranuras de equipo sobre un muñeco: cabeza, colgante, torso, manos, anillo, arma, mano izquierda, piernas, pies y abalorio; constantes en `src/data/inventory.ts`) y Ficha de personaje (`src/ui/playerWindows.ts`). Las monedas (Pelines y Lágrimas de fénix, premium) están descritas en [docs/CURRENCY.md](docs/CURRENCY.md). Habilidades, Profesiones, Enciclopedia y Social son solo botones por ahora; "Ayuda" del menú normal también.
+- HUD del jugador (vida, maná/estamina, experiencia): las fórmulas son editables en
+  `src/data/stats.ts` y están documentadas en [docs/STATS.md](docs/STATS.md).
+
+## Estructura del proyecto
+
+```
+src/
+  main.ts          punto de entrada: bucle de juego, HUD y menús
+  data/            datos y reglas: data, stats, inventory, currency
+  world/           ciudad y entorno: city, env, paint, render, audio, load
+  character/       personaje: character, head, portrait
+  ui/              interfaz: i18n, controls, tooltip, classIcons, playerWindows
+  services/        cuentas (Supabase) y ajustes
+  styles/          style.css
+  assets/models/   modelos .glb
+docs/              documentación de sistemas (STATS, CURRENCY)
+tools/             scripts de preparación de modelos
+```
 
 ## Desarrollo
 

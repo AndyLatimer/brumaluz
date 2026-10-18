@@ -1,3 +1,5 @@
+import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/data';
+
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
@@ -129,6 +131,7 @@ const translations: Record<string, string> = {
   'Anterior': 'Previous',
   'Siguiente': 'Next',
   'Base': 'Base',
+  'Humana': 'Human', 'Elfa': 'Elf', 'Pelsa': 'Pelso', 'Guerrera': 'Warrior', 'Maga': 'Mage', 'Clériga': 'Cleric', 'Exploradora': 'Ranger',
   'Humano': 'Human',
   'Elfo': 'Elf',
   "Lagto'": "Lagto'",
@@ -193,6 +196,27 @@ const translations: Record<string, string> = {
   'Confirma tu correo antes de iniciar sesión.': 'Confirm your email before signing in.',
   'Ya existe una cuenta con ese correo.': 'An account with that email already exists.',
   'Ha ocurrido un error inesperado. Inténtalo de nuevo.': 'An unexpected error occurred. Please try again.',
+  'Opciones': 'Options', 'Vídeo': 'Video',
+  'Placas de nombre': 'Nameplates', 'Mostrar nombre y título sobre el personaje': 'Show name and title above the character',
+  'Mostrar placas de nombre': 'Show nameplates', 'Título': 'Title', 'Se muestra bajo tu nombre sobre el personaje.': 'Shown under your name above the character.',
+  'Sin título': 'No title', 'Recién llegado': 'Newcomer', 'Sonido': 'Sound', 'Controles': 'Controls', 'Cerrar': 'Close',
+  'Menú de personaje': 'Character menu', 'Abrir menú de personaje': 'Open character menu', 'Personaje': 'Character',
+  'Inventario': 'Inventory', 'Ficha de personaje': 'Character sheet', 'Habilidades': 'Skills', 'Profesiones': 'Professions',
+  'Enciclopedia': 'Encyclopedia', 'Social': 'Social', 'Ayuda': 'Help', 'Próximamente': 'Coming soon',
+  'Pelines': 'Pelines', 'Pelín': 'Pelín', 'Lágrimas de fénix': 'Phoenix Tears', 'Lágrima de fénix': 'Phoenix Tear',
+  'La moneda corriente de Brumaluz. Sirve para comerciar y pagar servicios.': 'The everyday currency of Brumaluz. Used for trade and services.',
+  'Una lágrima de fénix cristalizada, tan rara como valiosa. Con ella se consiguen tesoros y privilegios únicos.': 'A crystallized phoenix tear, as rare as it is valuable. It buys unique treasures and privileges.',
+  'Equipo': 'Equipment', 'Anillo': 'Ring', 'Ranura vacía': 'Empty slot', 'Ampliar mochila': 'Expand backpack',
+  'Podrás desbloquear más huecos próximamente.': 'You will be able to unlock more slots soon.', 'Mochila': 'Backpack', 'Monedas': 'Coins', 'monedas': 'coins', 'Tu mochila está vacía por ahora.': 'Your backpack is empty for now.',
+  'Cabeza': 'Head', 'Torso': 'Chest', 'Manos': 'Hands', 'Piernas': 'Legs', 'Pies': 'Feet', 'Arma': 'Weapon', 'Mano izquierda': 'Off hand', 'Abalorio': 'Trinket',
+  'Abrir / cerrar el menú de personaje': 'Open / close the character menu',
+  'Sonido ambiental': 'Ambient sound', 'Volumen ambiental': 'Ambient volume', 'Volumen general': 'Master volume',
+  'El volumen general afecta a todos los sonidos del juego, como el combate.': 'Master volume affects every game sound, such as combat.',
+  'Movimiento': 'Movement', 'Acciones': 'Actions', 'Cámara': 'Camera', 'Sistema': 'System',
+  'Avanzar': 'Move forward', 'Retroceder': 'Move backward', 'Moverse a la izquierda': 'Move left', 'Moverse a la derecha': 'Move right',
+  'Mayús': 'Shift', 'Alternar correr / caminar': 'Toggle run / walk', 'Espacio': 'Space', 'Saltar': 'Jump',
+  'Abrir / cerrar el menú': 'Open / close the menu', 'Clic': 'Click', 'Arrastrar': 'Drag', 'Rueda': 'Wheel',
+  'Ir al punto clicado': 'Go to the clicked spot', 'Orbitar la cámara': 'Orbit the camera', 'Acercar / alejar': 'Zoom in / out',
 };
 
 const reverseTranslations = new Map(Object.entries(translations).map(([source, translated]) => [translated, source]));
@@ -219,6 +243,10 @@ export function t(source: string, values: Record<string, string | number> = {}) 
   for (const [key, value] of Object.entries(values)) translated = translated.replaceAll(`{${key}}`, String(value));
   return translated;
 }
+
+/** Raza y clase con el género del personaje; en inglés no hay distinción de género. */
+export const raceText = (d: Pick<CharData, 'race' | 'sex'>) => (language === 'en' ? t(RACES[d.race].label) : raceLabel(d));
+export const classText = (d: Pick<CharData, 'cls' | 'sex'>) => (language === 'en' ? t(CLASSES[d.cls].label) : classLabel(d));
 
 export function applyLanguage(root: ParentNode) {
   document.documentElement.lang = language;

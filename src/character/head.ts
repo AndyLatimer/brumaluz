@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { LoopSubdivision } from 'three-subdivide';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { coatMark } from './data';
+import { coatMark } from '../data/data';
 
 // ---------------------------------------------------------------------------
 // Cabezas modulares a partir de las cuatro cabezas de KayKit Adventurers.
@@ -125,11 +125,6 @@ function toGeometry(T: Tris, recomputeNormals = false) {
   return g;
 }
 /** Lleva la UV de un vértice a otra celda, conservando su posición dentro de la celda. */
-function moveToCell(uv: Float32Array, i: number, cell: number) {
-  const fu = uv[i * 2] * 8 - Math.floor(uv[i * 2] * 8), fv = uv[i * 2 + 1] * 8 - Math.floor(uv[i * 2 + 1] * 8);
-  uv[i * 2] = ((cell % 8) + Math.min(Math.max(fu, 0.05), 0.95)) / 8;
-  uv[i * 2 + 1] = (Math.floor(cell / 8) + Math.min(Math.max(fv, 0.05), 0.95)) / 8;
-}
 /** Asigna a una geometría procedural UVs de una celda con degradado vertical (arriba más claro). */
 /**
  * Sombreado suave: promedia las normales de los vértices que comparten posición

@@ -1,5 +1,5 @@
 import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
-import type { CharData } from './data';
+import type { CharData } from '../data/data';
 
 export const MAX_CHARACTERS_PER_ACCOUNT = 5;
 

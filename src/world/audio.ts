@@ -4,9 +4,16 @@ export class AmbientSoundscape {
   private birdsTimer: number | undefined;
   private bellTimer: number | undefined;
   private active = false;
+  private level = 1;
 
   get enabled() {
     return this.active;
+  }
+
+  // Volumen relativo (0-1) del paisaje sonoro: ambiente × volumen general.
+  setLevel(level: number) {
+    this.level = Math.max(0, Math.min(1, level));
+    if (this.active && this.context && this.master) this.master.gain.setTargetAtTime(0.72 * this.level, this.context.currentTime, 0.1);
   }
 
   async prepare() {
@@ -31,7 +38,7 @@ export class AmbientSoundscape {
     if (!this.context) this.createSoundscape();
     await this.context!.resume();
     if (!this.active) return;
-    this.master!.gain.setTargetAtTime(0.72, this.context!.currentTime, 0.8);
+    this.master!.gain.setTargetAtTime(0.72 * this.level, this.context!.currentTime, 0.8);
     this.scheduleBirds();
   }
 
