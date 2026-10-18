@@ -1047,7 +1047,7 @@ test('closing Social during a delayed refresh cannot populate a different window
 });
 
 async function nearbyInteractions(page, name) {
-  await page.locator('#interact-label').filter({hasText:`Interactuar con ${name}`}).waitFor();
+  await page.locator('#interact-label').filter({hasText:/^Interactuar$/}).waitFor();
   await page.keyboard.press('KeyE');
   await page.locator('#player-interactions').waitFor({state:'visible'});
   await page.waitForFunction(() => {
@@ -1125,7 +1125,7 @@ test('player interaction closes when its target leaves range and ignores late ac
     await second.page.evaluate(()=>window.brumaluz.move(110,-11.085));
     await first.page.locator('#player-interactions').waitFor({state:'hidden'});
     await second.page.evaluate(()=>window.brumaluz.move(101,-11.085));
-    await first.page.locator('#interact-label').filter({hasText:'Interactuar con Elara'}).waitFor();
+    await first.page.locator('#interact-label').filter({hasText:/^Interactuar$/}).waitFor();
     world.rpcDelay.set('friends_list',1500);
     await first.page.keyboard.press('KeyE');
     await first.page.locator('#player-interactions').waitFor({state:'visible'});
@@ -2241,7 +2241,10 @@ test('players trade through the actual interaction menu, offer quantities privat
     await first.enter();await second.enter();
     await nearbyInteractions(first.page,'Elara');
     await first.page.getByRole('button',{name:'Invitar a intercambiar',exact:true}).click();
-    await second.page.getByRole('button',{name:'Abrir intercambio',exact:true}).click();
+    await second.page.getByRole('dialog',{name:'Invitación de intercambio',exact:true}).waitFor();
+    await second.page.getByText('¿Quieres intercambiar objetos y pelines con Alric?',{exact:true}).waitFor();
+    await second.page.getByRole('button',{name:'Rechazar',exact:true}).waitFor();
+    await second.page.getByRole('button',{name:'Aceptar',exact:true}).click();
     await first.page.getByText('Tu mochila intercambiable',{exact:true}).waitFor();
     assert.equal(await first.page.locator('.trade-item').count(),1);
     assert.equal(await first.page.locator('.trade-peer-offer .trade-offer-item').count(),0);

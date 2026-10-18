@@ -1492,7 +1492,8 @@ begin
   end if;
   if tr.id is null then
     return jsonb_build_object('trade',null,'inventory',public.game_inventory(mine.data),
-      'wallet',jsonb_build_object('pelines',public.game_pelines(mine.data)));
+      'wallet',case when jsonb_typeof(mine.data->'wallet')='object' then mine.data->'wallet' else '{}'::jsonb end
+        || jsonb_build_object('pelines',public.game_pelines(mine.data)));
   end if;
   is_a:=tr.a=mine.id;
   if p_action not in ('state','invite','join','offer','accept','back','cancel') then raise exception 'TRADE_INVALID_OFFER'; end if;
@@ -1534,7 +1535,9 @@ begin
     'incoming',not is_a,'peerId',other.id,'peerName',other.name,'own',own_offer,'peer',peer_offer,
     'accepted',case when is_a then tr.accepted_a else tr.accepted_b end,
     'peerAccepted',case when is_a then tr.accepted_b else tr.accepted_a end),
-    'inventory',public.game_inventory(mine.data),'wallet',mine.data->'wallet');
+    'inventory',public.game_inventory(mine.data),
+    'wallet',case when jsonb_typeof(mine.data->'wallet')='object' then mine.data->'wallet' else '{}'::jsonb end
+      || jsonb_build_object('pelines',public.game_pelines(mine.data)));
 end $$;
 revoke all on function public.game_trade_valid(public.player_trades),public.game_trade_offer(jsonb,jsonb),
   public.game_trade_remove(jsonb,jsonb),public.game_trade_add(jsonb,jsonb) from public,anon,authenticated;

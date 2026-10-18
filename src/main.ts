@@ -400,7 +400,7 @@ function updateInteractPrompt() {
   const interaction = mode === 'play' && !dead && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
   prompt.hidden = !interaction?.item && !interaction?.player;
   if (interaction?.item || interaction?.player) {
-    const label = interaction.player ? t('Interactuar con {name}', { name: interaction.player.name }) : t(interaction.item!.label);
+    const label = interaction.player ? t('Interactuar') : t(interaction.item!.label);
     if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
   }
 }

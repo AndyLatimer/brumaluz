@@ -3,6 +3,9 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Interactuar': 'Interact',
+  'Invitación de intercambio': 'Trade invitation',
+  '¿Quieres intercambiar objetos y pelines con {name}?': 'Would you like to trade items and pelines with {name}?',
   'Preparando intercambio…': 'Preparing trade…',
   'No se pudo leer el estado del intercambio. Inténtalo de nuevo.': 'The trade state could not be read. Please try again.',
   'Intercambio': 'Trade',

@@ -98,7 +98,8 @@ test('Spanish invitation, cancellation, mobile layout and bound tooltip labels',
   try {
     h.state.trade.incoming=true;
     await h.page.evaluate(()=>{window.tradeUI.setCharacter(null);window.tradeUI.setCharacter('self');});
-    await h.page.getByRole('button',{name:'Abrir intercambio',exact:true}).click();
+    await h.page.getByRole('dialog',{name:'Invitación de intercambio',exact:true}).waitFor();
+    await h.page.getByRole('button',{name:'Aceptar',exact:true}).click();
     await h.page.getByText('Tu mochila intercambiable',{exact:true}).waitFor();
     assert.equal(await h.page.evaluate(()=>document.querySelector('.trade-window').getBoundingClientRect().right<=innerWidth),true);
     const binding=await h.page.evaluate(async()=>{
@@ -112,6 +113,28 @@ test('Spanish invitation, cancellation, mobile layout and bound tooltip labels',
     await h.page.getByRole('button',{name:'Cancelar',exact:true}).click();
     await h.page.getByText('Intercambio cancelado.',{exact:true}).waitFor();
     assert.equal(h.state.trade.status,'cancelled');assert.deepEqual(h.errors,[]);
+  }finally{await h.close();}
+});
+test('an incoming invitation appears automatically and can be rejected without opening the trade',async()=>{
+  const h=await harness({lang:'es',mobile:true});
+  try {
+    h.state.trade=null;
+    await h.page.evaluate(()=>{window.tradeUI.setCharacter(null);window.tradeUI.setCharacter('self');});
+    await h.page.locator('.trade-backdrop').waitFor({state:'hidden'});
+    h.state.trade={...trade(),status:'invited',incoming:true};
+    const invitation=h.page.getByRole('dialog',{name:'Invitación de intercambio',exact:true});
+    await invitation.waitFor({state:'visible'});
+    await h.page.getByText('¿Quieres intercambiar objetos y pelines con Elara?',{exact:true}).waitFor();
+    assert.equal(await h.page.getByRole('button',{name:'Aceptar',exact:true}).evaluate(el=>el===document.activeElement),true);
+    for(const width of [390,320]) {
+      await h.page.setViewportSize({width,height:844});
+      assert.equal(await invitation.evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+    }
+    await h.page.getByRole('button',{name:'Rechazar',exact:true}).click();
+    await h.page.getByText('Intercambio cancelado.',{exact:true}).waitFor();
+    assert.equal(h.calls.some(call=>call.p_action==='join'),false);
+    assert.equal(h.calls.some(call=>call.p_action==='cancel'),true);
+    assert.deepEqual(h.errors,[]);
   }finally{await h.close();}
 });
 test('explicit errors, invalid quantities, reset acceptance on offer changes and range cancellation',async()=>{

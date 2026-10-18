@@ -64,7 +64,11 @@ export function createTradeWindow(hooks: {
     backdrop.hidden=false;
     if(wasHidden) hooks.opened();
     content.replaceChildren();
-    const title=line('Intercambio','h2'); title.className='trade-title';
+    const incoming=tr.status==='invited' && tr.incoming;
+    panel.classList.toggle('trade-invitation',incoming);
+    const heading=incoming ? 'Invitación de intercambio' : 'Intercambio';
+    panel.setAttribute('aria-label',t(heading));
+    const title=line(heading,'h2'); title.className='trade-title';
     const crest=document.createElement('span');
     crest.innerHTML='<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 14h32l-8-8m10 28H9l8 8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M9 20h13v20H9zm17-12h13v20H26z" fill="#c59a50" stroke="#715138"/><circle cx="15.5" cy="30" r="4" fill="#f3dfac"/><circle cx="32.5" cy="18" r="4" fill="#f3dfac"/></svg>';
     title.prepend(crest); content.append(title);
@@ -75,9 +79,16 @@ export function createTradeWindow(hooks: {
       return;
     }
     if(tr.status==='invited') {
-      content.append(line(tr.incoming ? 'Te invita a intercambiar objetos y pelines.' : 'Esperando a que acepte la invitación…'));
-      if(tr.incoming) content.append(button('Abrir intercambio',()=>void act('join')));
-      content.append(button('Cancelar',()=>void act('cancel')));
+      const invitation=line(tr.incoming ? '¿Quieres intercambiar objetos y pelines con {name}?' : 'Esperando a que acepte la invitación…');
+      if(tr.incoming) invitation.textContent=t('¿Quieres intercambiar objetos y pelines con {name}?',{name:tr.peerName});
+      invitation.className='trade-invitation-message';
+      content.append(invitation);
+      const actions=document.createElement('footer');
+      if(tr.incoming) actions.append(button('Aceptar',()=>void act('join')));
+      actions.append(button(tr.incoming ? 'Rechazar' : 'Cancelar',()=>void act('cancel')));
+      content.append(actions);
+      setBusy(busy);
+      if(wasHidden) actions.querySelector<HTMLButtonElement>('button')?.focus();
       return;
     }
     content.append(line('Solo pelines y objetos intercambiables. Cada cambio retira ambas aceptaciones.'));

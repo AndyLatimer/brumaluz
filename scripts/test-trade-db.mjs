@@ -75,6 +75,23 @@ test('private atomic trades (all schema, fixtures and mutations roll back)',{tim
       for(const forbidden of ['inventory','wallet','data','premium']) assert.equal(forbidden in peer.trade.peer,false);
       assert.deepEqual(Object.keys(peer.trade.peer).sort(),['items','pelines']);
     });
+    await t.test('incoming invitations reach characters with missing, null or empty wallets',async()=>{
+      for(const wallet of [undefined,null,{}, {premium:777}]) {
+        await reset();
+        const data=base(1);
+        if(wallet===undefined) delete data.wallet; else data.wallet=wallet;
+        await admin('update public.characters set data=$2 where id=$1',[chars[1],data]);
+        const invited=await rpc(0,'invite',null,chars[1]);
+        const received=await rpc(1);
+        assert.equal(received.trade.id,invited.trade.id);
+        assert.equal(received.trade.incoming,true);
+        assert.equal(received.trade.status,'invited');
+        assert.equal(received.wallet.pelines,0,'A new character has a valid zero-pelines wallet in the RPC response');
+        const joined=await rpc(1,'join',invited.trade.id);
+        assert.equal(joined.trade.status,'open');
+        assert.equal(joined.wallet.pelines,0);
+      }
+    });
     await t.test('exact quantities, pelines only, bound and malformed rejection',async()=>{
       await reset(); const id=await opened();
       for(const invalid of [offer([item(0,0)]),offer([item(0,-1)]),offer([item(0,1.5)]),offer([item(0,11)]),
