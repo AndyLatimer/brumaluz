@@ -309,7 +309,7 @@ $$;
 -- Sustituida por una función por acción (debug_damage, debug_heal, debug_xp, respawn_character).
 drop function if exists public.character_action(uuid, text);
 
--- Las acciones debug_* (NPC de pruebas) se apagan con server_config.debug_actions = false.
+-- Con debug_actions = false, solo la cuenta administradora puede usar el NPC de pruebas.
 create or replace function public.game_require_debug()
 returns void
 language plpgsql
@@ -317,7 +317,11 @@ security definer
 set search_path = ''
 as $$
 begin
-  if not coalesce((select (value #>> '{}')::boolean from public.server_config where key = 'debug_actions'), false) then
+  if not coalesce((select (value #>> '{}')::boolean from public.server_config where key = 'debug_actions'), false)
+    and not exists (
+      select 1 from auth.users
+      where id = (select auth.uid()) and lower(email) = 'manuelperezardanuy@gmail.com'
+    ) then
     raise exception 'ACTION_DISABLED';
   end if;
 end;

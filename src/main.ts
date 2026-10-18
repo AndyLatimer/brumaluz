@@ -43,6 +43,7 @@ import { classIcon } from './ui/classIcons';
 import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
 import { loadSettings, saveSettings } from './services/settings';
+import { initMenuMusic } from './ui/menuMusic';
 
 
 // ---------------- Estado ----------------
@@ -97,13 +98,16 @@ let char: Character;
 let pendingHop = false;
 let rebuildQueued = false;
 const ambientSoundscape = new AmbientSoundscape();
+const menuMusic = initMenuMusic();
 if (import.meta.hot) import.meta.hot.dispose(() => {
   void ambientSoundscape.dispose().catch((error: unknown) => console.error('No se pudo cerrar el sonido ambiental:', error));
+  void menuMusic.dispose().catch((error: unknown) => console.error('No se pudo cerrar la música:', error));
 });
 let ambientEnabled = localStorage.getItem('brumaluz-ambient') !== 'off';
 const settings = loadSettings();
 function applyVolumes() {
   ambientSoundscape.setLevel((settings.ambientVolume / 100) * (settings.masterVolume / 100));
+  menuMusic.setLevel(settings.masterVolume / 100);
 }
 applyVolumes();
 
@@ -552,7 +556,7 @@ async function damagePlayer(source = 'Algo') {
   restartClass($('.hud-health'), 'hurt');
   shakeUntil = clock.getElapsedTime() + 0.35;
   floatText(`-${amount}`, 'damage');
-  if (state.health <= 0) { die(); return; }
+  if (vitalsOf(state).health === 0) { die(); return; }
   char.hit();
 }
 
@@ -855,6 +859,7 @@ function enterPlay() {
   updateHud();
   mode = 'play';
   document.body.classList.add('playing');
+  menuMusic.sync();
   void setAmbientEnabled(ambientEnabled);
   yaw = city.spawnYaw; pitch = 0.55; followDist = 12; zoomTarget = 12; playerVel.set(0, 0, 0);
   if (state.position) {
@@ -1450,6 +1455,7 @@ function showAuthScreen(message = '') {
   document.body.classList.add('auth-visible');
   document.body.classList.remove('characters-visible');
   $('#account-gate').hidden = false;
+  menuMusic.sync();
   $('#auth-screen').hidden = false;
   $('#character-screen').hidden = true;
   $('#auth-title').textContent = t('Un nuevo capítulo');
@@ -1469,6 +1475,7 @@ function showRecoveryRequestScreen() {
   document.body.classList.add('auth-visible');
   document.body.classList.remove('characters-visible');
   $('#account-gate').hidden = false;
+  menuMusic.sync();
   $('#auth-screen').hidden = false;
   $('#character-screen').hidden = true;
   $('#auth-title').textContent = t('Recuperar contraseña');
@@ -1490,6 +1497,7 @@ function showPasswordUpdateScreen(user: User) {
   document.body.classList.add('auth-visible');
   document.body.classList.remove('characters-visible');
   $('#account-gate').hidden = false;
+  menuMusic.sync();
   $('#auth-screen').hidden = false;
   $('#character-screen').hidden = true;
   $('#auth-title').textContent = t('Nueva contraseña');
@@ -1508,6 +1516,7 @@ function showPasswordUpdateScreen(user: User) {
 function showEditor() {
   document.body.classList.remove('auth-visible', 'characters-visible');
   $('#account-gate').hidden = true;
+  menuMusic.sync();
   document.querySelectorAll<HTMLElement>('#tabs button').forEach((button) => button.classList.toggle('active', button.dataset.tab === 'raza'));
   document.querySelectorAll<HTMLElement>('#pages section').forEach((section) => section.classList.toggle('active', section.dataset.page === 'raza'));
   tab = 'raza';
@@ -1524,6 +1533,7 @@ function showCharacterScreen() {
   document.body.classList.remove('auth-visible');
   document.body.classList.add('characters-visible');
   $('#account-gate').hidden = false;
+  menuMusic.sync();
   $('#auth-screen').hidden = true;
   $('#character-screen').hidden = false;
   $('#account-username').textContent = currentUsername ?? t('Nombre de usuario pendiente de asignación');
@@ -1534,6 +1544,7 @@ function showCharacterScreen() {
 function syncBackdropTime() {
   const hour = new Date().getHours();
   document.body.classList.toggle('daytime', hour >= 6 && hour < 18);
+  menuMusic.sync();
 }
 
 function displayCharacters(characters: SavedCharacter[]) {

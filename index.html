@@ -14,7 +14,11 @@
 
   <div id="loading"><div class="crest">✦</div><p>Encendiendo los faroles de Brumaluz…</p></div>
 
-  <button id="graphics-mode" type="button" class="btn ghost" title="Cambiar modo gráfico (recarga la página)">Gráficos: normal</button>
+  <div id="access-settings">
+    <span id="menu-music-message" role="status"></span>
+    <button id="menu-music" type="button" class="btn ghost" aria-pressed="true">Música: activada</button>
+    <button id="graphics-mode" type="button" class="btn ghost" title="Cambiar modo gráfico (recarga la página)">Gráficos: normal</button>
+  </div>
   <section id="graphics-error" role="alert" aria-labelledby="graphics-error-title" hidden>
     <div class="frame">
       <h2 id="graphics-error-title">Problema con los gráficos</h2>

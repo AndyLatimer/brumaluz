@@ -3,6 +3,11 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Música: activada': 'Music: on',
+  'Música: desactivada': 'Music: off',
+  'Silenciar música': 'Mute music',
+  'Activar música': 'Enable music',
+  'No se pudo iniciar la música. Vuelve a activarla para reintentar.': 'Music could not be started. Enable it again to retry.',
   'Invitar a grupo': 'Invite to party',
   'Salir del grupo': 'Leave party',
   'Líder': 'Leader',

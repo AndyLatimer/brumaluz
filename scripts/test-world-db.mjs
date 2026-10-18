@@ -55,6 +55,54 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       }
     }
     const motion = (x, extra = {}) => ({ x, z: 0, yaw: 0, facing: 1, jump: 0, wave: 0, ...extra });
+    await t.test('overheal absorbs damage before health and preserves full-health encoding', async () => {
+      await client.query('savepoint overheal_damage');
+      try {
+        await client.query("update public.server_config set value='true' where key='debug_actions'");
+        for (const [health, overheal, expectedHealth, expectedOverheal] of [
+          [-1, 20, -1, 10],
+          [-1, 10, -1, 0],
+          [-1, 4, 94, 0],
+          [5, 0, 0, 0],
+        ]) {
+          await client.query('reset role');
+          await client.query("update public.characters set data=data || jsonb_build_object('health',$1::int,'overheal',$2::int,'overheal_at',extract(epoch from now())) where id=$3", [health, overheal, ca]);
+          await user(a);
+          const result = await rpc('debug_damage', [ca]);
+          assert.equal(result.health, expectedHealth);
+          assert.equal(result.overheal, expectedOverheal);
+          const saved = await client.query('select data from public.characters where id=$1', [ca]);
+          assert.equal(saved.rows[0].data.health, expectedHealth);
+          assert.equal(saved.rows[0].data.overheal, expectedOverheal);
+        }
+      } finally {
+        await client.query('rollback to savepoint overheal_damage');
+        await client.query('release savepoint overheal_damage');
+      }
+    });
+    await t.test('disabled debug actions allow only the administrator and preserve character ownership', async () => {
+      await client.query('savepoint debug_access');
+      try {
+        await client.query("update public.server_config set value='false' where key='debug_actions'");
+        const actions = ['debug_damage', 'debug_heal', 'debug_xp', 'debug_money'];
+        await user(a);
+        for (const action of actions) await rejected(() => rpc(action, [ca]), /ACTION_DISABLED/);
+        await client.query('reset role');
+        await client.query("update auth.users set email='ManuelPerezArdanuy@gmail.com' where id=$1", [a]);
+        await user(a);
+        for (const action of actions) assert.ok(await rpc(action, [ca]));
+        for (const action of actions) await rejected(() => rpc(action, [cb]), /CHARACTER_NOT_FOUND/);
+        await user(b);
+        for (const action of actions) await rejected(() => rpc(action, [cb]), /ACTION_DISABLED/);
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key='debug_actions'");
+        await user(b);
+        for (const action of actions) assert.ok(await rpc(action, [cb]));
+      } finally {
+        await client.query('rollback to savepoint debug_access');
+        await client.query('release savepoint debug_access');
+      }
+    });
     await t.test('ownership, authentication and internal table/function permissions', async () => {
       await user(a);
       await rejected(() => rpc('world_join', [cb, sa]), /CHARACTER_NOT_FOUND/);

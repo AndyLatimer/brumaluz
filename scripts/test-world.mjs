@@ -53,7 +53,7 @@ function partyMember(world,userId){
   return {userId,characterId:p.id,username:account.username||p.data.name,data:p.data,position:p.position,location:'brumaluz',
     vitals:{health:p.data.health<0?maxHealth:Math.min(p.data.health,maxHealth),maxHealth,overheal:0,resource:maxResource,maxResource,resourceKind:mana?'mana':'stamina'}};
 }
-async function openPlayer(world, account, compatible = true) {
+async function openPlayer(world, account, compatible = true, clockTime) {
   world.accounts.set(account.user.id, account);
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
@@ -201,8 +201,10 @@ async function openPlayer(world, account, compatible = true) {
     };
     localStorage.setItem(`sb-${project}-auth-token`, JSON.stringify({ access_token: jwt, refresh_token: 'test-refresh', token_type: 'bearer', expires_at: exp, expires_in: 3600, user }));
     localStorage.setItem('brumaluz-ambient', 'off');
+    if (localStorage.getItem('brumaluz-menu-music') === null) localStorage.setItem('brumaluz-menu-music', 'off');
     localStorage.setItem('brumaluz-language', 'es');
   }, { project, jwt, exp, user: account.user });
+  if (clockTime) await page.clock.install({ time: clockTime });
   await page.goto(`${url}/${compatible ? '?graphics=compatible' : ''}`);
   await page.waitForFunction(() => !!window.brumaluz, { timeout: 90000 });
   await page.locator('.character-card .btn.gold').first().waitFor({ timeout: 30000 });
@@ -1254,6 +1256,201 @@ test('chat minimizes into a bottom tab, restores size, and corner preview stays 
     assert.equal((await player.page.locator('#chat').boundingBox()).height,minimized.height);
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
+});
+
+test('damage absorbed by overheal preserves full-health sentinel and only zero health kills', { timeout: 120000 }, async () => {
+  const account = fixture('Alric', 'humano', 100);
+  account.character.data.overheal = 25;
+  const player = await openPlayer(backend(), account);
+  const page = player.page;
+  const results = [
+    { health: -1, overheal: 15 },
+    { health: -1, overheal: 0 },
+    { health: 94, overheal: 0 },
+    { health: 0, overheal: 0 },
+  ];
+  let calls = 0;
+  await page.route('**/rest/v1/rpc/debug_damage', route => {
+    Object.assign(account.character.data, results[calls++]);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(account.character.data) });
+  });
+  try {
+    await player.enter();
+    await page.evaluate(() => {
+      const p = window.brumaluz.city().npcSites[0].position;
+      window.brumaluz.move(p.x, p.z + 0.6);
+    });
+    await page.keyboard.press('KeyE');
+    const damage = page.locator('.dialog-choice').filter({ hasText: 'Recibir 10 puntos de daño' });
+    await damage.waitFor({ state: 'visible' });
+    for (let i = 0; i < results.length; i++) {
+      await damage.click();
+      await page.waitForFunction(expected => document.querySelector('#hud-health-text').textContent.startsWith(expected), `${results[i].health < 0 ? 100 : results[i].health} / 100`);
+      assert.equal(await page.locator('#death-screen').isVisible(), i === 3, `Damage result ${i} must only kill at zero health`);
+      assert.equal(await page.locator('body').evaluate(el => el.classList.contains('dead')), i === 3);
+    }
+    assert.equal(calls, 4);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('character cards keep portraits inside the inner frame and borders stable on hover', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100));
+  try {
+    for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+      await player.page.setViewportSize(viewport);
+      const card = player.page.locator('.character-card').first();
+      const before = await card.boundingBox();
+      await card.hover();
+      await player.page.waitForTimeout(250);
+      assert.deepEqual(await card.boundingBox(), before, 'Hover must not lift the card into the scroll clip');
+      const result = await card.evaluate((element) => {
+        const card = element.getBoundingClientRect();
+        const portrait = element.querySelector('.character-portrait').getBoundingClientRect();
+        const info = element.querySelector('.character-info');
+        const list = element.parentElement.getBoundingClientRect();
+        return {
+          left: portrait.left - card.left, top: portrait.top - card.top,
+          bottom: card.bottom - portrait.bottom,
+          clipped: card.top < list.top || card.bottom > list.bottom,
+          overflow: getComputedStyle(info).overflow,
+          radius: getComputedStyle(info).borderRadius,
+          border: getComputedStyle(element, '::after').borderTopWidth,
+        };
+      });
+      assert.ok(result.left >= 6 && result.top >= 6 && result.bottom >= 6, JSON.stringify(result));
+      assert.equal(result.clipped, false);
+      assert.equal(result.overflow, 'hidden');
+      assert.equal(result.radius, '9px');
+      assert.equal(result.border, '1px');
+    }
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('menu music produces sound, persists its toggle and stops outside account screens', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100));
+  const page = player.page;
+  const sample = () => page.evaluate(async () => {
+    const context = window.__audioContexts[0];
+    const analyser = context.createAnalyser();
+    context.testMaster.connect(analyser);
+    await new Promise(resolve => setTimeout(resolve, 180));
+    const data = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(data);
+    context.testMaster.disconnect(analyser);
+    return Math.sqrt(data.reduce((sum, value) => sum + value * value, 0) / data.length);
+  });
+  try {
+    assert.equal(await page.evaluate(() => window.__audioContexts.length), 0, 'Do not autoplay before interaction');
+    const music = page.locator('#menu-music');
+    await music.click();
+    await page.waitForTimeout(1200);
+    assert.ok(await sample() > 0.0001, 'Music must produce actual audio');
+    assert.equal(await music.getAttribute('aria-pressed'), 'true');
+    const graphics = await page.locator('#graphics-mode').boundingBox(), button = await music.boundingBox();
+    assert.ok(button.x + button.width <= graphics.x && Math.abs(button.y - graphics.y) < 2);
+    await page.locator('[data-language="en"]').first().click();
+    assert.equal(await music.textContent(), 'Music: on');
+    await page.locator('[data-language="es"]').first().click();
+    await music.click();
+    assert.equal(await sample(), 0, 'Mute must produce exact silence');
+    await page.evaluate(() => window.__audioContexts[0].suspend());
+    await music.click();
+    await music.click();
+    await music.click();
+    await page.waitForTimeout(1000);
+    assert.ok(await sample() > 0.0001, 'Rapid toggles must restore music once');
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    assert.equal(await sample(), 0, 'Hidden tabs must stop music');
+    await page.evaluate(() => {
+      delete document.hidden;
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(1000);
+    assert.ok(await sample() > 0.0001, 'Visible tabs must restore music');
+    await page.locator('#new-character').click();
+    assert.equal(await sample(), 0, 'Creator must stop menu music');
+    await page.locator('#account-characters').click();
+    await page.waitForTimeout(1000);
+    assert.ok(await sample() > 0.0001, 'Returning to selection must restore music');
+    await player.enter();
+    assert.equal(await sample(), 0, 'World must stop menu music');
+    await page.keyboard.press('KeyO');
+    await page.locator('[data-tab="sound"]').click();
+    await page.locator('#opt-master-volume').fill('0');
+    await page.keyboard.press('Escape');
+    await leave(page);
+    await page.waitForTimeout(1000);
+    assert.ok(await sample() < 0.0001, 'Menu music must respect master volume');
+    await music.click();
+    await page.evaluate(() => {
+      const settings = JSON.parse(localStorage.getItem('brumaluz-settings'));
+      localStorage.setItem('brumaluz-settings', JSON.stringify({ ...settings, masterVolume: 80 }));
+    });
+    await page.reload();
+    await music.waitFor({ state: 'visible' });
+    assert.equal(await music.getAttribute('aria-pressed'), 'false', 'Mute preference must survive reload');
+    assert.equal(await page.evaluate(() => window.__audioContexts.length), 0);
+    await page.locator('#sign-out').click();
+    await page.locator('#auth-form').waitFor({ state: 'visible' });
+    assert.equal(await music.isVisible(), true, 'Music toggle must also exist on login');
+    await music.click();
+    await page.waitForTimeout(1000);
+    assert.ok(await sample() > 0.0001, 'Login must play the same music');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('menu music follows local day/night boundaries without enabling muted music', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100), true, new Date(2026, 9, 18, 5, 59, 30));
+  const page = player.page;
+  try {
+    await page.evaluate(() => {
+      window.__menuNotes = [];
+      const original = AudioContext.prototype.createOscillator;
+      AudioContext.prototype.createOscillator = function () {
+        const oscillator = original.call(this);
+        const start = oscillator.start.bind(oscillator);
+        oscillator.start = (when) => {
+          window.__menuNotes.push({ pitch: Math.round(69 + 12 * Math.log2(oscillator.frequency.value / 440)), when });
+          start(when);
+        };
+        return oscillator;
+      };
+    });
+    await page.locator('#new-character').click();
+    await page.locator('#account-characters').click();
+    assert.equal(await page.locator('body').evaluate(el => el.classList.contains('daytime')), false);
+    await page.locator('#menu-music').click();
+    await page.waitForFunction(() => window.__menuNotes.length >= 12);
+    const night = await page.evaluate(() => window.__menuNotes.slice(0, 12).map(note => note.pitch));
+    assert.deepEqual(night, [48, 55, 60, 64, 72, 60, 76, 67, 79, 72, 76, 76], 'Original night arrangement must stay unchanged');
+
+    await page.evaluate(() => { window.__menuNotes = []; });
+    await page.clock.fastForward(60_000);
+    await page.waitForFunction(() => document.body.classList.contains('daytime') && window.__menuNotes.some(note => note.pitch === 81));
+    const day = await page.evaluate(() => window.__menuNotes.slice(-22));
+    assert.equal(day.length, 22, 'Day arrangement has a livelier melody, accompaniment and bass');
+    assert.deepEqual(day.slice(4, 10).map(note => note.pitch), [76, 60, 79, 67, 81, 72]);
+    assert.ok(Math.abs(day[6].when - day[4].when - 0.34) < 0.001, 'Day melody must have a faster pulse');
+    assert.equal(await page.evaluate(() => window.__audioContexts.length), 1, 'Changing tracks must reuse the audio context');
+
+    await page.evaluate(() => { window.__menuNotes = []; });
+    await page.clock.fastForward(12 * 60 * 60 * 1000);
+    await page.waitForFunction(() => !document.body.classList.contains('daytime') && window.__menuNotes.length >= 12);
+    assert.deepEqual(await page.evaluate(() => window.__menuNotes.slice(-12).map(note => note.pitch)), night);
+    await page.locator('#menu-music').click();
+    await page.evaluate(() => { window.__menuNotes = []; });
+    await page.clock.fastForward(12 * 60 * 60 * 1000);
+    assert.equal(await page.locator('body').evaluate(el => el.classList.contains('daytime')), true);
+    assert.equal(await page.locator('#menu-music').getAttribute('aria-pressed'), 'false');
+    assert.equal(await page.evaluate(() => window.__menuNotes.length), 0, 'Time changes must preserve mute');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
 });
 
 test('ambient sound switch changes actual output and respects volume and repeated toggles', {timeout:120000}, async()=>{
