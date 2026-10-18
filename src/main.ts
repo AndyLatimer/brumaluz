@@ -20,6 +20,7 @@ import { setupStage, castShadows } from './world/render';
 import { createGraphics } from './world/graphics';
 import { RemotePlayers } from './world/players';
 import { renderSocial } from './ui/socialWindow';
+import { createPlayerInteractions } from './ui/playerInteractions';
 import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
@@ -194,7 +195,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const endDrag = (e: PointerEvent) => {
-  if (dragging && mode === 'play' && dragDist < 6 && !clickNpc(e)) clickToMove(e);
+  if (dragging && mode === 'play' && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
   dragging = false;
   canvas.classList.remove('drag');
 };
@@ -225,6 +226,10 @@ window.addEventListener('keydown', (e) => {
   if (dead) {
     e.preventDefault();
     if (!e.repeat && (e.code === 'KeyE' || e.code === 'Enter')) respawn();
+    return;
+  }
+  if (playerInteractions.isOpen) {
+    playerInteractions.key(e);
     return;
   }
   if (optionsOpen) {
@@ -296,6 +301,7 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => keys.delete(e.code));
 
 // ---------------- Interacción (tecla E) ----------------
+const playerInteractions = createPlayerInteractions();
 const INTERACTIONS: Record<string, () => DialogLine[]> = {
   well: () => [{ speaker: state.name, text: '(Te asomas al pozo, es realmente profundo)' }],
 };
@@ -307,6 +313,16 @@ function nearestInteractable(): Interactable | null {
   }
   return best;
 }
+function nearestInteraction() {
+  const item = nearestInteractable();
+  let distance = item ? Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z) : Infinity;
+  let player: ReturnType<RemotePlayers['list']>[number] | null = null;
+  for (const candidate of remotePlayers.list()) {
+    const d = Math.hypot(candidate.root.position.x - holder.position.x, candidate.root.position.z - holder.position.z);
+    if (d <= TALK_RANGE && d < distance) { player = candidate; distance = d; }
+  }
+  return { item: player ? null : item, player };
+}
 function talkTo(npcId: string) {
   pendingTalk = null;
   const conv = NPCS[npcId]?.conversation;
@@ -317,7 +333,17 @@ function talkTo(npcId: string) {
   openConversation(conv);
 }
 function interact() {
-  const item = nearestInteractable();
+  if (mode !== 'play' || dead || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
+  const { item, player } = nearestInteraction();
+  if (player) {
+    pendingTalk = null;
+    keys.clear();
+    moveTarget = null;
+    marker.visible = false;
+    playerVel.set(0, 0, 0);
+    void playerInteractions.open(player);
+    return;
+  }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   const lines = npcId ? null : item && INTERACTIONS[item.id]?.();
   const conv = npcId && NPCS[npcId] ? NPCS[npcId].conversation : null;
@@ -351,10 +377,14 @@ function clickNpc(e: PointerEvent) {
 }
 function updateInteractPrompt() {
   const prompt = $('#interact-prompt');
-  const item = mode === 'play' && !dead && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteractable() : null;
-  prompt.hidden = !item;
-  if (item) {
-    const label = t(item.label);
+  if (playerInteractions.isOpen) {
+    const target = remotePlayers.list().find((player) => player.id === playerInteractions.targetId);
+    if (mode !== 'play' || dead || !target || Math.hypot(target.root.position.x - holder.position.x, target.root.position.z - holder.position.z) > TALK_RANGE) playerInteractions.close();
+  }
+  const interaction = mode === 'play' && !dead && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
+  prompt.hidden = !interaction?.item && !interaction?.player;
+  if (interaction?.item || interaction?.player) {
+    const label = interaction.player ? t('Interactuar con {name}', { name: interaction.player.name }) : t(interaction.item!.label);
     if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
   }
 }
@@ -521,6 +551,7 @@ async function damagePlayer(source = 'Algo') {
 
 /** Muerte: cae al suelo, se apaga el color del mundo y aparece la pantalla de reaparición. */
 function die() {
+  playerInteractions.close();
   dead = true;
   closeDialog();
   setGameMenuOpen(false, false);
@@ -860,6 +891,7 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  playerInteractions.close();
   playGeneration++;
   stopMultiplayer();
   stopChat();
@@ -960,6 +992,7 @@ document.addEventListener('brumaluz-language-change', refreshLanguageDependentUI
 let gameMenuOpen = false;
 
 function setGameMenuOpen(open: boolean, restoreFocus = true) {
+  if (open) playerInteractions.close();
   gameMenuOpen = open;
   if (open) { setPlayerMenuOpen(false, false); setWindow(null, false); }
   const toggle = $<HTMLButtonElement>('#game-menu-toggle');
@@ -981,6 +1014,7 @@ let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
 function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
+  if (open) playerInteractions.close();
   playerMenuOpen = open;
   if (open) { setGameMenuOpen(false, false); setWindow(null, false); }
   const toggle = $<HTMLButtonElement>('#player-menu-toggle');
@@ -996,6 +1030,7 @@ let pointDraft: Partial<Record<AttributeId, number>> = {};
 const draftTotal = () => Object.values(pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
 
 function setWindow(win: PlayerWindow | null, closeMenu = true) {
+  playerInteractions.close();
   closeSocial?.();
   closeSocial = null;
   if (win !== openWindow) pointDraft = {};
@@ -1104,6 +1139,7 @@ function reportAmbientError(error: unknown) {
 // ---------------- Ventana de opciones ----------------
 let optionsOpen = false;
 function setOptionsOpen(open: boolean) {
+  if (open) playerInteractions.close();
   optionsOpen = open;
   $('#options-backdrop').hidden = !open;
   keys.clear();

@@ -3,6 +3,16 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Interactuar con {name}': 'Interact with {name}',
+  'Elegir interacción con un jugador': 'Select player interaction',
+  'Ejecutar interacción seleccionada': 'Execute selected interaction',
+  'Cerrar interacciones con un jugador': 'Close player interactions',
+  'Acción anterior': 'Previous action',
+  'Acción siguiente': 'Next action',
+  'Aceptar solicitud': 'Accept request',
+  'Silenciar chat': 'Mute chat',
+  'Reactivar chat': 'Unmute chat',
+  'Este jugador no tiene nombre de cuenta.': 'This player does not have an account username.',
   'Reina de Pompelín': 'Queen of Pompelín',
   'Nombre de cuenta': 'Account username',
   'Añadir amigo': 'Add friend',

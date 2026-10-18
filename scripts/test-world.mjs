@@ -37,7 +37,7 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), accounts: new Map(), friends: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), accounts: new Map(), friends: new Map(), history: [], fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
 }
 async function openPlayer(world, account, compatible = true) {
   world.accounts.set(account.user.id, account);
@@ -51,9 +51,13 @@ async function openPlayer(world, account, compatible = true) {
     const fulfill = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     if (path === '/auth/v1/logout' && world.logoutFails) return fulfill({ msg: 'Logout temporarily unavailable' }, 500);
     if (path.startsWith('/auth/v1/')) return fulfill(account.user);
-    if (path === '/rest/v1/profiles') return fulfill({ username: account.character.name });
+    if (path === '/rest/v1/profiles') {
+      const userId = new URL(request.url()).searchParams.get('user_id')?.replace(/^eq\./,'');
+      const target = userId ? world.accounts.get(userId) : account;
+      return fulfill(target ? { username: target.username || target.character.name } : null);
+    }
     if (path === '/rest/v1/characters') return fulfill(account.characters || [account.character]);
-    if (path === '/rest/v1/chat_messages') return fulfill([]);
+    if (path === '/rest/v1/chat_messages') return fulfill(world.history);
     const fn = path.split('/').at(-1);
     const args = request.postDataJSON() || {};
     const character = (account.characters || [account.character]).find((c) => c.id === args.p_character_id) || account.character;
@@ -70,12 +74,12 @@ async function openPlayer(world, account, compatible = true) {
         if (![relation.from, relation.to].includes(key)) continue;
         const target = world.accounts.get(relation.from === key ? relation.to : relation.from);
         const player = relation.accepted ? world.players.get(target.user.id) : null;
-        entries.push({ userId: target.user.id, username: target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, location: player ? 'brumaluz' : null });
+        entries.push({ userId: target.user.id, username: target.username || target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, location: player ? 'brumaluz' : null });
       }
       return fulfill(entries);
     }
     if (fn === 'friend_request') {
-      const target = [...world.accounts.values()].find((a) => a.character.name.toLowerCase() === args.p_username.toLowerCase());
+      const target = [...world.accounts.values()].find((a) => (a.username || a.character.name).toLowerCase() === args.p_username.toLowerCase());
       if (!target) return fulfill({message:'PLAYER_NOT_FOUND'},400);
       if (target.user.id === key) return fulfill({message:'FRIEND_SELF'},400);
       const pair = [key,target.user.id].sort().join(':');
@@ -455,6 +459,130 @@ test('closing Social during a delayed refresh cannot populate a different window
     await player.page.waitForTimeout(1800);
     assert.equal(await player.page.locator('.social-window').count(),0);
     assert.equal(await player.page.locator('.sheet-name-row strong').textContent(),'Alric');
+    assert.deepEqual(player.errors,[]);
+  } finally {await player.context.close();}
+});
+
+async function nearbyInteractions(page, name) {
+  await page.locator('#interact-label').filter({hasText:`Interactuar con ${name}`}).waitFor();
+  await page.keyboard.press('KeyE');
+  await page.locator('#player-interactions').waitFor({state:'visible'});
+  await page.waitForFunction(() => {
+    const button = document.querySelector('.player-interaction-action');
+    return button && !button.disabled;
+  });
+}
+
+test('nearby player carousel supports keyboard friend actions, reversible mute and account whispers', { timeout: 180000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
+  b.username = 'ElaraAccount';
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    await nearbyInteractions(first.page,'Elara');
+    await first.page.setViewportSize({width:390,height:844});
+    const box = await first.page.locator('#player-interactions').boundingBox();
+    assert.ok(box && box.x >= 0 && box.x + box.width <= 390,'Player interaction fits a narrow viewport');
+    assert.equal(await first.page.locator('#player-interaction-name').textContent(),'Elara');
+    assert.equal(await first.page.locator('#player-interactions .player-interaction-action').count(),3);
+    await first.page.keyboard.press('ArrowLeft');
+    assert.equal(await first.page.locator('.player-interaction-action[aria-pressed="true"]').getAttribute('aria-label'),'Silenciar chat');
+    await first.page.keyboard.press('KeyE');
+    await first.page.getByRole('button',{name:'Reactivar chat',exact:true}).waitFor();
+    assert.deepEqual(await first.page.evaluate(()=>JSON.parse(localStorage.getItem('brumaluz-chat-ignored'))),['elaraaccount']);
+    await first.page.keyboard.press('Enter');
+    await first.page.getByRole('button',{name:'Silenciar chat',exact:true}).waitFor();
+    assert.deepEqual(await first.page.evaluate(()=>JSON.parse(localStorage.getItem('brumaluz-chat-ignored'))),[]);
+    await first.page.keyboard.press('ArrowRight');
+    await first.page.keyboard.press('KeyE');
+    await first.page.getByRole('button',{name:'Cancelar solicitud',exact:true}).waitFor();
+    assert.equal(world.friends.size,1);
+    await nearbyInteractions(second.page,'Alric');
+    await second.page.getByRole('button',{name:'Aceptar solicitud',exact:true}).click();
+    await second.page.getByRole('button',{name:'Eliminar amigo',exact:true}).waitFor();
+    assert.equal(await second.page.getByRole('button',{name:'Silenciar chat',exact:true}).count(),0);
+    await first.page.getByRole('button',{name:'Cancelar solicitud',exact:true}).click();
+    await first.page.getByRole('button',{name:'Eliminar amigo',exact:true}).waitFor();
+    assert.equal(world.friends.size,1,'A stale cancel action must not remove a newly accepted friend');
+    assert.equal(await first.page.locator('.player-interaction-action').count(),2);
+    first.page.once('dialog',dialog=>dialog.accept());
+    await first.page.getByRole('button',{name:'Eliminar amigo',exact:true}).click();
+    await first.page.getByRole('button',{name:'Añadir amigo',exact:true}).waitFor();
+    assert.equal(await first.page.getByRole('button',{name:'Silenciar chat',exact:true}).count(),1);
+    await first.page.keyboard.press('ArrowRight');
+    await first.page.keyboard.press('KeyE');
+    assert.equal(await first.page.locator('#player-interactions').isVisible(),false);
+    assert.equal(await first.page.locator('.chat-input').inputValue(),'/w ~ElaraAccount ');
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
+});
+
+test('player interaction closes when its target leaves range and ignores late account lookups', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    await nearbyInteractions(first.page,'Elara');
+    await second.page.evaluate(()=>window.brumaluz.move(110,-11.085));
+    await first.page.locator('#player-interactions').waitFor({state:'hidden'});
+    await second.page.evaluate(()=>window.brumaluz.move(101,-11.085));
+    await first.page.locator('#interact-label').filter({hasText:'Interactuar con Elara'}).waitFor();
+    world.rpcDelay.set('friends_list',1500);
+    await first.page.keyboard.press('KeyE');
+    await first.page.locator('#player-interactions').waitFor({state:'visible'});
+    await first.page.keyboard.press('Escape');
+    await first.page.waitForTimeout(1800);
+    assert.equal(await first.page.locator('#player-interactions').isVisible(),false);
+    assert.equal(await first.page.locator('.player-interaction-action').count(),0);
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
+});
+
+test('nearby player mute persists after reload and filters public messages, whispers and speech bubbles', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    await nearbyInteractions(first.page,'Elara');
+    await first.page.getByRole('button',{name:'Silenciar chat',exact:true}).click();
+    await first.page.getByRole('button',{name:'Reactivar chat',exact:true}).waitFor();
+    await leave(first.page);
+    const message = {zone:null,sender_user:b.user.id,sender_name:'Elara',sender_account:'Elara',sender_title:'recien_llegado',recipient_user:null,recipient_name:null,created_at:new Date().toISOString()};
+    world.history = [
+      {...message,id:3,channel:'general',sender_user:a.user.id,sender_name:'Alric',sender_account:'Alric',body:'History loaded'},
+      {...message,id:2,channel:'whisper',recipient_user:a.user.id,recipient_name:'Alric',body:'Muted whisper'},
+      {...message,id:1,channel:'general',body:'Muted public message'},
+    ];
+    await first.page.reload();
+    await first.enter();
+    await first.page.locator('.chat-log').getByText('History loaded',{exact:true}).waitFor();
+    assert.doesNotMatch(await first.page.locator('.chat-log').textContent(),/Muted whisper|Muted public message/);
+    assert.equal(await first.page.locator('.speech-bubble').filter({hasText:'Muted public message'}).count(),0);
+    await nearbyInteractions(first.page,'Elara');
+    await first.page.getByRole('button',{name:'Reactivar chat',exact:true}).click();
+    await first.page.getByRole('button',{name:'Silenciar chat',exact:true}).waitFor();
+    await leave(first.page);
+    await first.enter();
+    await first.page.locator('.chat-log').getByText('Muted public message',{exact:true}).waitFor();
+    await first.page.locator('.chat-log').getByText('Muted whisper',{exact:true}).waitFor();
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
+});
+
+test('NPC interaction still opens its conversation with E', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',-6.4);
+  const player = await openPlayer(world,a);
+  try {
+    a.character.data.position = await player.page.evaluate(() => {
+      const npc = window.brumaluz.city().npcSites[0];
+      return {x:npc.position.x + 1,z:npc.position.z,yaw:0};
+    });
+    await player.page.reload();
+    await player.enter();
+    await player.page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('#dialog').waitFor({state:'visible'});
+    assert.equal(await player.page.locator('#player-interactions').isVisible(),false);
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
 });

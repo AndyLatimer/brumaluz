@@ -58,6 +58,17 @@ const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(`#ch
 const root = () => document.getElementById('chat')!;
 const stripMark = (s: string) => (s.startsWith(ACCOUNT_MARK) ? s.slice(1) : s);
 
+export function isChatIgnored(account: string) {
+  return ignored.has(stripMark(account).toLowerCase());
+}
+export function setChatIgnored(account: string, muted: boolean) {
+  const who = stripMark(account).trim().toLowerCase();
+  if (muted) ignored.add(who);
+  else ignored.delete(who);
+  store.set('ignored', [...ignored]);
+  chatSystem(t(muted ? 'Ignoras a {name}.' : 'Ya no ignoras a {name}.', { name: account }));
+}
+
 /** Nombre clicable. `account`: cuenta a la que susurrar al hacer clic (sin ella, no es clicable). */
 function nameElement(name: string, title?: string, account?: string | null) {
   const span = document.createElement('span');
@@ -256,14 +267,12 @@ async function submit(raw: string) {
       case 'ignore': case 'ignorar': {
         const who = stripMark(rest.trim()).toLowerCase();
         if (!who) { chatSystem(ignored.size ? `${t('Ignorados')}: ${[...ignored].join(', ')}` : t('No ignoras a nadie.')); return; }
-        ignored.add(who);
-        store.set('ignored', [...ignored]);
-        chatSystem(t('Ignoras a {name}.', { name: rest.trim() }));
+        setChatIgnored(who, true);
         return;
       }
       case 'unignore': case 'designorar': {
         const who = stripMark(rest.trim()).toLowerCase();
-        if (ignored.delete(who)) { store.set('ignored', [...ignored]); chatSystem(t('Ya no ignoras a {name}.', { name: rest.trim() })); }
+        if (ignored.has(who)) setChatIgnored(who, false);
         else chatSystem(t('No estabas ignorando a {name}.', { name: rest.trim() }), true);
         return;
       }
