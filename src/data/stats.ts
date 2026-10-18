@@ -40,13 +40,17 @@ export function evaluate(formula: StatFormula, d: CharData) {
   return Math.round(total);
 }
 
+/** Sobrecuración: vida curada por encima del máximo. Tope = fracción de la vida máxima; se pierde decayPerSecond por segundo. Igual que en supabase/server.sql. */
+export const OVERHEAL = { maxFraction: 0.3, decayPerSecond: 1 };
+export const maxOverhealOf = (d: CharData) => Math.floor(maxHealthOf(d) * OVERHEAL.maxFraction);
+
 export const experienceToNextLevel = (level: number) => Math.round(XP_CURVE.base * Math.pow(Math.max(level, 1), XP_CURVE.exponent));
 export const resourceKindOf = (cls: ClassId): ResourceKind => CLASS_RESOURCE[cls];
 export const maxHealthOf = (d: CharData) => evaluate(MAX_HEALTH, d);
 export const maxResourceOf = (d: CharData) => evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d);
 
 export interface Vitals {
-  health: number; maxHealth: number;
+  health: number; maxHealth: number; overheal: number;
   resource: number; maxResource: number;
   resourceKind: ResourceKind;
   experience: number; experienceNeeded: number;
@@ -58,7 +62,7 @@ export function vitalsOf(d: CharData): Vitals {
   const experienceNeeded = experienceToNextLevel(d.level);
   const fit = (value: number, max: number) => (value < 0 ? max : Math.min(value, max));
   return {
-    health: fit(d.health, maxHealth), maxHealth,
+    health: fit(d.health, maxHealth), maxHealth, overheal: Math.min(Math.max(d.overheal, 0), maxOverhealOf(d)),
     resource: fit(d.resource, maxResource), maxResource, resourceKind: resourceKindOf(d.cls),
     experience: Math.min(d.experience, experienceNeeded), experienceNeeded,
   };

@@ -91,23 +91,18 @@ create policy "Users can read their own characters"
   on public.characters for select to authenticated
   using ((select auth.uid()) = user_id);
 
+-- El cliente NO puede crear ni modificar personajes directamente: solo leerlos y borrarlos.
+-- Toda escritura pasa por las funciones del servidor de más abajo (create_character, character_action, ...).
 drop policy if exists "Users can create their own characters" on public.characters;
-create policy "Users can create their own characters"
-  on public.characters for insert to authenticated
-  with check ((select auth.uid()) = user_id);
-
 drop policy if exists "Users can update their own characters" on public.characters;
-create policy "Users can update their own characters"
-  on public.characters for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can delete their own characters" on public.characters;
 create policy "Users can delete their own characters"
   on public.characters for delete to authenticated
   using ((select auth.uid()) = user_id);
 
-grant select, insert, update, delete on public.characters to authenticated;
+revoke all on table public.characters from anon, authenticated;
+grant select, delete on public.characters to authenticated;
 
 create or replace function public.enforce_character_limit()
 returns trigger

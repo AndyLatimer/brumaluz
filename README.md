@@ -10,12 +10,23 @@ MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 - El acceso permite solicitar un correo de recuperación y cambiar la contraseña desde el enlace enviado por Supabase Auth.
 - Los personajes se guardan en `public.characters`, protegidos por políticas RLS para que cada cuenta solo acceda a los suyos.
 - Tras iniciar sesión aparece la selección de personajes. Desde ahí se puede jugar con uno existente o crear otro. Cada cuenta puede tener un máximo de cinco personajes; para crear más, primero hay que borrar uno. El creador guarda el personaje al pulsar «Guardar y entrar».
-- Cada personaje guarda su nivel (comienza en 1), sus puntos de experiencia (comienzan en 0) y su última ubicación; la tarjeta de selección muestra el nivel y la zona guardada. Por ahora solo está disponible Brumaluz. Los personajes antiguos sin ubicación se asignan automáticamente a Brumaluz.
+- Cada personaje guarda su nivel (comienza en 1), sus puntos de experiencia (comienzan en 0), vida, atributos, título, ubicación y última posición exacta en el mapa; la tarjeta de selección muestra el nivel y la zona guardada. Por ahora solo está disponible Brumaluz. Al volver a jugar apareces donde lo dejaste (si estabas caído, reapareces en la capital).
+- **El servidor manda.** El navegador no puede escribir en `public.characters` (solo leer y borrar). Crear personajes, ganar XP/nivel, recibir daño o curación, repartir puntos de atributo, cambiar de título, reaparecer y guardar la posición pasan por funciones de [`supabase/server.sql`](./supabase/server.sql) que validan todo y calculan el resultado: el cliente solo pide la acción y muestra lo que el servidor responde. Todo se guarda al instante, sin guardado manual. La posición se envía cada 5 s y al salir/ocultar la pestaña; el servidor la rechaza si está fuera del mundo o implica una velocidad imposible, y devuelve al jugador a la última posición válida.
+- Las acciones del NPC de pruebas y demás: cada acción del juego tiene su propia función en el servidor: `respawn_character`, `debug_damage`, `debug_heal`, `debug_xp`, `spend_attribute_points`, `set_character_title`, `save_character_position`, `create_character` y `character_enter`. Las `debug_*` (NPC de pruebas: daño, curación, XP) solo funcionan mientras `server_config.debug_actions` sea `true`; en producción ponlo en `false` (`update public.server_config set value = 'false' where key = 'debug_actions';`).
+- **Sobrecuración:** la vida curada por encima del máximo no se pierde: pasa a una reserva dorada (máximo el 30 % de la vida máxima) que se dibuja al final de la barra de vida, absorbe el daño antes que la vida y se desvanece con el tiempo (1 punto por segundo). Se calcula en el servidor (`game_overheal_now`) y el cliente solo la descuenta en pantalla; los parámetros están en `OVERHEAL` (`src/data/stats.ts`) y en `server.sql`.
+
+**Pendiente de hacer en el servidor, a medida que se añada cada sistema** (cada uno con su propia función en `server.sql`, validada y sin confiar en el cliente):
+- XP y nivel reales: dar experiencia por monstruos, misiones y descubrimientos (hoy solo existe `debug_xp`).
+- Monedas, inventario y equipo: comprar, vender, recoger, usar y equipar objetos.
+- Combate: daño y curación reales, maná/estamina y reaparición con penalizaciones si las hay.
+- Títulos ganables: comprobar los requisitos en `set_character_title`.
+- Posición: colisiones y límites reales del mapa en el servidor (hoy solo se comprueban el límite del mundo y la velocidad).
+- Fórmulas de vida, XP y sobrecuración: están duplicadas en `server.sql` y `src/data/stats.ts`; mantenerlas iguales.
 - Cada tarjeta de personaje permite borrarlo de la base de datos, tras confirmar escribiendo exactamente su nombre.
 
 ### Configuración de Supabase
 
-1. Crea un proyecto en [Supabase](https://supabase.com/) y ejecuta [`supabase/schema.sql`](./supabase/schema.sql) en el SQL Editor del proyecto. Si ya configuraste Supabase, vuelve a ejecutar el archivo actualizado para crear los perfiles, activar el límite de cinco personajes y añadir el registro automático de nombres de usuario.
+1. Crea un proyecto en [Supabase](https://supabase.com/) y ejecuta en el SQL Editor, **en este orden**, [`supabase/schema.sql`](./supabase/schema.sql) y [`supabase/server.sql`](./supabase/server.sql). Si ya configuraste Supabase, vuelve a ejecutar ambos archivos actualizados (son idempotentes): `schema.sql` retira los permisos de escritura directa sobre los personajes y `server.sql` crea las funciones del servidor. Hasta que ejecutes `server.sql`, crear y jugar con personajes fallará.
 2. Los usuarios que ya existían recibirán un perfil sin nombre de usuario. Asígnales uno manualmente desde el SQL Editor: consulta sus cuentas con `select u.id, u.email, p.username from auth.users u left join public.profiles p on p.user_id = u.id order by u.created_at;` y para cada persona ejecuta `update public.profiles set username = 'NombreElegido' where user_id = 'UUID';`. El índice único no distingue mayúsculas de minúsculas; usa nombres de 3-20 letras ASCII, números o guion bajo. No se debe modificar `auth.users` para hacer esta asignación.
 3. En **Auth → URL Configuration**, configura el Site URL y permite `http://localhost:5173/**` como Redirect URL de desarrollo (y `http://127.0.0.1:5173/**` si accedes usando esa dirección), además del dominio final al desplegar. Añade también la URL de producción para que los enlaces de recuperación puedan volver a la aplicación.
 4. En la configuración de Auth, decide si quieres exigir confirmación de correo. Si está activada, el usuario deberá confirmarlo antes de iniciar sesión.
@@ -65,6 +76,10 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
   espacio para saltar y E para saludar.
 - Opciones (menú del juego): Vídeo (idioma), Sonido (sonido ambiental, volumen ambiental y volumen general; se guardan en el navegador) y Controles (teclado ilustrado).
   **Cada vez que se añada o cambie un control hay que reflejarlo en `CONTROLS` de `src/ui/controls.ts`**; la ventana se genera a partir de esa lista. No hay reasignación de teclas.
+- Interacción (`E`; saludar es `<`): `City.interactables` define puntos interactivos (pozo, NPCs). Los diálogos usan `src/ui/dialog.ts`: `openDialog` (líneas simples) y `openConversation` (árbol de nodos con respuestas del jugador; siempre se añade «[Salir de la conversación]» salvo `noExit`; las opciones admiten `when` y `action` para flags de misión). Los NPCs se declaran en `NPCS` de `src/main.ts` (nombre, aspecto, conversación) y su posición en `City.npcSites`; muestran placa verde (no hostiles). el NPC de prueba «Testículos, the Debugger» está junto a la casa más cercana al spawn. Los títulos de personaje están en `src/data/titles.ts`.
+- Niveles y atributos: nivel máximo 50 (`MAX_LEVEL`). Se gana 1 punto de atributo cada 3 niveles (3, 6 … 48; `attributePointsAllowed` en `src/data/data.ts`), que se suma a los 2 de la creación (18 en total; tope 15 por atributo). Los puntos pendientes se calculan (permitidos − gastados) y se reparten con «+» en la ficha de personaje; el botón del menú de personaje muestra un «!» mientras haya puntos.
+- Experiencia: `gainExperience(n)` en `src/main.ts` suma XP con destellos dorados, número flotante y barra brillante; si completa niveles (`experienceToNextLevel`) añade destello de pantalla, estrellas y cartel «¡Subes de nivel!». Se prueba con Testículos («Recibir 200 puntos de experiencia»).
+- Muerte: al llegar la vida a 0 el personaje cae (animación `Death_A`), el mundo se apaga a grises y sale la pantalla «Has caído» con el botón (o `E`) «Reaparecer en la capital», que lleva al punto de inicio de Brumaluz con la vida completa (`die()`/`respawn()` en `src/main.ts`). Daño y curación pasan por `damagePlayer`/`healPlayer`.
 - Menú de personaje (`Tab`, icono a la izquierda del menú del juego): Inventario (mochila de 25 huecos + 1 bloqueado con «+» para futuras ampliaciones, 10 ranuras de equipo sobre un muñeco: cabeza, colgante, torso, manos, anillo, arma, mano izquierda, piernas, pies y abalorio; constantes en `src/data/inventory.ts`) y Ficha de personaje (`src/ui/playerWindows.ts`). Las monedas (Pelines y Lágrimas de fénix, premium) están descritas en [docs/CURRENCY.md](docs/CURRENCY.md). Habilidades, Profesiones, Enciclopedia y Social son solo botones por ahora; "Ayuda" del menú normal también.
 - HUD del jugador (vida, maná/estamina, experiencia): las fórmulas son editables en
   `src/data/stats.ts` y están documentadas en [docs/STATS.md](docs/STATS.md).
@@ -77,7 +92,7 @@ src/
   data/            datos y reglas: data, stats, inventory, currency
   world/           ciudad y entorno: city, env, paint, render, audio, load
   character/       personaje: character, head, portrait
-  ui/              interfaz: i18n, controls, tooltip, classIcons, playerWindows
+  ui/              interfaz: i18n, controls, tooltip, classIcons, playerWindows, dialog
   services/        cuentas (Supabase) y ajustes
   styles/          style.css
   assets/models/   modelos .glb

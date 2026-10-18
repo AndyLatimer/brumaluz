@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
-  requestPasswordReset, saveCharacter as persistCharacter, signIn, signOut, signUp, updatePassword, type SavedCharacter,
+  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, saveCharacterPosition,
+  signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './services/account';
+import { simulateAction, simulateSpend } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
 import { applyLanguage, getLanguage, setLanguage, t, raceText, classText } from './ui/i18n';
 import { world } from './world/paint';
@@ -11,15 +13,16 @@ import { buildEnv } from './world/env';
 import { Character, loadKits } from './character/character';
 import { createCharacterPortrait } from './character/portrait';
 import { setupStage, castShadows } from './world/render';
-import { buildCity, City } from './world/city';
+import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './character/head';
 import {
-  CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
+  CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, MAX_LEVEL, unspentAttributePoints, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
   defaultChar, randomChar, randomName, sanitize, HAIR_ACCS, HAIR_ACC_VALUES, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES, LOCATIONS,
 } from './data/data';
-import { vitalsOf } from './data/stats';
+import { vitalsOf, experienceToNextLevel, attributeTotal, OVERHEAL } from './data/stats';
 import { TITLES } from './data/titles';
+import { openDialog, openConversation, closeDialog, advanceDialog, chooseDialog, moveDialogChoice, isDialogOpen, refreshDialog, type DialogLine, type DialogChoice, type Conversation } from './ui/dialog';
 import { renderInventory, renderSheet } from './ui/playerWindows';
 import { classIcon } from './ui/classIcons';
 import { initTooltips } from './ui/tooltip';
@@ -190,8 +193,23 @@ function startJump() {
 }
 window.addEventListener('keydown', (e) => {
   if (mode !== 'play') return;
+  if (dead) {
+    e.preventDefault();
+    if (!e.repeat && (e.code === 'KeyE' || e.code === 'Enter')) respawn();
+    return;
+  }
   if (optionsOpen) {
     if (e.code === 'Escape') { e.preventDefault(); setOptionsOpen(false); }
+    return;
+  }
+  if (isDialogOpen()) {
+    e.preventDefault();
+    if (e.repeat) return;
+    if (e.code === 'KeyE' || e.code === 'Enter') advanceDialog();
+    else if (e.code === 'ArrowUp' || e.code === 'KeyW') moveDialogChoice(-1);
+    else if (e.code === 'ArrowDown' || e.code === 'KeyS') moveDialogChoice(1);
+    else if (/^Digit[1-9]$/.test(e.code)) chooseDialog(Number(e.code.slice(5)) - 1);
+    else if (e.code === 'Escape') closeDialog();
     return;
   }
   if (e.code === 'Tab') {
@@ -216,13 +234,48 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   keys.add(e.code);
-  if (e.code === 'KeyE') char.wave();
+  if (e.code === 'KeyE' && !e.repeat) interact();
+  if (e.code === 'IntlBackslash' || e.key === '<') char.wave();
   if (e.code === 'Space') {
     e.preventDefault();
     if (!e.repeat) startJump();
   } else if (e.code.startsWith('Arrow')) e.preventDefault();
 });
 window.addEventListener('keyup', (e) => keys.delete(e.code));
+
+// ---------------- Interacción (tecla E) ----------------
+const INTERACTIONS: Record<string, () => DialogLine[]> = {
+  well: () => [{ speaker: state.name, text: '(Te asomas al pozo, es realmente profundo)' }],
+};
+function nearestInteractable(): Interactable | null {
+  let best: Interactable | null = null, bestDistance = Infinity;
+  for (const item of city.interactables) {
+    const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
+    if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
+  }
+  return best;
+}
+function interact() {
+  const item = nearestInteractable();
+  const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
+  const lines = npcId ? null : item && INTERACTIONS[item.id]?.();
+  const conv = npcId && NPCS[npcId] ? NPCS[npcId].conversation : null;
+  if (!lines && !conv) return;
+  keys.clear();
+  moveTarget = null;
+  marker.visible = false;
+  if (conv) openConversation(conv); else openDialog(lines!);
+}
+document.getElementById('interact-prompt')!.addEventListener('click', () => interact());
+function updateInteractPrompt() {
+  const prompt = $('#interact-prompt');
+  const item = mode === 'play' && !dead && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteractable() : null;
+  prompt.hidden = !item;
+  if (item) {
+    const label = t(item.label);
+    if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
+  }
+}
 window.addEventListener('blur', () => keys.clear());
 let moveTarget: THREE.Vector3 | null = null;
 const marker = new THREE.Mesh(new THREE.RingGeometry(0.25, 0.38, 32), new THREE.MeshBasicMaterial({ color: '#ffe2a0', transparent: true, opacity: 0.85, depthWrite: false }));
@@ -250,6 +303,7 @@ function clickToMove(e: PointerEvent) {
   marker.visible = true;
 }
 function updatePlay(dt: number) {
+  if (dead) { keys.clear(); moveTarget = null; marker.visible = false; }
   const input = new THREE.Vector2(
     (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0),
     (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0),
@@ -305,6 +359,189 @@ function updatePlay(dt: number) {
   if (marker.visible) marker.scale.setScalar(1 + Math.sin(clock.getElapsedTime() * 6) * 0.1);
 }
 
+const restartClass = (el: HTMLElement, cls: string) => {
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  el.addEventListener('animationend', (e) => { if (e.target === el) el.classList.remove(cls); }, { once: true });
+};
+/** Número flotante que sube desde la cabeza del personaje. */
+function floatText(text: string, cls: string) {
+  const anchor = new THREE.Vector3(holder.position.x, holder.position.y + 1.6, holder.position.z).project(camera);
+  const float = document.createElement('div');
+  float.className = `damage-float ${cls}`;
+  float.textContent = text;
+  float.style.transform = `translate(${((anchor.x * 0.5 + 0.5) * window.innerWidth).toFixed(0)}px, ${((-anchor.y * 0.5 + 0.5) * window.innerHeight).toFixed(0)}px) translate(-50%, -100%)`;
+  document.body.appendChild(float);
+  float.addEventListener('animationend', () => float.remove());
+}
+
+/** Pide una acción al servidor (que decide el resultado) y copia sus datos al estado local. En ?test se simula en local. */
+let actionBusy = false;
+async function serverAction(action: CharacterAction): Promise<boolean> {
+  if (actionBusy) return false;
+  actionBusy = true;
+  try {
+    if (activeCharacterId) Object.assign(state, sanitize(await characterActions[action](activeCharacterId)));
+    else if (TEST) simulateAction(state, action);
+    else return false;
+    resetOverheal();
+    return true;
+  } catch (error) {
+    toast('No se pudo completar la acción', errorMessage(error), true);
+    return false;
+  } finally {
+    actionBusy = false;
+  }
+}
+
+/** Vida + sobrecuración: lo que el jugador puede perder antes de caer. */
+const totalHealth = () => { const v = vitalsOf(state); return v.health + v.overheal; };
+/** La sobrecuración se pierde con el tiempo: el servidor guarda el valor al recibirla y el cliente lo descuenta en pantalla. */
+let overhealBase = 0, overhealSince = 0;
+function resetOverheal() { overhealBase = state.overheal; overhealSince = performance.now(); }
+function tickOverheal() {
+  if (overhealBase <= 0 && state.overheal <= 0) return;
+  const left = Math.max(0, overhealBase - Math.floor(((performance.now() - overhealSince) / 1000) * OVERHEAL.decayPerSecond));
+  if (left !== state.overheal) { state.overheal = left; updateHud(); }
+}
+
+/** Resta vida al jugador (el servidor decide cuánta) y lo muestra: viñeta roja, golpe, sacudida de cámara, número flotante y barra. */
+let shakeUntil = 0;
+let dead = false;
+async function damagePlayer() {
+  if (dead) return;
+  const before = totalHealth();
+  if (!(await serverAction('damage'))) return;
+  const amount = before - totalHealth();
+  updateHud();
+  restartClass($('#damage-vignette'), 'hit');
+  restartClass($('.hud-health'), 'hurt');
+  shakeUntil = clock.getElapsedTime() + 0.35;
+  floatText(`-${amount}`, 'damage');
+  if (state.health <= 0) { die(); return; }
+  char.hit();
+}
+
+/** Muerte: cae al suelo, se apaga el color del mundo y aparece la pantalla de reaparición. */
+function die() {
+  dead = true;
+  closeDialog();
+  setGameMenuOpen(false, false);
+  setPlayerMenuOpen(false, false);
+  setWindow(null, false);
+  keys.clear();
+  moveTarget = null;
+  marker.visible = false;
+  playerVel.set(0, 0, 0);
+  char.die();
+  document.body.classList.add('dead');
+  $('#death-screen').hidden = false;
+}
+
+/** Reaparece en la capital (por ahora, el punto de inicio de Brumaluz) con la vida completa. */
+async function respawn() {
+  if (!dead || !(await serverAction('respawn'))) return;
+  dead = false;
+  $('#death-screen').hidden = true;
+  document.body.classList.remove('dead');
+  holder.position.copy(city.spawn);
+  holder.rotation.y = city.spawnYaw + Math.PI;
+  groundHeight = city.spawn.y;
+  jumpElapsed = jumpDuration;
+  jumpHeight = 0;
+  yaw = city.spawnYaw;
+  playerVel.set(0, 0, 0);
+  char.revive();
+  updateHud();
+  restartClass($('#heal-vignette'), 'hit');
+  restartClass($('.hud-health'), 'healed');
+}
+
+/** Cura al jugador (sin pasar del máximo) con viñeta verde, destellos ascendentes, animación y número flotante. */
+async function healPlayer() {
+  if (dead) return;
+  const before = totalHealth();
+  if (!(await serverAction('heal'))) return;
+  const healed = totalHealth() - before;
+  updateHud();
+  restartClass($('#heal-vignette'), 'hit');
+  restartClass($('.hud-health'), 'healed');
+  char.heal();
+  floatText(`+${healed}`, 'heal');
+  for (let i = 0; i < 12; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'heal-spark';
+    spark.textContent = '✦';
+    spark.style.left = `${50 + (Math.random() - 0.5) * 14}%`;
+    spark.style.top = `${52 + (Math.random() - 0.5) * 16}%`;
+    spark.style.setProperty('--dx', `${((Math.random() - 0.5) * 120).toFixed(0)}px`);
+    spark.style.animationDelay = `${(Math.random() * 0.45).toFixed(2)}s`;
+    document.body.appendChild(spark);
+    spark.addEventListener('animationend', () => spark.remove());
+  }
+}
+const sparkBurst = (count: number, cls: string, glyph = '✦') => {
+  for (let i = 0; i < count; i++) {
+    const spark = document.createElement('div');
+    spark.className = `heal-spark ${cls}`;
+    spark.textContent = glyph;
+    spark.style.left = `${50 + (Math.random() - 0.5) * 18}%`;
+    spark.style.top = `${52 + (Math.random() - 0.5) * 18}%`;
+    spark.style.setProperty('--dx', `${((Math.random() - 0.5) * 220).toFixed(0)}px`);
+    spark.style.animationDelay = `${(Math.random() * 0.5).toFixed(2)}s`;
+    document.body.appendChild(spark);
+    spark.addEventListener('animationend', () => spark.remove());
+  }
+};
+
+/** Da experiencia al jugador: destellos dorados, barra brillante y, si completa niveles, celebración extra. */
+let xpSettle = 0;
+async function gainExperience() {
+  if (dead) return;
+  if (state.level >= MAX_LEVEL) { floatText(t('Nivel máximo'), 'xp'); return; }
+  const startLevel = state.level, startPoints = unspentAttributePoints(state), startTotal = state.experience;
+  if (!(await serverAction('xp'))) return;
+  // XP realmente ganada: lo recorrido dentro de los niveles que ha cruzado.
+  let amount = state.experience - startTotal;
+  for (let level = startLevel; level < state.level; level++) amount += experienceToNextLevel(level);
+  const leveled = state.level > startLevel;
+  if (leveled) {
+    // La barra se llena del todo antes de vaciarse al nuevo nivel.
+    $('#hud-xp-fill').style.width = '100%';
+    window.clearTimeout(xpSettle);
+    xpSettle = window.setTimeout(updateHud, 700);
+  } else updateHud();
+  restartClass($('#xp-vignette'), 'hit');
+  restartClass($('.hud-xp'), 'gain');
+  floatText(`+${amount} XP`, 'xp');
+  sparkBurst(14, 'xp');
+  if (!leveled) { char.heal(); return; }
+  char.wave();
+  restartClass($('#levelup-flash'), 'hit');
+  $('#levelup-title').textContent = `${t('Nivel')} ${state.level}`;
+  const gained = unspentAttributePoints(state) - startPoints;
+  const pointsLine = $('#levelup-points');
+  pointsLine.hidden = gained <= 0;
+  pointsLine.textContent = t('+{n} punto de atributo', { n: gained });
+  restartClass($('#levelup-banner'), 'show');
+  sparkBurst(30, 'xp big', '★');
+  restartClass($('#hud-level'), 'pop');
+}
+/** Quita al instante los efectos de pantalla temporales (flotantes, destellos, viñetas, cartel de nivel). */
+function clearScreenEffects() {
+  document.querySelectorAll('.damage-float, .heal-spark').forEach((el) => el.remove());
+  for (const id of ['damage-vignette', 'heal-vignette', 'xp-vignette', 'levelup-flash']) $(`#${id}`).classList.remove('hit');
+  $('#levelup-banner').classList.remove('show');
+  $('#low-health-vignette').classList.remove('on');
+  window.clearTimeout(xpSettle);
+}
+function applyCameraShake() {
+  const left = shakeUntil - clock.getElapsedTime();
+  if (left <= 0) return;
+  const k = left / 0.35, t = clock.getElapsedTime() * 70;
+  camera.position.x += Math.sin(t) * 0.07 * k;
+  camera.position.y += Math.cos(t * 1.3) * 0.07 * k;
+}
+
 function updateHud() {
   const v = vitalsOf(state);
   const pct = (a: number, b: number) => `${Math.round((a / b) * 100)}%`;
@@ -316,7 +553,16 @@ function updateHud() {
   $('#hud-class-icon').innerHTML = classIcon(state.cls, 'hud');
   $('#hud-name').textContent = state.name;
   $('#hud-level').textContent = `${t('Nivel')} ${state.level}`;
-  setBar('hud-health', v.health, v.maxHealth, `${v.health} / ${v.maxHealth}`);
+  setBar('hud-health', v.health, v.maxHealth, `${v.health} / ${v.maxHealth}${v.overheal > 0 ? ` (+${v.overheal})` : ''}`);
+  // La sobrecuración se dibuja tras el final de la vida; si no cabe en la barra, se pega al borde derecho.
+  const healthPct = (v.health / v.maxHealth) * 100, overPct = (v.overheal / v.maxHealth) * 100;
+  const overEnd = Math.min(100, healthPct + overPct);
+  $('#hud-health-over').style.left = `${Math.max(overEnd - overPct, 0)}%`;
+  $('#hud-health-over').style.width = `${Math.min(overPct, overEnd)}%`;
+  $('.hud-health').classList.toggle('overhealed', v.overheal > 0);
+  const lowHealth = v.health > 0 && v.health / v.maxHealth < 0.25;
+  $('.hud-health').classList.toggle('low', lowHealth);
+  $('#low-health-vignette').classList.toggle('on', lowHealth && mode === 'play');
   setBar('hud-resource', v.resource, v.maxResource, `${v.resource} / ${v.maxResource}`);
   $('#hud-resource').className = `hud-bar hud-resource ${v.resourceKind}`;
   $('#hud-resource').setAttribute('aria-label', t(v.resourceKind === 'mana' ? 'Maná' : 'Estamina'));
@@ -324,6 +570,8 @@ function updateHud() {
   const hudTips: [string, string][] = [['hud-health', 'Vida'], ['hud-resource', v.resourceKind === 'mana' ? 'Maná' : 'Estamina'], ['hud-xp', 'Experiencia']];
   for (const [id, label] of hudTips) $(`#${id}-fill`).parentElement!.title = `${t(label)}|${$(`#${id}-text`).textContent}`;
   $('#hud-class-icon').title = `${classText(state)}|${t('Nivel')} ${state.level}`;
+  $('#player-menu-toggle').classList.toggle('has-points', unspentAttributePoints(state) > 0);
+  document.querySelector('#player-menu-panel [data-window="sheet"]')!.classList.toggle('has-points', unspentAttributePoints(state) > 0);
   refreshNameplateText();
 }
 
@@ -350,26 +598,50 @@ function updateNameplate() {
     }
     nameplate.el.hidden = !inView;
   } else if (!nameplate.el.hidden) nameplate.el.hidden = true;
+  for (const npc of npcActors) {
+    npc.anchor.set(npc.character.root.position.x, npc.character.root.position.y + 1.95, npc.character.root.position.z).project(camera);
+    const inView = visible && npc.anchor.z < 1 && Math.abs(npc.anchor.x) < 1.2 && Math.abs(npc.anchor.y) < 1.2;
+    if (inView) {
+      const x = (npc.anchor.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-npc.anchor.y * 0.5 + 0.5) * window.innerHeight;
+      npc.plate.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
+    }
+    npc.plate.hidden = !inView;
+  }
 }
 
 function enterPlay() {
+  if (state.health === 0) state.health = -1; // personaje guardado muerto: vuelve con la vida completa
+  dead = false;
+  $('#death-screen').hidden = true;
+  document.body.classList.remove('dead');
   updateHud();
-  state.location = city.locationId;
   mode = 'play';
   document.body.classList.add('playing');
   void setAmbientEnabled(ambientEnabled);
   yaw = city.spawnYaw; pitch = 0.55; followDist = 12; zoomTarget = 12; playerVel.set(0, 0, 0);
+  if (state.position) {
+    holder.position.set(state.position.x, city.groundY(state.position.x, state.position.z), state.position.z);
+    yaw = state.position.yaw;
+  } else holder.position.copy(city.spawn);
   running = true;
   groundHeight = holder.position.y;
   jumpElapsed = jumpDuration;
   jumpHeight = 0;
   camera.fov = 50;
-  holder.rotation.y = city.spawnYaw + Math.PI;
+  holder.rotation.y = yaw + Math.PI;
   camTarget.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0));
   rebuildNow();
   layout();
 }
 function exitPlay() {
+  dead = false;
+  clearScreenEffects();
+  closeDialog();
+  $('#interact-prompt').hidden = true;
+  $('#death-screen').hidden = true;
+  document.body.classList.remove('dead');
+  if (state.health === 0) state.health = -1;
   mode = 'create';
   void ambientSoundscape.setEnabled(false);
   setGameMenuOpen(false, false);
@@ -392,6 +664,7 @@ function exitPlay() {
 
 // ---------------- Interfaz ----------------
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
+$('#respawn').addEventListener('click', respawn);
 const RACE_ICONS: Record<Race, string> = { humano: '🛡️', elfo: '🌿', lagto: '🦎', pelso: '🐱' };
 const CLASS_ICONS: Record<ClassId, string> = { guerrero: classIcon('guerrero'), mago: classIcon('mago'), picaro: classIcon('picaro'), clerigo: classIcon('clerigo'), explorador: classIcon('explorador') };
 
@@ -423,6 +696,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-languag
   button.setAttribute('aria-pressed', String(selected));
   button.title = t(button.dataset.language === 'es' ? 'Español' : 'English');
 }
+document.addEventListener('brumaluz-language-change', refreshDialog);
 document.addEventListener('brumaluz-language-change', refreshLanguageDependentUI);
 
 let gameMenuOpen = false;
@@ -457,9 +731,15 @@ function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
   else if (restoreFocus) toggle.blur();
 }
 
+/** Reparto de puntos sin confirmar en la ficha: solo cuenta al pulsar «Confirmar». */
+let pointDraft: Partial<Record<AttributeId, number>> = {};
+const draftTotal = () => Object.values(pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
+
 function setWindow(win: 'inventory' | 'sheet' | null, closeMenu = true) {
+  if (win !== openWindow) pointDraft = {};
   openWindow = win;
   $('#window-backdrop').hidden = !win;
+  $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) return;
   if (closeMenu) setPlayerMenuOpen(false, false);
@@ -468,13 +748,48 @@ function setWindow(win: 'inventory' | 'sheet' | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory');
   if (win === 'inventory') renderInventory(body, state, renderer);
-  else renderSheet(body, state, renderer, (title) => {
-    state.title = title;
+  else renderSheet(body, state, renderer, async (title) => {
+    try {
+      if (activeCharacterId) Object.assign(state, sanitize(await setCharacterTitle(activeCharacterId, title)));
+      else if (TEST) state.title = title;
+      else return;
+    } catch (error) {
+      toast('No se pudo guardar', errorMessage(error), true);
+    }
     updateHud();
-    void saveCurrentCharacter();
+    if (openWindow === 'sheet') setWindow('sheet', false);
+  }, {
+    draft: pointDraft,
+    onAdd: (id) => {
+      if (unspentAttributePoints(state) - draftTotal() <= 0 || attributeTotal(state, id) + (pointDraft[id] ?? 0) >= ATTRIBUTE_MAX_VALUE) return;
+      pointDraft[id] = (pointDraft[id] ?? 0) + 1;
+      setWindow('sheet', false);
+    },
+    onRemove: (id) => {
+      if (!pointDraft[id]) return;
+      pointDraft[id]! -= 1;
+      setWindow('sheet', false);
+    },
   });
+  $('#window-confirm').hidden = win !== 'sheet' || draftTotal() === 0;
   $<HTMLButtonElement>('#window-close').focus();
 }
+$('#window-confirm').onclick = async () => {
+  const confirm = $<HTMLButtonElement>('#window-confirm');
+  if (confirm.disabled) return;
+  confirm.disabled = true;
+  try {
+    if (activeCharacterId) Object.assign(state, sanitize(await spendAttributePoints(activeCharacterId, pointDraft as Record<string, number>)));
+    else if (TEST) simulateSpend(state, pointDraft);
+    pointDraft = {};
+  } catch (error) {
+    toast('No se pudo guardar', errorMessage(error), true);
+  } finally {
+    confirm.disabled = false;
+  }
+  updateHud();
+  setWindow('sheet', false);
+};
 
 $('#player-menu-toggle').onclick = () => setPlayerMenuOpen(!playerMenuOpen);
 for (const b of document.querySelectorAll<HTMLButtonElement>('#player-menu-panel [data-window]')) {
@@ -913,8 +1228,12 @@ function displayCharacters(characters: SavedCharacter[]) {
     play.type = 'button';
     play.className = 'btn gold';
     play.textContent = t('Jugar');
-    play.onclick = () => {
+    play.onclick = async () => {
+      play.disabled = true;
       loadCharacter(saved);
+      const entered = await loadWorldState();
+      play.disabled = false;
+      if (!entered) return;
       showEditor();
       enterPlay();
     };
@@ -1090,11 +1409,13 @@ function validCharacterName() {
   return true;
 }
 
-async function saveCurrentCharacter() {
+/** Crea el personaje en el servidor si aún no existe (el servidor valida el nombre, el reparto inicial y la apariencia). */
+async function createCurrentCharacter() {
+  if (activeCharacterId) return true;
   if (savingCharacter || !currentUser || !validCharacterName()) return false;
   savingCharacter = true;
   try {
-    activeCharacterId = await persistCharacter(currentUser.id, activeCharacterId, state);
+    activeCharacterId = await createCharacter(state);
     return true;
   } catch (error) {
     toast('No se pudo guardar', errorMessage(error), true);
@@ -1104,10 +1425,47 @@ async function saveCurrentCharacter() {
   }
 }
 
+/** Pide al servidor los datos vigentes del personaje antes de entrar al mundo. */
+async function loadWorldState() {
+  if (!activeCharacterId) return TEST;
+  try {
+    Object.assign(state, sanitize(await enterCharacter(activeCharacterId)));
+    resetOverheal();
+    return true;
+  } catch (error) {
+    toast('No se pudo guardar', errorMessage(error), true);
+    return false;
+  }
+}
+
+/** Envía la posición al servidor, que la valida: si el salto desde la anterior es imposible, te devuelve a la última válida. */
+let positionBusy = false;
+async function syncPosition() {
+  if (!activeCharacterId || mode !== 'play' || dead || positionBusy) return;
+  positionBusy = true;
+  try {
+    const result = await saveCharacterPosition(activeCharacterId, Number(holder.position.x.toFixed(2)), Number(holder.position.z.toFixed(2)), Number(yaw.toFixed(2)));
+    if (result.position) state.position = result.position;
+    if (result.status === 'too_far' && result.position) {
+      holder.position.set(result.position.x, city.groundY(result.position.x, result.position.z), result.position.z);
+      groundHeight = holder.position.y;
+      playerVel.set(0, 0, 0);
+      moveTarget = null;
+      marker.visible = false;
+    }
+  } catch {
+    // un fallo de red puntual no debe interrumpir el juego; se reintenta en el siguiente ciclo
+  } finally {
+    positionBusy = false;
+  }
+}
+window.setInterval(() => void syncPosition(), 5000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') void syncPosition(); });
+window.addEventListener('pagehide', () => void syncPosition());
+
 async function returnToCharacters() {
   if (mode === 'play') {
-    state.location = city.locationId;
-    if (!(await saveCurrentCharacter())) return;
+    await syncPosition();
     exitPlay();
   }
   if (currentUser) await loadCharacterSelection(currentUser);
@@ -1261,10 +1619,7 @@ $('#game-menu-logout').onclick = async () => {
   logoutButton.disabled = true;
   $('#game-menu-message').textContent = t('Cerrando sesión…');
   try {
-    if (mode === 'play') {
-      state.location = city.locationId;
-      if (!(await saveCurrentCharacter())) return;
-    }
+    if (mode === 'play') await syncPosition();
     await signOut();
     await syncAccount(null);
   } catch (error) {
@@ -1281,6 +1636,10 @@ document.addEventListener('click', (event) => {
   }
 });
 $('#enter').onclick = async () => {
+  if (unspentAttributePoints(state) > 0) {
+    toast('Un momento…', 'Reparte todos tus puntos de atributo antes de empezar.', true);
+    return;
+  }
   if (ambientEnabled) {
     try {
       await ambientSoundscape.prepare();
@@ -1288,8 +1647,8 @@ $('#enter').onclick = async () => {
       reportAmbientError(error);
     }
   }
-  if (!(await saveCurrentCharacter())) return;
-  spinVel = 0;
+  if (!(await createCurrentCharacter())) return;
+  if (!(await loadWorldState())) return;
   focus = 'body';
   enterPlay();
   setTimeout(() => char.wave(), 60);
@@ -1329,7 +1688,7 @@ function testCity(): City {
   const ground = new THREE.Mesh(new THREE.CircleGeometry(6, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#c9b48a' }));
   ground.receiveShadow = true;
   root.add(ground);
-  return { root, locationId: 'brumaluz', vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  return { root, locationId: 'brumaluz', npcSites: [{ id: 'testiculos', position: new THREE.Vector3(2, 0, -1), yaw: Math.PI / 2 }], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 const clock = new THREE.Clock();
 try {
@@ -1340,6 +1699,54 @@ try {
   throw e;
 }
 scene.add(city.root);
+
+// ---------------- NPCs ----------------
+interface NpcDef { name: string; look: Partial<CharData>; conversation: Conversation; }
+// Mismas opciones y mismo orden en todos los nodos del NPC de prueba.
+const testChoices: DialogChoice[] = [
+  { text: 'Hola', next: 'hola' },
+  { text: 'Recibir 10 puntos de daño', next: 'dano', action: () => void damagePlayer() },
+  { text: 'Recibir 10 puntos de vida', next: 'cura', action: () => void healPlayer() },
+  { text: 'Recibir 200 puntos de experiencia', next: 'xp', action: () => void gainExperience() },
+];
+const NPCS: Record<string, NpcDef> = {
+  testiculos: {
+    name: 'Testículos, the Debugger',
+    look: { race: 'elfo', sex: 0, hair: 4, hairColor: 8, clothA: 2, clothB: 9 },
+    conversation: {
+      speaker: 'Testículos, the Debugger',
+      start: 'intro',
+      nodes: {
+        intro: { text: '¡Saludos, viajero! Soy un NPC de prueba, no tengo lore ni ganas de tenerlo.', choices: testChoices },
+        hola: { text: '¡Hola! Si estás leyendo esto, el sistema de conversaciones funciona. Ya me dejas en paz.' },
+        dano: { text: 'Pum. Diez puntos de daño, recién salidos del horno. Mira tu barra de vida.', choices: testChoices },
+        cura: { text: 'Cataplof. Diez puntos de vida, cortesía de la casa. Sin receta ni efectos secundarios.', choices: testChoices },
+        xp: { text: 'Toma, doscientos puntos de experiencia recién impresos. Mira la barra dorada, y si subes de nivel, no me des las gracias.', choices: testChoices },
+      },
+    },
+  },
+};
+const npcActors: { id: string; character: Character; plate: HTMLElement; anchor: THREE.Vector3 }[] = [];
+for (const site of city.npcSites) {
+  const def = NPCS[site.id];
+  if (!def) continue;
+  const npcData = sanitize({ ...defaultChar(), ...def.look, name: def.name } as unknown as Record<string, unknown>);
+  const character = new Character(npcData, { outfit: false });
+  character.root.position.copy(site.position);
+  character.root.rotation.y = site.yaw;
+  castShadows(character.root);
+  scene.add(character.root);
+  // Placa verde: NPC no hostil
+  const plate = document.createElement('div');
+  plate.className = 'nameplate npc';
+  plate.hidden = true;
+  plate.setAttribute('aria-hidden', 'true');
+  plate.innerHTML = '<strong></strong>';
+  plate.querySelector('strong')!.textContent = def.name;
+  document.body.appendChild(plate);
+  npcActors.push({ id: site.id, character, plate, anchor: new THREE.Vector3() });
+  city.interactables.push({ id: `npc:${site.id}`, position: site.position, radius: 2.6, label: 'Hablar' });
+}
 holder.position.copy(city.spawn);
 holder.rotation.y = city.spawnYaw - 0.3;
 rebuildNow();
@@ -1352,17 +1759,19 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(t - last, 0.05);
   last = t;
   world.uTime.value = t;
-  if (mode === 'play') updatePlay(dt);
+  if (mode === 'play') { updatePlay(dt); tickOverheal(); }
   else if (!dragging) {
     holder.rotation.y += spinVel;
     spinVel *= 0.92;
   }
   char.update(t);
-  env.update(t);
+  for (const npc of npcActors) npc.character.update(t);
   city.update(t, mode === 'play' ? holder.position : undefined);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
+  applyCameraShake();
   updateNameplate();
+  updateInteractPrompt();
   if (TEST) renderer.render(scene, camera); else stage.render();
 });
 

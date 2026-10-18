@@ -274,7 +274,7 @@ export class Character {
     this.idle.play();
     this.applyBodyShape();
     this.mixer.addEventListener('finished', (e) => {
-      if (e.action !== this.oneShot) return;
+      if (e.action !== this.oneShot || this.dead) return;
       this.oneShot = null;
       this.playGait(e.action);
     });
@@ -581,6 +581,25 @@ export class Character {
     this.playGait(from);
   }
   wave() { this.play('Cheer'); this.happyReq = true; }
+  hit() { this.play('Hit_A'); }
+  private dead = false;
+  /** Cae al suelo y se queda ahí hasta `revive()`. */
+  die() {
+    if (this.dead) return;
+    if (!this.actions.has('Death_A')) return;
+    this.dead = true;
+    this.play('Death_A');
+  }
+  revive() {
+    if (!this.dead) return;
+    this.dead = false;
+    const from = this.oneShot;
+    this.oneShot = null;
+    this.playGait(from ?? undefined);
+  }
+  /** Curación discreta: ojos felices y un leve "respiro" del cuerpo, sin gestos con los brazos. */
+  heal() { this.happyReq = true; this.healT = 0; }
+  private healT = -1;
   hop() { this.play(this.opts.outfit && this.d.cls === 'mago' ? 'Spellcast_Raise' : 'Interact'); }
   private jumpAction: THREE.AnimationAction | null = null;
   private jumpTime = -1;
@@ -620,6 +639,12 @@ export class Character {
     const dt = this.lastT < 0 ? 0 : Math.min(t - this.lastT, 0.1);
     this.lastT = t;
     this.updateJump(dt);
+    if (this.healT >= 0) {
+      this.healT += dt;
+      const p = this.healT / 0.7;
+      this.root.scale.setScalar(p >= 1 ? 1 : 1 + Math.sin(p * Math.PI) * 0.035);
+      if (p >= 1) this.healT = -1;
+    }
     this.mixer.update(dt);
     // Animation tracks reset bone scales, so reapply the chosen proportions afterward.
     this.applyBodyShape();

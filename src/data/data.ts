@@ -29,6 +29,14 @@ export type AttributeBonuses = Record<AttributeId, number>;
 export const ATTRIBUTE_POINTS_AVAILABLE = 2;
 export const ATTRIBUTE_BASE_VALUE = 5;
 export const ATTRIBUTE_MAX_VALUE = 15;
+export const MAX_LEVEL = 50;
+/** Se gana 1 punto de atributo cada 3 niveles (niveles 3, 6, … 48). */
+export const ATTRIBUTE_POINT_LEVEL_STEP = 3;
+/** Puntos de atributo totales a los que da derecho un nivel: los de la creación más los ganados al subir. */
+export const attributePointsAllowed = (level: number, creationPoints = ATTRIBUTE_POINTS_AVAILABLE) =>
+  creationPoints + Math.floor(Math.min(Math.max(level, 1), MAX_LEVEL) / ATTRIBUTE_POINT_LEVEL_STEP);
+export const unspentAttributePoints = (d: Pick<CharData, 'level' | 'attributePoints' | 'creationPoints'>) =>
+  attributePointsAllowed(d.level, d.creationPoints) - Object.values(d.attributePoints).reduce((sum, points) => sum + points, 0);
 
 const noBonuses = (): AttributeBonuses => ({
   fuerza: 0, intelecto: 0, corpulencia: 0, agilidad: 0, pericia: 0, presencia: 0, percepcion: 0,
@@ -40,13 +48,16 @@ export interface CharData {
   level: number;
   experience: number; // experiencia acumulada dentro del nivel actual
   health: number; // vida actual; -1 = al máximo
+  overheal: number; // sobrecuración vigente cuando el servidor la guardó (se pierde con el tiempo, ver OVERHEAL en stats.ts)
   resource: number; // maná o estamina actual según la clase; -1 = al máximo
   wallet: Wallet; // monedas (ver currency.ts)
   inventory: InventorySlots;
   equipment: Equipment;
   location: LocationId;
+  position: { x: number; z: number; yaw: number } | null; // última posición guardada por el servidor; null = punto de inicio
   race: Race;
   attributePoints: AttributeBonuses;
+  creationPoints: number; // puntos de creación a los que tiene derecho (los personajes antiguos solo conservan los que ya gastaron)
   sex: 0 | 1; // 0 hombre, 1 mujer: el cuerpo es el mismo; al cambiarlo se ajusta la personalización
   height: number; // 0..1
   build: number; // 0..1
@@ -193,7 +204,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
+    name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     cape: 0, clothA: 7, clothB: 5, hairAcc: 0, hairAccColor: 0, acc: 0, makeup: 0, makeupColor: 2, accColor: 0,
@@ -206,15 +217,20 @@ export function sanitize(d: Record<string, unknown>): CharData {
   if (!isTitleId(out.title)) out.title = DEFAULT_TITLE;
   const level = Number(out.level);
   const experience = Number(out.experience);
-  out.level = Number.isSafeInteger(level) ? Math.max(level, 1) : 1;
+  out.level = Number.isSafeInteger(level) ? Math.min(Math.max(level, 1), MAX_LEVEL) : 1;
   out.experience = Number.isSafeInteger(experience) ? Math.max(experience, 0) : 0;
   out.health = Number.isFinite(Number(out.health)) ? Math.max(Math.round(Number(out.health)), -1) : -1;
+  out.overheal = Number.isFinite(Number(out.overheal)) ? Math.max(Math.round(Number(out.overheal)), 0) : 0;
   out.resource = Number.isFinite(Number(out.resource)) ? Math.max(Math.round(Number(out.resource)), -1) : -1;
   out.wallet = sanitizeWallet(d.wallet, d.gold);
   delete (out as unknown as Record<string, unknown>).gold;
   out.inventory = sanitizeInventory(out.inventory);
   out.equipment = sanitizeEquipment(out.equipment);
   if (typeof out.location !== 'string' || !Object.prototype.hasOwnProperty.call(LOCATIONS, out.location)) out.location = 'brumaluz';
+  const pos = d.position as Partial<NonNullable<CharData['position']>> | null | undefined;
+  out.position = pos && [pos.x, pos.z, pos.yaw].every((n) => typeof n === 'number' && Number.isFinite(n))
+    ? { x: pos.x!, z: pos.z!, yaw: pos.yaw! }
+    : null;
   if (!(out.race in RACES)) out.race = 'humano';
   if (!(out.cls in CLASSES)) out.cls = 'guerrero';
   if (out.sex !== 0 && out.sex !== 1) out.sex = 0;
@@ -222,7 +238,12 @@ export function sanitize(d: Record<string, unknown>): CharData {
   const rawPoints = d.attributePoints && typeof d.attributePoints === 'object'
     ? d.attributePoints as Record<string, unknown>
     : {};
-  let remainingPoints = ATTRIBUTE_POINTS_AVAILABLE;
+  if (Number.isInteger(d.creationPoints)) out.creationPoints = Math.min(Math.max(d.creationPoints as number, 0), ATTRIBUTE_POINTS_AVAILABLE);
+  else {
+    const spent = Object.values(rawPoints).reduce<number>((sum, v) => sum + (Number.isFinite(Number(v)) ? Math.max(Math.floor(Number(v)), 0) : 0), 0);
+    out.creationPoints = Math.min(spent, ATTRIBUTE_POINTS_AVAILABLE);
+  }
+  let remainingPoints = attributePointsAllowed(out.level, out.creationPoints);
   out.attributePoints = noBonuses();
   for (const key of Object.keys(ATTRIBUTES) as AttributeId[]) {
     const value = Number(rawPoints[key]);
@@ -272,7 +293,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', race, attributePoints: noBonuses(), sex,
+    name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11, 12, 13][rnd(8)], hairColor: rnd(HAIR_COLORS.length),

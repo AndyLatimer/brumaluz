@@ -242,13 +242,34 @@
     </div>
   </footer>
 
+  <div id="damage-vignette" class="damage-vignette" aria-hidden="true"></div>
+  <div id="death-screen" class="death-screen" role="alertdialog" aria-labelledby="death-title" hidden>
+    <div class="death-card frame">
+      <div class="death-crest" aria-hidden="true">✦</div>
+      <h2 id="death-title">Has caído</h2>
+      <p class="death-text">Las luces de Brumaluz titilan, pero no se apagan. Descansa un momento: tu aventura aún no ha terminado.</p>
+      <button id="respawn" class="btn gold" type="button">Reaparecer en la capital <kbd>E</kbd></button>
+    </div>
+  </div>
+  <div id="heal-vignette" class="heal-vignette" aria-hidden="true"></div>
+  <div id="xp-vignette" class="xp-vignette" aria-hidden="true"></div>
+  <div id="levelup-flash" class="levelup-flash" aria-hidden="true"></div>
+  <div id="levelup-banner" class="levelup-banner" aria-hidden="true"><span class="levelup-star">★</span><small>¡Subes de nivel!</small><strong id="levelup-title"></strong><em id="levelup-points" hidden></em></div>
+  <div id="low-health-vignette" class="low-health-vignette" aria-hidden="true"></div>
   <div id="nameplate" class="nameplate" aria-hidden="true" hidden><strong id="nameplate-name"></strong><span id="nameplate-title"></span></div>
+  <div id="interact-prompt" class="interact-prompt" hidden><kbd>E</kbd><span id="interact-label"></span></div>
+  <div id="dialog" class="dialog" role="dialog" aria-live="polite" hidden>
+    <div class="dialog-speaker"></div>
+    <p class="dialog-text"></p>
+    <div class="dialog-choices" hidden></div>
+    <div class="dialog-hint"><kbd>E</kbd><span class="dialog-next"></span></div>
+  </div>
 
   <div id="player-hud" class="player-hud" aria-label="Estado del personaje">
     <div id="hud-class-icon" class="hud-class-icon" aria-hidden="true"></div>
     <div class="hud-bars">
       <div class="hud-name-row"><strong id="hud-name"></strong><span id="hud-level"></span></div>
-      <div class="hud-bar hud-health" role="progressbar" aria-label="Vida"><i id="hud-health-fill"></i><span id="hud-health-text"></span></div>
+      <div class="hud-bar hud-health" role="progressbar" aria-label="Vida"><i id="hud-health-fill"></i><i id="hud-health-over" class="hud-over"></i><span id="hud-health-text"></span></div>
       <div class="hud-bar hud-resource" id="hud-resource" role="progressbar"><i id="hud-resource-fill"></i><span id="hud-resource-text"></span></div>
       <div class="hud-bar hud-xp" role="progressbar" aria-label="Experiencia"><i id="hud-xp-fill"></i><span id="hud-xp-text"></span></div>
     </div>
@@ -289,6 +310,7 @@
       <h2 id="window-title"></h2>
       <div id="window-body"></div>
       <div class="options-actions">
+        <button id="window-confirm" type="button" class="btn gold" hidden>Confirmar puntos</button>
         <button id="window-close" type="button" class="btn ghost">Cerrar</button>
       </div>
     </section>

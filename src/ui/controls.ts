@@ -23,7 +23,9 @@ export const CONTROLS: ControlBinding[] = [
   { keys: ['KeyD', 'ArrowRight'], caption: 'D / →', label: 'Moverse a la derecha', group: 'move' },
   { keys: ['ShiftLeft', 'ShiftRight'], caption: 'Mayús', label: 'Alternar correr / caminar', group: 'move' },
   { keys: ['Space'], caption: 'Espacio', label: 'Saltar', group: 'action' },
-  { keys: ['KeyE'], caption: 'E', label: 'Saludar', group: 'action' },
+  { keys: ['KeyE'], caption: 'E', label: 'Interactuar / continuar diálogo / reaparecer', group: 'action' },
+  { keys: ['IntlBackslash'], caption: '<', label: 'Saludar', group: 'action' },
+  { keys: ['Digit1'], caption: '1-9', label: 'Elegir respuesta en una conversación', group: 'action' },
   { keys: ['Escape'], caption: 'Esc', label: 'Abrir / cerrar el menú', group: 'system' },
   { keys: ['Tab'], caption: 'Tab', label: 'Abrir / cerrar el menú de personaje', group: 'system' },
   { mouse: 'click', label: 'Ir al punto clicado', group: 'move' },
@@ -37,7 +39,7 @@ const KEY_ROWS: { offset: number; keys: [string, string, number?][] }[] = [
   { offset: 0, keys: [['Escape', 'Esc', 1.5]] },
   { offset: 0, keys: [['Tab', 'Tab', 1.5], ...['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'].map((k) => [`Key${k}`, k] as [string, string])] },
   { offset: 0.5, keys: ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'].map((k) => [`Key${k}`, k] as [string, string]) },
-  { offset: 0, keys: [['ShiftLeft', '⇧', 1.5], ...['Z', 'X', 'C', 'V', 'B', 'N', 'M'].map((k) => [`Key${k}`, k] as [string, string])] },
+  { offset: 0, keys: [['ShiftLeft', '⇧', 1.5], ['IntlBackslash', '<'], ...['Z', 'X', 'C', 'V', 'B', 'N', 'M'].map((k) => [`Key${k}`, k] as [string, string])] },
   { offset: 2.5, keys: [['Space', '', 6]] },
 ];
 

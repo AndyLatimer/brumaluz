@@ -1,6 +1,6 @@
 // Contenido de las ventanas del menú de personaje (Tab): inventario y ficha.
 import type * as THREE from 'three';
-import { ATTRIBUTES, CLASSES, LOCATIONS, RACES, type AttributeId, type CharData } from '../data/data';
+import { ATTRIBUTES, CLASSES, RACES, ATTRIBUTE_MAX_VALUE, unspentAttributePoints, type AttributeId, type CharData } from '../data/data';
 import { classIcon } from './classIcons';
 import { CURRENCIES, CURRENCY_ORDER, currencyIcon } from '../data/currency';
 import { EQUIPMENT_SLOTS, INVENTORY_UNLOCKED, type EquipmentSlot } from '../data/inventory';
@@ -160,7 +160,13 @@ function titlePicker(current: TitleId, onChange?: (title: TitleId) => void) {
   return root;
 }
 
-export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onTitleChange?: (title: TitleId) => void) {
+export interface PointEditor {
+  draft: Partial<Record<AttributeId, number>>;
+  onAdd: (id: AttributeId) => void;
+  onRemove: (id: AttributeId) => void;
+}
+
+export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onTitleChange?: (title: TitleId) => void, points?: PointEditor) {
   container.replaceChildren();
   const wrap = el('div', 'sheet');
 
@@ -183,7 +189,7 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
   detail.append(sexIcon, el('span', undefined, `${raceText(d)} · ${classText(d)}`));
   title.append(nameRow, detail);
   const chips = el('div', 'sheet-chips');
-  chips.append(el('span', 'chip level', `${t('Nivel')} ${d.level}`), el('span', 'chip place', t(LOCATIONS[d.location])));
+  chips.append(el('span', 'chip level', `${t('Nivel')} ${d.level}`));
 
   const v = vitalsOf(d);
   const bars = el('div', 'sheet-bars');
@@ -204,10 +210,36 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
 
   const attrs = el('div', 'sheet-attrs');
   attrs.append(el('h3', undefined, t('Atributos')));
+  const owed = unspentAttributePoints(d);
+  const draft = points?.draft ?? {};
+  const drafted = Object.values(draft).reduce((sum, n) => sum + (n ?? 0), 0);
+  const left_ = owed - drafted;
+  if (owed > 0) {
+    const line = el('p', 'sheet-points');
+    line.append(el('span', 'points-badge', '!'), t('Puntos por repartir: {n}', { n: left_ }));
+    attrs.append(line);
+  }
   for (const id of Object.keys(ATTRIBUTES) as AttributeId[]) {
     const row = el('div', 'sheet-attr');
     row.title = `${t(ATTRIBUTES[id].label)}|${t(ATTRIBUTES[id].desc)}`;
-    row.append(el('span', undefined, t(ATTRIBUTES[id].label)), el('b', undefined, String(attributeTotal(d, id))));
+    const extra = draft[id] ?? 0;
+    const total = attributeTotal(d, id) + extra;
+    const value = el('b', extra ? 'pending' : undefined, String(total));
+    row.append(el('span', undefined, t(ATTRIBUTES[id].label)), value);
+    if (owed > 0 && points) {
+      const label = t(ATTRIBUTES[id].label);
+      const remove = el('button', 'sheet-attr-add', '−') as HTMLButtonElement;
+      remove.type = 'button';
+      remove.disabled = extra === 0;
+      remove.setAttribute('aria-label', t('Quitar un punto de {attribute}', { attribute: label }));
+      remove.onclick = () => points.onRemove(id);
+      const add = el('button', 'sheet-attr-add', '+') as HTMLButtonElement;
+      add.type = 'button';
+      add.disabled = left_ <= 0 || total >= ATTRIBUTE_MAX_VALUE;
+      add.setAttribute('aria-label', t('Añadir un punto a {attribute}', { attribute: label }));
+      add.onclick = () => points.onAdd(id);
+      row.append(remove, add);
+    }
     attrs.append(row);
   }
 

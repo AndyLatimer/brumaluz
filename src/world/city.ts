@@ -64,9 +64,29 @@ export interface CityVendorSpot {
   position: THREE.Vector3;
 }
 
+export interface Interactable {
+  id: string;
+  position: THREE.Vector3;
+  /** Distancia máxima (en unidades de mundo) a la que se puede interactuar. */
+  radius: number;
+  /** Texto del aviso (español; se traduce con i18n). */
+  label: string;
+}
+
+export interface NpcSite {
+  id: string;
+  position: THREE.Vector3;
+  /** Rotación Y del NPC (hacia dónde mira). */
+  yaw: number;
+}
+
 export interface City {
   root: THREE.Group;
   locationId: LocationId;
+  /** Puntos donde colocar NPCs con nombre. */
+  npcSites: NpcSite[];
+  /** Elementos con los que se puede interactuar con la tecla E. */
+  interactables: Interactable[];
   /** Puntos despejados delante de los servicios, listos para alojar NPCs. */
   vendorSpots: CityVendorSpot[];
   /** Corrige un movimiento para no atravesar edificios ni agua. */
@@ -764,9 +784,25 @@ export async function buildCity(): Promise<City> {
     clouds.push(c);
   }
 
+  // NPC de prueba junto a la casa más cercana al punto de aparición del jugador
+  const spawnPoint = hexToWorld(0, -1.6);
+  const nearestHome = place
+    .filter((p) => p.model === 'home_A' || p.model === 'home_B')
+    .sort((a, b) => Math.hypot(a.x - spawnPoint.x, a.z - spawnPoint.y) - Math.hypot(b.x - spawnPoint.x, b.z - spawnPoint.y))[0];
+  const npcSites: NpcSite[] = [];
+  if (nearestHome) {
+    const front = BLOCK[nearestHome.model] + 0.8;
+    const nx = nearestHome.x + Math.sin(nearestHome.ry) * front + Math.cos(nearestHome.ry) * 1.9;
+    const nz = nearestHome.z + Math.cos(nearestHome.ry) * front - Math.sin(nearestHome.ry) * 1.9;
+    npcSites.push({ id: 'testiculos', position: new THREE.Vector3(nx, terrainHeightAtWorld(nx, nz), nz), yaw: Math.atan2(spawnPoint.x - nx, spawnPoint.y - nz) });
+    colliders.push({ x: nx, z: nz, r: 0.5 });
+  }
+
   return {
     root,
     locationId: 'brumaluz',
+    npcSites,
+    interactables: (() => { const w = hexToWorld(0, 0); return [{ id: 'well', position: new THREE.Vector3(w.x, groundY(w.x, w.y), w.y), radius: 3.4, label: 'Asomarse al pozo' }]; })(),
     vendorSpots,
     collide,
     groundY,
