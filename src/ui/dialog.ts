@@ -53,6 +53,10 @@ let onClose: (() => void) | undefined;
 
 const root = () => document.querySelector<HTMLElement>('#dialog')!;
 
+/** Recibe cada línea que se muestra (speaker null = respuesta del jugador); el texto va sin traducir. */
+let logger: ((speaker: string | null, text: string) => void) | undefined;
+export function setDialogLogger(fn: typeof logger) { logger = fn; }
+
 export const isDialogOpen = () => !root().hidden;
 
 function visibleChoices(n: DialogNode): ChoiceView[] {
@@ -108,6 +112,7 @@ export function openDialog(next: DialogLine[], closed?: () => void) {
   onClose = closed;
   root().hidden = false;
   render();
+  logger?.(lines[0].speaker, lines[0].text);
 }
 
 function goTo(id: string) {
@@ -117,6 +122,7 @@ function goTo(id: string) {
   choices = visibleChoices(next);
   selected = 0;
   render();
+  logger?.(next.speaker ?? conversation!.speaker, next.text);
 }
 
 export function openConversation(next: Conversation, closed?: () => void) {
@@ -143,8 +149,15 @@ export function chooseDialog(i: number) {
   const view = choices[i];
   if (!view) return;
   if (view.exit) { closeDialog(); return; }
+  logger?.(null, view.choice!.text);
   view.choice!.action?.();
   if (view.choice!.next) goTo(view.choice!.next); else closeDialog();
+}
+
+/** Esc / Tab: sale de la conversación (equivale a «[Salir de la conversación]») salvo en escenas obligadas (`noExit`). */
+export function exitDialog() {
+  if (!isDialogOpen() || node?.noExit) return;
+  closeDialog();
 }
 
 /** Mueve la selección de respuestas (+1 abajo, -1 arriba). */
@@ -163,7 +176,7 @@ export function advanceDialog() {
     else closeDialog();
     return;
   }
-  if (index < lines.length - 1) { index++; render(); } else closeDialog();
+  if (index < lines.length - 1) { index++; render(); logger?.(lines[index].speaker, lines[index].text); } else closeDialog();
 }
 
 /** Clic en el cuadro: avanza si no hay respuestas que elegir (las respuestas se eligen con su botón). */

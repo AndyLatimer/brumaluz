@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
-  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, saveCharacterPosition,
+  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles, saveCharacterPosition,
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
+  buyFromVendor, sellToVendor, useItem, sendChatMessage, fetchChatHistory, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './services/account';
-import { simulateAction, simulateSpend } from './services/devActions';
+import { captureTopDown } from './world/mapCapture';
+import { initMinimap, updateMinimap, setMinimapImage, toggleMinimap } from './ui/minimap';
+import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
+import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
 import { applyLanguage, getLanguage, setLanguage, t, raceText, classText } from './ui/i18n';
 import { world } from './world/paint';
@@ -21,9 +25,11 @@ import {
   defaultChar, randomChar, randomName, sanitize, HAIR_ACCS, HAIR_ACC_VALUES, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES, LOCATIONS,
 } from './data/data';
 import { vitalsOf, experienceToNextLevel, attributeTotal, OVERHEAL } from './data/stats';
-import { TITLES } from './data/titles';
-import { openDialog, openConversation, closeDialog, advanceDialog, chooseDialog, moveDialogChoice, isDialogOpen, refreshDialog, type DialogLine, type DialogChoice, type Conversation } from './ui/dialog';
+import { TITLES, isReservedTitle, setGrantedTitles, PHOENIX_ICON } from './data/titles';
+import { openDialog, openConversation, closeDialog, advanceDialog, chooseDialog, moveDialogChoice, isDialogOpen, exitDialog, refreshDialog, setDialogLogger, type DialogLine, type DialogChoice, type Conversation } from './ui/dialog';
 import { renderInventory, renderSheet } from './ui/playerWindows';
+import { renderVendor } from './ui/vendorWindow';
+import { initActionBar, renderActionBar, autoAssignToActionBar, useActionBarSlot, actionBarSlotForKey, toggleActionBarPage } from './ui/actionBar';
 import { classIcon } from './ui/classIcons';
 import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
@@ -166,7 +172,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const endDrag = (e: PointerEvent) => {
-  if (dragging && mode === 'play' && dragDist < 6) clickToMove(e);
+  if (dragging && mode === 'play' && dragDist < 6 && !clickNpc(e)) clickToMove(e);
   dragging = false;
   canvas.classList.remove('drag');
 };
@@ -199,7 +205,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (optionsOpen) {
-    if (e.code === 'Escape') { e.preventDefault(); setOptionsOpen(false); }
+    if (e.code === 'Escape' || (e.code === 'KeyO' && !e.repeat)) { e.preventDefault(); setOptionsOpen(false); }
     return;
   }
   if (isDialogOpen()) {
@@ -209,7 +215,7 @@ window.addEventListener('keydown', (e) => {
     else if (e.code === 'ArrowUp' || e.code === 'KeyW') moveDialogChoice(-1);
     else if (e.code === 'ArrowDown' || e.code === 'KeyS') moveDialogChoice(1);
     else if (/^Digit[1-9]$/.test(e.code)) chooseDialog(Number(e.code.slice(5)) - 1);
-    else if (e.code === 'Escape') closeDialog();
+    else if (e.code === 'Escape' || e.code === 'Tab') exitDialog();
     return;
   }
   if (e.code === 'Tab') {
@@ -227,10 +233,33 @@ window.addEventListener('keydown', (e) => {
     else setGameMenuOpen(!gameMenuOpen);
     return;
   }
+  if (e.code === 'Enter' && !gameMenuOpen && !playerMenuOpen && !openWindow) {
+    e.preventDefault();
+    if (!e.repeat) focusChat();
+    return;
+  }
+  if (!e.repeat && !gameMenuOpen && openWindow !== 'vendor' && (e.target as HTMLElement).tagName !== 'INPUT') {
+    const win = e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : null;
+    if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
+    if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
+  }
   if (gameMenuOpen || playerMenuOpen || openWindow || (e.target as HTMLElement).tagName === 'INPUT') return;
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
     e.preventDefault();
     if (!e.repeat) running = !running;
+    return;
+  }
+  const barSlot = actionBarSlotForKey(e.code);
+  if (e.code === 'KeyZ') {
+    if (!e.repeat) toggleActionBarPage();
+    return;
+  }
+  if (e.code === 'Backquote' || e.key === 'º') {
+    if (!e.repeat) toggleMinimap();
+    return;
+  }
+  if (barSlot >= 0) {
+    if (!e.repeat) useActionBarSlot(barSlot);
     return;
   }
   keys.add(e.code);
@@ -255,6 +284,15 @@ function nearestInteractable(): Interactable | null {
   }
   return best;
 }
+function talkTo(npcId: string) {
+  pendingTalk = null;
+  const conv = NPCS[npcId]?.conversation;
+  if (!conv) return;
+  keys.clear();
+  moveTarget = null;
+  marker.visible = false;
+  openConversation(conv);
+}
 function interact() {
   const item = nearestInteractable();
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
@@ -267,6 +305,27 @@ function interact() {
   if (conv) openConversation(conv); else openDialog(lines!);
 }
 document.getElementById('interact-prompt')!.addEventListener('click', () => interact());
+// Clic en un NPC: si está cerca habla con él; si no, camina hasta él y habla al llegar.
+let pendingTalk: string | null = null;
+const TALK_RANGE = 2.3;
+function clickNpc(e: PointerEvent) {
+  if (dead || isDialogOpen() || !npcActors.length) return false;
+  const r = canvas.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  for (const hit of ray.intersectObjects(npcActors.map((n) => n.character.root), true)) {
+    const npc = npcActors.find((n) => { let o: THREE.Object3D | null = hit.object; while (o) { if (o === n.character.root) return true; o = o.parent; } return false; });
+    if (!npc || !NPCS[npc.id]) continue;
+    const p = npc.character.root.position;
+    if (Math.hypot(p.x - holder.position.x, p.z - holder.position.z) <= TALK_RANGE) talkTo(npc.id);
+    else {
+      pendingTalk = npc.id;
+      moveTarget = new THREE.Vector3(p.x, city.groundY(p.x, p.z), p.z);
+      marker.visible = false;
+    }
+    return true;
+  }
+  return false;
+}
 function updateInteractPrompt() {
   const prompt = $('#interact-prompt');
   const item = mode === 'play' && !dead && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteractable() : null;
@@ -304,6 +363,11 @@ function clickToMove(e: PointerEvent) {
 }
 function updatePlay(dt: number) {
   if (dead) { keys.clear(); moveTarget = null; marker.visible = false; }
+  if (pendingTalk) {
+    const npc = npcActors.find((n) => n.id === pendingTalk);
+    if (!npc || !moveTarget || dead) pendingTalk = null;
+    else if (Math.hypot(npc.character.root.position.x - holder.position.x, npc.character.root.position.z - holder.position.z) <= TALK_RANGE) talkTo(pendingTalk);
+  }
   const input = new THREE.Vector2(
     (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0),
     (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0),
@@ -377,13 +441,18 @@ function floatText(text: string, cls: string) {
 /** Pide una acción al servidor (que decide el resultado) y copia sus datos al estado local. En ?test se simula en local. */
 let actionBusy = false;
 async function serverAction(action: CharacterAction): Promise<boolean> {
+  return runOnServer((id) => characterActions[action](id), () => simulateAction(state, action));
+}
+/** Ejecuta una petición al servidor con el personaje activo (o su simulación local en ?test) y copia el resultado al estado. */
+async function runOnServer(call: (id: string) => Promise<Record<string, unknown>>, simulate: () => void): Promise<boolean> {
   if (actionBusy) return false;
   actionBusy = true;
   try {
-    if (activeCharacterId) Object.assign(state, sanitize(await characterActions[action](activeCharacterId)));
-    else if (TEST) simulateAction(state, action);
+    if (activeCharacterId) Object.assign(state, sanitize(await call(activeCharacterId)));
+    else if (TEST) simulate();
     else return false;
     resetOverheal();
+    renderActionBar();
     return true;
   } catch (error) {
     toast('No se pudo completar la acción', errorMessage(error), true);
@@ -407,11 +476,12 @@ function tickOverheal() {
 /** Resta vida al jugador (el servidor decide cuánta) y lo muestra: viñeta roja, golpe, sacudida de cámara, número flotante y barra. */
 let shakeUntil = 0;
 let dead = false;
-async function damagePlayer() {
+async function damagePlayer(source = 'Algo') {
   if (dead) return;
   const before = totalHealth();
   if (!(await serverAction('damage'))) return;
   const amount = before - totalHealth();
+  chatCombat(t('{who} te hace {n} puntos de daño.', { who: t(source), n: amount }));
   updateHud();
   restartClass($('#damage-vignette'), 'hit');
   restartClass($('.hud-health'), 'hurt');
@@ -457,11 +527,12 @@ async function respawn() {
 }
 
 /** Cura al jugador (sin pasar del máximo) con viñeta verde, destellos ascendentes, animación y número flotante. */
-async function healPlayer() {
+async function healPlayer(source = 'Algo') {
   if (dead) return;
   const before = totalHealth();
   if (!(await serverAction('heal'))) return;
   const healed = totalHealth() - before;
+  chatCombat(t('{who} te cura {n} puntos de vida.', { who: t(source), n: healed }), 'heal');
   updateHud();
   restartClass($('#heal-vignette'), 'hit');
   restartClass($('.hud-health'), 'healed');
@@ -513,6 +584,8 @@ async function gainExperience() {
   restartClass($('#xp-vignette'), 'hit');
   restartClass($('.hud-xp'), 'gain');
   floatText(`+${amount} XP`, 'xp');
+  chatSystem(t('Has recibido {n} puntos de experiencia.', { n: amount }));
+  if (leveled) chatSystem(t('¡Has subido al nivel {n}!', { n: state.level }));
   sparkBurst(14, 'xp');
   if (!leveled) { char.heal(); return; }
   char.wave();
@@ -526,6 +599,58 @@ async function gainExperience() {
   sparkBurst(30, 'xp big', '★');
   restartClass($('#hud-level'), 'pop');
 }
+
+/** Da 100 pelines (NPC de pruebas): el servidor suma el dinero y el cliente solo lo muestra. */
+async function receiveMoney() {
+  if (dead || !(await serverAction('money'))) return;
+  floatText(`+100 ${t('Pelines')}`, 'xp');
+  chatSystem(t('Has recibido {n} pelines.', { n: 100 }));
+  sparkBurst(10, 'xp', '●');
+}
+
+// ---------------- Comercio ----------------
+let vendor: { id: string; name: string } | null = null;
+function openVendor(id: string) {
+  const def = NPCS[id];
+  if (!def) return;
+  vendor = { id, name: def.name };
+  setWindow('vendor');
+}
+async function vendorTransaction(call: (id: string, vendorId: string) => Promise<Record<string, unknown>>, simulate: () => void, bought?: string) {
+  if (!vendor) return;
+  const vendorId = vendor.id;
+  if (await runOnServer((id) => call(id, vendorId), simulate)) {
+    if (bought) autoAssignToActionBar(bought);
+    if (openWindow === 'vendor') setWindow('vendor', false);
+  }
+}
+const buyItem = (item: string) => vendorTransaction((id, v) => buyFromVendor(id, v, item), () => simulateBuy(state, vendor!.id, item), item);
+const sellItem = (slot: number) => vendorTransaction((id, v) => sellToVendor(id, v, slot), () => simulateSell(state, slot));
+
+/** Usa un objeto de la mochila (clic en el hueco). */
+async function useInventoryItem(slot: number) {
+  if (dead) return;
+  const before = totalHealth();
+  if (!(await runOnServer((id) => useItem(id, slot), () => simulateUse(state, slot)))) return;
+  const healed = totalHealth() - before;
+  if (healed > 0) chatCombat(t('Te curas {n} puntos de vida.', { n: healed }), 'heal');
+  updateHud();
+  if (healed > 0) {
+    restartClass($('#heal-vignette'), 'hit');
+    restartClass($('.hud-health'), 'healed');
+    char.heal();
+    floatText(`+${healed}`, 'heal');
+  }
+  if (openWindow === 'inventory') setWindow('inventory', false);
+}
+initActionBar({
+  storageKey: () => `brumaluz-actionbar:${activeCharacterId ?? 'test'}`,
+  count: (item) => state.inventory.reduce((sum, s) => sum + (s?.id === item ? s.count : 0), 0),
+  use: (item) => {
+    const slot = state.inventory.findIndex((s) => s?.id === item);
+    if (slot < 0) toast('No te quedan', '', true); else void useInventoryItem(slot);
+  },
+});
 /** Quita al instante los efectos de pantalla temporales (flotantes, destellos, viñetas, cartel de nivel). */
 function clearScreenEffects() {
   document.querySelectorAll('.damage-float, .heal-spark').forEach((el) => el.remove());
@@ -543,6 +668,7 @@ function applyCameraShake() {
 }
 
 function updateHud() {
+  renderActionBar();
   const v = vitalsOf(state);
   const pct = (a: number, b: number) => `${Math.round((a / b) * 100)}%`;
   const setBar = (id: string, value: number, max: number, text: string) => {
@@ -580,13 +706,57 @@ const nameplateAnchor = new THREE.Vector3();
 function refreshNameplateText() {
   $('#nameplate-name').textContent = state.name;
   const title = $('#nameplate-title');
-  title.textContent = state.title === 'none' ? '' : t(TITLES[state.title].label);
+  title.replaceChildren();
+  if (state.title !== 'none') {
+    if (isReservedTitle(state.title)) title.insertAdjacentHTML('beforeend', PHOENIX_ICON);
+    title.append(t(TITLES[state.title].label));
+  }
+  title.classList.toggle('staff-title', state.title !== 'none' && isReservedTitle(state.title));
   title.hidden = state.title === 'none';
+}
+// Bocadillo de habla sobre tu personaje (solo mensajes públicos del chat); los NPC únicamente mueven la boca.
+const speech = { el: null as HTMLElement | null, until: 0 };
+const speechSeconds = (text: string) => Math.min(8, 2.5 + text.length * 0.06);
+function playerSay(name: string, text: string) {
+  const secs = speechSeconds(text);
+  char.speak(secs);
+  if (!speech.el) {
+    speech.el = document.createElement('div');
+    speech.el.className = 'speech-bubble';
+    speech.el.setAttribute('aria-hidden', 'true');
+    speech.el.hidden = true;
+    speech.el.innerHTML = '<b></b><span></span>';
+    document.body.appendChild(speech.el);
+  }
+  speech.el.querySelector('b')!.textContent = name;
+  speech.el.querySelector('span')!.textContent = text;
+  speech.until = performance.now() + secs * 1000;
+  speech.el.classList.remove('pop');
+  void speech.el.offsetWidth;
+  speech.el.classList.add('pop');
+}
+function npcSay(name: string, text: string) {
+  const npc = npcActors.find((n) => NPCS[n.id]?.name === name);
+  npc?.character.speak(speechSeconds(text));
 }
 // Coloca la placa sobre la cabeza del personaje proyectando su posición en pantalla.
 function updateNameplate() {
   nameplate.el ??= $('#nameplate');
   const visible = mode === 'play' && settings.nameplates;
+  if (speech.el) {
+    const show = mode === 'play' && !dead && performance.now() < speech.until;
+    if (show) {
+      camera.updateMatrixWorld();
+      nameplateAnchor.set(holder.position.x, holder.position.y + 1.95 + (state.height - 0.5) * 0.3, holder.position.z).project(camera);
+      const inView = nameplateAnchor.z < 1 && Math.abs(nameplateAnchor.x) < 1.2 && Math.abs(nameplateAnchor.y) < 1.2;
+      if (inView) {
+        const x = (nameplateAnchor.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-nameplateAnchor.y * 0.5 + 0.5) * window.innerHeight - (settings.nameplates ? nameplate.el.offsetHeight + 8 : 6);
+        speech.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
+      }
+      speech.el.hidden = !inView;
+    } else if (!speech.el.hidden) speech.el.hidden = true;
+  }
   if (visible) {
     camera.updateMatrixWorld();
     nameplateAnchor.set(holder.position.x, holder.position.y + 1.95 + (state.height - 0.5) * 0.3, holder.position.z).project(camera);
@@ -633,8 +803,31 @@ function enterPlay() {
   camTarget.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0));
   rebuildNow();
   layout();
+  startChat();
+}
+let chatUnsubscribe: (() => void) | null = null;
+let chatSeq = 0;
+function startChat() {
+  stopChat();
+  setChatSelf(currentUser?.id ?? null);
+  chatSystem(t('Pulsa Enter para chatear. Escribe /ayuda para ver los comandos.'));
+  if (TEST || !activeCharacterId) {
+    chatSystem(t('Modo prueba: el chat no está conectado al servidor.'));
+    return;
+  }
+  const id = ++chatSeq;
+  void fetchChatHistory().then((list) => { if (id === chatSeq) list.forEach(chatReceive); }).catch(() => {});
+  const off = subscribeChat((m) => { if (id === chatSeq) chatReceive(m); });
+  chatUnsubscribe = off;
+}
+function stopChat() {
+  chatSeq++;
+  chatUnsubscribe?.();
+  chatUnsubscribe = null;
+  clearChat();
 }
 function exitPlay() {
+  stopChat();
   dead = false;
   clearScreenEffects();
   closeDialog();
@@ -670,6 +863,29 @@ const CLASS_ICONS: Record<ClassId, string> = { guerrero: classIcon('guerrero'), 
 
 applyLanguage(document);
 initTooltips();
+initChat({
+  onFocus: () => { keys.clear(); moveTarget = null; },
+  zone: () => state.location,
+  send: async (body, channel, to) => {
+    if (TEST || !activeCharacterId) {
+      if (channel === 'whisper') throw new Error(t('Los susurros no funcionan en modo prueba.'));
+      chatSelfSay(state.name, body);
+      playerSay(state.name, body);
+      return;
+    }
+    chatReceive(await sendChatMessage(activeCharacterId, body, channel, to));
+  },
+});
+initMinimap({
+  player: () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
+  markers: () => npcActors.map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
+  zone: () => LOCATIONS[state.location],
+});
+setChatSpeechListener((name, text, own) => { if (own) playerSay(name, text); });
+setDialogLogger((speaker, text) => {
+  if (speaker === null) { chatSelfSay(state.name, t(text)); char.speak(speechSeconds(text)); }
+  else { chatNpc(speaker, t(text)); npcSay(speaker, t(text)); }
+});
 
 function refreshLanguageDependentUI() {
   const language = getLanguage();
@@ -718,7 +934,7 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
-let openWindow: 'inventory' | 'sheet' | null = null;
+let openWindow: 'inventory' | 'sheet' | 'vendor' | null = null;
 
 function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
   playerMenuOpen = open;
@@ -735,19 +951,22 @@ function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
 let pointDraft: Partial<Record<AttributeId, number>> = {};
 const draftTotal = () => Object.values(pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
 
-function setWindow(win: 'inventory' | 'sheet' | null, closeMenu = true) {
+function setWindow(win: 'inventory' | 'sheet' | 'vendor' | null, closeMenu = true) {
   if (win !== openWindow) pointDraft = {};
   openWindow = win;
+  document.body.classList.toggle('window-open', !!win);
+  document.body.classList.toggle('window-full', !!win);
   $('#window-backdrop').hidden = !win;
   $('#window-confirm').hidden = true;
   keys.clear();
-  if (!win) return;
+  if (!win) { vendor = null; return; }
   if (closeMenu) setPlayerMenuOpen(false, false);
   const body = $('#window-body');
-  $('#window-title').textContent = t(win === 'inventory' ? 'Inventario' : 'Ficha de personaje');
-  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet');
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'inventory' ? 'Inventario' : 'Ficha de personaje');
+  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory');
-  if (win === 'inventory') renderInventory(body, state, renderer);
+  if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot));
+  else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else renderSheet(body, state, renderer, async (title) => {
     try {
       if (activeCharacterId) Object.assign(state, sanitize(await setCharacterTitle(activeCharacterId, title)));
@@ -1083,6 +1302,7 @@ function toast(title: string, text: string, error = false, values: Record<string
   toastSourceText = text;
   toastValues = values;
   renderToast();
+  chatSystem(`${t(title)}: ${t(text, values)}`, error);
   const element = $('#toast');
   element.classList.toggle('error', error);
   element.classList.add('show');
@@ -1427,10 +1647,11 @@ async function createCurrentCharacter() {
 
 /** Pide al servidor los datos vigentes del personaje antes de entrar al mundo. */
 async function loadWorldState() {
-  if (!activeCharacterId) return TEST;
+  if (!activeCharacterId) { if (TEST) setGrantedTitles(['rey_de_pompelin']); return TEST; }
   try {
     Object.assign(state, sanitize(await enterCharacter(activeCharacterId)));
     resetOverheal();
+    setGrantedTitles(await getMyTitles().catch(() => []));
     return true;
   } catch (error) {
     toast('No se pudo guardar', errorMessage(error), true);
@@ -1699,20 +1920,32 @@ try {
   throw e;
 }
 scene.add(city.root);
+try {
+  setMinimapImage(captureTopDown(renderer, scene, city.root, lowEnd ? 1536 : 2560));
+} catch (e) {
+  console.warn('Sin imagen para el minimapa:', e);
+}
 
 // ---------------- NPCs ----------------
-interface NpcDef { name: string; look: Partial<CharData>; conversation: Conversation; }
+interface NpcDef { name: string; look: Partial<CharData>; conversation: Conversation; barks?: string[]; }
 // Mismas opciones y mismo orden en todos los nodos del NPC de prueba.
 const testChoices: DialogChoice[] = [
   { text: 'Hola', next: 'hola' },
-  { text: 'Recibir 10 puntos de daño', next: 'dano', action: () => void damagePlayer() },
-  { text: 'Recibir 10 puntos de vida', next: 'cura', action: () => void healPlayer() },
+  { text: 'Recibir 10 puntos de daño', next: 'dano', action: () => void damagePlayer('Testículos, the Debugger') },
+  { text: 'Recibir 10 puntos de vida', next: 'cura', action: () => void healPlayer('Testículos, the Debugger') },
   { text: 'Recibir 200 puntos de experiencia', next: 'xp', action: () => void gainExperience() },
+  { text: 'Recibir 100 pelines', next: 'dinero', action: () => void receiveMoney() },
+  { text: 'Comerciar', action: () => openVendor('testiculos') },
 ];
 const NPCS: Record<string, NpcDef> = {
   testiculos: {
     name: 'Testículos, the Debugger',
     look: { race: 'elfo', sex: 0, hair: 4, hairColor: 8, clothA: 2, clothB: 9 },
+    barks: [
+      '¿Alguien ha visto mi documentación? Ah, no, no tengo.',
+      'Psst, viajero... ¿quieres probar mis pociones? Son de mentira, pero curan.',
+      'Un día más depurando el universo.',
+    ],
     conversation: {
       speaker: 'Testículos, the Debugger',
       start: 'intro',
@@ -1722,6 +1955,7 @@ const NPCS: Record<string, NpcDef> = {
         dano: { text: 'Pum. Diez puntos de daño, recién salidos del horno. Mira tu barra de vida.', choices: testChoices },
         cura: { text: 'Cataplof. Diez puntos de vida, cortesía de la casa. Sin receta ni efectos secundarios.', choices: testChoices },
         xp: { text: 'Toma, doscientos puntos de experiencia recién impresos. Mira la barra dorada, y si subes de nivel, no me des las gracias.', choices: testChoices },
+        dinero: { text: 'Cien pelines calentitos, recién acuñados. No preguntes de dónde salen. Gástalos en mi tienda: «Comerciar».', choices: testChoices },
       },
     },
   },
@@ -1747,6 +1981,21 @@ for (const site of city.npcSites) {
   npcActors.push({ id: site.id, character, plate, anchor: new THREE.Vector3() });
   city.interactables.push({ id: `npc:${site.id}`, position: site.position, radius: 2.6, label: 'Hablar' });
 }
+// Los NPC comentan algo de vez en cuando si estás cerca (canal NPC del chat).
+const barkCooldown = new Map<string, number>();
+window.setInterval(() => {
+  if (mode !== 'play' || dead) return;
+  const now = Date.now();
+  for (const npc of npcActors) {
+    const barks = NPCS[npc.id]?.barks;
+    if (!barks?.length || now < (barkCooldown.get(npc.id) ?? 0)) continue;
+    if (Math.hypot(npc.character.root.position.x - holder.position.x, npc.character.root.position.z - holder.position.z) > 8) continue;
+    barkCooldown.set(npc.id, now + 40000 + Math.random() * 40000);
+    const line = t(barks[Math.floor(Math.random() * barks.length)]);
+    chatNpc(NPCS[npc.id].name, line);
+    npcSay(NPCS[npc.id].name, line);
+  }
+}, 4000);
 holder.position.copy(city.spawn);
 holder.rotation.y = city.spawnYaw - 0.3;
 rebuildNow();
@@ -1772,6 +2021,7 @@ renderer.setAnimationLoop(() => {
   applyCameraShake();
   updateNameplate();
   updateInteractPrompt();
+  if (mode === 'play') updateMinimap();
   if (TEST) renderer.render(scene, camera); else stage.render();
 });
 
@@ -1790,6 +2040,7 @@ if (TEST) {
   set(d: Partial<CharData>) { state = sanitize({ ...state, ...d } as unknown as Record<string, unknown>); rebuildNow(); refreshUI(); },
   tab: selectTab,
   wave() { char.wave(); },
+  speak(s: number) { char.speak(s); },
   play: () => enterPlay(),
   spin(a: number) { holder.rotation.y = a; spinVel = 0; },
   move(x: number, z: number) { holder.position.set(x, 0, z); },

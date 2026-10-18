@@ -52,6 +52,8 @@ export interface HeadResult {
   eyes: THREE.Object3D[];
   /** Ojos cerrados de alegría (^ ^), ocultos hasta que el personaje saluda. */
   happy: THREE.Object3D[];
+  /** Boca en reposo y boca abierta (óvalo): al hablar se alternan y la abierta se abre y cierra. */
+  mouth: { rest: THREE.Object3D; open: THREE.Object3D };
 }
 
 // Celdas de la paleta
@@ -1446,11 +1448,33 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     g.computeVertexNormals();
     return g;
   };
+  // La boca vive en un grupo propio para poder animarla al hablar: la boca en reposo se oculta y una boca
+  // abierta (óvalo oscuro) se abre y cierra. Las geometrías se centran en el pivote para escalar desde ahí.
+  const mouthRig = new THREE.Group();
+  mouthRig.position.copy(mp);
+  const rest = new THREE.Group();
+  mouthRig.add(rest);
+  const addMouthMesh = (parent: THREE.Object3D, g: THREE.BufferGeometry, mat: THREE.Material, origin: THREE.Vector3) => {
+    g.translate(-origin.x, -origin.y, -origin.z);
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = true; m.receiveShadow = true;
+    parent.add(m);
+  };
   const mg = hugFace(mergeGeoms(mouth));
   const lips = o.makeup === 3 || o.makeup === 4;
-  if (mg) finish(new THREE.Mesh(mg, lips ? extraMat(makeupCol) : material(o.face)));
+  if (mg) addMouthMesh(rest, mg, lips ? extraMat(makeupCol) : material(o.face), mp);
   const tg = hugFace(mergeGeoms(teeth));
-  if (tg) finish(new THREE.Mesh(tg, material(o.face)));
+  if (tg) addMouthMesh(rest, tg, material(o.face), mp);
+  const openCenter = mp.clone().add(V(0, 0.02, 0));
+  const openPivot = new THREE.Group();
+  openPivot.position.copy(openCenter).sub(mp);
+  openPivot.visible = false;
+  mouthRig.add(openPivot);
+  const og = hugFace(piece(new THREE.CircleGeometry(0.05, 18), C_DARK, compose(openCenter, mr, V(1, 0.8, 1))));
+  if (og) addMouthMesh(openPivot, og, material(o.face), openCenter);
+  mouthRig.updateMatrix();
+  mouthRig.applyMatrix4(toBone);
+  group.add(mouthRig);
   for (const d of decals) {
     d.updateMatrix();
     d.applyMatrix4(toBone);
@@ -1463,6 +1487,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     toBone,
     eyes,
     happy,
+    mouth: { rest, open: openPivot },
     anchors: {
       ear: (s) => headAt(V(s, -0.2, -0.05), -0.01), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest,
       // punto real de la superficie (pelo o cabeza) en una dirección, hundido hacia dentro

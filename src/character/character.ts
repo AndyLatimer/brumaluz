@@ -149,6 +149,8 @@ export class Character {
   private nextBlink = 1 + Math.random() * 2;
   private blinkT = -1;
   private happy: THREE.Object3D[] = [];
+  private mouth?: { rest: THREE.Object3D; open: THREE.Object3D; sy: number };
+  private speakUntil = -1;
   private happyReq = false;
   private happyUntil = -1;
   private owned: { dispose(): void }[] = [];
@@ -231,6 +233,7 @@ export class Character {
     this.owned.push(...head.ownedMaterials);
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
     this.happy = head.happy;
+    this.mouth = { rest: head.mouth.rest, open: head.mouth.open, sy: head.mouth.open.scale.y };
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
@@ -581,6 +584,8 @@ export class Character {
     this.playGait(from);
   }
   wave() { this.play('Cheer'); this.happyReq = true; }
+  /** Mueve la boca como si hablara durante `seconds` segundos. */
+  speak(seconds: number) { this.speakUntil = Math.max(this.lastT, 0) + seconds; }
   hit() { this.play('Hit_A'); }
   private dead = false;
   /** Cae al suelo y se queda ahí hasta `revive()`. */
@@ -661,6 +666,12 @@ export class Character {
     const joy = t < this.happyUntil && t > this.happyUntil - 1.45;
     for (const e of this.eyes) e.o.visible = !joy;
     for (const h of this.happy) h.visible = joy;
+    if (this.mouth) {
+      const talking = t < this.speakUntil && !joy;
+      this.mouth.rest.visible = !talking;
+      this.mouth.open.visible = talking;
+      if (talking) this.mouth.open.scale.y = this.mouth.sy * (0.25 + 0.75 * Math.abs(Math.sin(t * 11) * Math.sin(t * 4.3 + 1)));
+    }
   }
 
   private applyBodyShape() {

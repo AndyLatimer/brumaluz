@@ -4,9 +4,11 @@ import { ATTRIBUTES, CLASSES, RACES, ATTRIBUTE_MAX_VALUE, unspentAttributePoints
 import { classIcon } from './classIcons';
 import { CURRENCIES, CURRENCY_ORDER, currencyIcon } from '../data/currency';
 import { EQUIPMENT_SLOTS, INVENTORY_UNLOCKED, type EquipmentSlot } from '../data/inventory';
-import { createCharacterPortrait } from '../character/portrait';
+import { itemDef, itemIcon, itemLabel } from '../data/items';
+import { DRAG_ITEM_TYPE } from './actionBar';
+import { createCharacterPortrait, createCharacterTurntable } from '../character/portrait';
 import { attributeTotal, vitalsOf } from '../data/stats';
-import { TITLES, TITLE_ORDER, type TitleId } from '../data/titles';
+import { TITLES, TITLE_ORDER, isReservedTitle, isTitleAvailable, PHOENIX_ICON, type TitleId } from '../data/titles';
 import { t, getLanguage, raceText, classText } from './i18n';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
@@ -36,10 +38,11 @@ const SLOT_ICON: Record<EquipmentSlot, string> = {
 
 const coins = (n: number) => n.toLocaleString(getLanguage() === 'en' ? 'en-US' : 'es-ES');
 
-function goldLine(d: CharData) {
+export function goldLine(d: CharData, includePremium = true) {
   const row = el('div', 'wallet');
   for (const id of CURRENCY_ORDER) {
     const cur = CURRENCIES[id];
+    if (cur.premium && !includePremium) continue;
     const item = el('div', `currency ${id}${cur.premium ? ' premium' : ''}`);
     item.title = `${t(cur.label)}|${t(cur.description)}`;
     item.innerHTML = currencyIcon(id);
@@ -60,7 +63,7 @@ function equipCell(d: CharData, slot: EquipmentSlot) {
   return cell;
 }
 
-export function renderInventory(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer) {
+export function renderInventory(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onUse?: (slot: number) => void) {
   container.replaceChildren();
   const wrap = el('div', 'inv');
 
@@ -72,9 +75,22 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   for (const slot of EQUIPMENT_SLOTS.slice(0, 5)) left.append(equipCell(d, slot));
   for (const slot of EQUIPMENT_SLOTS.slice(5)) right.append(equipCell(d, slot));
   const stage = el('div', 'doll-stage');
-  const portrait = createCharacterPortrait(d, renderer, { fullBody: true, scale: 2, aspect: 230 / 560 });
+  const turntable = createCharacterTurntable(d, renderer, { scale: 2, aspect: 230 / 560 });
+  const portrait = turntable.canvas;
   portrait.className = 'doll-portrait';
   stage.append(portrait);
+  stage.title = `${t('Girar personaje')}|${t('Arrastra para girar a tu personaje.')}`;
+  stage.classList.add('rotatable');
+  let dragging = false, lastX = 0, yaw = 0, pending = false;
+  const redraw = () => { pending = false; turntable.render(yaw); };
+  stage.onpointerdown = (e) => { dragging = true; lastX = e.clientX; stage.setPointerCapture(e.pointerId); };
+  stage.onpointermove = (e) => {
+    if (!dragging) return;
+    yaw += (e.clientX - lastX) * 0.012;
+    lastX = e.clientX;
+    if (!pending) { pending = true; requestAnimationFrame(redraw); }
+  };
+  stage.onpointerup = stage.onpointercancel = () => { dragging = false; };
   doll.append(left, stage, right);
   equip.append(doll);
 
@@ -88,8 +104,20 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
     const cell = el('div', `inv-slot${item ? ' filled' : ''}`);
     cell.dataset.index = String(i);
     if (item) {
-      cell.append(el('b', undefined, item.id));
+      const def = itemDef(item.id);
+      cell.title = def ? `${t(def.label)}|${t(def.description)}` : item.id;
+      cell.innerHTML = itemIcon(item.id);
+      cell.append(el('b', undefined, t(itemLabel(item.id))));
       if (item.count > 1) cell.append(el('i', undefined, String(item.count)));
+      if (onUse && def?.usable) {
+        cell.classList.add('usable');
+        cell.onclick = () => onUse(i);
+        cell.draggable = true;
+        cell.ondragstart = (e) => {
+          e.dataTransfer?.setData(DRAG_ITEM_TYPE, JSON.stringify({ id: item.id }));
+          e.dataTransfer!.effectAllowed = 'copy';
+        };
+      }
     }
     grid.append(cell);
   }
@@ -116,7 +144,14 @@ function titlePicker(current: TitleId, onChange?: (title: TitleId) => void) {
   button.setAttribute('aria-haspopup', 'listbox');
   button.setAttribute('aria-expanded', 'false');
   button.title = `${t('Título')}|${t('Se muestra bajo tu nombre sobre el personaje.')}`;
-  const label = el('span', undefined, t(TITLES[current].label));
+  const label = el('span');
+  const setLabel = (id: TitleId) => {
+    label.replaceChildren();
+    if (isReservedTitle(id)) label.insertAdjacentHTML('beforeend', PHOENIX_ICON);
+    label.append(t(TITLES[id].label));
+    button.classList.toggle('staff-title', isReservedTitle(id));
+  };
+  setLabel(current);
   button.append(label, el('i', 'caret'));
   const list = el('ul', 'title-list');
   list.setAttribute('role', 'listbox');
@@ -134,13 +169,17 @@ function titlePicker(current: TitleId, onChange?: (title: TitleId) => void) {
     document.addEventListener('pointerdown', outside, true);
   };
   for (const id of TITLE_ORDER) {
-    const item = el('li', 'title-option', t(TITLES[id].label));
+    if (id !== current && !isTitleAvailable(id)) continue;
+    const item = el('li', 'title-option');
+    if (isReservedTitle(id)) { item.classList.add('staff-title'); item.insertAdjacentHTML('beforeend', PHOENIX_ICON); }
+    item.append(t(TITLES[id].label));
     item.setAttribute('role', 'option');
     item.tabIndex = 0;
     item.setAttribute('aria-selected', String(id === current));
     const pick = () => {
       current = id;
-      label.textContent = t(TITLES[id].label);
+      label.textContent = '';
+      setLabel(id);
       for (const o of list.children) o.setAttribute('aria-selected', String(o === item));
       close();
       button.focus();
@@ -243,7 +282,7 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
     attrs.append(row);
   }
 
-  right.append(title, chips, bars, attrs, goldLine(d));
+  right.append(title, chips, bars, attrs);
   wrap.append(left, right);
   container.append(wrap);
 }

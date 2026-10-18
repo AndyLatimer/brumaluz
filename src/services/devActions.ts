@@ -2,6 +2,9 @@
 // Las reglas reales viven en supabase/server.sql.
 import { MAX_LEVEL, unspentAttributePoints, ATTRIBUTE_MAX_VALUE, type CharData, type AttributeId } from '../data/data';
 import { attributeTotal, experienceToNextLevel, maxOverhealOf, vitalsOf } from '../data/stats';
+import { addCurrency, spendCurrency } from '../data/currency';
+import { ITEMS, VENDOR_STOCK, sellPrice, itemStack } from '../data/items';
+import { INVENTORY_UNLOCKED } from '../data/inventory';
 import type { CharacterAction } from './account';
 
 export function simulateAction(d: CharData, action: CharacterAction) {
@@ -11,7 +14,9 @@ export function simulateAction(d: CharData, action: CharacterAction) {
   }
   if (d.health === 0) return;
   const v = vitalsOf(d);
-  if (action === 'damage') {
+  if (action === 'money') {
+    addCurrency(d.wallet, 'pelines', 100);
+  } else if (action === 'damage') {
     const absorbed = Math.min(v.overheal, 10);
     d.overheal = v.overheal - absorbed;
     if (absorbed < 10) d.health = Math.max(0, v.health - (10 - absorbed));
@@ -33,3 +38,43 @@ export function simulateSpend(d: CharData, points: Partial<Record<AttributeId, n
     if (attributeTotal(d, id) + n <= ATTRIBUTE_MAX_VALUE) d.attributePoints[id] += n;
   }
 }
+
+function addItem(d: CharData, id: string) {
+  const stack = itemStack(id);
+  const slot = d.inventory.findIndex((s) => s && s.id === id && s.count < stack);
+  if (slot >= 0) { d.inventory[slot]!.count++; return; }
+  const free = d.inventory.findIndex((s, i) => !s && i < INVENTORY_UNLOCKED);
+  if (free < 0) throw new Error('Tu mochila está llena.');
+  d.inventory[free] = { id, count: 1 };
+}
+
+function removeItem(d: CharData, slot: number) {
+  const item = d.inventory[slot];
+  if (!item || !ITEMS[item.id]) throw new Error('Ese objeto no existe.');
+  if (item.count <= 1) d.inventory[slot] = null; else item.count--;
+  return item.id;
+}
+
+export function simulateBuy(d: CharData, vendor: string, item: string) {
+  if (d.health === 0) return;
+  if (!VENDOR_STOCK[vendor]?.includes(item)) throw new Error('Ese vendedor no vende ese objeto.');
+  if (!spendCurrency(d.wallet, 'pelines', ITEMS[item].value)) throw new Error('No tienes suficientes pelines.');
+  try { addItem(d, item); } catch (e) { addCurrency(d.wallet, 'pelines', ITEMS[item].value); throw e; }
+}
+
+export function simulateSell(d: CharData, slot: number) {
+  if (d.health === 0) return;
+  const id = removeItem(d, slot);
+  addCurrency(d.wallet, 'pelines', sellPrice(id));
+}
+
+export function simulateUse(d: CharData, slot: number) {
+  if (d.health === 0) return;
+  const v = vitalsOf(d);
+  if (v.health >= v.maxHealth) throw new Error('Ya tienes la vida completa.');
+  removeItem(d, slot);
+  d.health = Math.min(v.maxHealth, v.health + Math.max(1, Math.ceil(v.maxHealth * 0.05)));
+  if (d.health >= v.maxHealth) d.health = -1;
+}
+
+

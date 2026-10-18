@@ -265,6 +265,45 @@
     <div class="dialog-hint"><kbd>E</kbd><span class="dialog-next"></span></div>
   </div>
 
+  <div id="action-bar" class="action-bar" role="toolbar" aria-label="Barra de acceso rápido"></div>
+  <section id="chat" class="chat" aria-label="Chat">
+    <div class="chat-resize" title="Arrastra para cambiar el tamaño"></div>
+    <header class="chat-head">
+      <div class="chat-filters" role="group" aria-label="Filtros del chat">
+        <button type="button" class="chat-filter" data-kind="general" aria-pressed="true" title="General|Mensajes de todo el servidor.">General</button>
+        <button type="button" class="chat-filter" data-kind="zone" aria-pressed="true" title="Zona|Mensajes de los jugadores de tu mapa.">Zona</button>
+        <button type="button" class="chat-filter" data-kind="whisper" aria-pressed="true" title="Susurros|Mensajes privados entre cuentas.">Susurros</button>
+        <button type="button" class="chat-filter" data-kind="system" aria-pressed="true" title="Sistema|Avisos del juego.">Sistema</button>
+        <button type="button" class="chat-filter" data-kind="combat" aria-pressed="true" title="Combate|Daño, curación y golpes.">Combate</button>
+        <button type="button" class="chat-filter" data-kind="npc" aria-pressed="true" title="NPC|Lo que dicen los personajes no jugadores.">NPC</button>
+      </div>
+      <button type="button" class="chat-collapse" aria-expanded="true" title="Minimizar chat" aria-label="Minimizar chat"><i></i></button>
+    </header>
+    <div class="chat-log" role="log" aria-live="polite" tabindex="-1"></div>
+    <form class="chat-form" autocomplete="off">
+      <button type="button" class="chat-channel" title="Canal|Cambia entre General (todo el servidor) y Zona (tu mapa). También /g y /z.">General</button>      <input class="chat-input" type="text" maxlength="200" placeholder="Pulsa Enter para escribir…" aria-label="Mensaje de chat" spellcheck="false">
+    </form>
+  </section>
+
+  <aside id="minimap" class="minimap" aria-label="Minimapa">
+    <div class="minimap-frame">
+      <canvas class="minimap-canvas" width="176" height="176"></canvas>
+      <span class="minimap-dir n" aria-hidden="true">N</span>
+      <span class="minimap-dir e" aria-hidden="true">E</span>
+      <span class="minimap-dir s" aria-hidden="true">S</span>
+      <span class="minimap-dir w" aria-hidden="true">O</span>
+      <div class="minimap-tip" hidden></div>
+    </div>
+    <div class="minimap-zoom">
+      <button type="button" class="minimap-zoom-in" aria-label="Acercar" title="Acercar|También con la rueda del ratón sobre el mapa.">+</button>
+      <button type="button" class="minimap-zoom-out" aria-label="Alejar" title="Alejar|También con la rueda del ratón sobre el mapa.">−</button>
+    </div>
+    <div class="minimap-plate" title="Ubicación|Lugar actual y coordenadas (este, norte) en metros desde la plaza. º muestra u oculta el minimapa.">
+      <strong class="minimap-zone"></strong>
+      <span class="minimap-coords"></span>
+    </div>
+  </aside>
+
   <div id="player-hud" class="player-hud" aria-label="Estado del personaje">
     <div id="hud-class-icon" class="hud-class-icon" aria-hidden="true"></div>
     <div class="hud-bars">

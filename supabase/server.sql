@@ -16,7 +16,8 @@ insert into public.server_config (key, value) values
   ('debug_actions', 'true'::jsonb),            -- acciones del NPC de pruebas (daño, curación, XP). Pon false en producción.
   ('spawn', '{"x": -6.4, "z": -11.085}'::jsonb), -- punto de inicio de Brumaluz (hexToWorld(0, -1.6))
   ('world_limit', '400'::jsonb),                -- |x| y |z| máximos permitidos
-  ('max_speed', '9'::jsonb)                     -- m/s tolerados al guardar la posición (correr real: 6.2)
+  ('max_speed', '9'::jsonb),                    -- m/s tolerados al guardar la posición (correr real: 6.2)
+  ('staff_titles', '{"rey_de_pompelin": ["manuelperezardanuy@gmail.com"]}'::jsonb) -- títulos reservados: título -> emails autorizados
 on conflict (key) do nothing;
 
 -- ---------- Fórmulas (internas) ----------
@@ -358,6 +359,203 @@ begin
 end;
 $$;
 
+-- ---------- Objetos, dinero y vendedores ----------
+-- Los precios y efectos replican src/data/items.ts: si cambias uno, cambia el otro.
+
+-- Catálogo: value = precio de compra en pelines (el vendedor paga la mitad), stack = máximo por hueco (opcional; por defecto 99).
+create or replace function public.game_item(p_item text)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_item
+    when 'pocion_vida_minuscula' then jsonb_build_object('value', 10, 'heal_pct', 5)
+    else null
+  end
+$$;
+
+-- Mercancía de cada vendedor (por id de NPC).
+create or replace function public.game_vendor_stock(p_vendor text)
+returns text[]
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_vendor
+    when 'testiculos' then array['pocion_vida_minuscula']
+    else array[]::text[]
+  end
+$$;
+
+create or replace function public.game_pelines(d jsonb)
+returns int
+language sql
+immutable
+set search_path = ''
+as $$
+  select greatest(coalesce((d #>> '{wallet,pelines}')::int, 0), 0)
+$$;
+
+create or replace function public.game_set_pelines(d jsonb, amount int)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select d || jsonb_build_object('wallet', coalesce(d -> 'wallet', '{}'::jsonb) || jsonb_build_object('pelines', greatest(amount, 0)))
+$$;
+
+-- Mochila de 25 huecos (relleno con null si el personaje aún no tiene).
+create or replace function public.game_inventory(d jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(coalesce(d -> 'inventory' -> (i - 1), 'null'::jsonb) order by i), '[]'::jsonb)
+  from generate_series(1, 25) i
+$$;
+
+-- Añade una unidad: primero a un montón con sitio, si no al primer hueco libre.
+create or replace function public.game_add_item(d jsonb, p_item text)
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  inv jsonb := public.game_inventory(d);
+  stack int := coalesce((public.game_item(p_item) ->> 'stack')::int, 99);
+  slot jsonb;
+  i int;
+begin
+  for i in 0..24 loop
+    slot := inv -> i;
+    if jsonb_typeof(slot) = 'object' and slot ->> 'id' = p_item and (slot ->> 'count')::int < stack then
+      return d || jsonb_build_object('inventory', jsonb_set(inv, array[i::text], jsonb_build_object('id', p_item, 'count', (slot ->> 'count')::int + 1)));
+    end if;
+  end loop;
+  for i in 0..24 loop
+    if jsonb_typeof(inv -> i) is distinct from 'object' then
+      return d || jsonb_build_object('inventory', jsonb_set(inv, array[i::text], jsonb_build_object('id', p_item, 'count', 1)));
+    end if;
+  end loop;
+  raise exception 'INVENTORY_FULL';
+end;
+$$;
+
+-- Quita una unidad del hueco indicado.
+create or replace function public.game_remove_item(d jsonb, p_slot int)
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  inv jsonb := public.game_inventory(d);
+  slot jsonb;
+begin
+  if p_slot is null or p_slot not between 0 and 24 then raise exception 'INVALID_ITEM'; end if;
+  slot := inv -> p_slot;
+  if jsonb_typeof(slot) is distinct from 'object' then raise exception 'INVALID_ITEM'; end if;
+  if (slot ->> 'count')::int <= 1 then
+    inv := jsonb_set(inv, array[p_slot::text], 'null'::jsonb);
+  else
+    inv := jsonb_set(inv, array[p_slot::text], jsonb_build_object('id', slot ->> 'id', 'count', (slot ->> 'count')::int - 1));
+  end if;
+  return d || jsonb_build_object('inventory', inv);
+end;
+$$;
+
+-- NPC de pruebas: 100 pelines.
+create or replace function public.debug_money(p_character_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.characters := public.game_lock_character(p_character_id);
+  d jsonb := c.data;
+begin
+  perform public.game_require_debug();
+  if coalesce((d ->> 'health')::int, -1) = 0 then return d; end if;
+  return public.game_store(c.id, public.game_set_pelines(d, public.game_pelines(d) + 100));
+end;
+$$;
+
+-- Comprar una unidad a un vendedor: el servidor comprueba mercancía, saldo y hueco, y cobra el precio del catálogo.
+create or replace function public.vendor_buy(p_character_id uuid, p_vendor text, p_item text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.characters := public.game_lock_character(p_character_id);
+  d jsonb := c.data;
+  price int;
+begin
+  if coalesce((d ->> 'health')::int, -1) = 0 then return d; end if;
+  if not (p_item = any (public.game_vendor_stock(p_vendor))) then raise exception 'ITEM_NOT_FOR_SALE'; end if;
+  price := (public.game_item(p_item) ->> 'value')::int;
+  if public.game_pelines(d) < price then raise exception 'NOT_ENOUGH_MONEY'; end if;
+  d := public.game_add_item(d, p_item);
+  return public.game_store(c.id, public.game_set_pelines(d, public.game_pelines(d) - price));
+end;
+$$;
+
+-- Vender una unidad del hueco indicado: el vendedor paga la mitad del valor.
+create or replace function public.vendor_sell(p_character_id uuid, p_vendor text, p_slot int)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.characters := public.game_lock_character(p_character_id);
+  d jsonb := c.data;
+  item jsonb;
+  price int;
+begin
+  if coalesce((d ->> 'health')::int, -1) = 0 then return d; end if;
+  if cardinality(public.game_vendor_stock(p_vendor)) = 0 then raise exception 'INVALID_VENDOR'; end if;
+  if p_slot is null or p_slot not between 0 and 24 then raise exception 'INVALID_ITEM'; end if;
+  item := public.game_item(public.game_inventory(d) -> p_slot ->> 'id');
+  if item is null then raise exception 'INVALID_ITEM'; end if;
+  price := greatest(1, floor((item ->> 'value')::int / 2.0)::int);
+  d := public.game_remove_item(d, p_slot);
+  return public.game_store(c.id, public.game_set_pelines(d, public.game_pelines(d) + price));
+end;
+$$;
+
+-- Usar un objeto de la mochila. Las pociones curan un % de la vida máxima (sin sobrecuración).
+create or replace function public.use_item(p_character_id uuid, p_slot int)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.characters := public.game_lock_character(p_character_id);
+  d jsonb := c.data;
+  item jsonb;
+  maxh int := public.game_max_health(d);
+  total int;
+begin
+  if coalesce((d ->> 'health')::int, -1) = 0 then return d; end if;
+  if p_slot is null or p_slot not between 0 and 24 then raise exception 'INVALID_ITEM'; end if;
+  item := public.game_item(public.game_inventory(d) -> p_slot ->> 'id');
+  if item is null then raise exception 'INVALID_ITEM'; end if;
+  if item -> 'heal_pct' is null then raise exception 'ITEM_NOT_USABLE'; end if;
+  if public.game_health(d) >= maxh then raise exception 'NOTHING_TO_HEAL'; end if;
+  total := least(maxh, public.game_health(d) + greatest(1, ceil(maxh * (item ->> 'heal_pct')::int / 100.0)::int));
+  d := public.game_remove_item(d, p_slot);
+  return public.game_store(c.id, d || jsonb_build_object('health', case when total >= maxh then -1 else total end));
+end;
+$$;
+
 -- Repartir puntos de atributo: p_points = {"fuerza": 1, ...} con los puntos NUEVOS a sumar.
 create or replace function public.spend_attribute_points(p_character_id uuid, p_points jsonb)
 returns jsonb
@@ -400,10 +598,39 @@ as $$
 declare
   c public.characters := public.game_lock_character(p_character_id);
 begin
-  -- Cuando haya títulos que se ganen, aquí se comprobará que el personaje cumple los requisitos.
-  if p_title not in ('none', 'recien_llegado') then raise exception 'INVALID_TITLE'; end if;
+  if p_title not in ('none', 'recien_llegado') and not public.game_title_granted(p_title) then raise exception 'INVALID_TITLE'; end if;
   return public.game_store(c.id, c.data || jsonb_build_object('title', p_title));
 end;
+$$;
+
+-- Títulos reservados: server_config.staff_titles = {"titulo": ["email", ...]}. Solo esas cuentas pueden usarlos.
+create or replace function public.game_title_granted(p_title text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select exists (
+      select 1 from jsonb_array_elements_text(value -> p_title) as e(email)
+      where lower(e.email) = lower(coalesce((select auth.jwt()) ->> 'email', ''))
+    )
+    from public.server_config where key = 'staff_titles' and jsonb_typeof(value -> p_title) = 'array'
+  ), false)
+$$;
+
+-- Títulos reservados que puede usar la cuenta actual (el cliente solo los muestra en el selector).
+create or replace function public.my_titles()
+returns text[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(array_agg(t.key), array[]::text[])
+  from public.server_config c, jsonb_object_keys(c.value) as t(key)
+  where c.key = 'staff_titles' and public.game_title_granted(t.key)
 $$;
 
 -- Guarda la última posición si es creíble: dentro del mundo y sin saltos imposibles desde la anterior.
@@ -452,23 +679,121 @@ begin
 end;
 $$;
 
+-- ---------- Chat multijugador ----------
+-- Los mensajes solo se crean con chat_send (el cliente no puede insertar): el servidor limpia el texto,
+-- limita el ritmo, aplica silencios y fija remitente y título. Los clientes los reciben por Realtime (RLS aplicada).
+create table if not exists public.chat_messages (
+  id bigint generated always as identity primary key,
+  channel text not null check (channel in ('general', 'zone', 'whisper')),
+  sender_user uuid not null references auth.users (id) on delete cascade,
+  sender_name text not null,
+  sender_title text not null default 'none',
+  recipient_user uuid references auth.users (id) on delete cascade,
+  recipient_name text,
+  body text not null check (char_length(body) between 1 and 200),
+  created_at timestamptz not null default now()
+);
+-- Por si la tabla se creó con una versión anterior de este archivo.
+alter table public.chat_messages add column if not exists zone text;
+alter table public.chat_messages add column if not exists sender_account text;
+alter table public.chat_messages drop constraint if exists chat_messages_channel_check;
+alter table public.chat_messages add constraint chat_messages_channel_check check (channel in ('general', 'zone', 'whisper'));
+create index if not exists chat_messages_created_idx on public.chat_messages (created_at);
+alter table public.chat_messages enable row level security;
+
+-- general: todo el servidor; zone: se entrega a todos y el cliente solo muestra la de su mapa; whisper: solo remitente y destinatario.
+drop policy if exists "Read public and own chat messages" on public.chat_messages;
+create policy "Read public and own chat messages"
+  on public.chat_messages for select to authenticated
+  using (channel in ('general', 'zone') or sender_user = (select auth.uid()) or recipient_user = (select auth.uid()));
+
+revoke all on table public.chat_messages from anon, authenticated;
+grant select on public.chat_messages to authenticated;
+
+-- Silencios: se ponen a mano desde el editor SQL, p. ej.
+--   insert into public.chat_mutes (user_id, until, reason) values ('<uuid>', now() + interval '1 day', 'spam');
+create table if not exists public.chat_mutes (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  until timestamptz not null,
+  reason text
+);
+alter table public.chat_mutes enable row level security;
+revoke all on table public.chat_mutes from anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'chat_messages') then
+    alter publication supabase_realtime add table public.chat_messages;
+  end if;
+end $$;
+
+-- Envía un mensaje. p_channel: 'general' (todo el servidor), 'zone' (el mapa del personaje) o 'whisper',
+-- que va a una CUENTA (p_to = nombre de usuario de la cuenta, no del personaje).
+drop function if exists public.chat_send(uuid, text, text, text);
+create or replace function public.chat_send(p_character_id uuid, p_body text, p_channel text default 'general', p_to text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.characters := public.game_lock_character(p_character_id);
+  clean text := btrim(regexp_replace(coalesce(p_body, ''), '[[:cntrl:][:space:]]+', ' ', 'g'));
+  me text;
+  target_user uuid;
+  target_account text;
+  msg public.chat_messages;
+begin
+  if p_channel not in ('general', 'zone', 'whisper') then raise exception 'INVALID_CHANNEL'; end if;
+  if clean = '' then raise exception 'CHAT_EMPTY'; end if;
+  if char_length(clean) > 200 then raise exception 'CHAT_TOO_LONG'; end if;
+  if exists (select 1 from public.chat_mutes m where m.user_id = c.user_id and m.until > now()) then raise exception 'CHAT_MUTED'; end if;
+  if (select count(*) from public.chat_messages where sender_user = c.user_id and created_at > now() - interval '10 seconds') >= 5 then
+    raise exception 'CHAT_RATE_LIMIT';
+  end if;
+  select username into me from public.profiles where user_id = c.user_id;
+  if p_channel = 'whisper' then
+    select user_id, username into target_user, target_account from public.profiles
+      where username is not null and lower(username collate pg_catalog."C") = lower(btrim(coalesce(p_to, '')) collate pg_catalog."C");
+    if target_user is null then raise exception 'PLAYER_NOT_FOUND'; end if;
+    if target_user = c.user_id then raise exception 'CANNOT_WHISPER_SELF'; end if;
+  end if;
+  delete from public.chat_messages where created_at < now() - interval '3 days';
+  insert into public.chat_messages (channel, zone, sender_user, sender_name, sender_account, sender_title, recipient_user, recipient_name, body)
+  values (
+    p_channel, case when p_channel = 'zone' then coalesce(c.data ->> 'location', 'brumaluz') end,
+    c.user_id, c.name, me, coalesce(c.data ->> 'title', 'none'), target_user, target_account, clean
+  )
+  returning * into msg;
+  return to_jsonb(msg);
+end;
+$$;
+
 -- Permisos: las funciones internas no son invocables; las acciones, solo por usuarios con sesión.
 revoke all on function
   public.game_race_bonus(text, text), public.game_level(jsonb), public.game_xp_needed(int),
   public.game_attr_total(jsonb, text), public.game_max_health(jsonb), public.game_health(jsonb),
   public.game_points_spent(jsonb), public.game_points_allowed(jsonb), public.game_lock_character(uuid),
-  public.game_store(uuid, jsonb), public.game_require_debug(), public.game_overheal_cap(jsonb), public.game_overheal_now(jsonb)
+  public.game_store(uuid, jsonb), public.game_require_debug(), public.game_overheal_cap(jsonb), public.game_overheal_now(jsonb),
+  public.game_item(text), public.game_vendor_stock(text), public.game_pelines(jsonb), public.game_set_pelines(jsonb, int),
+  public.game_inventory(jsonb), public.game_add_item(jsonb, text), public.game_remove_item(jsonb, int), public.game_title_granted(text)
   from public, anon, authenticated;
+
+revoke all on function public.my_titles() from public, anon;
+grant execute on function public.my_titles() to authenticated;
 
 revoke all on function
   public.create_character(jsonb), public.character_enter(uuid), public.respawn_character(uuid),
-  public.debug_damage(uuid), public.debug_heal(uuid), public.debug_xp(uuid),
+  public.debug_damage(uuid), public.debug_heal(uuid), public.debug_xp(uuid), public.debug_money(uuid),
+  public.vendor_buy(uuid, text, text), public.vendor_sell(uuid, text, int), public.use_item(uuid, int),
   public.spend_attribute_points(uuid, jsonb), public.set_character_title(uuid, text),
-  public.save_character_position(uuid, double precision, double precision, double precision)
+  public.save_character_position(uuid, double precision, double precision, double precision), public.chat_send(uuid, text, text, text)
   from public, anon;
 grant execute on function
   public.create_character(jsonb), public.character_enter(uuid), public.respawn_character(uuid),
-  public.debug_damage(uuid), public.debug_heal(uuid), public.debug_xp(uuid),
+  public.debug_damage(uuid), public.debug_heal(uuid), public.debug_xp(uuid), public.debug_money(uuid),
+  public.vendor_buy(uuid, text, text), public.vendor_sell(uuid, text, int), public.use_item(uuid, int),
   public.spend_attribute_points(uuid, jsonb), public.set_character_title(uuid, text),
-  public.save_character_position(uuid, double precision, double precision, double precision)
+  public.save_character_position(uuid, double precision, double precision, double precision), public.chat_send(uuid, text, text, text)
   to authenticated;

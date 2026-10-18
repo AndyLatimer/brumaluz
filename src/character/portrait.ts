@@ -91,3 +91,69 @@ export function createCharacterPortrait(data: CharData, renderer: THREE.WebGLRen
   context.putImageData(image, 0, 0);
   return canvas;
 }
+
+export interface CharacterTurntable {
+  canvas: HTMLCanvasElement;
+  /** Redibuja al personaje girado `yaw` radianes. */
+  render: (yaw: number) => void;
+}
+
+let liveTurntable: { dispose: () => void } | null = null;
+
+/** Retrato de cuerpo entero que se puede girar con fluidez: el personaje y los buffers se crean una sola vez. */
+export function createCharacterTurntable(data: CharData, renderer: THREE.WebGLRenderer, options: { scale?: number; aspect: number }): CharacterTurntable {
+  liveTurntable?.dispose();
+  const aspect = options.aspect;
+  const W = Math.round(WIDTH * (options.scale ?? 1));
+  const H = Math.round(W / aspect);
+  const target = new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, type: THREE.UnsignedByteType, samples: 4, depthBuffer: true });
+  target.texture.colorSpace = THREE.SRGBColorSpace;
+  const character = new Character({ ...data }, { outfit: false });
+  scene.add(character.root);
+  scene.updateMatrixWorld(true);
+  character.update(0);
+  const box = new THREE.Box3().setFromObject(character.root);
+  const center = box.getCenter(new THREE.Vector3());
+  const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const distance = Math.max(((box.max.y - box.min.y) * 1.12) / 2 / tan, ((box.max.x - box.min.x) * 1.15) / 2 / (tan * aspect));
+  const cameraPosition = new THREE.Vector3(center.x, center.y, box.max.z + distance);
+  scene.remove(character.root);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('No se pudo crear el lienzo de la vista previa del personaje.');
+  const image = context.createImageData(W, H);
+  const pixels = new Uint8Array(W * H * 4);
+  const rowSize = W * 4;
+
+  const render = (yaw: number) => {
+    character.root.rotation.y = yaw;
+    // El personaje solo está en la escena durante el dibujado para no aparecer en otros retratos.
+    scene.add(character.root);
+    scene.updateMatrixWorld(true);
+    camera.aspect = aspect;
+    camera.position.copy(cameraPosition);
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+    const previousTarget = renderer.getRenderTarget();
+    try {
+      renderer.setRenderTarget(target);
+      renderer.clear(true, true, true);
+      renderer.render(scene, camera);
+      renderer.readRenderTargetPixels(target, 0, 0, W, H, pixels);
+    } finally {
+      renderer.setRenderTarget(previousTarget);
+      scene.remove(character.root);
+    }
+    for (let y = 0; y < H; y++) {
+      const source = (H - 1 - y) * rowSize;
+      image.data.set(pixels.subarray(source, source + rowSize), y * rowSize);
+    }
+    context.putImageData(image, 0, 0);
+  };
+  render(0);
+  liveTurntable = { dispose: () => { target.dispose(); character.dispose(); } };
+  return { canvas, render };
+}
