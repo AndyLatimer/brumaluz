@@ -26,9 +26,9 @@ const price = (amount: number) => {
   return box;
 };
 
-function row(item: string, label: string, amount: number, action: string, enabled: boolean, onClick: () => void, count?: number) {
+function row(item: string, label: string, amount: number, action: string, enabled: boolean, onClick: () => void, count?: number, bound = false) {
   const li = el('li', 'vendor-row');
-  setItemTooltip(li, item);
+  setItemTooltip(li, item, bound);
   li.tabIndex = 0;
   const icon = el('span', 'vendor-icon');
   icon.innerHTML = itemIcon(item);
@@ -67,14 +67,16 @@ export function renderVendor(container: HTMLElement, d: CharData, vendorId: stri
   const used = d.inventory.slice(0, INVENTORY_UNLOCKED).filter(Boolean).length;
   mine.append(el('p', 'vendor-subtitle', t('Mochila: {used}/{total} · Vendes una unidad cada vez.', { used, total: INVENTORY_UNLOCKED })));
   const owned = el('ul', 'vendor-list');
-  // Agrupa por objeto: una fila con el total; al vender se descuenta del último hueco que lo contenga.
-  const groups = new Map<string, { total: number; slot: number }>();
+  // Agrupa por objeto y vinculación; al vender se descuenta del último hueco del grupo.
+  const groups = new Map<string, { id: string; bound: boolean; total: number; slot: number }>();
   d.inventory.forEach((item, slot) => {
     if (!item || !ITEMS[item.id]) return;
-    const g = groups.get(item.id);
-    groups.set(item.id, { total: (g?.total ?? 0) + item.count, slot });
+    const bound = item.bound === true || ITEMS[item.id].bound === true;
+    const key = `${item.id}:${bound}`;
+    const g = groups.get(key);
+    groups.set(key, { id: item.id, bound, total: (g?.total ?? 0) + item.count, slot });
   });
-  for (const [id, g] of groups) owned.append(row(id, itemLabel(id), sellPrice(id), 'Vender', true, () => handlers.onSell(g.slot), g.total));
+  for (const g of groups.values()) owned.append(row(g.id, itemLabel(g.id), sellPrice(g.id), 'Vender', true, () => handlers.onSell(g.slot), g.total, g.bound));
   if (!owned.children.length) owned.append(el('li', 'vendor-empty', t('No tienes nada que vender.')));
   mine.append(owned);
 

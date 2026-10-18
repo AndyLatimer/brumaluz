@@ -8,6 +8,7 @@ export interface ItemStack {
   /** Identificador del objeto en el futuro catálogo. */
   id: string;
   count: number;
+  bound?: boolean;
 }
 
 export type InventorySlots = (ItemStack | null)[];
@@ -21,9 +22,9 @@ export const emptyEquipment = (): Equipment => Object.fromEntries(EQUIPMENT_SLOT
 
 const asStack = (v: unknown): ItemStack | null => {
   if (!v || typeof v !== 'object') return null;
-  const { id, count } = v as Record<string, unknown>;
+  const { id, count, bound } = v as Record<string, unknown>;
   const n = Number(count);
-  return typeof id === 'string' && id && Number.isSafeInteger(n) && n > 0 ? { id, count: n } : null;
+  return typeof id === 'string' && id && Number.isSafeInteger(n) && n > 0 ? { id, count: n, ...(bound === true ? { bound: true } : {}) } : null;
 };
 
 export function sanitizeInventory(v: unknown): InventorySlots {

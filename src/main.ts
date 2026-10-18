@@ -22,6 +22,7 @@ import { RemotePlayers } from './world/players';
 import { renderSocial } from './ui/socialWindow';
 import { startFriendNotifications } from './ui/friendNotifications';
 import { createPlayerInteractions } from './ui/playerInteractions';
+import { createTradeWindow } from './ui/tradeWindow';
 import { createTargetFrame, type NpcType, type TargetDetails } from './ui/targetFrame';
 import { getParty, observeParty, startParty, stopParty, partySelf, isPartyLeader } from './services/party';
 import { initPartyHud } from './ui/partyPanel';
@@ -45,6 +46,7 @@ import { renderControls } from './ui/controls';
 import { loadSettings, saveSettings } from './services/settings';
 import { initMenuMusic } from './ui/menuMusic';
 import { initBuffLayout, renderBuffs } from './ui/buffs';
+import { beginTransition } from './ui/transitionLoading';
 import type { FoodBuff } from './data/food';
 
 
@@ -208,7 +210,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const endDrag = (e: PointerEvent) => {
-  if (dragging && mode === 'play' && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
+  if (dragging && mode === 'play' && !tradeWindow.isOpen && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
   dragging = false;
   canvas.classList.remove('drag');
 };
@@ -236,6 +238,7 @@ function startJump() {
 }
 window.addEventListener('keydown', (e) => {
   if (mode !== 'play') return;
+  if (tradeWindow.isOpen) { tradeWindow.key(e); return; }
   if (dead) {
     e.preventDefault();
     if (!e.repeat && (e.code === 'KeyE' || e.code === 'Enter')) respawn();
@@ -314,7 +317,7 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => keys.delete(e.code));
 
 // ---------------- Interacción (tecla E) ----------------
-const playerInteractions = createPlayerInteractions();
+const playerInteractions = createPlayerInteractions((target) => tradeWindow.invite(target));
 const INTERACTIONS: Record<string, () => DialogLine[]> = {
   well: () => [{ speaker: state.name, text: '(Te asomas al pozo, es realmente profundo)' }],
 };
@@ -346,7 +349,7 @@ function talkTo(npcId: string) {
   openConversation(conv);
 }
 function interact() {
-  if (mode !== 'play' || dead || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
+  if (mode !== 'play' || dead || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
   const { item, player } = nearestInteraction();
   if (player) {
     pendingTalk = null;
@@ -394,7 +397,7 @@ function updateInteractPrompt() {
     const target = remotePlayers.list().find((player) => player.id === playerInteractions.targetId);
     if (mode !== 'play' || dead || !target || Math.hypot(target.root.position.x - holder.position.x, target.root.position.z - holder.position.z) > TALK_RANGE) playerInteractions.close();
   }
-  const interaction = mode === 'play' && !dead && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
+  const interaction = mode === 'play' && !dead && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
   prompt.hidden = !interaction?.item && !interaction?.player;
   if (interaction?.item || interaction?.player) {
     const label = interaction.player ? t('Interactuar con {name}', { name: interaction.player.name }) : t(interaction.item!.label);
@@ -762,6 +765,7 @@ async function useInventoryItem(slot: number) {
 initActionBar({
   storageKey: () => `brumaluz-actionbar:${activeCharacterId ?? 'test'}`,
   count: (item) => state.inventory.reduce((sum, s) => sum + (s?.id === item ? s.count : 0), 0),
+  bound: (item) => state.inventory.find(s => s?.id === item)?.bound === true,
   use: (item) => {
     const slot = state.inventory.findIndex((s) => s?.id === item);
     if (slot < 0) toast('No te quedan', '', true); else void useInventoryItem(slot);
@@ -995,6 +999,23 @@ const CLASS_ICONS: Record<ClassId, string> = { guerrero: classIcon('guerrero'), 
 
 applyLanguage(document);
 initTooltips();
+const tradeWindow = createTradeWindow({
+  active(id) { return mode==='play' && activeCharacterId===id && !dead; },
+  inventory(value) {
+    state.inventory = value.inventory;
+    if(value.wallet) state.wallet.pelines = value.wallet.pelines;
+    updateHud();
+  },
+  opened() {
+    playerInteractions.close();
+    setWindow(null,false);
+    keys.clear(); moveTarget=null; marker.visible=false;
+  },
+  notify(text) { chatSystem(text); },
+});
+window.setInterval(()=>{
+  tradeWindow.setCharacter(mode==='play' && !TEST && !dead ? activeCharacterId : null);
+},250);
 initChat({
   onFocus: () => { keys.clear(); moveTarget = null; },
   zone: () => state.location,
@@ -1661,12 +1682,14 @@ function displayCharacters(characters: SavedCharacter[]) {
       if (enteringWorld) return;
       enteringWorld = true;
       play.disabled = true;
+      const finishTransition = beginTransition('Entrando en Brumaluz…');
       try {
         loadCharacter(saved);
         if (!(await loadWorldState())) return;
         showEditor();
         enterPlay();
       } finally {
+        finishTransition();
         enteringWorld = false;
         play.disabled = false;
       }
@@ -1952,13 +1975,18 @@ window.addEventListener('pagehide', stopMultiplayer);
 window.addEventListener('pageshow', (event) => { if (event.persisted && mode === 'play') void returnToCharacters(); });
 
 async function returnToCharacters() {
-  const user = currentUser;
-  if (mode === 'play') {
-    const stopped = stopMultiplayer();
-    exitPlay();
-    await stopped;
+  const finishTransition = beginTransition('Volviendo a tus personajes…');
+  try {
+    const user = currentUser;
+    if (mode === 'play') {
+      const stopped = stopMultiplayer();
+      exitPlay();
+      await stopped;
+    }
+    if (user && currentUser?.id === user.id) await loadCharacterSelection(user);
+  } finally {
+    finishTransition();
   }
-  if (user && currentUser?.id === user.id) await loadCharacterSelection(user);
 }
 
 function startNewCharacter() {
@@ -2155,6 +2183,7 @@ $('#enter').onclick = async () => {
   enteringWorld = true;
   const enter = $<HTMLButtonElement>('#enter');
   enter.disabled = true;
+  const finishTransition = beginTransition('Preparando tu aventura…');
   const stillCurrent = characterContext();
   try {
     if (ambientEnabled) {
@@ -2172,6 +2201,7 @@ $('#enter').onclick = async () => {
     setTimeout(() => { if (mode === 'play') { char.wave(); waveSequence++; } }, 60);
     toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: state.name });
   } finally {
+    finishTransition();
     enteringWorld = false;
     enter.disabled = false;
   }
@@ -2312,7 +2342,7 @@ window.setInterval(() => {
 }, 4000);
 const targetFrame = createTargetFrame(canvas, camera, city.root);
 function updateTargetFrame() {
-  const enabled = mode === 'play' && !dead && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
+  const enabled = mode === 'play' && !dead && !tradeWindow.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
   if (!enabled) { targetFrame.update([], false, holder.position); return; }
   const targets: TargetDetails[] = remotePlayers.list().map((player) => ({
     ...player, identity: { kind: 'player', username: player.username, cls: player.cls, title: player.title },

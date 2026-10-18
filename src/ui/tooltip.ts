@@ -60,7 +60,7 @@ function show(target: HTMLElement) {
   const box = ensureTip();
   box.replaceChildren();
   box.classList.toggle('item-tooltip', !!item);
-  if (item) renderItemTooltip(box, item);
+  if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true');
   else {
     const [head, body] = text!.includes('|') ? text!.split('|', 2) : [text!, ''];
     const strong = document.createElement('strong');

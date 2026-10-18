@@ -90,6 +90,7 @@ interface Database {
       party_invite: { Args: { p_username: string }; Returns: undefined };
       party_respond: { Args: { p_invite_id: string; p_accept: boolean }; Returns: undefined };
       party_leave: { Args: Record<string, never>; Returns: undefined };
+      trade_action: { Args: { p_character_id: string; p_action: string; p_trade_id?: string; p_target_id?: string; p_offer?: Json; p_revision?: number }; Returns: Json };
       friend_request: { Args: { p_username: string }; Returns: undefined };
       friend_update: { Args: { p_user_id: string; p_action: string }; Returns: undefined };
     };
@@ -243,6 +244,15 @@ async function serverCall<T>(call: PromiseLike<{ data: T | null; error: { messag
 }
 
 const asRecord = (data: unknown) => data as Record<string, unknown>;
+
+export async function tradeAction(character: string, action: string, trade?: string, target?: string, offer?: Json, revision?: number) {
+  const {data,error} = await requireClient().rpc('trade_action', {
+    p_character_id: character, p_action: action, p_trade_id: trade, p_target_id: target,
+    p_offer: offer, p_revision: revision,
+  }).abortSignal(AbortSignal.timeout(10000));
+  if(error) throw new Error(error.message);
+  return data;
+}
 
 /** Crea un personaje: el servidor solo acepta nombre, linaje, clase, apariencia y reparto inicial; el resto lo fija él. */
 export async function createCharacter(character: CharData) {

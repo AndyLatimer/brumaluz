@@ -45,8 +45,17 @@ export function renderBuffs(d: CharData, paused: boolean) {
 export function initBuffLayout() {
   const bar = document.getElementById('action-bar')!;
   const root = document.getElementById('active-buffs')!;
-  new ResizeObserver(() => {
+  const update = () => {
     const rect = bar.getBoundingClientRect();
-    if (rect.height > 0) root.style.bottom = `${innerHeight - rect.top + 8}px`;
-  }).observe(bar);
+    if (rect.height > 0) {
+      const bottom = innerHeight - rect.top + 8;
+      root.style.bottom = `${bottom}px`;
+      const buffHeight = Math.max(56, root.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--interaction-bottom', `${bottom + buffHeight + 16}px`);
+    }
+  };
+  const observer = new ResizeObserver(update);
+  observer.observe(bar);
+  observer.observe(root);
+  window.addEventListener('resize', update);
 }

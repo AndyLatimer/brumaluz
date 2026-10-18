@@ -4,6 +4,7 @@ import type { FoodId } from './food';
 
 export interface ItemDef {
   id: string;
+  bound?: boolean;
   label: string; // en español (se traduce con t())
   category: string;
   description: string;

@@ -97,6 +97,62 @@ async function openPlayer(world, account, compatible = true, clockTime) {
     if (fn === 'set_character_title') { character.data.title = args.p_title; return fulfill({ ...data, title: args.p_title }); }
     if (fn === 'my_titles') return fulfill(account.titles || []);
     const key = account.user.id;
+    if(fn==='trade_action') {
+      world.trades ??= new Map();
+      for(const tr of world.trades.values()) {
+        const a=world.players.get(tr.a),b=world.players.get(tr.b);
+        if(['invited','open'].includes(tr.status) && (!a || !b || a.session!==tr.sa || b.session!==tr.sb
+          || Math.hypot(a.position.x-b.position.x,a.position.z-b.position.z)>10)) {
+          tr.status='cancelled';tr.reason='TRADE_UNAVAILABLE';
+        }
+      }
+      let tr=args.p_trade_id ? world.trades.get(args.p_trade_id) : [...world.trades.values()].reverse().find(tr=>[tr.a,tr.b].includes(key));
+      if(args.p_action==='invite') {
+        const target=[...world.players.values()].find(player=>player.id===args.p_target_id),self=world.players.get(key);
+        if(!target || !self) return fulfill({message:'TRADE_UNAVAILABLE'},400);
+        tr={id:randomUUID(),a:key,b:target.userId,sa:self.session,sb:target.session,status:'invited',reason:null,revision:0,
+          offer_a:{items:[],pelines:0},offer_b:{items:[],pelines:0},accepted_a:false,accepted_b:false};
+        world.trades.set(tr.id,tr);
+      }
+      if(!tr) return fulfill({trade:null});
+      if(![tr.a,tr.b].includes(key)) return fulfill({message:'TRADE_NOT_FOUND'},400);
+      const isA=tr.a===key,own=isA?'a':'b',peer=isA?'b':'a';
+      if(args.p_action==='join')tr.status='open';
+      if(args.p_action==='cancel'){tr.status='cancelled';tr.reason='TRADE_CANCELLED';}
+      if(args.p_action==='back')tr[`accepted_${own}`]=false;
+      if(args.p_action==='offer') {
+        if(args.p_revision!==tr.revision) return fulfill({message:'TRADE_CHANGED'},400);
+        tr[`offer_${own}`]=args.p_offer;tr.revision++;tr.accepted_a=false;tr.accepted_b=false;
+      }
+      if(args.p_action==='accept') {
+        if(args.p_revision!==tr.revision) return fulfill({message:'TRADE_CHANGED'},400);
+        tr[`accepted_${own}`]=true;
+        if(tr.accepted_a && tr.accepted_b) {
+          const dataA=world.accounts.get(tr.a).character.data,dataB=world.accounts.get(tr.b).character.data;
+          const remove=(data,offer)=>{
+            for(const item of offer.items) {
+              data.inventory[item.slot].count-=item.count;
+              if(!data.inventory[item.slot].count)data.inventory[item.slot]=null;
+            }
+            data.wallet.pelines-=offer.pelines;
+          };
+          const add=(data,offer)=>{
+            for(const item of offer.items) {
+              const found=data.inventory.find(stack=>stack?.id===item.id && !stack.bound);
+              if(found)found.count+=item.count;else data.inventory.push({id:item.id,count:item.count});
+            }
+            data.wallet.pelines+=offer.pelines;
+          };
+          remove(dataA,tr.offer_a);remove(dataB,tr.offer_b);add(dataA,tr.offer_b);add(dataB,tr.offer_a);
+          tr.status='completed';
+        }
+      }
+      const selfData=world.accounts.get(key).character.data;
+      return fulfill({trade:{id:tr.id,status:tr.status,reason:tr.reason,revision:tr.revision,incoming:!isA,
+        peerId:world.accounts.get(tr[peer]).character.id,peerName:world.accounts.get(tr[peer]).character.name,
+        own:tr[`offer_${own}`],peer:tr[`offer_${peer}`],accepted:tr[`accepted_${own}`],peerAccepted:tr[`accepted_${peer}`]},
+        inventory:selfData.inventory ?? [],wallet:selfData.wallet ?? {pelines:0}});
+    }
     if(fn.startsWith('party_')){
       cleanupParties(world);
       const party=partyOf(world,key);
@@ -333,6 +389,42 @@ test('signing out during a delayed join cannot reopen the world or leave remote 
     assert.equal(await player.page.locator('body').evaluate((body) => body.classList.contains('playing')), false);
     assert.equal(await player.page.evaluate(() => window.brumaluz.players().length), 0);
     assert.equal(world.players.has(a.user.id), false);
+    await player.page.locator('#transition-loading').waitFor({ state: 'hidden' });
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('world transitions show delayed loading, clear on success and errors, and leave controls usable', { timeout: 120000 }, async () => {
+  const world = backend(), account = fixture('Alric', 'humano', 100);
+  world.rpcDelay.set('character_enter', 1900);
+  const player = await openPlayer(world, account), page = player.page;
+  try {
+    await page.locator('.character-card .btn.gold').first().click();
+    const loading = page.locator('#transition-loading');
+    await loading.waitFor({ state: 'visible' });
+    assert.equal(await loading.textContent(), 'Entrando en Brumaluz…');
+    assert.equal(await page.locator('#scene').getAttribute('aria-busy'), 'true');
+    assert.equal(await loading.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
+    await page.waitForFunction(() => document.querySelector('#transition-loading')?.classList.contains('slow'));
+    await page.waitForFunction(() => document.body.classList.contains('playing'));
+    await loading.waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('#scene').getAttribute('aria-busy'), null);
+    world.rpcDelay.set('world_leave', 700);
+    await page.locator('#game-menu-toggle').click();
+    await page.locator('#game-menu-characters').click();
+    await loading.waitFor({ state: 'visible' });
+    assert.equal(await loading.textContent(), 'Volviendo a tus personajes…');
+    await page.locator('.character-card .btn.gold').first().waitFor({ state: 'visible' });
+    await loading.waitFor({ state: 'hidden' });
+    await page.route('**/rest/v1/rpc/character_enter', async route => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ message: 'Transition temporarily unavailable' }) });
+    });
+    await page.locator('.character-card .btn.gold').first().click();
+    await loading.waitFor({ state: 'visible' });
+    await loading.waitFor({ state: 'hidden' });
+    assert.match(await page.locator('#toast').textContent(), /Transition temporarily unavailable/);
+    assert.equal(await page.locator('.character-card .btn.gold').first().isEnabled(), true);
     assert.deepEqual(player.errors, []);
   } finally { await player.context.close(); }
 });
@@ -419,11 +511,14 @@ test('a delayed character creation cannot pull the user back into the world afte
     const sent = player.page.waitForRequest((request) => request.url().endsWith('/rpc/create_character'));
     await player.page.locator('#enter').click();
     await sent;
+    await player.page.locator('#transition-loading').waitFor({ state: 'visible' });
+    assert.equal(await player.page.locator('#transition-loading p').textContent(), 'Preparando tu aventura…');
     await player.page.locator('#account-characters').click();
     await player.page.locator('.character-card .btn.gold').first().waitFor({ state: 'visible' });
     await player.page.waitForTimeout(2500);
     assert.equal(await player.page.locator('body').evaluate((body) => body.classList.contains('playing')), false);
     assert.equal(world.players.has(a.user.id), false);
+    await player.page.locator('#transition-loading').waitFor({ state: 'hidden' });
     assert.deepEqual(player.errors, []);
   } finally { await player.context.close(); }
 });
@@ -978,12 +1073,13 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
         assert.ok(bounds && bounds.x >= box.x && bounds.x + bounds.width <= box.x + box.width,'Each interaction button fits inside its panel');
       }
     }
-    assert.equal(await first.page.locator('.player-interaction-medallion svg[viewBox="0 0 48 48"]').count(),4);
+    assert.equal(await first.page.locator('.player-interaction-medallion svg[viewBox="0 0 48 48"]').count(),5);
     assert.equal(await first.page.locator('.player-interaction-label').textContent(),'Añadir amigo');
     assert.equal(await first.page.locator('#player-interactions').getAttribute('aria-busy'),'false');
     assert.equal(await first.page.locator('#player-interaction-name').textContent(),'Elara');
-    assert.equal(await first.page.locator('#player-interactions .player-interaction-action').count(),4);
+    assert.equal(await first.page.locator('#player-interactions .player-interaction-action').count(),5);
     assert.equal(await first.page.getByRole('button',{name:'Invitar a grupo',exact:true}).count(),1);
+    await first.page.keyboard.press('ArrowLeft');
     await first.page.keyboard.press('ArrowLeft');
     await first.page.keyboard.press('ArrowLeft');
     assert.equal(await first.page.locator('.player-interaction-label').textContent(),'Silenciar chat');
@@ -996,6 +1092,7 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
     assert.deepEqual(await first.page.evaluate(()=>JSON.parse(localStorage.getItem('brumaluz-chat-ignored'))),[]);
     await first.page.keyboard.press('ArrowRight');
     await first.page.keyboard.press('ArrowRight');
+    await first.page.keyboard.press('ArrowRight');
     await first.page.keyboard.press('KeyE');
     await first.page.getByRole('button',{name:'Cancelar solicitud',exact:true}).waitFor();
     assert.equal(world.friends.size,1);
@@ -1006,7 +1103,7 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
     await first.page.getByRole('button',{name:'Cancelar solicitud',exact:true}).click();
     await first.page.getByRole('button',{name:'Eliminar amigo',exact:true}).waitFor();
     assert.equal(world.friends.size,1,'A stale cancel action must not remove a newly accepted friend');
-    assert.equal(await first.page.locator('.player-interaction-action').count(),3);
+    assert.equal(await first.page.locator('.player-interaction-action').count(),4);
     first.page.once('dialog',dialog=>dialog.accept());
     await first.page.getByRole('button',{name:'Eliminar amigo',exact:true}).click();
     await first.page.getByRole('button',{name:'Añadir amigo',exact:true}).waitFor();
@@ -1508,17 +1605,26 @@ test('bread shows a timed food buff above the action bar without healing and ren
     assert.equal(await page.locator('.item-tip-sale b').textContent(), '2 Pelines');
     await bread.dragTo(page.locator('.ab-slot').first());
     await bread.click();
+    const fedAt = await page.evaluate(() => performance.now());
     const buff = page.locator('.food-buff');
     assert.equal(await page.locator('#hud-health-text').textContent(), '100 / 105');
     assert.equal(await page.locator('#hud-resource-text').textContent(), '80 / 83');
     assert.equal(await buff.locator('span').textContent(), '15:00');
     assert.equal(await bread.locator('i').textContent(), '2');
     await page.locator('#window-close').click();
+    await page.evaluate(() => {
+      const p = window.brumaluz.city().npcSites[0].position;
+      window.brumaluz.move(p.x, p.z + 0.6);
+    });
     for (const width of [1280, 390, 320]) {
       await page.setViewportSize({ width, height: 844 });
+      await page.locator('#interact-prompt').waitFor({ state: 'visible' });
+      await page.waitForTimeout(300);
       const badge = await buff.boundingBox(), bar = await page.locator('#action-bar').boundingBox();
+      const prompt = await page.locator('#interact-prompt').boundingBox();
       assert.ok(badge.x >= 0 && badge.x + badge.width <= width);
       assert.ok(badge.y + badge.height <= bar.y - 6, 'Buff is above, not overlapping the quick bar');
+      assert.ok(prompt.y + prompt.height <= badge.y - 8, 'Interaction prompt stays above the buff row');
     }
     await page.waitForTimeout(100);
     await page.mouse.move(0, 0);
@@ -1528,7 +1634,8 @@ test('bread shows a timed food buff above the action bar without healing and ren
     assert.match(await page.locator('#game-tooltip').textContent(), /Origen: Pan duro/);
     assert.match(await page.locator('#game-tooltip').textContent(), /se pausa al desconectarte/);
     if (process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.PLAYWRIGHT_SCREENSHOT_DIR, 'bread-buff.png') });
-    await page.clock.fastForward(60000);
+    const elapsedSinceMeal = await page.evaluate(start => performance.now() - start, fedAt);
+    await page.clock.fastForward(Math.max(0, Math.floor(60000 - elapsedSinceMeal)));
     assert.equal(await buff.locator('span').textContent(), '14:00');
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.keyboard.press('Digit1');
@@ -2122,4 +2229,47 @@ test('ambient sound switch changes actual output and respects volume and repeate
     assert.equal(await player.page.locator('#opt-ambient').getAttribute('aria-checked'),'true');
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
+});
+
+test('players trade through the actual interaction menu, offer quantities privately and commit both HUD inventories', {timeout:180000},async()=>{
+  const world=backend(),a=fixture('Alric','humano',100),b=fixture('Elara','elfo',101);
+  a.character.data.inventory=[{id:'pan_duro',count:10},{id:'pocion_vida_minuscula',count:3,bound:true}];
+  b.character.data.inventory=[{id:'pocion_mana_minuscula',count:8}];
+  a.character.data.wallet={pelines:100,premium:777};b.character.data.wallet={pelines:100,premium:888};
+  const first=await openPlayer(world,a),second=await openPlayer(world,b);
+  try {
+    await first.enter();await second.enter();
+    await nearbyInteractions(first.page,'Elara');
+    await first.page.getByRole('button',{name:'Invitar a intercambiar',exact:true}).click();
+    await second.page.getByRole('button',{name:'Abrir intercambio',exact:true}).click();
+    await first.page.getByText('Tu mochila intercambiable',{exact:true}).waitFor();
+    assert.equal(await first.page.locator('.trade-item').count(),1);
+    assert.equal(await first.page.locator('.trade-peer-offer .trade-offer-item').count(),0);
+    await first.page.getByLabel('Ofrecer Pan duro (1)',{exact:true}).fill('4');
+    await first.page.getByLabel('Pelines ofrecidos',{exact:true}).fill('30');
+    await first.page.getByRole('button',{name:'Actualizar oferta',exact:true}).click();
+    await second.page.locator('.trade-peer-offer').getByText('Pan duro ×4',{exact:true}).waitFor();
+    await second.page.getByLabel('Ofrecer Poción de maná minúscula (1)',{exact:true}).fill('3');
+    await second.page.getByRole('button',{name:'Actualizar oferta',exact:true}).click();
+    await first.page.locator('.trade-peer-offer').getByText('Poción de maná minúscula ×3',{exact:true}).waitFor();
+    for(const width of [1280,390,320]) {
+      await first.page.setViewportSize({width,height:844});
+      assert.equal(await first.page.locator('.trade-window').evaluate(el=>el.scrollWidth<=el.clientWidth),true,`Trade fits ${width}px`);
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`trade-${width}.png`)});
+    }
+    await first.page.getByRole('button',{name:'Aceptar intercambio',exact:true}).click();
+    await second.page.getByText('✓ El otro jugador ha aceptado.',{exact:true}).waitFor();
+    await first.page.getByRole('button',{name:'Atrás',exact:true}).click();
+    await first.page.getByText('Revisa ambas ofertas antes de aceptar.',{exact:true}).waitFor();
+    await first.page.getByRole('button',{name:'Aceptar intercambio',exact:true}).click();
+    await second.page.getByRole('button',{name:'Aceptar intercambio',exact:true}).click();
+    await first.page.getByText('¡Intercambio completado!',{exact:true}).waitFor();
+    await second.page.getByText('¡Intercambio completado!',{exact:true}).waitFor();
+    assert.equal(a.character.data.wallet.pelines,70);assert.equal(b.character.data.wallet.pelines,130);
+    assert.equal(a.character.data.wallet.premium,777);assert.equal(b.character.data.wallet.premium,888);
+    await first.page.getByRole('button',{name:'Cerrar',exact:true}).click();
+    await first.page.keyboard.press('KeyI');
+    await first.page.locator('[data-item-id="pocion_mana_minuscula"]').first().waitFor();
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
 });

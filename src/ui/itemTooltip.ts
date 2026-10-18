@@ -2,12 +2,13 @@ import { currencyIcon } from '../data/currency';
 import { itemDef, itemIcon, itemLabel, sellPrice } from '../data/items';
 import { getLanguage, t } from './i18n';
 
-export function setItemTooltip(target: HTMLElement, id: string) {
+export function setItemTooltip(target: HTMLElement, id: string, bound = false) {
   target.dataset.itemId = id;
+  target.dataset.itemBound = String(bound || itemDef(id)?.bound === true);
   target.setAttribute('aria-label', t(itemLabel(id)));
 }
 
-export function renderItemTooltip(container: HTMLElement, id: string) {
+export function renderItemTooltip(container: HTMLElement, id: string, bound = false) {
   const item = itemDef(id);
   if (!item) {
     const name = document.createElement('strong');
@@ -30,6 +31,10 @@ export function renderItemTooltip(container: HTMLElement, id: string) {
   identity.append(category, name);
   header.append(icon, identity);
   container.append(header);
+  const binding = document.createElement('p');
+  binding.className = 'item-tip-binding';
+  binding.textContent = t(bound || item.bound ? 'Ligado · No intercambiable' : 'Intercambiable');
+  container.append(binding);
 
   if (item.stats?.length) {
     const stats = document.createElement('dl');

@@ -6,6 +6,7 @@ import { inviteToParty } from '../services/party';
 
 const ICONS = {
   party: '<path class="icon-enamel" d="m24 4 17 9v21L24 44 7 34V13z"/><circle class="icon-parchment" cx="19" cy="17" r="5"/><circle class="icon-parchment" cx="32" cy="20" r="4"/><path class="icon-parchment" d="M10 34v-5a9 9 0 0 1 18 0v5m0-9a7 7 0 0 1 11 6v3"/><circle class="icon-seal" cx="33" cy="35" r="8"/><path class="icon-mark" d="M33 31v8m-4-4h8"/>',
+  trade: '<path class="icon-parchment" d="M8 12h32v27H8z"/><path class="icon-enamel" d="M8 17h15v22H8zm17-5h15v22H25z"/><circle class="icon-seal" cx="16" cy="27" r="5"/><circle class="icon-seal" cx="32" cy="23" r="5"/><path class="icon-mark" d="M5 7h30l-5-4M43 43H13l5 4"/>',
   friend: '<path class="icon-enamel" d="m24 4 15 6v14c0 10-8 16-15 20C17 40 9 34 9 24V10z"/><path class="icon-detail" d="m24 8 11 5v11c0 7-5 12-11 16-6-4-11-9-11-16V13z"/><circle class="icon-parchment" cx="21" cy="19" r="5"/><path class="icon-parchment" d="M13 33v-3a8 8 0 0 1 15-4"/><circle class="icon-seal" cx="33" cy="31" r="9"/><path class="icon-mark" d="M33 27v8m-4-4h8"/>',
   accept: '<path class="icon-enamel" d="m24 4 15 6v14c0 10-8 16-15 20C17 40 9 34 9 24V10z"/><path class="icon-detail" d="m24 8 11 5v11c0 7-5 12-11 16-6-4-11-9-11-16V13z"/><path class="icon-mark" d="m16 23 6 6 11-13"/><path d="m20 36 4 3 4-3"/>',
   remove: '<path class="icon-enamel" d="m24 4 15 6v14c0 10-8 16-15 20C17 40 9 34 9 24V10z"/><path class="icon-detail" d="m24 8 11 5v11c0 7-5 12-11 16-6-4-11-9-11-16V13z"/><circle class="icon-parchment" cx="21" cy="19" r="5"/><path class="icon-parchment" d="M13 33v-3a8 8 0 0 1 15-4"/><circle class="icon-wax" cx="33" cy="31" r="9"/><path class="icon-mark" d="M29 31h8"/>',
@@ -16,7 +17,7 @@ const ICONS = {
 interface Target { id: string; userId: string; name: string }
 interface Action { label: string; icon: keyof typeof ICONS; run(): Promise<void> | void }
 
-export function createPlayerInteractions() {
+export function createPlayerInteractions(inviteTrade?: (target: string) => Promise<void>) {
   const panel = document.createElement('section');
   panel.id = 'player-interactions';
   panel.className = 'player-interactions';
@@ -171,6 +172,10 @@ export function createPlayerInteractions() {
     actions.push({
       label:'Invitar a grupo',icon:'party',
       async run(){await inviteToParty(username);if(generation===version)status(t('Invitación de grupo enviada a ~{name}.',{name:username}));},
+    });
+    if(inviteTrade) actions.push({
+      label:'Invitar a intercambiar',icon:'trade',
+      async run(){await inviteTrade(person.id);if(generation===version)close();},
     });
     selected = Math.min(selected, actions.length - 1);
     status(`~${username}`);

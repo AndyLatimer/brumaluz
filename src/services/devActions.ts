@@ -42,11 +42,12 @@ export function simulateSpend(d: CharData, points: Partial<Record<AttributeId, n
 
 function addItem(d: CharData, id: string) {
   const stack = itemStack(id);
-  const slot = d.inventory.findIndex((s) => s && s.id === id && s.count < stack);
+  const bound = ITEMS[id]?.bound === true;
+  const slot = d.inventory.findIndex((s) => s && s.id === id && !!s.bound === bound && s.count < stack);
   if (slot >= 0) { d.inventory[slot]!.count++; return; }
   const free = d.inventory.findIndex((s, i) => !s && i < INVENTORY_UNLOCKED);
   if (free < 0) throw new Error('Tu mochila está llena.');
-  d.inventory[free] = { id, count: 1 };
+  d.inventory[free] = { id, count: 1, ...(bound ? { bound: true } : {}) };
 }
 
 function removeItem(d: CharData, slot: number) {

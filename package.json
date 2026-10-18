@@ -8,6 +8,8 @@
     "test:graphics": "npm run build && node --test scripts/test-graphics.mjs",
     "test:world": "npm run build && node --test scripts/test-world.mjs",
     "test:world:db": "node scripts/test-world-db.mjs",
+    "test:trade": "npm run build && node --test scripts/test-trade.mjs",
+    "test:trade:db": "node scripts/test-trade-db.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",

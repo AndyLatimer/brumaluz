@@ -14,6 +14,7 @@ export interface ActionBarHooks {
   storageKey: () => string;
   /** Unidades del objeto que hay ahora en la mochila. */
   count: (item: string) => number;
+  bound: (item: string) => boolean;
   /** Se pidió usar el objeto del hueco. */
   use: (item: string) => void;
 }
@@ -63,7 +64,7 @@ export function toggleActionBarPage() {
 /** Dibuja la barra solo si algo ha cambiado (para no romper el arrastre ni los tooltips). */
 export function renderActionBar(force = false) {
   load();
-  const next = `${page}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}` : '-')).join(',')}`;
+  const next = `${page}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
   if (!force && next === signature) return;
   signature = next;
   const switcher = document.createElement('button');
@@ -93,7 +94,7 @@ function slotElement(id: string | null, index: number) {
     const count = hooks.count(id);
     slot.classList.add('filled');
     slot.classList.toggle('empty', count === 0);
-    setItemTooltip(slot, id);
+    setItemTooltip(slot, id, hooks.bound(id));
     slot.tabIndex = 0;
     slot.insertAdjacentHTML('afterbegin', itemIcon(id));
     const amount = document.createElement('i');

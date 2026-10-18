@@ -62,7 +62,7 @@ function equipCell(d: CharData, slot: EquipmentSlot) {
   cell.append(el('small', undefined, t(SLOT_LABEL[slot])));
   if (item) {
     cell.removeAttribute('title');
-    setItemTooltip(cell, item.id);
+    setItemTooltip(cell, item.id, item.bound);
     cell.tabIndex = 0;
     if (itemDef(item.id)) {
       cell.innerHTML = itemIcon(item.id);
@@ -137,7 +137,7 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
     if (cell instanceof HTMLButtonElement) cell.type = 'button';
     cell.dataset.index = String(i);
     if (item) {
-      setItemTooltip(cell, item.id);
+      setItemTooltip(cell, item.id, item.bound);
       cell.tabIndex = 0;
       cell.setAttribute('aria-label', t('{name}, {n} unidades', { name: t(itemLabel(item.id)), n: item.count }));
       cell.innerHTML = itemIcon(item.id);
