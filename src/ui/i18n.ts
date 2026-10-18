@@ -3,6 +3,17 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Gráficos: normal': 'Graphics: normal',
+  'Gráficos: compatible': 'Graphics: compatibility',
+  'Cambiar modo gráfico (recarga la página)': 'Change graphics mode (reloads the page)',
+  'Problema con los gráficos': 'Graphics problem',
+  'Recargar en modo compatible': 'Reload in compatibility mode',
+  'Reintentar': 'Retry',
+  'El modo compatible desactiva efectos gráficos avanzados. No cambia tu cuenta ni tus personajes guardados.': 'Compatibility mode disables advanced graphics effects. It does not change your account or saved characters.',
+  'Se ha perdido la conexión con la tarjeta gráfica. Recarga el juego o prueba el modo compatible.': 'The connection to the graphics card was lost. Reload the game or try compatibility mode.',
+  'La tarjeta gráfica vuelve a responder. Recarga el juego para reconstruir el mundo.': 'The graphics card is responding again. Reload the game to rebuild the world.',
+  'No se pudo iniciar WebGL 2. Comprueba la aceleración gráfica de Chrome y el controlador de la tarjeta gráfica.': 'WebGL 2 could not start. Check Chrome graphics acceleration and your graphics card driver.',
+  'No se pudo dibujar el mundo 3D. Prueba el modo compatible.': 'The 3D world could not be rendered. Try compatibility mode.',
   'Encendiendo los faroles de Brumaluz…': 'Lighting the lanterns of Brumaluz…',
   'Un nuevo capítulo': 'A New Chapter',
   'Inicia sesión o crea una cuenta para entrar en el mundo de Brumaluz.': 'Sign in or create an account to enter the world of Brumaluz.',

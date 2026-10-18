@@ -33,6 +33,13 @@ html, body {
 }
 #loading .crest { font-size: 56px; animation: spin 3s linear infinite; color: var(--gold); text-shadow: 0 0 24px #ffb35a; }
 #loading.hide { opacity: 0; pointer-events: none; }
+#graphics-mode { position: fixed; left: 12px; top: 12px; z-index: 51; font-size: 12px; }
+body.playing #graphics-mode { display: none; }
+#graphics-error:not([hidden]) { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(26,16,18,.9); }
+#graphics-error .frame { width: min(600px, 100%); max-height: 90vh; overflow: auto; padding: 24px; background: var(--parch); }
+#graphics-error h2 { font-family: 'Cinzel', serif; }
+#graphics-error-details { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow: auto; font-size: 12px; user-select: text; }
+#graphics-error .btn { margin: 6px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 #account-backdrop { display: none; position: fixed; inset: 0; z-index: 0; overflow: hidden; }

@@ -16,7 +16,7 @@ import sunsetExr from '@pmndrs/assets/hdri/sunset.exr';
 export const SUN_DIR = new THREE.Vector3(-0.62, 0.7, 0.42).normalize();
 
 export interface Stage {
-  composer: EffectComposer;
+  composer: EffectComposer | null;
   sun: THREE.DirectionalLight;
   /** Centra el sol (y sus sombras) en un punto; `wide` para el modo exploración. */
   follow(p: THREE.Vector3, wide: boolean): void;
@@ -24,11 +24,11 @@ export interface Stage {
   render(): void;
 }
 
-export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, lowEnd: boolean): Stage {
+export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, lowEnd: boolean, compatible = false): Stage {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 0.92;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !compatible;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   scene.fog = new THREE.Fog('#e8b090', 45, 170);
@@ -36,7 +36,7 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   // Sol cálido y bajo, con sombras suaves centradas en el personaje
   const sun = new THREE.DirectionalLight('#ffd2a0', 3.2);
   sun.position.copy(SUN_DIR).multiplyScalar(8);
-  sun.castShadow = true;
+  sun.castShadow = !compatible;
   sun.shadow.mapSize.set(lowEnd ? 1024 : 2048, lowEnd ? 1024 : 2048);
   const sc = sun.shadow.camera;
   sc.left = -2.2; sc.right = 2.2; sc.top = 2.6; sc.bottom = -1.2; sc.near = 1; sc.far = 20;
@@ -61,24 +61,27 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
 
   // Reflejos e iluminación ambiental de un HDRI de atardecer
   scene.environmentIntensity = 0.4;
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  let hdrTexture: THREE.DataTexture | undefined;
-  try {
-    hdrTexture = loadEXR(sunsetExr);
-    scene.environment = pmrem.fromEquirectangular(hdrTexture).texture;
-  } catch (e) {
-    console.warn('Sin HDRI:', e);
-  } finally {
-    hdrTexture?.dispose();
-    pmrem.dispose();
+  if (!compatible) {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    let hdrTexture: THREE.DataTexture | undefined;
+    try {
+      hdrTexture = loadEXR(sunsetExr);
+      scene.environment = pmrem.fromEquirectangular(hdrTexture).texture;
+    } catch (e) {
+      console.warn('Sin HDRI:', e);
+    } finally {
+      hdrTexture?.dispose();
+      pmrem.dispose();
+    }
   }
 
   // Postprocesado
-  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: lowEnd ? 0 : 4 });
-  const composer = new EffectComposer(renderer, target);
-  composer.addPass(new RenderPass(scene, camera));
+  const composer = compatible ? null : new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType, samples: lowEnd ? 0 : Math.min(4, renderer.capabilities.maxSamples),
+  }));
+  composer?.addPass(new RenderPass(scene, camera));
   let gtao: GTAOPass | null = null;
-  if (!lowEnd) {
+  if (composer && !lowEnd) {
     gtao = new GTAOPass(scene, camera, 1, 1);
     gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.5, thickness: 1, scale: 1.2, samples: 12 });
     gtao.blendIntensity = 0.75;
@@ -93,9 +96,10 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
     };
     composer.addPass(gtao);
   }
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.28, 0.6, 0.88);
-  composer.addPass(bloom);
-  composer.addPass(new OutputPass());
+  if (composer) {
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.28, 0.6, 0.88));
+    composer.addPass(new OutputPass());
+  }
 
   return {
     composer,
@@ -115,11 +119,14 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
       sun.target.position.z = Math.round(sun.target.position.z / texel) * texel;
     },
     resize(w, h) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
+      composer?.setPixelRatio(renderer.getPixelRatio());
+      composer?.setSize(w, h);
       gtao?.setSize(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
     },
-    render() { composer.render(); },
+    render() {
+      if (composer) composer.render();
+      else renderer.render(scene, camera);
+    },
   };
 }
 

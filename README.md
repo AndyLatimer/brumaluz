@@ -38,6 +38,21 @@ MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 
 La clave publishable es para el navegador y está protegida por las políticas RLS de la base de datos. **No uses ni publiques una `service_role` o secret key en la web.** La autenticación real necesita el proyecto de Supabase y su esquema; sin esa configuración, el sitio muestra qué falta y no ofrece un acceso simulado.
 
+### Despliegue público en Vercel
+
+1. Sube la rama `main` a GitHub e importa `AndyLatimer/brumaluz` desde [Vercel](https://vercel.com/new). Elige `brumaluz` como nombre del proyecto si está disponible; la URL resultante será `https://brumaluz.vercel.app`. Si el nombre ya está ocupado, Vercel pedirá elegir otro.
+2. Vercel detecta Vite automáticamente. Comprueba que el comando de build sea `npm run build` y el directorio de salida `dist`.
+3. En **Project Settings → Environment Variables**, configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` con los valores del proyecto de Supabase. Añádelas al menos al entorno **Production** (y también a **Preview** si quieres que las previsualizaciones puedan iniciar sesión). Son las mismas variables que en `.env.local`; no añadas `SUPABASE_DB_URL`, `service_role` ni ninguna clave secreta al sitio.
+4. Haz el primer deploy. En Supabase, ve a **Authentication → URL Configuration** y establece **Site URL** como la URL de producción asignada por Vercel. Añade también `https://brumaluz.vercel.app/**` a **Redirect URLs**. Si Vercel asigna otro subdominio, usa ese dominio real en ambos campos.
+5. Antes de abrir el juego al público, desactiva las acciones del NPC de pruebas en el SQL Editor de Supabase:
+
+   ```sql
+   update public.server_config set value = 'false'::jsonb where key = 'debug_actions';
+   ```
+
+   Comprueba el resultado con `select key, value from public.server_config where key = 'debug_actions';`. Así se desactivan las acciones de prueba de daño, curación, XP y dinero; las funciones normales del juego siguen disponibles.
+6. Cada push a `main` desplegará una nueva versión automáticamente. Para usar un dominio propio más adelante, añádelo en **Project Settings → Domains** y actualiza **Site URL** y **Redirect URLs** en Supabase.
+
 ## Creador de personaje
 
 - Linajes: Humano, Elfo, Lagto' (gente lagarto) y Pelso (gente gato), hombre o mujer.
@@ -113,5 +128,15 @@ npm install
 npm run dev     # servidor de desarrollo
 npm run build   # genera dist/index.html (un único archivo)
 ```
+
+### Compatibilidad gráfica
+
+- Si la interfaz funciona pero el mundo o el creador aparecen vacíos, abre `https://brumaluz.vercel.app/?graphics=compatible`. El botón «Gráficos» en la pantalla de acceso y el creador permite alternar y recarga la página; guarda el personaje antes de cambiar de modo.
+- El modo compatible conserva la ciudad y los personajes, pero no usa HDRI, sombras ni posprocesado (oclusión ambiental y resplandor). Limita la resolución a 1920 × 1080 y reduce la captura del minimapa. Se activa automáticamente si falta `EXT_color_buffer_float`; no depende del modelo de tarjeta gráfica.
+- El modo normal conserva los efectos, pero limita el renderizado a 2560 × 1440 para no multiplicar innecesariamente los buffers en pantallas de alta densidad.
+- Una pérdida del contexto WebGL o un fallo de shaders muestra un aviso con opciones de recarga, en lugar de dejar solo el mundo vacío. Si WebGL 2 no está disponible, el aviso indica comprobar la aceleración gráfica del navegador y el controlador; el modo compatible también necesita WebGL 2.
+- Pruebas: `npm run test:graphics` compila y usa Playwright para comprobar ambos modos con ciudad y personajes, resolución, falta de texturas flotantes, pérdida de contexto y fallos de WebGL/shaders. Requiere un navegador instalado (Edge en Windows, Chromium de Playwright en otros sistemas); `PLAYWRIGHT_CHANNEL` permite elegir otro canal.
+
+El chat es compartido en tiempo real, pero aún no existe sincronización de presencia, aspecto ni movimiento de otros jugadores en el mundo 3D.
 
 Tecnología: Three.js + TypeScript + Vite.

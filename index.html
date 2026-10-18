@@ -14,6 +14,18 @@
 
   <div id="loading"><div class="crest">✦</div><p>Encendiendo los faroles de Brumaluz…</p></div>
 
+  <button id="graphics-mode" type="button" class="btn ghost" title="Cambiar modo gráfico (recarga la página)">Gráficos: normal</button>
+  <section id="graphics-error" role="alert" aria-labelledby="graphics-error-title" hidden>
+    <div class="frame">
+      <h2 id="graphics-error-title">Problema con los gráficos</h2>
+      <p id="graphics-error-message"></p>
+      <pre id="graphics-error-details"></pre>
+      <p>El modo compatible desactiva efectos gráficos avanzados. No cambia tu cuenta ni tus personajes guardados.</p>
+      <button id="graphics-compatible" type="button" class="btn gold">Recargar en modo compatible</button>
+      <button id="graphics-retry" type="button" class="btn ghost">Reintentar</button>
+    </div>
+  </section>
+
   <div id="account-backdrop" aria-hidden="true">
     <span class="account-moon"></span>
     <span class="account-mountains"></span>

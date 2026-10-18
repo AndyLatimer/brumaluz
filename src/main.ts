@@ -17,6 +17,7 @@ import { buildEnv } from './world/env';
 import { Character, loadKits } from './character/character';
 import { createCharacterPortrait } from './character/portrait';
 import { setupStage, castShadows } from './world/render';
+import { createGraphics } from './world/graphics';
 import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './character/head';
@@ -50,14 +51,22 @@ let passwordRecoveryUser: User | null = null;
 
 // ---------------- Render ----------------
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const graphics = createGraphics(canvas);
+const renderer = graphics.renderer;
+graphics.resize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 900);
 const env = buildEnv(scene);
-const lowEnd = window.innerWidth <= 760 || /Mobi|Android/i.test(navigator.userAgent);
-const stage = setupStage(renderer, scene, camera, lowEnd);
+const lowEnd = graphics.compatible || window.innerWidth <= 760 || /Mobi|Android/i.test(navigator.userAgent);
+const stage = (() => {
+  try {
+    return setupStage(renderer, scene, camera, lowEnd, graphics.compatible);
+  } catch (error) {
+    graphics.fail('No se pudo dibujar el mundo 3D. Prueba el modo compatible.', error);
+    throw error;
+  }
+})();
 
 const holder = new THREE.Group();
 holder.rotation.y = -0.3;
@@ -103,7 +112,7 @@ const tmp = new THREE.Vector3();
 
 function layout() {
   const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h, false);
+  graphics.resize(w, h);
   stage.resize(w, h);
   camera.aspect = w / h;
   if (mode === 'play') {
@@ -1921,7 +1930,7 @@ try {
 }
 scene.add(city.root);
 try {
-  setMinimapImage(captureTopDown(renderer, scene, city.root, lowEnd ? 1536 : 2560));
+  setMinimapImage(captureTopDown(renderer, scene, city.root, graphics.compatible ? 1024 : lowEnd ? 1536 : 2560));
 } catch (e) {
   console.warn('Sin imagen para el minimapa:', e);
 }
@@ -2004,6 +2013,7 @@ layout();
 
 let last = 0;
 renderer.setAnimationLoop(() => {
+  if (graphics.failed) return;
   const t = clock.getElapsedTime();
   const dt = Math.min(t - last, 0.05);
   last = t;
@@ -2022,7 +2032,11 @@ renderer.setAnimationLoop(() => {
   updateNameplate();
   updateInteractPrompt();
   if (mode === 'play') updateMinimap();
-  if (TEST) renderer.render(scene, camera); else stage.render();
+  try {
+    if (TEST) renderer.render(scene, camera); else stage.render();
+  } catch (error) {
+    graphics.fail('No se pudo dibujar el mundo 3D. Prueba el modo compatible.', error);
+  }
 });
 
 requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide'), 400));

@@ -32,6 +32,10 @@ export interface PortraitOptions {
   aspect?: number;
 }
 
+function previewSamples(renderer: THREE.WebGLRenderer) {
+  return renderer.getContext().getContextAttributes()?.antialias ? Math.min(4, renderer.capabilities.maxSamples) : 0;
+}
+
 export function createCharacterPortrait(data: CharData, renderer: THREE.WebGLRenderer, options: PortraitOptions = {}) {
   const scale = options.scale ?? 1;
   const aspect = options.aspect ?? WIDTH / HEIGHT;
@@ -39,7 +43,7 @@ export function createCharacterPortrait(data: CharData, renderer: THREE.WebGLRen
   const H = Math.round(W / aspect);
   const target_ = scale === 1 && !options.aspect
     ? renderTarget
-    : new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, type: THREE.UnsignedByteType, samples: 4, depthBuffer: true });
+    : new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, type: THREE.UnsignedByteType, samples: previewSamples(renderer), depthBuffer: true });
   camera.aspect = aspect;
   target_.texture.colorSpace = THREE.SRGBColorSpace;
   // Misma ropa que lleva el personaje dentro del juego (atuendo de aldeano con sus colores).
@@ -106,7 +110,7 @@ export function createCharacterTurntable(data: CharData, renderer: THREE.WebGLRe
   const aspect = options.aspect;
   const W = Math.round(WIDTH * (options.scale ?? 1));
   const H = Math.round(W / aspect);
-  const target = new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, type: THREE.UnsignedByteType, samples: 4, depthBuffer: true });
+  const target = new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, type: THREE.UnsignedByteType, samples: previewSamples(renderer), depthBuffer: true });
   target.texture.colorSpace = THREE.SRGBColorSpace;
   const character = new Character({ ...data }, { outfit: false });
   scene.add(character.root);
