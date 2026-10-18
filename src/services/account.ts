@@ -82,6 +82,9 @@ interface Database {
       my_titles: { Args: Record<string, never>; Returns: Json };
       chat_send: { Args: { p_character_id: string; p_body: string; p_channel?: string; p_to?: string | null }; Returns: Json };
       save_character_position: { Args: { p_character_id: string; p_x: number; p_z: number; p_yaw: number }; Returns: Json };
+      world_join: { Args: { p_character_id: string; p_session_id: string }; Returns: Json };
+      world_sync: { Args: { p_character_id: string; p_session_id: string; p_state: Json }; Returns: Json };
+      world_leave: { Args: { p_character_id: string; p_session_id: string }; Returns: undefined };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -173,6 +176,8 @@ export async function getProfileUsername(userId: string) {
 }
 
 const SERVER_ERRORS: Record<string, string> = {
+  WORLD_SESSION_REPLACED: 'Tu cuenta ha entrado al mundo desde otra pestaña o equipo.',
+  INVALID_WORLD_STATE: 'El servidor ha rechazado el movimiento del personaje.',
   CHARACTER_LIMIT_REACHED: `Cada cuenta puede tener un máximo de ${MAX_CHARACTERS_PER_ACCOUNT} personajes. Borra uno antes de crear otro.`,
   INVALID_NAME: 'Tu nombre necesita entre 3 y 16 letras.',
   INVALID_CHARACTER: 'El servidor ha rechazado los datos del personaje.',
@@ -271,6 +276,21 @@ export interface PositionResult {
 }
 export async function saveCharacterPosition(id: string, x: number, z: number, yaw: number) {
   return (await serverCall(requireClient().rpc('save_character_position', { p_character_id: id, p_x: x, p_z: z, p_yaw: yaw }))) as unknown as PositionResult;
+}
+
+export function joinWorld(characterId: string, sessionId: string) {
+  return serverCall(requireClient().rpc('world_join', { p_character_id: characterId, p_session_id: sessionId }).abortSignal(AbortSignal.timeout(8000)));
+}
+
+export function syncWorld(characterId: string, sessionId: string, state: { x: number; z: number; yaw: number; facing: number; jump: number; wave: number }) {
+  return requireClient().rpc('world_sync', { p_character_id: characterId, p_session_id: sessionId, p_state: state }).abortSignal(AbortSignal.timeout(8000)).then(({ data, error }) => {
+    if (error) throw new Error(error.message);
+    return data;
+  });
+}
+
+export async function leaveWorld(characterId: string, sessionId: string) {
+  await serverCall(requireClient().rpc('world_leave', { p_character_id: characterId, p_session_id: sessionId }).abortSignal(AbortSignal.timeout(8000)));
 }
 export type ChatChannel = 'general' | 'zone' | 'whisper';
 export interface ChatMessage {

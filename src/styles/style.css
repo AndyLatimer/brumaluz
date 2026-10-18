@@ -24,6 +24,10 @@ html, body {
 }
 #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
 #scene.drag { cursor: grabbing; }
+#multiplayer-status { display: none; }
+body.playing #multiplayer-status { display: block; position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 12; max-width: 80vw; padding: 5px 12px; border-radius: 12px; background: rgba(26,16,18,.75); color: var(--gold-hi); font-size: 13px; text-align: center; pointer-events: none; }
+body.playing #multiplayer-status.error { color: #ffb7a0; }
+.nameplate.player strong { color: #c9e9ff; }
 
 #loading {
   position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; text-align: center;

@@ -3,6 +3,13 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Mundo compartido · {count} jugadores': 'Shared world · {count} players',
+  'Conexión al mundo interrumpida. Reintentando…': 'World connection interrupted. Retrying…',
+  'Tu cuenta ha entrado al mundo desde otra pestaña o equipo.': 'Your account entered the world from another tab or device.',
+  'Sesión de juego cerrada': 'Game session closed',
+  'La entrada al mundo se ha cancelado.': 'Entering the world was cancelled.',
+  'Respuesta multijugador no válida.': 'Invalid multiplayer response.',
+  'El servidor ha rechazado el movimiento del personaje.': 'The server rejected the character movement.',
   'Gráficos: normal': 'Graphics: normal',
   'Gráficos: compatible': 'Graphics: compatibility',
   'Cambiar modo gráfico (recarga la página)': 'Change graphics mode (reloads the page)',

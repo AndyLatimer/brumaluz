@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
-  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles, saveCharacterPosition,
+  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles,
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, sendChatMessage, fetchChatHistory, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
@@ -18,6 +18,8 @@ import { Character, loadKits } from './character/character';
 import { createCharacterPortrait } from './character/portrait';
 import { setupStage, castShadows } from './world/render';
 import { createGraphics } from './world/graphics';
+import { RemotePlayers } from './world/players';
+import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './character/head';
@@ -199,6 +201,7 @@ let running = true;
 let jumpDuration = 0;
 let jumpElapsed = 0;
 let jumpHeight = 0;
+let waveSequence = 0;
 let groundHeight = 0;
 function startJump() {
   if (jumpDuration > 0 && jumpElapsed < jumpDuration) return;
@@ -273,7 +276,7 @@ window.addEventListener('keydown', (e) => {
   }
   keys.add(e.code);
   if (e.code === 'KeyE' && !e.repeat) interact();
-  if (e.code === 'IntlBackslash' || e.key === '<') char.wave();
+  if (e.code === 'IntlBackslash' || e.key === '<') { char.wave(); waveSequence++; }
   if (e.code === 'Space') {
     e.preventDefault();
     if (!e.repeat) startJump();
@@ -813,6 +816,7 @@ function enterPlay() {
   rebuildNow();
   layout();
   startChat();
+  worldConnection?.start();
 }
 let chatUnsubscribe: (() => void) | null = null;
 let chatSeq = 0;
@@ -836,13 +840,14 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  stopMultiplayer();
   stopChat();
   dead = false;
   clearScreenEffects();
   closeDialog();
   $('#interact-prompt').hidden = true;
   $('#death-screen').hidden = true;
-  document.body.classList.remove('dead');
+  document.body.classList.remove('dead', 'playing');
   if (state.health === 0) state.health = -1;
   mode = 'create';
   void ambientSoundscape.setEnabled(false);
@@ -890,13 +895,18 @@ initMinimap({
   markers: () => npcActors.map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
   zone: () => LOCATIONS[state.location],
 });
-setChatSpeechListener((name, text, own) => { if (own) playerSay(name, text); });
+setChatSpeechListener((name, text, own, userId) => {
+  if (own) playerSay(name, text);
+  else remotePlayers.say(userId, name, text);
+});
 setDialogLogger((speaker, text) => {
   if (speaker === null) { chatSelfSay(state.name, t(text)); char.speak(speechSeconds(text)); }
   else { chatNpc(speaker, t(text)); npcSay(speaker, t(text)); }
 });
 
 function refreshLanguageDependentUI() {
+  remotePlayers.refreshLanguage();
+  if (mode === 'play' && worldConnection) refreshWorldStatus();
   const language = getLanguage();
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-language]')) {
     const selected = button.dataset.language === language;
@@ -1595,6 +1605,7 @@ async function loadCharacterSelection(user: User) {
 
 async function syncAccount(sessionUser: User | null) {
   if (!sessionUser) {
+    stopMultiplayer();
     if (mode === 'play') exitPlay();
     accountSyncId++;
     currentUser = null;
@@ -1603,6 +1614,8 @@ async function syncAccount(sessionUser: User | null) {
     showAuthScreen();
     return;
   }
+  if (currentUser?.id === sessionUser.id && (mode === 'play' || worldConnection)) return;
+  if (currentUser?.id !== sessionUser.id) stopMultiplayer();
   if (currentUser && currentUser.id !== sessionUser.id && mode === 'play') exitPlay();
   await loadCharacterSelection(sessionUser);
 }
@@ -1657,45 +1670,86 @@ async function createCurrentCharacter() {
 /** Pide al servidor los datos vigentes del personaje antes de entrar al mundo. */
 async function loadWorldState() {
   if (!activeCharacterId) { if (TEST) setGrantedTitles(['rey_de_pompelin']); return TEST; }
+  const characterId = activeCharacterId;
+  const userId = currentUser?.id;
+  const syncId = accountSyncId;
+  const stillCurrent = () => activeCharacterId === characterId && currentUser?.id === userId && accountSyncId === syncId;
   try {
-    Object.assign(state, sanitize(await enterCharacter(activeCharacterId)));
+    const data = await enterCharacter(characterId);
+    if (!stillCurrent()) return false;
+    Object.assign(state, sanitize(data));
     resetOverheal();
-    setGrantedTitles(await getMyTitles().catch(() => []));
-    return true;
+    const titles = await getMyTitles();
+    if (!stillCurrent()) return false;
+    setGrantedTitles(titles);
+    await prepareMultiplayer();
+    return stillCurrent();
   } catch (error) {
+    if (!stillCurrent()) return false;
+    stopMultiplayer();
     toast('No se pudo guardar', errorMessage(error), true);
     return false;
   }
 }
 
-/** Envía la posición al servidor, que la valida: si el salto desde la anterior es imposible, te devuelve a la última válida. */
-let positionBusy = false;
-async function syncPosition() {
-  if (!activeCharacterId || mode !== 'play' || dead || positionBusy) return;
-  positionBusy = true;
-  try {
-    const result = await saveCharacterPosition(activeCharacterId, Number(holder.position.x.toFixed(2)), Number(holder.position.z.toFixed(2)), Number(yaw.toFixed(2)));
-    if (result.position) state.position = result.position;
-    if (result.status === 'too_far' && result.position) {
-      holder.position.set(result.position.x, city.groundY(result.position.x, result.position.z), result.position.z);
-      groundHeight = holder.position.y;
-      playerVel.set(0, 0, 0);
-      moveTarget = null;
-      marker.visible = false;
-    }
-  } catch {
-    // un fallo de red puntual no debe interrumpir el juego; se reintenta en el siguiente ciclo
-  } finally {
-    positionBusy = false;
-  }
+const remotePlayers = new RemotePlayers(scene, (x, z) => city.groundY(x, z));
+let worldConnection: WorldConnection | null = null;
+let worldRetrying = false;
+
+function refreshWorldStatus() {
+  $('#multiplayer-status').textContent = t(worldRetrying ? 'Conexión al mundo interrumpida. Reintentando…' : 'Mundo compartido · {count} jugadores', { count: remotePlayers.list().length + 1 });
+  $('#multiplayer-status').classList.toggle('error', worldRetrying);
 }
-window.setInterval(() => void syncPosition(), 5000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') void syncPosition(); });
-window.addEventListener('pagehide', () => void syncPosition());
+function receiveWorld(value: WorldSnapshot) {
+  state.position = value.position;
+  if (value.status === 'corrected') {
+    holder.position.set(value.position.x, city.groundY(value.position.x, value.position.z), value.position.z);
+    groundHeight = holder.position.y;
+    playerVel.set(0, 0, 0);
+    moveTarget = null;
+    marker.visible = false;
+  }
+  remotePlayers.receive(value.players);
+  refreshWorldStatus();
+}
+async function prepareMultiplayer() {
+  stopMultiplayer();
+  if (TEST || !activeCharacterId) return;
+  waveSequence = 0;
+  const connection = new WorldConnection(activeCharacterId, {
+    motion: () => ({ x: holder.position.x, z: holder.position.z, yaw, facing: holder.rotation.y, jump: Math.min(0.7, Math.max(0, jumpHeight)), wave: waveSequence }),
+    receive: receiveWorld,
+    connection: (status) => {
+      worldRetrying = status === 'retrying';
+      refreshWorldStatus();
+      if (worldRetrying) chatSystem(t('Conexión al mundo interrumpida. Reintentando…'));
+    },
+    replaced: () => {
+      exitPlay();
+      if (currentUser) void loadCharacterSelection(currentUser);
+      toast('Sesión de juego cerrada', 'Tu cuenta ha entrado al mundo desde otra pestaña o equipo.', true);
+    },
+  });
+  worldConnection = connection;
+  const initial = await connection.join();
+  if (worldConnection !== connection || !initial) throw new Error(t('La entrada al mundo se ha cancelado.'));
+  state.position = initial.position;
+  remotePlayers.receive(initial.players);
+}
+function stopMultiplayer() {
+  const connection = worldConnection;
+  worldConnection = null;
+  const stopped = connection?.stop();
+  remotePlayers.clear();
+  $('#multiplayer-status').textContent = '';
+  return stopped;
+}
+window.addEventListener('pagehide', stopMultiplayer);
+window.addEventListener('pageshow', (event) => { if (event.persisted && mode === 'play') void returnToCharacters(); });
 
 async function returnToCharacters() {
   if (mode === 'play') {
-    await syncPosition();
+    await stopMultiplayer();
     exitPlay();
   }
   if (currentUser) await loadCharacterSelection(currentUser);
@@ -1849,7 +1903,7 @@ $('#game-menu-logout').onclick = async () => {
   logoutButton.disabled = true;
   $('#game-menu-message').textContent = t('Cerrando sesión…');
   try {
-    if (mode === 'play') await syncPosition();
+    if (mode === 'play') await stopMultiplayer();
     await signOut();
     await syncAccount(null);
   } catch (error) {
@@ -1881,7 +1935,7 @@ $('#enter').onclick = async () => {
   if (!(await loadWorldState())) return;
   focus = 'body';
   enterPlay();
-  setTimeout(() => char.wave(), 60);
+  setTimeout(() => { if (mode === 'play') { char.wave(); waveSequence++; } }, 60);
   toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: state.name });
 };
 
@@ -2030,6 +2084,7 @@ renderer.setAnimationLoop(() => {
   updateCamera(dt);
   applyCameraShake();
   updateNameplate();
+  if (mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);
   updateInteractPrompt();
   if (mode === 'play') updateMinimap();
   try {
@@ -2053,7 +2108,7 @@ if (TEST) {
 (window as unknown as { brumaluz: object }).brumaluz = {
   set(d: Partial<CharData>) { state = sanitize({ ...state, ...d } as unknown as Record<string, unknown>); rebuildNow(); refreshUI(); },
   tab: selectTab,
-  wave() { char.wave(); },
+  wave() { char.wave(); waveSequence++; },
   speak(s: number) { char.speak(s); },
   play: () => enterPlay(),
   spin(a: number) { holder.rotation.y = a; spinVel = 0; },
@@ -2061,5 +2116,6 @@ if (TEST) {
   view(y: number, p: number, d: number) { yaw = y; pitch = p; followDist = d; zoomTarget = d; },
   char: () => char,
   city: () => city,
+  players: () => remotePlayers.list(),
   time() { const t0 = performance.now(); rebuildNow(); return performance.now() - t0; },
 };

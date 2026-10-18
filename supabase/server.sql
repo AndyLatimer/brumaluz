@@ -247,6 +247,7 @@ declare
 begin
   if coalesce((d ->> 'health')::int, -1) = 0 then
     d := (d - 'position') || jsonb_build_object('health', -1);
+    update public.world_players set dead = true where character_id = c.id;
   end if;
   d := d || jsonb_build_object('location', 'brumaluz', 'position_at', extract(epoch from now()));
   return public.game_store(c.id, d);
@@ -283,6 +284,9 @@ declare
 begin
   if coalesce((d ->> 'health')::int, -1) <> 0 then return d; end if;
   d := (d - 'position') || jsonb_build_object('health', -1, 'location', 'brumaluz', 'position_at', extract(epoch from now()));
+  update public.world_players set dead = true,
+    position = (select value || '{"yaw":0}'::jsonb from public.server_config where key = 'spawn')
+    where character_id = c.id;
   return public.game_store(c.id, d);
 end;
 $$;
@@ -678,6 +682,199 @@ begin
   return jsonb_build_object('status', 'ok', 'position', d -> 'position');
 end;
 $$;
+
+-- ---------- Mundo compartido ----------
+-- Una concesión por cuenta. No se publica la tabla characters ni el inventario de otros jugadores.
+create table if not exists public.world_players (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  character_id uuid not null unique references public.characters(id) on delete cascade,
+  session_id uuid not null,
+  position jsonb not null,
+  facing double precision not null default 0,
+  jump double precision not null default 0,
+  wave int not null default 0,
+  dead boolean not null default false,
+  movement_credit double precision not null default 3,
+  seen_at timestamptz not null default now(),
+  saved_at timestamptz not null default now()
+);
+alter table public.world_players enable row level security;
+revoke all on table public.world_players from public, anon, authenticated;
+
+create or replace function public.game_public_character(d jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(jsonb_object_agg(key, value), '{}'::jsonb)
+  from jsonb_each(d)
+  where key = any(array[
+    'name', 'title', 'level', 'race', 'cls', 'sex', 'height', 'build', 'skin', 'face',
+    'hair', 'hairColor', 'beard', 'eyeShape', 'eyeColor', 'brows', 'nose', 'mouth', 'detail',
+    'trait', 'primary', 'secondary', 'cape', 'clothA', 'clothB', 'hairAcc', 'hairAccColor',
+    'acc', 'makeup', 'makeupColor', 'accColor'
+  ])
+$$;
+
+create or replace function public.game_world_snapshot(p_user_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', w.character_id, 'userId', w.user_id,
+    'data', public.game_public_character(c.data) || jsonb_build_object('name', c.name),
+    'position', w.position, 'facing', w.facing, 'jump', w.jump, 'wave', w.wave,
+    'dead', public.game_health(c.data) = 0
+  ) order by w.character_id), '[]'::jsonb)
+  from public.world_players w
+  join public.characters c on c.id = w.character_id
+  where w.user_id <> p_user_id and w.seen_at > now() - interval '15 seconds'
+    and coalesce(c.data ->> 'location', 'brumaluz') = (
+      select coalesce(me.data ->> 'location', 'brumaluz')
+      from public.world_players mine join public.characters me on me.id = mine.character_id
+      where mine.user_id = p_user_id
+    )
+$$;
+
+create or replace function public.world_join(p_character_id uuid, p_session_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  previous public.world_players;
+  spawn jsonb := (select value from public.server_config where key = 'spawn');
+  pos jsonb;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  if p_session_id is null then raise exception 'INVALID_WORLD_STATE'; end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
+  c := public.game_lock_character(p_character_id);
+  select * into previous from public.world_players where user_id = uid for update;
+  -- Conserva la posición más reciente al abrir otra pestaña, sin retroceder al último checkpoint.
+  if previous.character_id is not null and not previous.dead then
+    perform public.game_store(previous.character_id,
+      (select data from public.characters where id = previous.character_id)
+      || jsonb_build_object('position', previous.position, 'position_at', extract(epoch from now())));
+  end if;
+  if previous.character_id = c.id and not previous.dead then pos := previous.position;
+  else pos := coalesce(c.data -> 'position', jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0));
+  end if;
+  insert into public.world_players(user_id, character_id, session_id, position, facing, dead)
+    values(uid, c.id, p_session_id, pos, coalesce((pos ->> 'yaw')::double precision, 0) + pi(), public.game_health(c.data) = 0)
+  on conflict (user_id) do update set
+    character_id = excluded.character_id, session_id = excluded.session_id,
+    position = excluded.position, facing = excluded.facing, jump = 0, wave = 0,
+    dead = excluded.dead,
+    movement_credit = case when world_players.character_id = excluded.character_id then world_players.movement_credit else 3 end,
+    seen_at = now(), saved_at = now();
+  return jsonb_build_object('position', pos, 'status', 'ok', 'players', public.game_world_snapshot(uid));
+end;
+$$;
+
+create or replace function public.world_sync(p_character_id uuid, p_session_id uuid, p_state jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  w public.world_players;
+  cfg_limit double precision := (select (value #>> '{}')::double precision from public.server_config where key = 'world_limit');
+  cfg_speed double precision := (select (value #>> '{}')::double precision from public.server_config where key = 'max_speed');
+  spawn jsonb := (select value from public.server_config where key = 'spawn');
+  px double precision;
+  pz double precision;
+  pyaw double precision;
+  facing double precision;
+  v_jump double precision;
+  v_wave int;
+  credit double precision;
+  distance double precision;
+  is_dead boolean;
+  status text := 'ok';
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
+  c := public.game_lock_character(p_character_id);
+  select * into w from public.world_players where user_id = uid for update;
+  if w.session_id is distinct from p_session_id or w.character_id is distinct from c.id then
+    raise exception 'WORLD_SESSION_REPLACED';
+  end if;
+  if jsonb_typeof(p_state) is distinct from 'object' then raise exception 'INVALID_WORLD_STATE'; end if;
+  if not (p_state ?& array['x','z','yaw','facing','jump','wave']) or exists (
+    select 1 from jsonb_each(p_state) where key = any(array['x','z','yaw','facing','jump','wave']) and jsonb_typeof(value) <> 'number'
+  ) then raise exception 'INVALID_WORLD_STATE'; end if;
+  px := (p_state ->> 'x')::double precision;
+  pz := (p_state ->> 'z')::double precision;
+  pyaw := (p_state ->> 'yaw')::double precision;
+  facing := (p_state ->> 'facing')::double precision;
+  v_jump := (p_state ->> 'jump')::double precision;
+  if not (px between -cfg_limit and cfg_limit and pz between -cfg_limit and cfg_limit
+    and pyaw between -1000000 and 1000000 and facing between -1000000 and 1000000
+    and v_jump between 0 and 0.7 and (p_state ->> 'wave')::numeric between 0 and 2147483647
+    and (p_state ->> 'wave')::numeric = trunc((p_state ->> 'wave')::numeric)) then
+    raise exception 'INVALID_WORLD_STATE';
+  end if;
+  v_wave := (p_state ->> 'wave')::int;
+  is_dead := public.game_health(c.data) = 0;
+  credit := least(3, w.movement_credit) + cfg_speed * least(15, greatest(0, extract(epoch from now() - w.seen_at)));
+  distance := sqrt(power(px - (w.position ->> 'x')::double precision, 2) + power(pz - (w.position ->> 'z')::double precision, 2));
+  if w.dead and not is_dead then
+    w.position := coalesce(c.data -> 'position', jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0));
+    status := 'corrected';
+  elsif is_dead or distance > credit then
+    status := 'corrected';
+  else
+    w.position := jsonb_build_object('x', px, 'z', pz, 'yaw', pyaw);
+    w.facing := facing;
+    credit := greatest(0, credit - distance);
+  end if;
+  update public.world_players set position = w.position, facing = w.facing,
+    jump = case when is_dead then 0 else v_jump end, wave = v_wave,
+    dead = is_dead, movement_credit = least(3, credit), seen_at = now()
+    where user_id = uid;
+  if now() - w.saved_at >= interval '5 seconds' then
+    perform public.game_store(c.id, c.data || jsonb_build_object('position', w.position, 'position_at', extract(epoch from now())));
+    update public.world_players set saved_at = now() where user_id = uid;
+  end if;
+  return jsonb_build_object('status', status, 'position', w.position, 'players', public.game_world_snapshot(uid));
+end;
+$$;
+
+create or replace function public.world_leave(p_character_id uuid, p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  w public.world_players;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
+  select * into w from public.world_players where user_id = uid and character_id = p_character_id and session_id = p_session_id for update;
+  if not found then return; end if;
+  c := public.game_lock_character(p_character_id);
+  perform public.game_store(c.id, c.data || jsonb_build_object('position', w.position, 'position_at', extract(epoch from now())));
+  delete from public.world_players where user_id = uid and session_id = p_session_id;
+end;
+$$;
+
+revoke all on function public.game_public_character(jsonb), public.game_world_snapshot(uuid) from public, anon, authenticated;
+revoke all on function public.world_join(uuid, uuid), public.world_sync(uuid, uuid, jsonb), public.world_leave(uuid, uuid) from public, anon;
+grant execute on function public.world_join(uuid, uuid), public.world_sync(uuid, uuid, jsonb), public.world_leave(uuid, uuid) to authenticated;
 
 -- ---------- Chat multijugador ----------
 -- Los mensajes solo se crean con chat_send (el cliente no puede insertar): el servidor limpia el texto,

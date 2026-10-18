@@ -22,16 +22,25 @@ if (!url) {
 
 const files = process.argv.includes('--schema') ? ['supabase/schema.sql', 'supabase/server.sql'] : ['supabase/server.sql'];
 const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+let transaction = false;
 try {
   await client.connect();
+  await client.query('begin');
+  transaction = true;
   for (const file of files) {
     await client.query(readFileSync(file, 'utf8'));
     console.log(`OK  ${file}`);
   }
   // Recarga la caché de esquema de la API para que las funciones nuevas se vean al momento.
   await client.query("notify pgrst, 'reload schema'");
+  await client.query('commit');
+  transaction = false;
 } catch (error) {
   console.error('Error aplicando el SQL:', error.message);
+  if (transaction) {
+    try { await client.query('rollback'); }
+    catch (rollbackError) { console.error('Error deshaciendo la transacción:', rollbackError.message); }
+  }
   process.exitCode = 1;
 } finally {
   await client.end();

@@ -145,9 +145,9 @@ function push(e: Entry) {
 }
 
 /** Mensaje de un jugador recibido del servidor (se ignoran duplicados y jugadores silenciados por ti). */
-let speechListener: ((name: string, text: string, own: boolean) => void) | null = null;
+let speechListener: ((name: string, text: string, own: boolean, userId: string) => void) | null = null;
 /** Se avisa de cada mensaje público NUEVO (general o de tu zona) para mostrarlo como bocadillo sobre el personaje. */
-export function setChatSpeechListener(fn: (name: string, text: string, own: boolean) => void) { speechListener = fn; }
+export function setChatSpeechListener(fn: (name: string, text: string, own: boolean, userId: string) => void) { speechListener = fn; }
 const FRESH_MS = 15_000;
 
 export function chatReceive(m: ChatMessage) {
@@ -162,10 +162,10 @@ export function chatReceive(m: ChatMessage) {
   } else if (m.channel === 'zone') {
     if (m.zone !== hooks?.zone()) return;
     push({ ...base, kind: 'zone', name: m.senderName, account: m.senderAccount, title: m.senderTitle });
-    if (Date.now() - base.time.getTime() < FRESH_MS) speechListener?.(m.senderName, m.body, own);
+    if (Date.now() - base.time.getTime() < FRESH_MS) speechListener?.(m.senderName, m.body, own, m.senderUser);
   } else {
     push({ ...base, kind: 'general', name: m.senderName, account: m.senderAccount, title: m.senderTitle });
-    if (Date.now() - base.time.getTime() < FRESH_MS) speechListener?.(m.senderName, m.body, own);
+    if (Date.now() - base.time.getTime() < FRESH_MS) speechListener?.(m.senderName, m.body, own, m.senderUser);
   }
 }
 
