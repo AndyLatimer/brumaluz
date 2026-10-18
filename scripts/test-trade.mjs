@@ -87,14 +87,69 @@ test('trade UI shows only own tradable inventory, illustrated peer offer, quanti
     await h.page.locator('[data-own-state]').getByText('Accepted',{exact:true}).waitFor();
     assert.equal(await h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true}).isDisabled(),true);
     assert.equal(await h.page.getByLabel('Offered pelines',{exact:true}).isDisabled(),true);
-    await h.page.getByRole('button',{name:'Back',exact:true}).click();
-    await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
+    await h.page.getByRole('button',{name:'Cancel offer',exact:true}).click();
+    await h.page.locator('[data-own-state]').getByText('No offer',{exact:true}).waitFor();
+    assert.deepEqual(h.state.trade.own,emptyOffer());
+    assert.equal(await h.page.getByLabel('Offered pelines',{exact:true}).inputValue(),'0');
+    assert.equal(await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).textContent(),'0');
     assert.equal(h.state.trade.status,'open');assert.equal(h.state.trade.accepted,false);
     h.state.trade.peerAccepted=true;
     await h.page.locator('.trade-peer-offer.accepted').getByText('Trade accepted',{exact:true}).waitFor();
     assert.deepEqual(await h.page.evaluate(()=>window.notifications),['The other player has accepted the trade.']);
     await h.page.getByRole('button',{name:'Accept trade',exact:true}).click();
     await h.page.getByText('Trade completed!',{exact:true}).waitFor();
+    assert.deepEqual(h.errors,[]);
+  }finally{await h.close();}
+});
+test('compact invitations have plain action containers in both directions',async()=>{
+  const h=await harness({status:'invited'});
+  try {
+    for(const incoming of [false,true]) {
+      h.state.trade.incoming=incoming;
+      await h.page.evaluate(()=>{window.tradeUI.setCharacter(null);window.tradeUI.setCharacter('self');});
+      await h.page.locator('.trade-invitation').waitFor({state:'visible'});
+      for(const width of [1280,390,320]) {
+        await h.page.setViewportSize({width,height:844});
+        const panel=await h.page.locator('.trade-window').boundingBox();
+        assert.ok(panel.width<=460);
+        assert.equal(await h.page.locator('.trade-window').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+        assert.deepEqual(await h.page.locator('.trade-window footer').evaluate(el=>{
+          const css=getComputedStyle(el);return [css.borderTopWidth,css.backgroundImage,css.boxShadow];
+        }),['0px','none','none']);
+        if(process.env.PLAYWRIGHT_SCREENSHOT_DIR) await h.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`trade-invitation-${incoming?'incoming':'outgoing'}-${width}.png`)});
+      }
+    }
+  }finally{await h.close();}
+});
+test('cancel offer clears drafts locally, resets both accepts remotely, and keeps errors recoverable',async()=>{
+  const h=await harness();
+  try {
+    assert.equal(await h.page.getByRole('button',{name:'Cancel offer',exact:true}).isVisible(),false);
+    await h.page.getByRole('button',{name:'Add: Offer Stale bread (1)',exact:true}).click();
+    await h.page.getByRole('button',{name:'Cancel offer',exact:true}).click();
+    assert.equal(h.calls.filter(call=>call.p_action==='offer').length,0);
+    assert.equal(await h.page.getByLabel('Offer Stale bread (1)',{exact:true}).textContent(),'0');
+    await h.page.getByRole('button',{name:'All: Offer Stale bread (1)',exact:true}).click();
+    await h.page.getByRole('button',{name:'Send offer',exact:true}).click();
+    await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
+    h.state.trade.peerAccepted=true;
+    await h.page.locator('.trade-peer-offer.accepted').waitFor();
+    h.setFailure('TRADE_CHANGED');
+    await h.page.getByRole('button',{name:'Cancel offer',exact:true}).click();
+    await h.page.getByText('The offer changed. Review it before accepting.',{exact:true}).waitFor();
+    assert.equal(h.state.trade.own.items[0].count,10);
+    assert.equal(await h.page.locator('.trade-backdrop').isVisible(),true);
+    h.setFailure(null);
+    await h.page.getByRole('button',{name:'Cancel offer',exact:true}).click();
+    await h.page.locator('[data-own-state]').getByText('No offer',{exact:true}).waitFor();
+    assert.deepEqual(h.state.trade.own,emptyOffer());
+    assert.equal(h.state.trade.peerAccepted,false);
+    assert.equal(h.state.trade.status,'open');
+    await h.page.getByRole('button',{name:'Cancel',exact:true}).click();
+    await h.page.locator('.trade-backdrop').waitFor({state:'hidden'});
+    await h.page.waitForTimeout(1200);
+    assert.equal(await h.page.locator('.trade-backdrop').isHidden(),true);
+    assert.equal(h.state.trade.status,'cancelled');
     assert.deepEqual(h.errors,[]);
   }finally{await h.close();}
 });
@@ -200,7 +255,8 @@ test('Spanish invitation, cancellation, mobile layout and bound tooltip labels',
     });
     assert.equal(binding.stack.bound,true);assert.match(binding.tip,/Ligado · No intercambiable/);
     await h.page.getByRole('button',{name:'Cancelar',exact:true}).click();
-    await h.page.getByText('Intercambio cancelado.',{exact:true}).waitFor();
+    await h.page.locator('.trade-backdrop').waitFor({state:'hidden'});
+    assert.ok((await h.page.evaluate(()=>window.notifications)).includes('Intercambio cancelado.'));
     assert.equal(h.state.trade.status,'cancelled');assert.deepEqual(h.errors,[]);
   }finally{await h.close();}
 });
@@ -220,7 +276,7 @@ test('an incoming invitation appears automatically and can be rejected without o
       assert.equal(await invitation.evaluate(el=>el.scrollWidth<=el.clientWidth),true);
     }
     await h.page.getByRole('button',{name:'Rechazar',exact:true}).click();
-    await h.page.getByText('Intercambio cancelado.',{exact:true}).waitFor();
+    await h.page.locator('.trade-backdrop').waitFor({state:'hidden'});
     assert.equal(h.calls.some(call=>call.p_action==='join'),false);
     assert.equal(h.calls.some(call=>call.p_action==='cancel'),true);
     assert.deepEqual(h.errors,[]);
@@ -245,7 +301,8 @@ test('explicit errors, invalid quantities, reset acceptance on offer changes and
     h.state.trade.revision++;h.state.trade.accepted=false;h.state.trade.peerAccepted=false;
     await h.page.locator('[data-own-state]').getByText('Offer sent',{exact:true}).waitFor();
     h.state.trade.status='cancelled';h.state.trade.reason='TRADE_UNAVAILABLE';
-    await h.page.getByText('Trade ended: you moved out of range or someone disconnected.',{exact:true}).waitFor();
+    await h.page.locator('.trade-backdrop').waitFor({state:'hidden'});
+    assert.ok((await h.page.evaluate(()=>window.notifications)).includes('Trade ended: you moved out of range or someone disconnected.'));
   }finally{await h.close();}
 });
 test('trade keyboard stays in dialog, Escape closes invitations and slow requests show loading',async()=>{
@@ -261,8 +318,7 @@ test('trade keyboard stays in dialog, Escape closes invitations and slow request
     await h.page.keyboard.press('Tab');
     assert.equal(await cancel.evaluate(el=>el===document.activeElement),true);
     await h.page.keyboard.press('Escape');
-    await h.page.getByText('Trade cancelled.',{exact:true}).waitFor();
-    await h.page.keyboard.press('Escape');
+    await h.page.locator('.trade-backdrop').waitFor({state:'hidden'});
     assert.equal(await h.page.locator('.trade-backdrop').isHidden(),true);
     assert.deepEqual(h.errors,[]);
   }finally{await h.close();}
@@ -313,7 +369,7 @@ test('late poll cannot overwrite mutation; stopped character ignores stale callb
     await h.page.waitForTimeout(100);
     assert.equal(await h.page.locator('[data-own-state]').getByText('Accepted',{exact:true}).count(),1);
     h.setDelay(350);
-    await h.page.getByRole('button',{name:'Back',exact:true}).click();
+    await h.page.getByRole('button',{name:'Cancel offer',exact:true}).click();
     await h.page.evaluate(()=>window.tradeUI.setCharacter(null));
     await h.page.waitForTimeout(450);
     assert.equal(await h.page.locator('.trade-backdrop').isHidden(),true);

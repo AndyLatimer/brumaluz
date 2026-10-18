@@ -6,9 +6,10 @@
 .trade-window .trade-peer-name{display:block;text-align:center;font-size:18px;margin:6px 0 18px}
 .trade-window .trade-peer-name:after{display:none}
 .trade-mobile-state{display:none}
-.trade-window.trade-invitation{width:min(520px,94vw);text-align:center}
-.trade-invitation .trade-title{font-size:24px}
-.trade-invitation-message{line-height:1.6;margin:20px 0}
+.trade-window.trade-invitation,.trade-window.trade-ended{width:min(460px,94vw);text-align:center;border:1px solid #b79b72;border-radius:12px;padding:22px 24px;background:linear-gradient(120deg,#f7ebcf,#ecdbb8);box-shadow:0 10px 35px #20150855,inset 0 1px #fff7e3}
+.trade-window.trade-invitation .trade-title{font-size:19px;gap:9px}
+.trade-invitation .trade-title svg{width:30px;height:30px}
+.trade-invitation-message{line-height:1.5;margin:16px 0}
 .trade-columns{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin:0 0 16px}
 .trade-columns>section{min-width:0;padding:16px;border:1px solid #b4986c;border-radius:10px;background:#fff6dd55;box-shadow:inset 0 0 22px #ac8c5030}
 .trade-window .trade-columns h3{margin:0;font:700 13px 'Cinzel',serif;letter-spacing:.05em}
@@ -52,8 +53,9 @@
 .trade-window .trade-offer-coins{display:flex;align-items:center;gap:6px;margin:3px 0;font-weight:700}
 .trade-accept-seal{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;padding:14px 10px;border-top:1px solid #78915a66;color:#3b592c;font-weight:700;font-size:19px}
 .trade-accept-seal>span{display:grid;place-items:center;width:34px;height:34px;border:2px solid #78915a;border-radius:50%;background:#d9e5ba}
-.trade-window footer{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;border-top:1px solid #b4986c;padding-top:14px}
-.trade-window>div>footer{position:sticky;bottom:-22px;z-index:1;padding:12px 0;background:linear-gradient(#ecd9b2,#e7d0a5);box-shadow:0 -6px 12px #e7d0a599}
+.trade-window footer{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;border:0;padding-top:14px}
+.trade-window>div>footer{position:sticky;bottom:-22px;z-index:1;padding:12px 0;background:transparent;box-shadow:none}
+.trade-window.trade-invitation footer{position:static;padding:8px 0 0}
 .trade-status{margin:10px 0 0;text-align:center;font-size:15px;color:#78552b}
 .trade-status:empty{display:none}
 .trade-status.error{color:#a0382b;font-weight:bold}

@@ -3,6 +3,7 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Cancelar oferta': 'Cancel offer',
   'Tu mochila': 'Your backpack',
   '{n} disponibles': '{n} available',
   'Disponible: {n}': 'Available: {n}',

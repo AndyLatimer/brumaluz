@@ -109,7 +109,8 @@ export function createTradeWindow(hooks: {
     if(wasHidden) hooks.opened();
     content.replaceChildren();
     const incoming=tr.status==='invited' && tr.incoming;
-    panel.classList.toggle('trade-invitation',incoming);
+    panel.classList.toggle('trade-invitation',tr.status==='invited');
+    panel.classList.toggle('trade-ended',tr.status==='completed');
     const heading=incoming ? 'Invitación de intercambio' : 'Intercambio';
     panel.setAttribute('aria-label',t(heading));
     const title=line(heading,'h2'); title.className='trade-title';
@@ -195,7 +196,8 @@ export function createTradeWindow(hooks: {
     const accept=button('Aceptar intercambio',()=>void act('accept')); accept.dataset.tradeAccept='';
     accept.className='trade-primary';
     accept.dataset.locked=String(dirty || tr.accepted);
-    footer.append(accept,button('Atrás',()=>void act('back')),button('Cancelar',()=>void act('cancel')));
+    const withdraw=button('Cancelar oferta',()=>void withdrawOffer()); withdraw.dataset.tradeWithdraw='';
+    footer.append(accept,withdraw,button('Cancelar',()=>void act('cancel')));
     content.append(footer); markDirty(); setBusy(busy);
     if(wasHidden) content.querySelector<HTMLButtonElement>('button')?.focus();
   }
@@ -207,11 +209,25 @@ export function createTradeWindow(hooks: {
     if(accept) { accept.dataset.locked=String(dirty || !!current?.trade?.accepted); accept.disabled=busy || accept.dataset.locked==='true'; }
     const save=content.querySelector<HTMLButtonElement>('[data-trade-save]');
     if(save) { save.dataset.locked=String(!dirty || !!tr?.accepted); save.disabled=busy || save.dataset.locked==='true'; }
+    const withdraw=content.querySelector<HTMLButtonElement>('[data-trade-withdraw]');
+    if(withdraw) {
+      withdraw.hidden=!tr || !(hasOffer(tr.own) || tr.accepted || dirty);
+      withdraw.dataset.locked=String(withdraw.hidden);
+      withdraw.disabled=busy || withdraw.hidden;
+    }
     const state=content.querySelector<HTMLElement>('[data-own-state]');
     if(state && tr) {
       state.textContent=t(tr.accepted ? 'Aceptada' : dirty ? 'Sin ofertar' : hasOffer(tr.own) ? 'Oferta enviada' : 'Sin oferta');
       state.classList.toggle('accepted',tr.accepted);
       state.classList.toggle('pending',dirty);
+    }
+  }
+  async function withdrawOffer() {
+    if(!current?.trade || busy) return;
+    if(hasOffer(current.trade.own) || current.trade.accepted) {
+      await act('offer',{items:[],pelines:0});
+    } else {
+      draft=structuredClone(current.trade.own); dirty=false; announce(''); render();
     }
   }
   function receive(value: TradeState, force=false) {
@@ -220,6 +236,11 @@ export function createTradeWindow(hooks: {
     const changed=!before || before.id!==next?.id || before.revision!==next?.revision;
     const redraw=force || changed || before?.status!==next?.status || before?.accepted!==next?.accepted || before?.peerAccepted!==next?.peerAccepted;
     current=value;
+    if(next?.status==='cancelled') {
+      if(dismissed!==next.id) hooks.notify(t(errors[next.reason ?? ''] ?? 'Intercambio cancelado.'));
+      dismissed=next.id; backdrop.hidden=true;
+      return;
+    }
     if(next && (force || before?.id!==next.id || JSON.stringify(before.own)!==JSON.stringify(next.own))) {
       draft=structuredClone(next.own); dirty=false;
     }
@@ -273,7 +294,7 @@ export function createTradeWindow(hooks: {
     },
     key(event: KeyboardEvent) {
       if(event.code==='Tab') {
-        const controls=Array.from(panel.querySelectorAll<HTMLButtonElement|HTMLInputElement>('button:not(:disabled),input:not(:disabled)'));
+        const controls=Array.from(panel.querySelectorAll<HTMLButtonElement|HTMLInputElement>('button:not(:disabled):not([hidden]),input:not(:disabled)'));
         const first=controls[0], last=controls[controls.length-1];
         if(first && event.shiftKey && document.activeElement===first) { event.preventDefault(); last.focus(); }
         else if(last && !event.shiftKey && document.activeElement===last) { event.preventDefault(); first.focus(); }
@@ -282,7 +303,9 @@ export function createTradeWindow(hooks: {
         event.preventDefault();
         const tr=current?.trade;
         if(tr?.status==='completed' || tr?.status==='cancelled') { dismissed=tr.id; render(); }
-        else void act(tr?.status==='invited' ? 'cancel' : 'back');
+        else if(tr?.status==='invited') void act('cancel');
+        else if(tr && (hasOffer(tr.own) || tr.accepted || dirty)) void withdrawOffer();
+        else void act('cancel');
       }
     },
   };
