@@ -127,7 +127,7 @@ export const RACES: Record<Race, RaceDef> = {
   humano: {
     label: 'Humano',
     feminine: 'Humana',
-    desc: 'Nacidos en Brumaluz o llegados de tierras lejanas, los humanos destacan por su ingenio y por encontrar su propio camino en cualquier oficio.',
+    desc: 'Nacidos en Brumaluz o llegados de tierras lejanas, los humanos destacan por su ingenio y por encontrar su propio camino en cualquier oficio y destino.',
     bonuses: { ...noBonuses(), pericia: 3, presencia: 2 },
     skins: HUMAN_SKINS, skinNames: HUMAN_SKIN_NAMES,
     traitLabel: null, traits: [],
@@ -136,7 +136,7 @@ export const RACES: Record<Race, RaceDef> = {
   elfo: {
     label: 'Elfo',
     feminine: 'Elfa',
-    desc: 'Desde hace generaciones, los elfos protegen los bosques que abrazan Brumaluz. Su larga vida y conocimiento de la naturaleza los han convertido en hábiles alquimistas.',
+    desc: 'Desde hace generaciones, los elfos protegen los bosques que abrazan Brumaluz. Nativos de la Arboleda, su conexión y conocimiento de la naturaleza los han convertido en hábiles alquimistas.',
     bonuses: { ...noBonuses(), intelecto: 2, pericia: 2, agilidad: 1 },
     skins: ['#fbe0cc', '#f2cdb0', '#e8c4c8', '#c9b4d8', '#9f8fc6', '#d4bc94'],
     skinNames: ['Alba', 'Pétalo', 'Rosa', 'Lavanda', 'Crepúsculo', 'Trigo'],
@@ -145,7 +145,7 @@ export const RACES: Record<Race, RaceDef> = {
   },
   lagto: {
     label: "Lagto'",
-    desc: 'Los Lagto’ hacen su hogar en montañas pedregosas, entre grietas estrechas y cavernas donde apenas llega la luz. Recios y pacientes, conocen los pasos ocultos de la roca mejor que nadie.',
+    desc: 'Los Lagto’ hacen su hogar en las montañas pedregosas de Las Cumbres de Cobre, entre grietas estrechas y cavernas donde apenas llega la luz. Recios y pacientes, conocen los pasos ocultos de la roca mejor que nadie.',
     bonuses: { ...noBonuses(), fuerza: 2, corpulencia: 3 },
     skins: ['#7cc06a', '#4fae94', '#a8c25a', '#e0a050', '#5d93c8', '#c86a5a'],
     skinNames: ['Junco', 'Laguna', 'Musgo', 'Arena', 'Río', 'Brasa'],
@@ -155,7 +155,7 @@ export const RACES: Record<Race, RaceDef> = {
   pelso: {
     label: 'Pelso',
     feminine: 'Pelsa',
-    desc: 'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos. Se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
+    desc: 'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos hábiles navegantes nativos de la Isla de Luna Argéntea, se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
     bonuses: { ...noBonuses(), fuerza: 1, corpulencia: 1, agilidad: 2, percepcion: 1 },
     skins: PELSO_COATS.map((c) => c.base), skinNames: PELSO_COATS.map((c) => c.name),
     traitLabel: 'Orejas', traits: ['Puntiagudas', 'Redondas', 'Dobladas'],

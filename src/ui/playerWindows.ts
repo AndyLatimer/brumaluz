@@ -159,8 +159,7 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   lock.append(el('span', undefined, t('Más espacio, próximamente')));
   lock.title = `${t('Ampliar mochila')}|${t('Podrás desbloquear más huecos próximamente.')}`;
   grid.append(lock);
-  const usageHint = el('p', 'inv-hint', t('Clic para usar · Arrastra a la barra rápida'));
-  bag.append(head, grid, usageHint);
+  bag.append(head, grid);
   if (!used) bag.append(el('p', 'inv-empty', t('Tu mochila está vacía por ahora.')));
 
   const purse = el('section', 'inv-purse');
