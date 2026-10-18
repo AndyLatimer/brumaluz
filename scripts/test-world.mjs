@@ -480,12 +480,22 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
   try {
     await first.enter(); await second.enter();
     await nearbyInteractions(first.page,'Elara');
-    await first.page.setViewportSize({width:390,height:844});
-    const box = await first.page.locator('#player-interactions').boundingBox();
-    assert.ok(box && box.x >= 0 && box.x + box.width <= 390,'Player interaction fits a narrow viewport');
+    for (const width of [320,390]) {
+      await first.page.setViewportSize({width,height:844});
+      const box = await first.page.locator('#player-interactions').boundingBox();
+      assert.ok(box && box.x >= 0 && box.x + box.width <= width,'Player interaction fits a narrow viewport');
+      for (const button of await first.page.locator('#player-interactions button').all()) {
+        const bounds = await button.boundingBox();
+        assert.ok(bounds && bounds.x >= box.x && bounds.x + bounds.width <= box.x + box.width,'Each interaction button fits inside its panel');
+      }
+    }
+    assert.equal(await first.page.locator('.player-interaction-medallion svg[viewBox="0 0 48 48"]').count(),3);
+    assert.equal(await first.page.locator('.player-interaction-label').textContent(),'Añadir amigo');
+    assert.equal(await first.page.locator('#player-interactions').getAttribute('aria-busy'),'false');
     assert.equal(await first.page.locator('#player-interaction-name').textContent(),'Elara');
     assert.equal(await first.page.locator('#player-interactions .player-interaction-action').count(),3);
     await first.page.keyboard.press('ArrowLeft');
+    assert.equal(await first.page.locator('.player-interaction-label').textContent(),'Silenciar chat');
     assert.equal(await first.page.locator('.player-interaction-action[aria-pressed="true"]').getAttribute('aria-label'),'Silenciar chat');
     await first.page.keyboard.press('KeyE');
     await first.page.getByRole('button',{name:'Reactivar chat',exact:true}).waitFor();
