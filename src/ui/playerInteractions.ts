@@ -26,12 +26,9 @@ export function createPlayerInteractions() {
   crest.className = 'player-interaction-crest';
   crest.setAttribute('aria-hidden', 'true');
   crest.innerHTML = `<svg viewBox="0 0 48 48">${ICONS.accept}</svg>`;
-  const eyebrow = document.createElement('span');
-  eyebrow.className = 'player-interaction-eyebrow';
-  eyebrow.textContent = t('Social');
   const heading = document.createElement('strong');
   heading.id = 'player-interaction-name';
-  header.append(crest, eyebrow, heading);
+  header.append(crest, heading);
   const message = document.createElement('p');
   message.className = 'player-interaction-status';
   message.setAttribute('role', 'status');

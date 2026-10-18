@@ -406,6 +406,22 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await second.page.getByRole('button', {name:'Aceptar',exact:true}).click({timeout:15000});
     await first.page.locator('[data-social="friend"] .social-row').waitFor({timeout:15000});
     assert.match(await first.page.locator('.social-online').textContent(), /Conectado · Elara · Brumaluz/);
+    assert.equal(await first.page.locator('.social-summary').textContent(),'Conectados: 1 · Amigos: 1');
+    assert.equal(await first.page.locator('[data-social="friend"] .social-count').textContent(),'1');
+    assert.equal(await first.page.locator('.social-avatar').textContent(),'E');
+    assert.equal(await first.page.locator('#social-username').getAttribute('aria-describedby'),'social-invitation-help');
+    for (const width of [320,390,1280]) {
+      await first.page.setViewportSize({width,height:844});
+      const fits = await first.page.locator('.social-window').evaluate(el => {
+        const bounds = el.getBoundingClientRect();
+        return bounds.left >= 0 && bounds.right <= innerWidth && el.scrollWidth <= el.clientWidth
+          && [...el.querySelectorAll('button,input')].every(control => {
+            const box = control.getBoundingClientRect();
+            return box.left >= bounds.left && box.right <= bounds.right;
+          });
+      });
+      assert.equal(fits,true,`Populated Social and controls fit ${width}px`);
+    }
     await first.page.getByRole('button', {name:'Susurrar',exact:true}).click();
     assert.equal(await first.page.locator('.chat-input').inputValue(), '/w ~Elara ');
     assert.equal(await first.page.locator('#window-backdrop').isVisible(), false);
@@ -480,6 +496,7 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
   try {
     await first.enter(); await second.enter();
     await nearbyInteractions(first.page,'Elara');
+    assert.equal(await first.page.locator('.player-interaction-header').textContent(),'Elara');
     for (const width of [320,390]) {
       await first.page.setViewportSize({width,height:844});
       const box = await first.page.locator('#player-interactions').boundingBox();

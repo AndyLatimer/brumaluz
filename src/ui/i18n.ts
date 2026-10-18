@@ -3,6 +3,14 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Compañeros de aventuras': 'Adventure companions',
+  'Los mejores caminos se recorren en compañía.': 'The best paths are travelled together.',
+  'Invita a un compañero': 'Invite a companion',
+  'Usa su nombre de cuenta, no el de su personaje.': 'Use their account name, not their character name.',
+  'Conectados': 'Online',
+  'Tu próxima aventura puede empezar con una amistad.': 'Your next adventure could begin with a friendship.',
+  'No tienes invitaciones pendientes de responder.': 'You have no invitations awaiting a reply.',
+  'Tus próximas invitaciones aparecerán aquí.': 'Your next invitations will appear here.',
   'Interactuar con {name}': 'Interact with {name}',
   'Elegir interacción con un jugador': 'Select player interaction',
   'Ejecutar interacción seleccionada': 'Execute selected interaction',
