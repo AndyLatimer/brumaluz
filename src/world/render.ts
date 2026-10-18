@@ -77,7 +77,8 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
 
   // Postprocesado
   const composer = compatible ? null : new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, {
-    type: THREE.HalfFloatType, samples: lowEnd ? 0 : Math.min(4, renderer.capabilities.maxSamples),
+    type: THREE.HalfFloatType,
+    samples: lowEnd || !renderer.getContext().getContextAttributes()?.antialias ? 0 : Math.min(4, renderer.capabilities.maxSamples),
   }));
   composer?.addPass(new RenderPass(scene, camera));
   let gtao: GTAOPass | null = null;

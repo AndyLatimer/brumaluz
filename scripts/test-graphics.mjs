@@ -41,11 +41,13 @@ async function openPage(query = '', fault) {
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2 });
   const page = await context.newPage();
   const errors = [];
+  const warnings = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
     if (message.type() === 'error' && message.location().url !== `${url}/favicon.ico`) {
       errors.push(`${message.text()} (${message.location().url})`);
     }
+    if (message.type() === 'warning') warnings.push(message.text());
   });
   await page.addInitScript((fault) => {
     localStorage.setItem('brumaluz-ambient', 'off');
@@ -55,10 +57,32 @@ async function openPage(query = '', fault) {
       WebGL2RenderingContext.prototype.getExtension = function (name) {
         return name === 'EXT_color_buffer_float' ? null : original.call(this, name);
       };
-    } else if (fault === 'no-webgl') {
+    } else if (['no-webgl', 'no-antialias', 'no-high-performance'].includes(fault)) {
       const original = HTMLCanvasElement.prototype.getContext;
+      window.graphicsContextAttempts = [];
+      window.graphicsMultisampleCalls = 0;
+      window.graphicsFloatTargets = 0;
+      const multisample = WebGL2RenderingContext.prototype.renderbufferStorageMultisample;
+      WebGL2RenderingContext.prototype.renderbufferStorageMultisample = function (...args) {
+        window.graphicsMultisampleCalls++;
+        return multisample.apply(this, args);
+      };
+      const storage = WebGL2RenderingContext.prototype.texStorage2D;
+      WebGL2RenderingContext.prototype.texStorage2D = function (...args) {
+        if (args[2] === this.RGBA16F) window.graphicsFloatTargets++;
+        return storage.apply(this, args);
+      };
       HTMLCanvasElement.prototype.getContext = function (type, ...args) {
-        return type.startsWith('webgl') ? null : original.call(this, type, ...args);
+        if (type === 'webgl2' && this.id === 'scene' && args[0]) {
+          const attributes = args[0];
+          window.graphicsContextAttempts.push({ antialias: attributes.antialias, powerPreference: attributes.powerPreference });
+          if (fault === 'no-webgl' || (fault === 'no-antialias' && attributes.antialias)
+            || (fault === 'no-high-performance' && attributes.powerPreference === 'high-performance')) {
+            this.dispatchEvent(new WebGLContextEvent('webglcontextcreationerror', { statusMessage: 'Error creating WebGL context with your selected attributes.' }));
+            return null;
+          }
+        }
+        return original.call(this, type, ...args);
       };
     } else if (fault === 'shader') {
       const original = WebGL2RenderingContext.prototype.shaderSource;
@@ -68,7 +92,7 @@ async function openPage(query = '', fault) {
     }
   }, fault);
   await page.goto(`${url}/${query}`);
-  return { page, errors, close: () => context.close() };
+  return { page, errors, warnings, close: () => context.close() };
 }
 
 async function waitForWorld(page) {
@@ -121,6 +145,50 @@ test('missing float render targets automatically use the direct compatible rende
   } finally { await close(); }
 });
 
+test('rejected context attributes retry without antialiasing while preserving normal effects', { timeout: 180000 }, async () => {
+  for (const fault of ['no-antialias', 'no-high-performance']) {
+    const { page, errors, warnings, close } = await openPage('', fault);
+    try {
+      await waitForWorld(page);
+      assert.equal(await page.locator('#graphics-mode').textContent(), 'Gráficos: normal');
+      await assertRendered(page, 2560 * 1440);
+      await page.evaluate(() => window.brumaluz.play());
+      await assertRendered(page, 2560 * 1440);
+      const result = await page.evaluate(() => ({
+        attempts: window.graphicsContextAttempts,
+        antialias: document.getElementById('scene').getContext('webgl2').getContextAttributes().antialias,
+        multisampleCalls: window.graphicsMultisampleCalls,
+        floatTargets: window.graphicsFloatTargets,
+      }));
+      const expected = [
+        { antialias: true, powerPreference: 'high-performance' },
+        { antialias: false, powerPreference: 'high-performance' },
+      ];
+      if (fault === 'no-high-performance') expected.push({ antialias: false, powerPreference: 'default' });
+      assert.deepEqual(result.attempts, expected);
+      assert.equal(result.antialias, false);
+      assert.equal(result.multisampleCalls, 0);
+      assert.ok(result.floatTargets > 0, 'Normal effects must still use HDR render targets');
+      assert.ok(warnings.some((warning) => warning.includes('WebGL 2 rechazó los atributos')));
+      assert.deepEqual(errors, []);
+    } finally { await close(); }
+  }
+});
+
+test('compatible mode can retry with the browser default GPU preference', { timeout: 120000 }, async () => {
+  const { page, errors, close } = await openPage('?graphics=compatible', 'no-high-performance');
+  try {
+    await waitForWorld(page);
+    assert.equal(await page.locator('#graphics-mode').textContent(), 'Gráficos: compatible');
+    await assertRendered(page, 1920 * 1080);
+    assert.deepEqual(await page.evaluate(() => window.graphicsContextAttempts), [
+      { antialias: false, powerPreference: 'high-performance' },
+      { antialias: false, powerPreference: 'default' },
+    ]);
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
 test('context loss shows recovery and the compatible reload preserves URL fragments', { timeout: 120000 }, async () => {
   const { page, close } = await openPage('?#graphics-test');
   try {
@@ -148,6 +216,10 @@ test('WebGL unavailable and shader failures show an actionable error instead of 
       await page.locator('#graphics-error').waitFor({ state: 'visible' });
       assert.match(await page.locator('#graphics-error-message').textContent(), fault === 'no-webgl' ? /WebGL 2/ : /mundo 3D/);
       assert.equal(await page.getByRole('button', { name: 'Recargar en modo compatible' }).isVisible(), true);
+      if (fault === 'no-webgl') {
+        assert.equal(await page.evaluate(() => window.graphicsContextAttempts.length), 3);
+        assert.match(await page.locator('#graphics-error-details').textContent(), /selected attributes/);
+      }
     } finally { await close(); }
   }
 });

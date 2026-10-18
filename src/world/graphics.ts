@@ -35,16 +35,35 @@ export function createGraphics(canvas: HTMLCanvasElement) {
   canvas.addEventListener('webglcontextrestored', () => {
     fail('La tarjeta gráfica vuelve a responder. Recarga el juego para reconstruir el mundo.');
   });
-  canvas.addEventListener('webglcontextcreationerror', (event) => {
-    fail('No se pudo iniciar WebGL 2. Comprueba la aceleración gráfica de Chrome y el controlador de la tarjeta gráfica.', new Error(event instanceof WebGLContextEvent ? event.statusMessage : event.type));
-  });
-
   const requested = new URLSearchParams(location.search).get('graphics') === 'compatible';
+  let creationError = '';
+  const onCreationError = (event: Event) => {
+    creationError = event instanceof WebGLContextEvent ? event.statusMessage : event.type;
+  };
+  canvas.addEventListener('webglcontextcreationerror', onCreationError);
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: !requested, powerPreference: 'high-performance' });
+    const attempts: WebGLContextAttributes[] = [
+      { antialias: !requested, powerPreference: 'high-performance' },
+      ...(!requested ? [{ antialias: false, powerPreference: 'high-performance' } as const] : []),
+      { antialias: false, powerPreference: 'default' },
+    ];
+    let context: WebGL2RenderingContext | null = null;
+    for (const attributes of attempts) {
+      context = canvas.getContext('webgl2', {
+        alpha: true, depth: true, stencil: false, premultipliedAlpha: true,
+        preserveDrawingBuffer: false, failIfMajorPerformanceCaveat: false, ...attributes,
+      });
+      if (context) break;
+      console.warn('[Brumaluz graphics] WebGL 2 rechazó los atributos solicitados.', attributes, creationError);
+    }
+    if (!context) throw new Error(creationError || 'No WebGL 2 context could be created.');
+    renderer = new THREE.WebGLRenderer({ canvas, context });
+    renderer.setClearAlpha(1);
   } catch (error) {
     fail('No se pudo iniciar WebGL 2. Comprueba la aceleración gráfica de Chrome y el controlador de la tarjeta gráfica.', error);
     throw error;
+  } finally {
+    canvas.removeEventListener('webglcontextcreationerror', onCreationError);
   }
   const activeRenderer = renderer;
   const compatible = requested || !renderer.extensions.has('EXT_color_buffer_float');
@@ -57,7 +76,7 @@ export function createGraphics(canvas: HTMLCanvasElement) {
   }
   document.getElementById('graphics-mode')!.textContent = t(compatible ? 'Gráficos: compatible' : 'Gráficos: normal');
   document.getElementById('graphics-mode')!.onclick = () => reloadGraphics(!compatible);
-  console.info('[Brumaluz graphics]', { compatible, maxTextureSize: renderer.capabilities.maxTextureSize, maxSamples: renderer.capabilities.maxSamples });
+  console.info('[Brumaluz graphics]', { compatible, context: renderer.getContext().getContextAttributes(), maxTextureSize: renderer.capabilities.maxTextureSize, maxSamples: renderer.capabilities.maxSamples });
 
   return {
     renderer: activeRenderer,
