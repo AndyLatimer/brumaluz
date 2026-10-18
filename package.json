@@ -19,6 +19,7 @@
   "dependencies": {
     "@pmndrs/assets": "^1.7.0",
     "@supabase/supabase-js": "^2.118.0",
+    "@vercel/analytics": "^2.0.1",
     "three": "^0.170.0",
     "three-subdivide": "^1.1.5"
   },
