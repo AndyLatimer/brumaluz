@@ -140,6 +140,7 @@ npm run build   # genera dist/index.html (un único archivo)
 
 ### Mundo multijugador
 
+- El distintivo de ubicación bajo el minimapa muestra un icono de jugadores y el número de personajes presentes en tu mapa, incluido el tuyo; no hay un mensaje superior permanente. Al perder la conexión, el contador muestra un guion y el aviso de reconexión está disponible en su descripción y en el chat. El botón de gráficos está en la esquina inferior derecha fuera del juego, separado de los datos de cuenta.
 - Las cuentas que entran en Brumaluz se ven en la misma ciudad, con su aspecto, nombre, título, movimiento interpolado, orientación, saludo, salto y estado de caída. Los mensajes públicos de jugadores presentes también aparecen sobre su personaje. La opción de mostrar nombres afecta tanto a NPCs como a jugadores.
 - Una cuenta solo mantiene un personaje conectado al mundo: entrar desde otra pestaña o equipo sustituye la sesión anterior, que vuelve a la selección con un aviso. Una respuesta tardía o la salida de la pestaña antigua no puede expulsar la nueva sesión.
 - [`world_join`, `world_sync` y `world_leave`](./supabase/server.sql) gestionan una concesión de sesión en `public.world_players`, inaccesible directamente desde el navegador. El servidor fija la identidad y el aspecto a partir del personaje guardado, y solo publica los datos necesarios para dibujarlo, nunca inventario, monedas ni atributos privados.

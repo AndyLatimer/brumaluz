@@ -3,7 +3,8 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
-  'Mundo compartido · {count} jugadores': 'Shared world · {count} players',
+  '{count} jugador en este mapa': '{count} player in this map',
+  '{count} jugadores en este mapa': '{count} players in this map',
   'Conexión al mundo interrumpida. Reintentando…': 'World connection interrupted. Retrying…',
   'Tu cuenta ha entrado al mundo desde otra pestaña o equipo.': 'Your account entered the world from another tab or device.',
   'Sesión de juego cerrada': 'Game session closed',

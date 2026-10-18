@@ -7,7 +7,7 @@ import {
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
-import { initMinimap, updateMinimap, setMinimapImage, toggleMinimap } from './ui/minimap';
+import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
 import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
 import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
@@ -832,6 +832,7 @@ function enterPlay() {
   rebuildNow();
   layout();
   startChat();
+  refreshWorldStatus();
   worldConnection?.start();
 }
 let chatUnsubscribe: (() => void) | null = null;
@@ -1726,8 +1727,7 @@ let worldConnection: WorldConnection | null = null;
 let worldRetrying = false;
 
 function refreshWorldStatus() {
-  $('#multiplayer-status').textContent = t(worldRetrying ? 'Conexión al mundo interrumpida. Reintentando…' : 'Mundo compartido · {count} jugadores', { count: remotePlayers.list().length + 1 });
-  $('#multiplayer-status').classList.toggle('error', worldRetrying);
+  setMapPlayerCount(worldRetrying ? null : remotePlayers.list().length + 1);
 }
 function receiveWorld(value: WorldSnapshot) {
   state.position = value.position;
@@ -1771,7 +1771,7 @@ function stopMultiplayer() {
   worldConnection = null;
   const stopped = connection?.stop();
   remotePlayers.clear();
-  $('#multiplayer-status').textContent = '';
+  setMapPlayerCount(null);
   return stopped;
 }
 window.addEventListener('pagehide', stopMultiplayer);

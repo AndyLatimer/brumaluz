@@ -122,7 +122,9 @@ test('independent accounts see real remote models, appearance, names, movement a
     await second.enter();
     await remote(first.page, b.character.id);
     await remote(second.page, a.character.id);
-    assert.equal(await first.page.locator('#multiplayer-status').textContent(), 'Mundo compartido · 2 jugadores');
+    assert.equal(await first.page.locator('#multiplayer-status').count(), 0);
+    assert.equal(await first.page.locator('.minimap-player-count').textContent(), '2');
+    assert.equal(await first.page.locator('.minimap-players').getAttribute('aria-label'), '2 jugadores en este mapa');
     assert.equal(await first.page.locator(`[data-player-id="${b.character.id}"] strong`).textContent(), 'Elara');
     assert.equal(await first.page.locator(`[data-player-id="${b.character.id}"]`).isVisible(), true);
     assert.equal(await second.page.locator(`[data-player-id="${a.character.id}"]`).isVisible(), true);
@@ -144,6 +146,7 @@ test('independent accounts see real remote models, appearance, names, movement a
     assert.ok(world.players.get(b.user.id).position.x < 0, 'Server corrections must reach the local actor');
     await leave(second.page);
     await first.page.waitForFunction(() => window.brumaluz.players().length === 0);
+    assert.equal(await first.page.locator('.minimap-player-count').textContent(), '1');
     assert.equal(await first.page.locator('.nameplate.player').count(), 0);
     assert.equal(world.players.has(b.user.id), false);
     assert.deepEqual([...first.errors, ...second.errors], []);
@@ -176,11 +179,12 @@ test('network errors retry sequentially; delayed snapshots cannot recreate actor
     await first.enter(); await second.enter();
     await remote(first.page, b.character.id);
     world.fail.add(a.user.id);
-    await first.page.waitForFunction(() => document.getElementById('multiplayer-status').classList.contains('error'));
+    await first.page.waitForFunction(() => document.querySelector('.minimap-players').classList.contains('error'));
     await first.page.waitForFunction(() => window.brumaluz.players().length === 0, null, { timeout: 25000 });
-    assert.match(await first.page.locator('#multiplayer-status').textContent(), /Reintentando/);
+    assert.equal(await first.page.locator('.minimap-player-count').textContent(), '—');
+    assert.match(await first.page.locator('.minimap-players').getAttribute('aria-label'), /Reintentando/);
     world.fail.delete(a.user.id);
-    await first.page.waitForFunction(() => !document.getElementById('multiplayer-status').classList.contains('error'));
+    await first.page.waitForFunction(() => !document.querySelector('.minimap-players').classList.contains('error'));
     await remote(first.page, b.character.id);
     world.delay.set(a.user.id, 800);
     await first.page.waitForTimeout(300);
@@ -299,6 +303,43 @@ test('a delayed character creation cannot pull the user back into the world afte
     await player.page.waitForTimeout(2500);
     assert.equal(await player.page.locator('body').evaluate((body) => body.classList.contains('playing')), false);
     assert.equal(world.players.has(a.user.id), false);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('graphics controls stay clear of account information and map population fits desktop and small screens', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4);
+  const player = await openPlayer(world, a);
+  try {
+    for (const [width, height] of [[1280, 800], [390, 844]]) {
+      await player.page.setViewportSize({ width, height });
+      const layout = await player.page.evaluate(() => {
+        const button = document.getElementById('graphics-mode').getBoundingClientRect();
+        const account = document.getElementById('account-details').getBoundingClientRect();
+        return {
+          separated: button.right <= account.left || button.left >= account.right || button.bottom <= account.top || button.top >= account.bottom,
+          inCorner: button.right <= innerWidth && button.bottom <= innerHeight && button.left > innerWidth / 2 && button.top > innerHeight / 2,
+        };
+      });
+      assert.deepEqual(layout, { separated: true, inCorner: true });
+    }
+    await player.enter();
+    for (const [width, height] of [[1280, 800], [390, 844]]) {
+      await player.page.setViewportSize({ width, height });
+      await player.page.locator('.minimap-player-count').waitFor({ state: 'visible' });
+      assert.equal(await player.page.locator('.minimap-player-count').textContent(), '1');
+      const fits = await player.page.locator('.minimap-plate').evaluate((plate) => {
+        const badge = plate.querySelector('.minimap-players').getBoundingClientRect();
+        const bounds = plate.getBoundingClientRect();
+        return plate.scrollWidth <= plate.clientWidth && badge.left >= bounds.left && badge.right <= bounds.right && bounds.right <= innerWidth;
+      });
+      assert.equal(fits, true);
+    }
+    await player.page.locator('#game-menu-toggle').click();
+    await player.page.locator('#game-menu-options').click();
+    await player.page.locator('#options-backdrop [data-language="en"]').click();
+    assert.equal(await player.page.locator('.minimap-players').getAttribute('aria-label'), '1 player in this map');
+    assert.equal(await player.page.locator('#multiplayer-status').count(), 0);
     assert.deepEqual(player.errors, []);
   } finally { await player.context.close(); }
 });

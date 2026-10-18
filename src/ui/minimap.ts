@@ -31,6 +31,7 @@ let zoom = 1;
 let off = false;
 let lastZone = '';
 let lastCoords = '';
+let playerCount: number | null = null;
 let drawn: { marker: MinimapMarker; sx: number; sy: number; inside: boolean }[] = [];
 let mouse: { x: number; y: number } | null = null;
 
@@ -40,6 +41,23 @@ const canvas = () => root().querySelector<HTMLCanvasElement>('.minimap-canvas')!
 function save() { localStorage.setItem(STORE_KEY, JSON.stringify({ zoom, off })); }
 
 export function setMinimapImage(map: HTMLCanvasElement | null) { image = map; }
+
+export function setMapPlayerCount(count: number | null) {
+  playerCount = count;
+  const badge = root().querySelector<HTMLElement>('.minimap-players')!;
+  const label = count === null
+    ? t('Conexión al mundo interrumpida. Reintentando…')
+    : t(count === 1 ? '{count} jugador en este mapa' : '{count} jugadores en este mapa', { count });
+  const text = count === null ? '—' : String(count);
+  const value = badge.querySelector('.minimap-player-count')!;
+  if (value.textContent !== text) value.textContent = text;
+  if (badge.getAttribute('aria-label') !== label) {
+    badge.setAttribute('aria-label', label);
+    if (badge.dataset.tip !== undefined) badge.dataset.tip = label;
+    else badge.title = label;
+  }
+  badge.classList.toggle('error', count === null);
+}
 
 function applyState() {
   root().classList.toggle('off', off);
@@ -63,6 +81,7 @@ function setDirectionLetters() {
   const letters = getLanguage() === 'en' ? { n: 'N', e: 'E', s: 'S', w: 'W' } : { n: 'N', e: 'E', s: 'S', w: 'O' };
   for (const [key, value] of Object.entries(letters)) root().querySelector<HTMLElement>(`.minimap-dir.${key}`)!.textContent = value;
   lastZone = '';
+  setMapPlayerCount(playerCount);
 }
 
 export function initMinimap(h: MinimapHooks) {

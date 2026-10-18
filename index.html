@@ -11,7 +11,6 @@
 </head>
 <body class="auth-visible">
   <canvas id="scene"></canvas>
-  <div id="multiplayer-status" role="status" aria-live="polite"></div>
 
   <div id="loading"><div class="crest">✦</div><p>Encendiendo los faroles de Brumaluz…</p></div>
 
@@ -313,6 +312,10 @@
     </div>
     <div class="minimap-plate" title="Ubicación|Lugar actual y coordenadas (este, norte) en metros desde la plaza. º muestra u oculta el minimapa.">
       <strong class="minimap-zone"></strong>
+      <span class="minimap-players" role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 4v3"/></svg>
+        <span class="minimap-player-count"></span>
+      </span>
       <span class="minimap-coords"></span>
     </div>
   </aside>
