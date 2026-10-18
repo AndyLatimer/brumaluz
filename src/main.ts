@@ -20,6 +20,7 @@ import { setupStage, castShadows } from './world/render';
 import { createGraphics } from './world/graphics';
 import { RemotePlayers } from './world/players';
 import { renderSocial } from './ui/socialWindow';
+import { startFriendNotifications } from './ui/friendNotifications';
 import { createPlayerInteractions } from './ui/playerInteractions';
 import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, type Interactable } from './world/city';
@@ -864,10 +865,13 @@ function enterPlay() {
   rebuildNow();
   layout();
   startChat();
+  stopFriendNotifications?.();
+  stopFriendNotifications = !TEST && currentUser ? startFriendNotifications() : null;
   refreshWorldStatus();
   worldConnection?.start();
 }
 let chatUnsubscribe: (() => void) | null = null;
+let stopFriendNotifications: (() => void) | null = null;
 let chatSeq = 0;
 function startChat() {
   stopChat();
@@ -891,6 +895,8 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  stopFriendNotifications?.();
+  stopFriendNotifications = null;
   playerInteractions.close();
   playGeneration++;
   stopMultiplayer();
@@ -1038,6 +1044,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   document.body.classList.toggle('window-open', !!win);
   document.body.classList.toggle('window-full', !!win);
   $('#window-backdrop').hidden = !win;
+  $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
   $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) { vendor = null; return; }

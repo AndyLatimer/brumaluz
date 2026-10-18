@@ -921,7 +921,7 @@ begin
     'userId', p.user_id, 'username', p.username,
     'status', case when f.status = 'accepted' then 'friend' when f.requested_by = uid then 'outgoing' else 'incoming' end,
     'online', w.user_id is not null,
-    'characterName', c.name, 'location', c.data ->> 'location'
+    'characterName', c.name, 'location', c.data ->> 'location', 'characterClass', c.data ->> 'cls'
   ) order by lower(p.username)), '[]'::jsonb) into result
   from public.friendships f
   join public.profiles p on p.user_id = case when f.user_low = uid then f.user_high else f.user_low end

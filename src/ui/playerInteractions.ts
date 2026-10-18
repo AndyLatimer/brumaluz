@@ -1,4 +1,5 @@
-import { getProfileUsername, listFriends, requestFriend, updateFriend, type FriendEntry } from '../services/account';
+import { getProfileUsername, requestFriend, updateFriend, type FriendEntry } from '../services/account';
+import { readFriends as listFriends } from '../services/friends';
 import { focusChat, isChatIgnored, setChatIgnored } from './chatWindow';
 import { t } from './i18n';
 

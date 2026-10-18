@@ -308,6 +308,7 @@ export interface FriendEntry {
   status: 'friend' | 'incoming' | 'outgoing';
   online: boolean;
   characterName: string | null;
+  characterClass: string | null;
   location: string | null;
 }
 export async function listFriends(): Promise<FriendEntry[]> {
@@ -319,11 +320,13 @@ export async function listFriends(): Promise<FriendEntry[]> {
       || !['friend', 'incoming', 'outgoing'].includes(String(value.status))
       || typeof value.online !== 'boolean'
       || (value.characterName !== null && typeof value.characterName !== 'string')
+      || (value.characterClass !== null && typeof value.characterClass !== 'string')
       || (value.location !== null && typeof value.location !== 'string')) throw new Error('Respuesta social no válida.');
     return {
       userId: value.userId, username: value.username,
       status: value.status === 'friend' ? 'friend' : value.status === 'incoming' ? 'incoming' : 'outgoing',
       online: value.online, characterName: value.characterName, location: value.location,
+      characterClass: value.characterClass,
     };
   });
 }

@@ -1,4 +1,7 @@
-import { listFriends, requestFriend, updateFriend, type FriendEntry } from '../services/account';
+import { requestFriend, updateFriend, type FriendEntry } from '../services/account';
+import { readFriends as listFriends } from '../services/friends';
+import { CLASSES, type ClassId } from '../data/data';
+import { classIcon } from './classIcons';
 import { t } from './i18n';
 
 const ICONS = {
@@ -21,6 +24,53 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   container.replaceChildren();
   const root = document.createElement('div');
   root.className = 'social-window';
+  const tabs = document.createElement('div');
+  tabs.className = 'social-tabs';
+  tabs.setAttribute('role', 'tablist');
+  tabs.setAttribute('aria-label', t('Social'));
+  const friendsPanel = document.createElement('div');
+  friendsPanel.className = 'social-friends-panel';
+  friendsPanel.id = 'social-friends-panel';
+  friendsPanel.setAttribute('role', 'tabpanel');
+  const groupPanel = document.createElement('div');
+  groupPanel.id = 'social-group-panel';
+  groupPanel.className = 'social-group-panel';
+  groupPanel.setAttribute('role', 'tabpanel');
+  groupPanel.hidden = true;
+  const groupTitle = document.createElement('h3');
+  groupTitle.textContent = t('Tu próxima aventura, en grupo');
+  const groupText = document.createElement('p');
+  groupText.textContent = t('Próximamente podrás formar un grupo con otros aventureros.');
+  groupPanel.append(icon('friend'), groupTitle, groupText);
+  const tabButtons = [friendsPanel, groupPanel].map((panel, index) => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.id = `social-tab-${index}`;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-controls', panel.id);
+    tab.setAttribute('aria-selected', String(index === 0));
+    tab.tabIndex = index === 0 ? 0 : -1;
+    panel.setAttribute('aria-labelledby', tab.id);
+    tab.append(icon(index === 0 ? 'friend' : 'accept'), document.createTextNode(t(index === 0 ? 'Amigos' : 'Grupo')));
+    tab.onclick = () => selectTab(index);
+    tabs.append(tab);
+    return tab;
+  });
+  function selectTab(index: number) {
+    [friendsPanel, groupPanel].forEach((panel, i) => {
+      panel.hidden = i !== index;
+      tabButtons[i].setAttribute('aria-selected', String(i === index));
+      tabButtons[i].tabIndex = i === index ? 0 : -1;
+    });
+  }
+  tabs.onkeydown = (event) => {
+    const current = tabButtons.findIndex((tab) => tab === document.activeElement);
+    if (current < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : 1 - current;
+    selectTab(index);
+    tabButtons[index].focus();
+  };
   const introduction = document.createElement('header');
   introduction.className = 'social-introduction';
   const crest = document.createElement('span');
@@ -35,9 +85,6 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   introduction.append(crest, welcome);
   const overview = document.createElement('div');
   overview.className = 'social-overview';
-  const summary = document.createElement('p');
-  summary.className = 'social-summary';
-  overview.append(summary);
   const invitation = document.createElement('section');
   invitation.className = 'social-invitation';
   const invitationLabel = document.createElement('label');
@@ -70,7 +117,8 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   message.setAttribute('role', 'status');
   const lists = document.createElement('div');
   lists.className = 'social-lists';
-  root.append(introduction, overview, invitation, message, lists);
+  friendsPanel.append(introduction, overview, invitation, message, lists);
+  root.append(tabs, friendsPanel, groupPanel);
   container.append(root);
   let closed = false;
   let busy = false;
@@ -84,7 +132,7 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   function setBusy(value: boolean) {
     busy = value;
     lists.setAttribute('aria-busy', String(value));
-    for (const control of root.querySelectorAll<HTMLButtonElement>('button')) control.disabled = value;
+    for (const control of friendsPanel.querySelectorAll<HTMLButtonElement>('button')) control.disabled = value;
   }
   function button(text: string, kind: keyof typeof ICONS, action: () => void) {
     const el = document.createElement('button');
@@ -97,7 +145,21 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   function display(entries: FriendEntry[]) {
     lists.replaceChildren();
     const friends = entries.filter((entry) => entry.status === 'friend');
-    summary.textContent = `${t('Conectados')}: ${friends.filter((entry) => entry.online).length} · ${t('Amigos')}: ${friends.length}`;
+    overview.replaceChildren();
+    for (const [label, count, kind] of [
+      ['Amigos en total', friends.length, 'friend'],
+      ['Amigos conectados', friends.filter((entry) => entry.online).length, 'accept'],
+      ['Solicitudes recibidas', entries.filter((entry) => entry.status === 'incoming').length, 'incoming'],
+    ] as const) {
+      const stat = document.createElement('div');
+      stat.className = `social-stat social-stat-${kind}`;
+      const number = document.createElement('strong');
+      number.textContent = String(count);
+      const caption = document.createElement('span');
+      caption.textContent = t(label);
+      stat.append(icon(kind), number, caption);
+      overview.append(stat);
+    }
     for (const [kind, label] of [['friend', 'Amigos'], ['incoming', 'Solicitudes recibidas'], ['outgoing', 'Solicitudes enviadas']] as const) {
       const section = document.createElement('section');
       section.dataset.social = kind;
@@ -122,8 +184,16 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
         row.classList.toggle('online', kind === 'friend' && entry.online);
         const avatar = document.createElement('span');
         avatar.className = 'social-avatar';
-        avatar.setAttribute('aria-hidden', 'true');
-        avatar.textContent = entry.username.slice(0, 1).toUpperCase();
+        if (entry.online && entry.characterClass && Object.hasOwn(CLASSES, entry.characterClass)) {
+          const cls = entry.characterClass as ClassId;
+          avatar.innerHTML = classIcon(cls, `friend-${entry.userId}`);
+          avatar.setAttribute('role', 'img');
+          avatar.setAttribute('aria-label', t(CLASSES[cls].label));
+          avatar.title = t(CLASSES[cls].label);
+        } else {
+          avatar.append(icon('friend'));
+          avatar.setAttribute('aria-hidden', 'true');
+        }
         const info = document.createElement('div');
         info.className = 'social-info';
         const name = document.createElement('strong');
@@ -133,8 +203,20 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
           const presence = document.createElement('span');
           presence.className = entry.online ? 'social-online' : 'social-offline';
           presence.textContent = t(entry.online ? 'Conectado' : 'Desconectado');
-          if (entry.online && entry.characterName) presence.textContent += ` · ${entry.characterName}${entry.location ? ` · ${t(entry.location === 'brumaluz' ? 'Brumaluz' : entry.location)}` : ''}`;
           info.append(presence);
+          if (entry.online) {
+            const details = document.createElement('dl');
+            details.className = 'social-details';
+            for (const [label, value] of [['Personaje', entry.characterName], ['Ubicación', entry.location === 'brumaluz' ? 'Brumaluz' : entry.location]] as const) {
+              if (!value) continue;
+              const dt = document.createElement('dt');
+              dt.textContent = t(label);
+              const dd = document.createElement('dd');
+              dd.textContent = label === 'Personaje' ? value : t(value);
+              details.append(dt, dd);
+            }
+            info.append(details);
+          }
         }
         const actions = document.createElement('div');
         actions.className = 'social-actions';

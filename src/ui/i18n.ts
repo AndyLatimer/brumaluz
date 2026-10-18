@@ -3,6 +3,16 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Amigos en total': 'Total friends',
+  'Amigos conectados': 'Friends online',
+  'Grupo': 'Party',
+  'Tu próxima aventura, en grupo': 'Your next adventure, together',
+  'Próximamente podrás formar un grupo con otros aventureros.': 'Soon you will be able to form a party with other adventurers.',
+  '{n} solicitudes de amistad pendientes': '{n} pending friend requests',
+  'Social: {n} solicitudes pendientes': 'Social: {n} pending requests',
+  '{name} te ha enviado una solicitud de amistad.': '{name} sent you a friend request.',
+  '{name} ha aceptado tu solicitud de amistad.': '{name} accepted your friend request.',
+  'No se pudieron actualizar los avisos de amistad: {error}': 'Friendship notifications could not be updated: {error}',
   'Compañeros de aventuras': 'Adventure companions',
   'Los mejores caminos se recorren en compañía.': 'The best paths are travelled together.',
   'Invita a un compañero': 'Invite a companion',

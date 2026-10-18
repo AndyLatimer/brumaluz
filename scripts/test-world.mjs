@@ -74,7 +74,7 @@ async function openPlayer(world, account, compatible = true) {
         if (![relation.from, relation.to].includes(key)) continue;
         const target = world.accounts.get(relation.from === key ? relation.to : relation.from);
         const player = relation.accepted ? world.players.get(target.user.id) : null;
-        entries.push({ userId: target.user.id, username: target.username || target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, location: player ? 'brumaluz' : null });
+        entries.push({ userId: target.user.id, username: target.username || target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, characterClass: player?.data.cls || null, location: player ? 'brumaluz' : null });
       }
       return fulfill(entries);
     }
@@ -387,6 +387,7 @@ async function socialRequest(page, username) {
 
 test('Social supports requests, acceptance, online presence, whisper, cancellation and removal across accounts', { timeout: 180000 }, async () => {
   const world = backend(), a = fixture('Alric', 'humano', -6.4), b = fixture('Elara', 'elfo', -5.4);
+  b.character.data.cls = 'mago';
   const first = await openPlayer(world, a), second = await openPlayer(world, b);
   try {
     await first.enter(); await second.enter();
@@ -405,10 +406,13 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await socialRequest(first.page, 'Elara');
     await second.page.getByRole('button', {name:'Aceptar',exact:true}).click({timeout:15000});
     await first.page.locator('[data-social="friend"] .social-row').waitFor({timeout:15000});
-    assert.match(await first.page.locator('.social-online').textContent(), /Conectado · Elara · Brumaluz/);
-    assert.equal(await first.page.locator('.social-summary').textContent(),'Conectados: 1 · Amigos: 1');
+    assert.equal(await first.page.locator('.social-online').textContent(),'Conectado');
+    assert.equal(await first.page.locator('.social-details dt').allTextContents().then(labels=>labels.join(',')),'Personaje,Ubicación');
+    assert.deepEqual(await first.page.locator('.social-details dd').allTextContents(),['Elara','Brumaluz']);
+    assert.deepEqual(await first.page.locator('.social-stat strong').allTextContents(),['1','1','0']);
     assert.equal(await first.page.locator('[data-social="friend"] .social-count').textContent(),'1');
-    assert.equal(await first.page.locator('.social-avatar').textContent(),'E');
+    assert.equal(await first.page.locator('.social-avatar .class-icon').count(),1);
+    assert.equal(await first.page.locator('.social-avatar').getAttribute('aria-label'),'Mago');
     assert.equal(await first.page.locator('#social-username').getAttribute('aria-describedby'),'social-invitation-help');
     for (const width of [320,390,1280]) {
       await first.page.setViewportSize({width,height:844});
@@ -430,6 +434,7 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await first.page.locator('.chat-input').blur();
     await social(first.page);
     assert.equal(await first.page.locator('.social-offline').textContent(), 'Desconectado');
+    assert.equal(await first.page.locator('.social-avatar .class-icon').count(),0);
     first.page.once('dialog', dialog => dialog.accept());
     await first.page.getByRole('button', {name:'Eliminar amigo',exact:true}).click();
     await first.page.locator('[data-social="friend"] .social-row').waitFor({state:'detached'});
@@ -612,4 +617,44 @@ test('NPC interaction still opens its conversation with E', { timeout: 120000 },
     assert.equal(await player.page.locator('#player-interactions').isVisible(),false);
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
+});
+
+test('friend requests notify outside Social, mark both menu levels and announce acceptance; Group is a placeholder tab', {timeout:120000}, async () => {
+  const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    assert.equal(await first.page.locator('#game-menu-toggle .menu-key').textContent(),'Esc');
+    assert.equal(await first.page.locator('#player-menu-toggle .menu-key').textContent(),'Tab');
+    await social(first.page);
+    await socialRequest(first.page,'Elara');
+    await first.page.locator('[data-social="outgoing"] .social-row').waitFor();
+    await first.page.locator('#window-close').click();
+    await second.page.locator('.friend-notification').filter({hasText:'~Alric te ha enviado una solicitud de amistad.'}).waitFor({timeout:15000});
+    await second.page.locator('.friend-request-badge').waitFor({state:'visible'});
+    assert.equal(await second.page.locator('[data-window="social"]').getAttribute('class').then(value=>value.includes('has-friend-requests')),true);
+    assert.equal(await second.page.locator('#window-backdrop').isVisible(),false);
+    await social(second.page);
+    assert.equal(await second.page.locator('[data-social="incoming"] .class-icon').count(),0);
+    assert.equal(await second.page.locator('[data-social="incoming"] .social-avatar').textContent(),'');
+    assert.deepEqual(await second.page.locator('.social-stat strong').allTextContents(),['0','0','1']);
+    await second.page.getByRole('tab',{name:'Grupo',exact:true}).click();
+    await second.page.getByText('Próximamente podrás formar un grupo con otros aventureros.',{exact:true}).waitFor();
+    assert.equal(await second.page.locator('#social-friends-panel').isVisible(),false);
+    await second.page.keyboard.press('ArrowLeft');
+    assert.equal(await second.page.getByRole('tab',{name:'Amigos',exact:true}).getAttribute('aria-selected'),'true');
+    await second.page.getByRole('button',{name:'Aceptar',exact:true}).click();
+    await second.page.locator('[data-social="friend"] .social-row').waitFor();
+    await second.page.locator('.friend-request-badge').waitFor({state:'hidden'});
+    assert.equal(await second.page.locator('[data-window="social"]').getAttribute('class').then(value=>value.includes('has-friend-requests')),false);
+    await first.page.locator('.friend-notification').filter({hasText:'~Elara ha aceptado tu solicitud de amistad.'}).waitFor({timeout:15000});
+    await first.page.locator('.chat-log').getByText('~Elara ha aceptado tu solicitud de amistad.',{exact:true}).waitFor();
+    const notices = await first.page.locator('.chat-log').getByText('~Elara ha aceptado tu solicitud de amistad.',{exact:true}).count();
+    await first.page.waitForTimeout(5500);
+    assert.equal(await first.page.locator('.chat-log').getByText('~Elara ha aceptado tu solicitud de amistad.',{exact:true}).count(),notices);
+    await leave(first.page);
+    assert.equal(await first.page.locator('.friend-notification').count(),0);
+    assert.equal(await first.page.locator('.friend-request-badge').count(),0);
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
 });

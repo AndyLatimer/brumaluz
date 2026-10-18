@@ -331,8 +331,9 @@
   </div>
 
   <div id="game-menu" class="game-menu">
-    <button id="game-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="game-menu-panel">
+    <button id="game-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="game-menu-panel" aria-keyshortcuts="Escape">
       <span aria-hidden="true">☰</span>
+      <kbd class="menu-key" aria-hidden="true">Esc</kbd>
     </button>
     <section id="game-menu-panel" class="game-menu-panel frame" aria-labelledby="game-menu-title" hidden>
       <h2 id="game-menu-title">Menú</h2>
@@ -346,7 +347,8 @@
 
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="cur-flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd35a"/><stop offset=".55" stop-color="#ff8a2a"/><stop offset="1" stop-color="#e03a1e"/></linearGradient></defs></svg>
   <div id="player-menu" class="player-menu">
-    <button id="player-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú de personaje" aria-expanded="false" aria-controls="player-menu-panel" title="Menú de personaje|Tab">
+    <button id="player-menu-toggle" class="game-menu-toggle" type="button" aria-label="Abrir menú de personaje" aria-expanded="false" aria-controls="player-menu-panel" aria-keyshortcuts="Tab" title="Menú de personaje|Tab">
+      <kbd class="menu-key" aria-hidden="true">Tab</kbd>
       <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="pm-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d09a3c"/></linearGradient></defs><path class="pm-bust" d="M16 5.5a5.2 5.2 0 1 1 0 10.4 5.2 5.2 0 0 1 0-10.4ZM5.5 27c0-5.6 4.4-9.2 10.5-9.2S26.5 21.4 26.5 27Z"/><path class="pm-spark" d="M26 3l1.2 3 3 1.2-3 1.2L26 11.4l-1.2-3-3-1.2 3-1.2Z"/></svg>
     </button>
     <section id="player-menu-panel" class="game-menu-panel frame" aria-labelledby="player-menu-title" hidden>

@@ -191,6 +191,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       assert.equal(pending.status, 'outgoing');
       assert.equal(pending.online, false);
       assert.equal(pending.characterName, null);
+      assert.equal(pending.characterClass, null);
       await user(outsider);
       assert.deepEqual(await rpc('friends_list', []), []);
       await rejected(() => rpc('friend_update', [a, 'accept']), /FRIEND_NOT_FOUND/);
@@ -205,12 +206,15 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       assert.equal(friend.status, 'friend');
       assert.equal(friend.online, true);
       assert.equal(friend.characterName, 'Elara');
+      assert.equal(friend.characterClass, 'guerrero');
       assert.equal(friend.location, location);
       assert.equal('email' in friend, false);
       await client.query('reset role');
       await client.query("update public.world_players set seen_at=now()-interval '16 seconds' where user_id=$1", [b]);
       await user(a);
-      assert.equal((await rpc('friends_list', []))[0].online, false);
+      const offline = (await rpc('friends_list', []))[0];
+      assert.equal(offline.online, false);
+      assert.equal(offline.characterClass, null);
       await rpc('friend_update', [b, 'remove']);
       await user(b);
       assert.deepEqual(await rpc('friends_list', []), []);
