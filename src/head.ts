@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { LoopSubdivision } from 'three-subdivide';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { coatMark } from './data';
 
 // ---------------------------------------------------------------------------
 // Cabezas modulares a partir de las cuatro cabezas de KayKit Adventurers.
@@ -34,15 +35,18 @@ export interface HeadOptions {
   skin?: string;
   /** Complementos: adorno del pelo, gafas/bufanda/joyas, maquillaje y su color. */
   hairAcc?: number;
+  hairAccColor?: string;
   acc?: number;
   makeup?: number;
+  makeupColor?: string;
   accColor?: string;
 }
 
 export interface HeadResult {
   group: THREE.Group;
+  ownedMaterials: THREE.Material[];
   /** Puntos de anclaje en el espacio de la malla original (pasar por toBone). */
-  anchors: { ear: (s: number) => THREE.Vector3; top: (s: number) => THREE.Vector3; crest: { p: THREE.Vector3; n: THREE.Vector3 }[] };
+  anchors: { ear: (s: number) => THREE.Vector3; top: (s: number) => THREE.Vector3; crest: { p: THREE.Vector3; n: THREE.Vector3 }[]; surf: (dir: THREE.Vector3, sink?: number) => { p: THREE.Vector3; n: THREE.Vector3 } };
   toBone: THREE.Matrix4;
   /** Grupos de los ojos (para parpadear escalando en Y). */
   eyes: THREE.Object3D[];
@@ -66,8 +70,8 @@ const HEAD_SHAPES: Record<HeadKit, { rx: number; ryDown: number; nLow: number }>
   Barbarian: { rx: 0.49, ryDown: 0.465, nLow: 3.7 }, // cuadrada: mandíbula marcada
 };
 
-export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Coleta de lado'];
-export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla', 'Bigote'];
+export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado'];
+export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla y bigote', 'Bigote', 'Perilla'];
 export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados'];
 export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas'];
 export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón'];
@@ -334,6 +338,7 @@ const BROW = [
 export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, material: (kit: HeadKit) => THREE.Material, extraMat: (c: string) => THREE.Material): HeadResult {
   const A = analyse(sources[o.face === 'Barbarian' ? 'Mage' : o.face]);
   const group = new THREE.Group();
+  const ownedMaterials: THREE.Material[] = [];
   const toBone = A.src.toBone;
 
   // ---------- Cabeza ----------
@@ -364,15 +369,29 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     g.computeVertexNormals();
     const flat = g.toNonIndexed();
     g.dispose();
-    // piel con su degradado; con pelo, coronilla y nuca del color del pelo (nunca se ve calva)
     paintCell(flat, C_SKIN, 0.2, 0.7);
-    if (o.hair !== 0 && o.hair !== 7) {
+    if (o.hair !== 0 && o.hair !== 7 && o.hat !== 'helmet') {
       const uv = flat.attributes.uv as THREE.BufferAttribute, fp = flat.attributes.position;
+      const hairlineY = o.hair === 8 ? 1.02 : 1.3;
       for (let t = 0; t < fp.count / 3; t++) {
         let cy = 0, cz = 0;
         for (let k = 0; k < 3; k++) { cy += fp.getY(t * 3 + k) / 3; cz += fp.getZ(t * 3 + k) / 3; }
-        if (cy > 1.3 && (cz < 0.08 || cy > 1.98)) for (let k = 0; k < 3; k++) uv.setXY(t * 3 + k, ((C_HAIR % 8) + 0.5) / 8, (Math.floor(C_HAIR / 8) + 0.5) / 8);
+        if (cy > hairlineY && (cz < 0.08 || cy > 1.98)) for (let k = 0; k < 3; k++) {
+          const i = t * 3 + k;
+          uv.setXY(i, ((C_HAIR % 8) + 0.5) / 8, (Math.floor(C_HAIR / 8) + 1) / 8);
+        }
       }
+    }
+    if (o.hat === 'helmet') {
+      // En vez de borrar la parte trasera (dejaba huecos visibles), se encoge hacia dentro del casco y la cabeza sigue cerrada.
+      const fp = flat.attributes.position;
+      for (let i = 0; i < fp.count; i++) {
+        const w = 1 - THREE.MathUtils.smoothstep(fp.getZ(i), 0.12, 0.4);
+        if (w <= 0) continue;
+        const k = 1 - 0.22 * w;
+        fp.setXYZ(i, HEAD_C.x + (fp.getX(i) - HEAD_C.x) * k, HEAD_C.y + (fp.getY(i) - HEAD_C.y) * k, HEAD_C.z + (fp.getZ(i) - HEAD_C.z) * k);
+      }
+      flat.computeVertexNormals();
     }
     return flat;
   })();
@@ -420,7 +439,25 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const u0 = Math.floor(u - 0.5), w0 = THREE.MathUtils.clamp(Math.floor(w - 0.5), 0, NV - 2), fu = u - 0.5 - u0, fw = THREE.MathUtils.clamp(w - 0.5 - w0, 0, 1);
       const at = (r: number, c: number) => sm[r * NU + ((c % NU) + NU) % NU];
       const gp = (at(w0, u0) * (1 - fu) + at(w0, u0 + 1) * fu) * (1 - fw) + (at(w0 + 1, u0) * (1 - fu) + at(w0 + 1, u0 + 1) * fu) * fw;
-      const down = Math.min(gp, 0.07) * (1 - THREE.MathUtils.smoothstep(-v.y, 0.25, 0.45));
+      const down = Math.min(gp, 0.11) * (1 - THREE.MathUtils.smoothstep(-v.y, 0.25, 0.45));
+      p.setXYZ(i, HEAD_C.x + v.x * (L - down), HEAD_C.y + v.y * (L - down), HEAD_C.z + v.z * (L - down));
+    }
+    p.needsUpdate = true;
+    g.computeVertexNormals();
+    return g;
+  };
+  const fitHairShell = (g: THREE.BufferGeometry) => {
+    const p = g.attributes.position, v = V(0, 0, 0);
+    for (let i = 0; i < p.count; i++) {
+      v.set(p.getX(i) - HEAD_C.x, p.getY(i) - HEAD_C.y, p.getZ(i) - HEAD_C.z);
+      const L = v.length();
+      if (L < 1e-6) continue;
+      v.multiplyScalar(1 / L);
+      if (v.y < -0.45) continue;
+      const clearance = L - headR(v);
+      const crownAllowance = THREE.MathUtils.smoothstep(v.y, 0.55, 0.9);
+      const targetClearance = THREE.MathUtils.lerp(0.003, 0.012, crownAllowance);
+      const down = Math.min(Math.max(0, clearance - targetClearance), 0.2);
       p.setXYZ(i, HEAD_C.x + v.x * (L - down), HEAD_C.y + v.y * (L - down), HEAD_C.z + v.z * (L - down));
     }
     p.needsUpdate = true;
@@ -497,10 +534,14 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   // ---------- Pelo ----------
   const hatShrink = o.hat === 'helmet' ? 0.9 : o.hat === 'bear' ? 0.92 : o.hat === 'wizard' ? 0.94 : 1;
   const hairPieces: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
-  const kitHair = (kit: HeadKit) => {
+  const kitHair = (kit: HeadKit, closeFit = 1) => {
     const h = analyse(sources[kit]).hair;
     if (!h || kit === 'Barbarian') return;
     const T: Tris = { pos: h.pos.slice(), uv: h.uv.slice(), nrm: h.nrm.slice(), count: h.count };
+    if (closeFit < 1) for (let i = 0; i < T.count * 3; i++) {
+      const p = V(T.pos[i * 3], T.pos[i * 3 + 1], T.pos[i * 3 + 2]).sub(HEAD_C).multiplyScalar(closeFit).add(HEAD_C);
+      T.pos.set([p.x, p.y, p.z], i * 3);
+    }
     if (hatShrink < 1) for (let i = 0; i < T.count * 3; i++) {
       const y = T.pos[i * 3 + 1];
       if (y < 1.45) continue;
@@ -508,11 +549,19 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const p = V(T.pos[i * 3], y, T.pos[i * 3 + 2]).sub(CENTER).multiplyScalar(k).add(CENTER);
       T.pos.set([p.x, p.y, p.z], i * 3);
     }
-    hairPieces.push({ geo: pushOut(settle(toGeometry(T, true), 0.02), 0.014), kit }); // el pelo base se asienta sobre el cráneo y nunca entra
+    hairPieces.push({ geo: pushOut(fitHairShell(toGeometry(T, true)), 0.014), kit });
   };
   const hairCell = C_HAIR;
   const blob = (r: number, p: THREE.Vector3, s: THREE.Vector3, rot = new THREE.Euler(), detail = 1) =>
-    piece(new THREE.IcosahedronGeometry(r, detail), hairCell, compose(p, rot, s));
+    pushOut(settle(piece(new THREE.IcosahedronGeometry(r, detail), hairCell, compose(p, rot, s)), 0.02), 0.014);
+  const ponytail = (direction: THREE.Vector3, offsets: THREE.Vector3[], radius: number) => {
+    const outward = direction.normalize();
+    const root = headAt(outward, radius * 0.35);
+    hairPieces.push({ geo: blob(radius * 1.15, root, V(1, 0.92, 0.9), new THREE.Euler(), 3), kit: o.face });
+    const start = root.clone().addScaledVector(outward, -radius * 0.8);
+    const points = [start, root, ...offsets.map((offset) => root.clone().add(offset))];
+    hairPieces.push({ geo: strand(points, radius, radius * 0.48), kit: o.face });
+  };
   /**
    * Mechón liso: un tubo que sigue una curva y se estrecha hasta una punta redonda.
    * braid: ondas de trenzado; flat: aplastado de lado (cresta); taperStart: afina también el inicio.
@@ -547,14 +596,17 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     return paintCell(flat, hairCell, 0.2, 0.8);
   };
   const hasHat = o.hat !== 'none';
-  switch (o.hair) {
+  switch (o.hat === 'helmet' ? -1 : o.hair) {
     case 1: kitHair('Mage'); break;
     case 2: kitHair('Knight'); break;
     case 3: kitHair('Rogue'); break;
     case 4: // coleta: nudo en la nuca y una cola lisa que cae
       kitHair('Rogue');
-      hairPieces.push({ geo: blob(0.1, V(0, 1.78, -0.47), V(1, 0.9, 0.85), new THREE.Euler(), 3), kit: o.face });
-      hairPieces.push({ geo: strand([V(0, 1.78, -0.5), V(0, 1.7, -0.62), V(0, 1.5, -0.67), V(0, 1.3, -0.63), V(0.02, 1.13, -0.58)], 0.1, 0.05), kit: o.face });
+      ponytail(
+        V(0, -0.18, -0.98),
+        [V(0, -0.06, -0.13), V(0, -0.24, -0.18), V(0, -0.45, -0.15), V(0.02, -0.62, -0.1)],
+        0.105,
+      );
       break;
     case 5: // moño
       kitHair('Mage');
@@ -563,8 +615,11 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     case 6: // dos coletas
       kitHair('Rogue');
       for (const sx of [-1, 1]) {
-        hairPieces.push({ geo: blob(0.075, V(sx * 0.44, 1.82, -0.17), V(1, 1, 1), new THREE.Euler(), 3), kit: o.face });
-        hairPieces.push({ geo: strand([V(sx * 0.45, 1.82, -0.18), V(sx * 0.57, 1.74, -0.2), V(sx * 0.63, 1.55, -0.22), V(sx * 0.62, 1.36, -0.2), V(sx * 0.57, 1.22, -0.17)], 0.085, 0.04), kit: o.face });
+        ponytail(
+          V(sx * 0.72, 0.34, -0.6),
+          [V(sx * 0.1, -0.06, -0.025), V(sx * 0.19, -0.22, -0.04), V(sx * 0.2, -0.4, -0.02), V(sx * 0.15, -0.54, 0.02)],
+          0.085,
+        );
       }
       break;
     case 7: // cresta: una franja continua de la frente a la nuca
@@ -574,23 +629,64 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
         hairPieces.push({ geo: strand(pts, 0.12, 0.07, { flat: 0.42, taperStart: true }), kit: o.face });
       }
       break;
-    case 8: // melena larga: masa redondeada a la espalda y dos mechones lisos junto a la cara
-      kitHair('Mage');
-      {
-        const back = new THREE.SphereGeometry(1, 28, 20);
-        const bp = back.attributes.position;
-        for (let i = 0; i < bp.count; i++) { const y = bp.getY(i); bp.setX(i, bp.getX(i) * (1 - Math.max(0, -y) * 0.22)); bp.setZ(i, bp.getZ(i) * (1 - Math.max(0, -y) * 0.3)); }
-        hairPieces.push({ geo: piece(back, hairCell, compose(V(0, 1.36, -0.3), new THREE.Euler(-0.1, 0, 0), V(0.53, 0.64, 0.34))), kit: o.face });
-        for (const sx of [-1, 1]) hairPieces.push({ geo: strand([V(sx * 0.42, 1.55, 0.02), V(sx * 0.45, 1.38, 0.07), V(sx * 0.44, 1.2, 0.08), V(sx * 0.4, 1.06, 0.06)], 0.075, 0.035), kit: o.face });
+    case 8: { // melena larga: una sola cubierta continua prolongada por la nuca
+      const segments = 192, rings = 48;
+      const pos: number[] = [HEAD_C.x, HEAD_C.y + headR(V(0, 1, 0)) + 0.012, HEAD_C.z];
+      const idx: number[] = [];
+      const limit = (phi: number) => {
+        const z = Math.sin(phi);
+        const front = THREE.MathUtils.smoothstep(z, 0, 1);
+        const rear = THREE.MathUtils.smoothstep(-z, 0, 1);
+        const side = THREE.MathUtils.smoothstep(Math.abs(Math.cos(phi)), 0.3, 0.9);
+        return 1.5 - 0.48 * front + 0.9 * rear
+          + 0.28 * side * rear
+          + 0.025 * Math.cos(phi) * front;
+      };
+      for (let ring = 1; ring <= rings; ring++) {
+        const thetaScale = ring / rings;
+        for (let segment = 0; segment < segments; segment++) {
+          const phi = (segment / segments) * 2 * PI;
+          const theta = thetaScale * limit(phi);
+          const d = V(Math.sin(theta) * Math.cos(phi), Math.cos(theta), Math.sin(theta) * Math.sin(phi));
+          const fall = THREE.MathUtils.smoothstep(theta, 1.25, limit(phi));
+          const r = headR(d) + 0.018 + Math.cos(phi * 8 + theta * 0.3) * 0.015 * fall;
+          const back = THREE.MathUtils.smoothstep(-Math.sin(phi), -0.15, 0.8);
+          const side = THREE.MathUtils.smoothstep(Math.abs(Math.cos(phi)), 0.25, 0.8);
+          const drape = fall * THREE.MathUtils.clamp(back * 0.9 + side * 0.8, 0, 1);
+          const x = HEAD_C.x + d.x * r + Math.sign(Math.cos(phi)) * side * drape * 0.035;
+          const y = HEAD_C.y + d.y * r - drape * (0.34 + back * 0.16 + side * 0.1);
+          const z = HEAD_C.z + d.z * r - drape * (back * 0.08 + side * 0.025);
+          pos.push(x, y, z);
+        }
       }
+      for (let segment = 0; segment < segments; segment++) {
+        const next = (segment + 1) % segments;
+        idx.push(0, 1 + next, 1 + segment);
+      }
+      for (let ring = 0; ring < rings - 1; ring++) {
+        const inner = 1 + ring * segments, outer = inner + segments;
+        for (let segment = 0; segment < segments; segment++) {
+          const next = (segment + 1) % segments;
+          idx.push(inner + segment, outer + next, outer + segment);
+          idx.push(inner + segment, inner + next, outer + next);
+        }
+      }
+      const mane = new THREE.BufferGeometry();
+      mane.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      mane.setIndex(idx);
+      pushOut(mane, 0.018);
+      mane.computeVertexNormals();
+      hairPieces.push({ geo: paintCell(mane, hairCell, 0.2, 0.8), kit: o.face });
       break;
+    }
     case 9: // trenza: un mechón con ondas de trenzado
       kitHair('Mage');
       hairPieces.push({ geo: strand([V(0, 1.78, -0.44), V(0, 1.6, -0.56), V(0, 1.36, -0.61), V(0, 1.12, -0.6), V(0, 0.96, -0.57)], 0.09, 0.045, { braid: 7 }), kit: o.face });
       break;
     case 10: // moños dobles
       kitHair('Rogue');
-      if (!hasHat) for (const sx of [-1, 1]) hairPieces.push({ geo: blob(0.15, V(sx * 0.33, 2.08, -0.12), V(1, 0.92, 1), new THREE.Euler(), 3), kit: o.face });
+      if (!hasHat) for (const sx of [-1, 1])
+        hairPieces.push({ geo: blob(0.15, V(sx * 0.33, 2.08, -0.3), V(1, 0.92, 1), new THREE.Euler(), 3), kit: o.face });
       break;
     case 11: // rizos: media melena con bucles alrededor
       kitHair('Rogue');
@@ -600,11 +696,82 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
         hairPieces.push({ geo: blob(0.115, V(Math.sin(a) * 0.43, 1.37 - (k % 2) * 0.045, -Math.cos(a) * 0.36 - 0.06), V(1, 1.1, 0.85), new THREE.Euler(), 3), kit: o.face });
       }
       break;
-    case 12: // coleta de lado
-      kitHair('Mage');
-      hairPieces.push({ geo: blob(0.075, V(0.44, 1.8, -0.2), V(1, 1, 1), new THREE.Euler(), 3), kit: o.face });
-      hairPieces.push({ geo: strand([V(0.45, 1.8, -0.21), V(0.58, 1.7, -0.24), V(0.64, 1.48, -0.26), V(0.61, 1.27, -0.23), V(0.55, 1.12, -0.19)], 0.1, 0.045), kit: o.face });
+    case 12: { // corte corto asimétrico con línea frontal ladeada
+      const segments = 128, rings = 32;
+      const pos: number[] = [HEAD_C.x, HEAD_C.y + headR(V(0, 1, 0)) + 0.01, HEAD_C.z];
+      const idx: number[] = [];
+      const limit = (phi: number) => {
+        const z = Math.sin(phi), x = Math.cos(phi);
+        const front = THREE.MathUtils.smoothstep(z, 0, 1);
+        const back = THREE.MathUtils.smoothstep(-z, 0, 1);
+        return 1.62 - 0.32 * front + 0.42 * back + 0.3 * front * x;
+      };
+      for (let ring = 1; ring <= rings; ring++) {
+        const thetaScale = ring / rings;
+        for (let segment = 0; segment < segments; segment++) {
+          const phi = (segment / segments) * 2 * PI;
+          const theta = thetaScale * limit(phi);
+          const d = V(Math.sin(theta) * Math.cos(phi), Math.cos(theta), Math.sin(theta) * Math.sin(phi));
+          const r = headR(d) + 0.01;
+          pos.push(HEAD_C.x + d.x * r, HEAD_C.y + d.y * r, HEAD_C.z + d.z * r);
+        }
+      }
+      for (let segment = 0; segment < segments; segment++) {
+        const next = (segment + 1) % segments;
+        idx.push(0, 1 + next, 1 + segment);
+      }
+      for (let ring = 0; ring < rings - 1; ring++) {
+        const inner = 1 + ring * segments, outer = inner + segments;
+        for (let segment = 0; segment < segments; segment++) {
+          const next = (segment + 1) % segments;
+          idx.push(inner + segment, outer + next, outer + segment);
+          idx.push(inner + segment, inner + next, outer + next);
+        }
+      }
+      const cap = new THREE.BufferGeometry();
+      cap.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      cap.setIndex(idx);
+      cap.computeVertexNormals();
+      hairPieces.push({ geo: paintCell(cap, hairCell, 0.2, 0.8), kit: o.face });
       break;
+    }
+    case 13: { // corte corto pegado al cráneo
+      const segments = 128, rings = 32;
+      const pos: number[] = [HEAD_C.x, HEAD_C.y + headR(V(0, 1, 0)) + 0.008, HEAD_C.z];
+      const idx: number[] = [];
+      const limit = (phi: number) => {
+        const z = Math.sin(phi);
+        return 1.55 - 0.32 * THREE.MathUtils.smoothstep(z, 0, 1) + 0.47 * THREE.MathUtils.smoothstep(-z, 0, 1);
+      };
+      for (let ring = 1; ring <= rings; ring++) {
+        const t = ring / rings;
+        for (let segment = 0; segment < segments; segment++) {
+          const phi = (segment / segments) * 2 * PI;
+          const theta = t * limit(phi);
+          const d = V(Math.sin(theta) * Math.cos(phi), Math.cos(theta), Math.sin(theta) * Math.sin(phi));
+          const r = headR(d) + 0.008;
+          pos.push(HEAD_C.x + d.x * r, HEAD_C.y + d.y * r, HEAD_C.z + d.z * r);
+        }
+      }
+      for (let segment = 0; segment < segments; segment++) {
+        const next = (segment + 1) % segments;
+        idx.push(0, 1 + next, 1 + segment);
+      }
+      for (let ring = 0; ring < rings - 1; ring++) {
+        const inner = 1 + ring * segments, outer = inner + segments;
+        for (let segment = 0; segment < segments; segment++) {
+          const next = (segment + 1) % segments;
+          idx.push(inner + segment, outer + next, outer + segment);
+          idx.push(inner + segment, inner + next, outer + next);
+        }
+      }
+      const cap = new THREE.BufferGeometry();
+      cap.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      cap.setIndex(idx);
+      cap.computeVertexNormals();
+      hairPieces.push({ geo: paintCell(cap, hairCell, 0.2, 0.8), kit: o.face });
+      break;
+    }
   }
 
   // ---------- Boca ----------
@@ -718,7 +885,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     const mouthHole = (x: number, y: number) => Math.hypot(x / 1.25, (y - my) * 1.1) - 0.065;
     const jaw = (x: number, y: number, height: number, width: number) => {
       const ax = Math.abs(x);
-      const top = my - height + (height + 0.035) * Math.pow(Math.min(ax / width, 1), 2);
+      const top = my - height - 0.015 * Math.pow(Math.min(ax / width, 1), 2);
       return smoothMin(smoothMin(top - y, width - ax, 0.045), mouthHole(x, y), 0.02);
     };
     const stache = (x: number, y: number) => {
@@ -727,9 +894,14 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const thickness = 0.026 * (1 - sm(ax, 0.055, 0.16)) + 0.003;
       return Math.min(thickness - Math.abs(y - yc), 0.175 - ax);
     };
+    const goatee = (x: number, y: number) => {
+      const centerY = my - 0.17;
+      const vertical = (y - centerY) / 0.105, horizontal = x / 0.075;
+      return (1 - horizontal * horizontal - vertical * vertical) * 0.055;
+    };
     switch (o.beard) {
       case 1:
-        beardPatch((x, y) => Math.max(jaw(x, y, 0.05, 0.46), stache(x, y)));
+        beardPatch((x, y) => Math.max(jaw(x, y, 0.05, 0.23), stache(x, y)));
         break;
       case 2:
         beardPatch((x, y) => {
@@ -742,17 +914,13 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
         }, true);
         break;
       case 3:
-        beardPatch((x, y) => Math.max(
-          stache(x, y),
-          (() => {
-            const centerY = my - 0.17;
-            const vertical = (y - centerY) / 0.105, horizontal = x / 0.075;
-            return (1 - horizontal * horizontal - vertical * vertical) * 0.055;
-          })(),
-        ));
+        beardPatch((x, y) => Math.max(stache(x, y), goatee(x, y)));
         break;
       case 4:
         beardPatch(stache);
+        break;
+      case 5:
+        beardPatch(goatee);
         break;
     }
   }
@@ -903,6 +1071,34 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     conform(g, out);
     decals.push(g);
   };
+  const warPaintStripe = (x: number, y: number, angle: number) => {
+    const width = 0.15, height = 0.03, round = height / 2, across = 24, rows = 6;
+    const positions: number[] = [], indices: number[] = [];
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    for (let row = 0; row <= rows; row++) {
+      const v = row / rows, localY = (v - 0.5) * height;
+      const endInset = round * (1 - Math.sqrt(Math.max(0, 1 - ((v - 0.5) * 2) ** 2)));
+      for (let col = 0; col <= across; col++) {
+        const u = col / across;
+        const localX = THREE.MathUtils.lerp(-width / 2 + endInset, width / 2 - endInset, u);
+        const px = x + localX * cos - localY * sin;
+        const py = y + localX * sin + localY * cos;
+        const hit = rayHead(V(px, py, 2), V(0, 0, -1));
+        if (!hit) throw new Error(`Unable to project war paint onto face at (${px.toFixed(3)}, ${py.toFixed(3)})`);
+        const point = hit.point.addScaledVector(hit.normal, 0.007);
+        positions.push(point.x, point.y, point.z);
+      }
+    }
+    for (let row = 0; row < rows; row++) for (let col = 0; col < across; col++) {
+      const a = row * (across + 1) + col, b = a + 1, c = a + across + 1, d = c + 1;
+      indices.push(a, b, c, b, d, c);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    decals.push(new THREE.Mesh(geometry, extraMat('#3a6ab8')));
+  };
   const cheekY = nose.y - 0.04;
   const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: '#ff6f7a', transparent: true, opacity: o.detail === 1 ? 0.85 : o.race === 'lagto' ? 0.16 : (o.makeup ?? 0) > 0 ? 0.42 : 0.24, depthWrite: false });
   for (const s of [-1, 1]) {
@@ -920,16 +1116,45 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       decal(new THREE.CapsuleGeometry(0.008, 0.11, 2, 6), '#c47a70', 0.27, cheekY + 0.01, 0.5, V(1, 1, 0.4), 0.008);
       for (const k of [-1, 0, 1]) decal(new THREE.CapsuleGeometry(0.004, 0.04, 2, 4), '#a8605a', 0.27 - k * 0.03 * Math.sin(0.5), cheekY + 0.01 + k * 0.03 * Math.cos(0.5), 0.5 + PI / 2, V(1, 1, 0.4), 0.01);
       break;
-    case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) decal(new THREE.BoxGeometry(0.17, 0.028, 0.01), '#3a6ab8', s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
+    case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) warPaintStripe(s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
     case 5: decal(new THREE.CircleGeometry(0.016, 10), '#3a2420', 0.2, mouthY + 0.01, 0, V(1, 1, 1), 0.006); break;
   }
 
   // ---------- Rasgos del linaje en la cara ----------
   if (o.race === 'pelso') {
-    // naricilla rosa de gato y bigotes
-    decal(new THREE.CircleGeometry(0.036, 3).rotateZ(-PI / 2), '#e8828e', 0, nose.y - 0.015, 0, V(1.35, 0.9, 1), 0.012);
+    // pelaje: nariz, bigotes y marcas propias de cada color
+    const blob = (r: number) => new THREE.RingGeometry(0.0001, r, 40, 4);
+    const coat = coatMark(o.skin ?? '');
+    decal(new THREE.CircleGeometry(0.036, 3).rotateZ(-PI / 2), coat?.nose ?? '#e8828e', 0, nose.y - 0.015, 0, V(1.35, 0.9, 1), 0.012);
     for (const sx of [-1, 1]) for (let k = 0; k < 3; k++)
-      decal(new THREE.CapsuleGeometry(0.0045, 0.1, 2, 4).rotateZ(PI / 2), '#5a3a30', sx * 0.3, cheekY - 0.01 - k * 0.028, sx * (0.12 - k * 0.12), V(1, 1, 0.5), 0.008);
+      decal(new THREE.CapsuleGeometry(0.0045, 0.1, 6, 16).rotateZ(PI / 2), coat?.whisker ?? '#5a3a30', sx * 0.3, cheekY - 0.01 - k * 0.028, sx * (0.12 - k * 0.12), V(1, 1, 0.5), 0.008);
+    if (coat && coat.mark !== 'plain') {
+      const mc = coat.markColor, kind = coat.mark;
+      const stripe = (x: number, y: number, len: number, w: number, rz: number) => decal(new THREE.CapsuleGeometry(w, len, 6, 16), mc, x, y, rz, V(1, 1, 0.4), 0.006);
+      if (kind === 'tabby') {
+        // "M" de la frente: la raya central es la más larga y las laterales se abren
+        stripe(0, 1.85, 0.11, 0.017, 0);
+        for (const sx of [-1, 1]) {
+          stripe(sx * 0.075, 1.838, 0.085, 0.015, -sx * 0.22);
+          stripe(sx * 0.15, 1.805, 0.06, 0.012, -sx * 0.5);
+          // rayas de mejilla en diagonal, bajo el ojo y fuera de los bigotes
+          stripe(sx * 0.36, cheekY + 0.11, 0.07, 0.012, sx * 0.9);
+          stripe(sx * 0.37, cheekY + 0.065, 0.06, 0.011, sx * 1.2);
+        }
+      } else if (kind === 'spots') {
+        const pts: [number, number, number, number][] = [[-0.09, 1.85, 0.02, 1.2], [0.05, 1.87, 0.015, 1], [0.11, 1.81, 0.019, 0.8], [-0.03, 1.79, 0.013, 1], [-0.35, cheekY + 0.07, 0.019, 1.3], [0.36, cheekY + 0.045, 0.022, 0.9], [-0.31, cheekY - 0.005, 0.013, 1], [0.32, cheekY - 0.022, 0.016, 1.2]];
+        for (const [sx, sy, r, st] of pts) decal(blob(r), mc, sx, sy, 0.4, V(1, st, 1), 0.006);
+      } else if (kind === 'mask') {
+        // antifaz siamés: hocico y arco sobre los ojos
+        decal(blob(0.095), mc, 0, nose.y - 0.025, 0, V(1.35, 1, 1), 0.007);
+        for (const sx of [-1, 1]) decal(blob(0.055), mc, sx * 0.17, nose.y + 0.075, 0, V(1.3, 0.7, 1), 0.007);
+      } else {
+        // parches de bicolor / carey
+        decal(blob(0.1), mc, -0.2, 1.83, 0.3, V(1.1, 1.3, 1), 0.007);
+        decal(blob(0.045), mc, 0.4, cheekY + 0.14, 0, V(1, 1.3, 1), 0.007);
+        decal(blob(0.03), mc, 0.1, 1.9, 0, V(1.2, 1, 1), 0.007);
+      }
+    }
   }
   if (o.race === 'lagto') {
     for (const sx of [-1, 1]) decal(new THREE.CircleGeometry(0.011, 8), '#1e2a20', sx * 0.032, nose.y - 0.01, 0, V(1.4, 0.8, 1), 0.01);
@@ -961,7 +1186,10 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const byKit = new Map<HeadKit, THREE.BufferGeometry[]>();
   for (const h of hairPieces) (byKit.get(h.kit) ?? byKit.set(h.kit, []).get(h.kit)!).push(h.geo);
   const finalHair: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
-  for (const [kit, gs] of byKit) { const g = mergeGeoms(gs); if (g) finalHair.push({ geo: subdiv(g, 55, 0.006), kit }); }
+  for (const [kit, gs] of byKit) {
+    const g = mergeGeoms(gs);
+    if (g) finalHair.push({ geo: smoothNormals(pushOut(subdiv(g, 70, 0.003), 0.012), 70), kit });
+  }
   const hairGeos = [...finalHair, ...extras].map((h) => h.geo);
   const topRay = new THREE.Group();
   for (const g of hairGeos) topRay.add(new THREE.Mesh(g, headRay.material));
@@ -975,7 +1203,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const h2 = new THREE.Raycaster(HEAD_C.clone().addScaledVector(d2, 2), d2.clone().negate()).intersectObject(topRay, true)[0];
       if (h2 && h2.point.distanceTo(HEAD_C) > c2.distanceTo(HEAD_C) + 0.005) { covered = true; break; }
     }
-    if (covered && o.hat === 'none') continue;
+    if (o.hat === 'helmet' || (covered && o.hat === 'none')) continue;
     const e = new THREE.SphereGeometry(1, 16, 12);
     e.scale(0.035, 0.1, 0.07);
     e.rotateZ(s * 0.12);
@@ -998,11 +1226,20 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   // ---------- Complementos ----------
   const accCol = o.accColor ?? '#e8b84a';
   const accMat = extraMat(accCol);
+  const hairAccMat = extraMat(o.hairAccColor ?? '#e8b84a');
+  const makeupCol = o.makeupColor ?? '#f08aa8';
   /** Punto del pelo (o de la cabeza) en una dirección desde el centro, un poco por fuera. */
   const onHair = (dir: THREE.Vector3, out = 0.01) => {
     const d = dir.clone().normalize();
     const hit = new THREE.Raycaster(CENTER.clone().addScaledVector(d, 2), d.clone().negate()).intersectObjects([topRay, headRay], true)[0];
     return (hit ? hit.point : CENTER.clone().addScaledVector(d, 0.55)).addScaledVector(d, out);
+  };
+  const onHairSurface = (dir: THREE.Vector3, out: number) => {
+    const d = dir.clone().normalize();
+    const hit = new THREE.Raycaster(CENTER.clone().addScaledVector(d, 2), d.clone().negate()).intersectObjects([topRay, headRay], true)[0];
+    if (!hit) return { point: CENTER.clone().addScaledVector(d, 0.55).addScaledVector(d, out), normal: d };
+    const normal = hit.face!.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
+    return { point: hit.point.clone().addScaledVector(normal, out), normal };
   };
   /** Objeto mirando hacia fuera según una dirección. */
   const place = (obj: THREE.Object3D, p: THREE.Vector3, n: THREE.Vector3, roll = 0) => {
@@ -1037,48 +1274,73 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     return m;
   };
   if (o.hat === 'none') switch (o.hairAcc ?? 0) {
-    case 1: { const d = V(0.6, 0.6, 0.55); place(flower(0.06, accCol), onHair(d, 0.012), d); break; }
+    case 1: { const d = V(0.6, 0.6, 0.55); place(flower(0.06, o.hairAccColor ?? '#e8b84a'), onHair(d, 0.012), d); break; }
     case 2: {
       const d = V(0.5, 0.8, 0.3), g = new THREE.Group();
       for (const sx of [-1, 1]) {
-        const w = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.16, 12).rotateZ(sx * PI / 2).translate(sx * 0.08, 0, 0), accMat);
+        const w = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.16, 12).rotateZ(sx * PI / 2).translate(sx * 0.08, 0, 0), hairAccMat);
         w.scale.set(1, 1, 0.45);
         g.add(w);
-        const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.1, 2, 6), accMat);
+        const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.1, 2, 6), hairAccMat);
         tail.position.set(sx * 0.03, -0.08, 0); tail.rotation.z = sx * 0.35; tail.scale.z = 0.4;
         g.add(tail);
       }
-      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), accMat);
+      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), hairAccMat);
       g.add(knot);
       place(g, onHair(d, 0.02), d, -0.4);
       break;
     }
-    case 3: { const d = V(-0.65, 0.6, 0.5); place(new THREE.Mesh(star(0.06, 0.018), accMat), onHair(d, 0.012), d, 0.2); break; }
+    case 3: { const d = V(-0.65, 0.6, 0.5); place(new THREE.Mesh(star(0.06, 0.018), hairAccMat), onHair(d, 0.012), d, 0.2); break; }
     case 4: {
       const N = 9;
       for (let k = 0; k < N; k++) {
         const a = -PI * 0.5 + (k / (N - 1)) * PI;
         const d = V(Math.sin(a) * 0.8, 0.6, Math.cos(a) * 0.55 + 0.05);
-        place(flower(0.038, k % 2 ? accCol : '#fff4f8', k % 2 ? '#ffd65a' : '#ffb0c8'), onHair(d, 0.01), d, k);
+        place(flower(0.038, k % 2 ? o.hairAccColor ?? '#e8b84a' : '#fff4f8', k % 2 ? '#ffd65a' : '#ffb0c8'), onHair(d, 0.01), d, k);
       }
       break;
     }
-    case 5: {
-      const pts: THREE.Vector3[] = [];
-      for (let k = 0; k <= 12; k++) { const a = PI * (0.12 + (k / 12) * 0.76); pts.push(onHair(V(Math.cos(a), Math.sin(a) * 1.05, 0.22), 0.008)); }
-      ring(pts, 0.022, accMat);
+    case 7: {
+      const d = V(-0.68, 0.48, 0.72), pin = new THREE.Group();
+      const bar = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.14, 3, 8), hairAccMat);
+      bar.rotation.z = -0.58;
+      bar.scale.z = 0.45;
+      pin.add(bar);
+      for (const x of [-0.06, 0.06]) {
+        const rivet = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), extraMat('#f2dfb0'));
+        rivet.position.set(x, x * -0.68, 0.004);
+        pin.add(rivet);
+      }
+      place(pin, onHair(d, 0.012), d, -0.35);
       break;
     }
-    case 6: {
-      const d = V(0.7, 0.7, 0.3), g = new THREE.Group();
-      const vane = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), accMat);
-      vane.scale.set(0.014, 0.19, 0.06); vane.position.y = 0.16;
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.34, 4), extraMat('#f4f0e6'));
-      shaft.position.y = 0.12;
-      g.add(vane, shaft);
-      const holder = place(new THREE.Group(), onHair(d, 0), d);
-      g.rotation.set(0.7, 0, -0.45);
-      holder.add(g);
+    case 8: {
+      const d = V(0.62, 0.72, 0.38), brooch = new THREE.Group();
+      const anchor = onHairSurface(d, 0.035);
+      const badgeShape = new THREE.Shape();
+      badgeShape.moveTo(0, 0.075);
+      badgeShape.lineTo(0.052, 0.035);
+      badgeShape.lineTo(0.042, -0.035);
+      badgeShape.lineTo(0, -0.075);
+      badgeShape.lineTo(-0.042, -0.035);
+      badgeShape.lineTo(-0.052, 0.035);
+      badgeShape.closePath();
+      const badge = new THREE.Mesh(new THREE.ExtrudeGeometry(badgeShape, {
+        depth: 0.018, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.002, bevelSegments: 2,
+      }).translate(0, 0, -0.009), hairAccMat);
+      brooch.add(badge);
+      const emblem = new THREE.Shape();
+      for (let k = 0; k < 8; k++) {
+        const angle = PI / 2 + k * PI / 4;
+        const radius = k % 2 === 0 ? 0.034 : 0.012;
+        const x = Math.cos(angle) * radius, y = Math.sin(angle) * radius;
+        if (k === 0) emblem.moveTo(x, y);
+        else emblem.lineTo(x, y);
+      }
+      emblem.closePath();
+      const emblemGeometry = new THREE.ExtrudeGeometry(emblem, { depth: 0.004, bevelEnabled: false }).translate(0, 0, 0.011);
+      brooch.add(new THREE.Mesh(emblemGeometry, extraMat('#382b1c')));
+      place(brooch, anchor.point, anchor.normal, 0.12);
       break;
     }
   }
@@ -1144,7 +1406,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   // maquillaje
   const mk = o.makeup ?? 0;
   if (mk === 2 || mk === 4) {
-    const shadow = new THREE.MeshBasicMaterial({ map: blushMat.map, color: accCol, transparent: true, opacity: 0.75, depthWrite: false });
+    const shadow = new THREE.MeshBasicMaterial({ map: blushMat.map, color: makeupCol, transparent: true, opacity: 0.75, depthWrite: false });
     for (const s of [-1, 1]) {
       const x = s * A.eyeX * 0.96, y = A.eyeY - 0.012 + E.ry * 0.95;
       const m = new THREE.Mesh(new THREE.PlaneGeometry(E.rx * 3.6, E.ry * 1.6), shadow);
@@ -1168,7 +1430,13 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   finish(headMesh);
   for (const g of skinParts) finish(new THREE.Mesh(smoothNormals(g, 80), material(o.face)));
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
-  for (const h of finalHair) finish(new THREE.Mesh(h.geo, material(h.kit)));
+  for (const h of finalHair) {
+    const hairMaterial = material(h.kit);
+    const doubleSided = hairMaterial.clone();
+    doubleSided.side = THREE.DoubleSide;
+    ownedMaterials.push(doubleSided);
+    finish(new THREE.Mesh(h.geo, doubleSided));
+  }
   for (const g of beardGeos) finish(new THREE.Mesh(g, material(o.face)));
   // la boca sigue la curva de la cara (en la cara "Dulce" los labios abultan y la tapaban)
   const hugFace = (g: THREE.BufferGeometry | null) => {
@@ -1185,7 +1453,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   };
   const mg = hugFace(mergeGeoms(mouth));
   const lips = o.makeup === 3 || o.makeup === 4;
-  if (mg) finish(new THREE.Mesh(mg, lips ? extraMat('#d4486a') : material(o.face)));
+  if (mg) finish(new THREE.Mesh(mg, lips ? extraMat(makeupCol) : material(o.face)));
   const tg = hugFace(mergeGeoms(teeth));
   if (tg) finish(new THREE.Mesh(tg, material(o.face)));
   for (const d of decals) {
@@ -1196,9 +1464,14 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   }
   return {
     group,
+    ownedMaterials,
     toBone,
     eyes,
     happy,
-    anchors: { ear: (s) => headAt(V(s, -0.2, -0.05), -0.01), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest },
+    anchors: {
+      ear: (s) => headAt(V(s, -0.2, -0.05), -0.01), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest,
+      // punto real de la superficie (pelo o cabeza) en una dirección, hundido hacia dentro
+      surf: (dir, sink = 0.05) => { const n = dir.clone().normalize(); return { p: onHair(n, -sink), n }; },
+    },
   };
 }

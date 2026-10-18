@@ -175,14 +175,18 @@
         <div class="stepper" data-key="mouth"></div>
         <h3>Barba</h3>
         <div class="stepper" data-key="beard"></div>
-        <h3>Detalles</h3>
-        <div class="stepper" data-key="detail"></div>
-        <h3>Maquillaje</h3>
-        <div class="stepper" data-key="makeup"></div>
         <div id="traitBox">
           <h3 id="traitLabel">Orejas</h3>
           <div class="stepper" data-key="trait"></div>
         </div>
+        <h3>Maquillaje</h3>
+        <div class="stepper" data-key="makeup"></div>
+        <div id="makeupColorBox" hidden>
+          <h3>Color del maquillaje</h3>
+          <div class="swatches small" id="makeupColor"></div>
+        </div>
+        <h3>Detalles</h3>
+        <div class="stepper" data-key="detail"></div>
       </section>
       <section data-page="cabello">
         <h3>Peinado</h3>
@@ -191,15 +195,11 @@
         <div class="swatches" id="hairColor"></div>
         <h3>Adorno</h3>
         <div class="stepper" data-key="hairAcc"></div>
+        <h3>Color del adorno</h3>
+        <div class="swatches small" id="hairAccColor"></div>
         <p class="desc" id="hairNote"></p>
       </section>
       <section data-page="ropa">
-        <h3>Torso</h3>
-        <div class="stepper" data-key="top"></div>
-        <h3>Mangas</h3>
-        <div class="stepper" data-key="arms"></div>
-        <h3>Piernas</h3>
-        <div class="stepper" data-key="legs"></div>
         <h3>Color principal</h3>
         <div class="swatches" id="clothA"></div>
         <h3>Color secundario</h3>
@@ -208,14 +208,13 @@
         <div class="stepper" data-key="acc"></div>
         <h3>Color de complementos</h3>
         <div class="swatches small" id="accColor"></div>
-        <h3>Para pasear por la ciudad</h3>
-        <div class="stepper" data-key="cityWear"></div>
-        <p class="desc">El color de complementos tiñe también el adorno del pelo y el maquillaje.</p>
+        <p class="desc">Este color se aplica a los complementos de ropa.</p>
       </section>
       <section data-page="clase">
         <h3>Vocación</h3>
         <div class="cards" id="classes"></div>
         <p class="desc" id="classDesc"></p>
+        <p class="desc">Aquí se muestra el equipo propio de cada clase; comenzarás la aventura con ropa de novato.</p>
         <h3>Color principal</h3>
         <div class="swatches" id="primary"></div>
         <h3>Color secundario</h3>

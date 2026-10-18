@@ -6,7 +6,7 @@ import mageUrl from './assets/models/Mage.glb?url';
 import knightUrl from './assets/models/Knight.glb?url';
 import rogueUrl from './assets/models/Rogue.glb?url';
 import barbarianUrl from './assets/models/Barbarian.glb?url';
-import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, OUTFIT_KITS, ACC_COLORS } from './data';
+import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from './data';
 import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
 import { softDot } from './paint';
 
@@ -43,10 +43,10 @@ export async function loadKits() {
 const SKIN = [0, 8, 39, 47];
 const HAIR = [1, 9];
 const CLOTH_CELLS: Record<Kit, { primary: number[]; secondary: number[] }> = {
-  Mage: { primary: [16, 17, 23, 24, 25, 31], secondary: [18, 26, 33, 41] },
-  Rogue: { primary: [16, 17, 24, 25, 33, 41], secondary: [5, 13, 21, 29, 35, 43] },
-  Knight: { primary: [16, 24, 34, 42], secondary: [20, 28] },
-  Barbarian: { primary: [16, 17, 24, 25, 34, 42], secondary: [33, 41] },
+  Mage: { primary: [16, 17, 23, 24, 25, 31], secondary: [35, 43] },
+  Rogue: { primary: [16, 17, 24, 25, 33, 41], secondary: [5, 13, 35, 43] },
+  Knight: { primary: [16, 24, 34, 42], secondary: [18, 26] },
+  Barbarian: { primary: [16, 17, 24, 25, 34, 42], secondary: [18, 26] },
 };
 
 interface Outfit { kit: Kit; hat?: string; items: { kit: Kit; name: string }[]; cape: boolean; idle: string }
@@ -57,7 +57,7 @@ const OUTFITS: Record<CharData['cls'], Outfit> = {
   clerigo: { kit: 'Mage', cape: true, idle: 'Idle', items: [{ kit: 'Mage', name: '1H_Wand' }, { kit: 'Mage', name: 'Spellbook' }] },
   explorador: { kit: 'Barbarian', hat: 'Barbarian_Hat', cape: true, idle: 'Idle', items: [{ kit: 'Rogue', name: '1H_Crossbow' }] },
 };
-/** Ropa sencilla de aldeano fuera de la pestaña Clase. */
+/** Atuendo básico común con el que empiezan todos los personajes. */
 const VILLAGER: Outfit = { kit: 'Rogue', cape: false, idle: 'Idle', items: [] };
 
 // ---------------------------------------------------------------------------
@@ -119,28 +119,18 @@ const PI = Math.PI;
 /** KayKit mide ~2.4 unidades: lo llevamos a ~1.55 m, proporción de la escena. */
 const UNIT = 0.65;
 
-/**
- * Toque "premium" para los materiales del personaje: luz de contorno cálida
- * (fresnel) y, en la cabeza, el anillo de brillo del pelo típico del anime.
- */
-function charm(m: THREE.MeshStandardMaterial, hairRing = false) {
+/** Luz de contorno cálida para integrar los materiales del personaje en la escena. */
+function charm(m: THREE.MeshStandardMaterial) {
   m.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
       {
         vec3 vd = normalize(vViewPosition);
         float fr = pow(1.0 - clamp(dot(normal, vd), 0.0, 1.0), 3.0);
         outgoingLight += vec3(1.0, 0.82, 0.66) * fr * 0.22 * (0.4 + diffuseColor.rgb);
-        ${hairRing ? `
-        vec2 cell = floor(vMapUv * 8.0);
-        if (cell.x == 1.0 && cell.y < 2.0) {
-          float ny = normal.y;
-          float ring = smoothstep(0.3, 0.5, ny) * (1.0 - smoothstep(0.62, 0.82, ny));
-          outgoingLight += (diffuseColor.rgb * 0.7 + 0.18) * ring * 0.55;
-        }` : ''}
       }
       #include <opaque_fragment>`);
   };
-  m.customProgramCacheKey = () => (hairRing ? 'charm-hair' : 'charm');
+  m.customProgramCacheKey = () => 'charm';
   return m;
 }
 
@@ -219,7 +209,7 @@ export class Character {
       let m = headMats.get(kit);
       if (!m) {
         const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6 }), true);
+        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6 }));
         headMats.set(kit, m);
         this.owned.push(m);
       }
@@ -235,9 +225,10 @@ export class Character {
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
-      hairAcc: d.hairAcc, acc: d.acc, makeup: d.makeup, accColor: ACC_COLORS[d.accColor],
+      hairAcc: d.hairAcc, hairAccColor: ACC_COLORS[d.hairAccColor], acc: d.acc, makeup: d.makeup, makeupColor: ACC_COLORS[d.makeupColor], accColor: ACC_COLORS[d.accColor],
     }, headMat, flatMat);
     this.bones.get('head')!.add(head.group);
+    this.owned.push(...head.ownedMaterials);
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
     this.happy = head.happy;
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
@@ -248,24 +239,29 @@ export class Character {
       // Capas desactivadas temporalmente; restaurar esta línea para reactivarlas:
       // if (outfit.cape) { const cm = capeMat(outfit.kit); this.addRigid(outfit.kit, `${outfit.kit}_Cape`, cm); this.addMantle(outfit.kit, outfit.kit, cm); }
     } else {
-      // ropa de diario: torso, mangas y piernas combinables de los cuatro modelos
-      const top = OUTFIT_KITS[d.top], arms = OUTFIT_KITS[d.arms], legs = OUTFIT_KITS[d.legs];
-      this.addSkinned(top, `${top}_Body`, mat(top, true));
+      const kit = VILLAGER.kit;
+      this.addSkinned(kit, `${kit}_Body`, mat(kit, true));
       for (const side of ['Left', 'Right']) {
-        this.addSkinned(arms, `${arms}_Arm${side}`, mat(arms, true));
-        this.addSkinned(legs, `${legs}_Leg${side}`, mat(legs, true));
+        this.addSkinned(kit, `${kit}_Arm${side}`, mat(kit, true));
+        this.addSkinned(kit, `${kit}_Leg${side}`, mat(kit, true));
       }
       // Restaurar esta línea junto con el selector de capa para habilitar capas en ropa diaria:
-      // if (d.cape > 0) { const k = OUTFIT_KITS[d.cape - 1], cm = capeMat(k); this.addRigid(k, `${k}_Cape`, cm); this.addMantle(top, k, cm); }
+      // if (d.cape > 0) { const cm = capeMat(kit); this.addRigid(kit, `${kit}_Cape`, cm); this.addMantle(kit, kit, cm); }
     }
     if (outfit.hat) {
       // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
-      const hat = this.addRigid(outfit.kit, outfit.hat, mat(outfit.kit, true));
+      // doble cara: el interior del casco/sombrero no debe desaparecer según el ángulo
+      const hatMat = mat(outfit.kit, true).clone();
+      hatMat.side = THREE.DoubleSide;
+      this.owned.push(hatMat);
+      const hat = this.addRigid(outfit.kit, outfit.hat, hatMat);
       if (hat) hat.scale.multiplyScalar(1.06);
     }
     for (const it of outfit.items) {
       const o = this.addRigid(it.kit, it.name, mat(it.kit, it.kit === outfit.kit));
       if (it.name === '2H_Staff' && o) this.addGlow(o);
+      // el libro cuelga de la mano, agarrado por el canto
+      if (it.name === 'Spellbook' && o) { o.quaternion.set(-0.3637, 0.6065, 0.3641, -0.6061).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2)); o.position.set(-0.21, 0, 0); }
     }
 
     // Rasgos del linaje
@@ -465,6 +461,10 @@ export class Character {
       }
     }
     if (d.race === 'pelso') {
+      // orejas y cola siguen el pelaje, no el color de pelo
+      const coat = coatMark(RACES.pelso.skins[d.skin]);
+      const furMat: THREE.Material = coat?.mark === 'mask' ? flatMat(coat.markColor) : mat;
+      const innerCol = coat?.ear ?? '#f2a6ae';
       for (const s of [-1, 1]) {
         const g = pivot(A.top(s).add(V(s * 0.02, -0.06, 0)));
         g.rotation.z = -s * 0.3;
@@ -472,17 +472,18 @@ export class Character {
         if (d.trait === 1) {
           const ear = new THREE.SphereGeometry(0.17, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
           ear.scale(1, 1.3, 0.5);
-          mesh(paintCell(ear, 1), mat, g);
+          mesh(paintCell(ear.translate(0, -0.05, 0), 0), furMat, g);
           const inner = new THREE.SphereGeometry(0.11, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
           inner.scale(1, 1.2, 0.3).translate(0, 0.0, 0.05);
-          mesh(inner, flatMat('#f2a6ae'), g);
+          mesh(inner, flatMat(innerCol), g);
         } else {
-          mesh(paintCell(new THREE.ConeGeometry(0.17, 0.34, 4).rotateY(Math.PI / 4).scale(1, 1, 0.55).translate(0, 0.17, 0), 1), mat, g);
-          mesh(new THREE.ConeGeometry(0.1, 0.24, 4).rotateY(Math.PI / 4).scale(1, 1, 0.3).translate(0, 0.12, 0.055), flatMat('#f2a6ae'), g);
+          // la base se hunde en la cabeza para que la oreja nazca de ella y no flote
+          mesh(paintCell(new THREE.ConeGeometry(0.19, 0.46, 4).rotateY(Math.PI / 4).scale(1, 1, 0.6).translate(0, 0.11, 0), 0), furMat, g);
+          mesh(new THREE.ConeGeometry(0.1, 0.26, 4).rotateY(Math.PI / 4).scale(1, 1, 0.3).translate(0, 0.1, 0.07), flatMat(innerCol), g);
         }
         this.ears.push(g);
       }
-      this.addTail(mat, 1, 0.055, 0.035, [[0, 0, 0], [0, -0.1, -0.16], [0, -0.04, -0.34], [0, 0.16, -0.44], [0.04, 0.33, -0.42]]);
+      this.addTail(furMat, 0, 0.055, 0.035, [[0, 0, 0], [0, -0.1, -0.16], [0, -0.04, -0.34], [0, 0.16, -0.44], [0.04, 0.33, -0.42]]);
     }
     if (d.race === 'lagto') {
       if (hat === 'none' && d.trait === 0) A.crest.forEach((c, i) => {
@@ -490,14 +491,19 @@ export class Character {
         mesh(paintCell(cone(0.09, h, 4, c.n, 1).scale(0.35, 1, 1), 0, 0.5, 0.95), mat, pivot(c.p.clone().addScaledVector(c.n, -0.04)));
       });
       if (hat === 'none' && d.trait === 1) for (const s of [-1, 1]) {
-        const base = A.crest[1].p.clone().add(V(s * 0.22, -0.06, -0.05));
-        mesh(cone(0.07, 0.36, 8, V(s * 0.35, 0.6, -0.75)), flatMat('#efe4c8'), pivot(base));
+        // cuernos que nacen de la superficie de la cabeza, con la base hundida
+        const { p, n } = A.surf(V(s * 0.6, 0.75, -0.25), 0.05);
+        const dir = n.clone().multiplyScalar(0.7).add(V(0, 0.15, -0.55));
+        mesh(cone(0.075, 0.4, 8, dir), flatMat('#efe4c8'), pivot(p));
       }
       if (d.trait === 2) for (const s of [-1, 1]) {
-        const g = new THREE.ConeGeometry(0.16, 0.34, 3).translate(0, 0.17, 0);
-        g.scale(1, 1, 0.2);
-        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), V(s, 0.15, -0.7).normalize()));
-        mesh(paintCell(g, 0, 0.5, 0.95), mat, pivot(A.ear(s)));
+        // aletas laterales ancladas a la superficie y hundidas en la cabeza
+        const { p, n } = A.surf(V(s, -0.05, -0.1), 0.12);
+        const dir = n.clone().multiplyScalar(0.8).add(V(0, 0.2, -0.6));
+        const g = new THREE.ConeGeometry(0.2, 0.5, 3).translate(0, 0.2, 0);
+        g.scale(1, 1, 0.22);
+        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), dir.normalize()));
+        mesh(paintCell(g, 0, 0.5, 0.95), mat, pivot(p));
       }
       this.addTail(mat, 0, 0.11, 0.015, [[0, 0, 0], [0, -0.08, -0.2], [0, -0.16, -0.42], [0, -0.17, -0.66]]);
     }

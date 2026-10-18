@@ -16,7 +16,7 @@ import { AmbientSoundscape } from './audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './head';
 import {
   CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
-  defaultChar, randomChar, randomName, sanitize, TOPS, ARMS, LEGS, HAIR_ACCS, ACCS, MAKEUPS, CITY_WEAR, ACC_COLORS, ACC_COLOR_NAMES, LOCATIONS,
+  defaultChar, randomChar, randomName, sanitize, HAIR_ACCS, HAIR_ACC_VALUES, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES, LOCATIONS,
 } from './data';
 
 
@@ -59,7 +59,7 @@ let ambientEnabled = localStorage.getItem('brumaluz-ambient') !== 'off';
 function rebuildNow() {
   rebuildQueued = false;
   char?.dispose();
-  char = new Character({ ...state }, { outfit: tab === 'clase' || (mode === 'play' && state.cityWear === 0) });
+  char = new Character({ ...state }, { outfit: mode === 'create' && tab === 'clase' });
   holder.add(char.root);
   castShadows(char.root);
   char.update(clock.getElapsedTime());
@@ -354,7 +354,7 @@ function cards<T extends string>(el: HTMLElement, items: Record<T, { label: stri
   });
 }
 
-function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'eyeColor' | 'primary' | 'secondary' | 'clothA' | 'clothB' | 'accColor', names: () => string[]) {
+function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairColor' | 'eyeColor' | 'primary' | 'secondary' | 'clothA' | 'clothB' | 'hairAccColor' | 'makeupColor' | 'accColor', names: () => string[]) {
   return () => {
     el.innerHTML = '';
     const ns = names();
@@ -370,16 +370,17 @@ function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 'hairCo
   };
 }
 
-function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'top' | 'arms' | 'legs' | 'cape' | 'hairAcc' | 'acc' | 'makeup' | 'cityWear', list: () => string[]) {
+function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'cape' | 'hairAcc' | 'acc' | 'makeup', list: () => string[], values?: number[]) {
   const el = $(`.stepper[data-key="${key}"]`);
   el.innerHTML = `<button aria-label="${t('Anterior')}">‹</button><div class="val"></div><button aria-label="${t('Siguiente')}">›</button>`;
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
-  prev.onclick = () => { const l = list(); set(key, (state[key] + l.length - 1) % l.length); };
-  next.onclick = () => { const l = list(); set(key, (state[key] + 1) % l.length); };
+  prev.onclick = () => { const l = list(), indices = values ?? l.map((_, i) => i), current = Math.max(0, indices.indexOf(state[key])); set(key, indices[(current + l.length - 1) % l.length]); };
+  next.onclick = () => { const l = list(), indices = values ?? l.map((_, i) => i), current = Math.max(0, indices.indexOf(state[key])); set(key, indices[(current + 1) % l.length]); };
   return () => {
     const l = list();
     if (!l.length) return;
-    (el.querySelector('.val') as HTMLElement).innerHTML = `${t(l[state[key]])}<small>${state[key] + 1} / ${l.length}</small>`;
+    const indices = values ?? l.map((_, i) => i), current = Math.max(0, indices.indexOf(state[key]));
+    (el.querySelector('.val') as HTMLElement).innerHTML = `${t(l[current])}<small>${current + 1} / ${l.length}</small>`;
   };
 }
 
@@ -410,14 +411,12 @@ const renders = [
   stepper('detail', () => DETAILS),
   stepper('trait', () => RACES[state.race].traits),
   stepper('makeup', () => MAKEUPS),
-  stepper('hairAcc', () => HAIR_ACCS),
-  stepper('top', () => TOPS),
-  stepper('arms', () => ARMS),
-  stepper('legs', () => LEGS),
+  swatches($('#makeupColor'), () => ACC_COLORS, 'makeupColor', () => ACC_COLOR_NAMES),
+  stepper('hairAcc', () => HAIR_ACCS, HAIR_ACC_VALUES),
   stepper('acc', () => ACCS),
-  stepper('cityWear', () => CITY_WEAR),
   swatches($('#clothA'), () => CLOTH, 'clothA', () => CLOTH_NAMES),
   swatches($('#clothB'), () => CLOTH, 'clothB', () => CLOTH_NAMES),
+  swatches($('#hairAccColor'), () => ACC_COLORS, 'hairAccColor', () => ACC_COLOR_NAMES),
   swatches($('#accColor'), () => ACC_COLORS, 'accColor', () => ACC_COLOR_NAMES),
 ];
 
@@ -501,8 +500,9 @@ function refreshUI() {
   const R = RACES[state.race];
   $('#traitBox').hidden = !R.traitLabel;
   $('#noseBox').hidden = state.race === 'pelso' || state.race === 'lagto';
+  $('#makeupColorBox').hidden = ![2, 3, 4].includes(state.makeup);
   if (R.traitLabel) $('#traitLabel').textContent = state.race === 'lagto' ? t('Cresta del linaje') : t(R.traitLabel);
-  $('#hairNote').textContent = state.race === 'pelso' ? t('El color también tiñe las orejas y la cola.') : '';
+  $('#hairNote').textContent = '';
   if (document.activeElement !== nameInput) nameInput.value = state.name;
   renders.forEach((r) => r());
 }

@@ -53,19 +53,16 @@ export interface CharData {
   mouth: number;
   detail: number;
   trait: number; // rasgo propio del linaje (orejas, cresta…)
-  // ropa de diario (pestaña Ropa) y complementos
-  top: number;
-  arms: number;
-  legs: number;
+  // colores de la ropa inicial de novato y complementos
   cape: number;
   clothA: number;
   clothB: number;
   hairAcc: number;
+  hairAccColor: number;
   acc: number;
   makeup: number;
+  makeupColor: number;
   accColor: number;
-  /** Qué se pone para pasear por la ciudad: 0 traje de clase, 1 ropa de diario. */
-  cityWear: number;
   cls: ClassId;
   primary: number;
   secondary: number;
@@ -84,6 +81,21 @@ export interface RaceDef {
 
 const HUMAN_SKINS = ['#f8ccab', '#ecb68e', '#d9a07a', '#b97f57', '#8e5a3a', '#5f3b28'];
 const HUMAN_SKIN_NAMES = ['Marfil', 'Melocotón', 'Miel', 'Canela', 'Cacao', 'Ébano'];
+
+/** Pelajes felinos: color base, nombre y marcas de la cara (tabby = rayas, spots = manchas, mask = antifaz, patch = parches). */
+export type CoatMark = 'tabby' | 'spots' | 'mask' | 'patch' | 'plain';
+export interface Coat { base: string; name: string; mark: CoatMark; markColor: string; nose: string; ear: string; whisker: string; tail: string }
+export const PELSO_COATS: Coat[] = [
+  { base: '#e29a55', name: 'Naranja atigrado', mark: 'tabby', markColor: '#b96a2c', nose: '#e8909a', ear: '#f0b0a8', whisker: '#7a4a2a', tail: '#b96a2c' },
+  { base: '#a3a8b3', name: 'Gris atigrado', mark: 'tabby', markColor: '#5f6573', nose: '#d58a98', ear: '#d9a5b0', whisker: '#4a4e5a', tail: '#4a4e5a' },
+  { base: '#4a4247', name: 'Negro', mark: 'plain', markColor: '#2a2428', nose: '#8a5560', ear: '#8a5a64', whisker: '#d9d2d4', tail: '#2a2428' },
+  { base: '#efe1c8', name: 'Siamés', mark: 'mask', markColor: '#7d5c49', nose: '#c9808a', ear: '#e8b4b0', whisker: '#6a4a3a', tail: '#7d5c49' },
+  { base: '#e8c27a', name: 'Leopardo', mark: 'spots', markColor: '#8a5a2b', nose: '#d98a8a', ear: '#f0b8a0', whisker: '#6a4424', tail: '#8a5a2b' },
+  { base: '#f6f2ea', name: 'Bicolor', mark: 'patch', markColor: '#8f8f98', nose: '#f0a0aa', ear: '#f6c4c4', whisker: '#7a7a82', tail: '#8f8f98' },
+  { base: '#d89050', name: 'Carey', mark: 'patch', markColor: '#35292b', nose: '#d4858f', ear: '#e8a8a0', whisker: '#4a3630', tail: '#35292b' },
+  { base: '#ad8c64', name: 'Pardo atigrado', mark: 'tabby', markColor: '#5a4128', nose: '#c98a86', ear: '#dba898', whisker: '#4a3626', tail: '#5a4128' },
+];
+export const coatMark = (skin: string) => PELSO_COATS.find((c) => c.base === skin);
 
 export const RACES: Record<Race, RaceDef> = {
   humano: {
@@ -116,7 +128,7 @@ export const RACES: Record<Race, RaceDef> = {
     label: 'Pelso',
     desc: 'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos. Se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
     bonuses: { ...noBonuses(), fuerza: 1, corpulencia: 1, agilidad: 2, percepcion: 1 },
-    skins: HUMAN_SKINS, skinNames: HUMAN_SKIN_NAMES,
+    skins: PELSO_COATS.map((c) => c.base), skinNames: PELSO_COATS.map((c) => c.name),
     traitLabel: 'Orejas', traits: ['Puntiagudas', 'Redondas', 'Dobladas'],
     names: [['Mi', 'Nu', 'Pi', 'Ro', 'Ca', 'Mo', 'Tis', 'Lu', 'Fe'], ['sha', 'ru', 'lo', 'mi', 'ki', 'fu', 'sia', 'nya', 'rra']],
   },
@@ -145,15 +157,11 @@ export const HAIR_NAMES = ['Azabache', 'Castaño oscuro', 'Castaño', 'Cobrizo',
 export const CLOTH = ['#a8302e', '#3a64a8', '#2e8a4e', '#6a4aa8', '#d8a838', '#7a4a2a', '#34343e', '#ece4d0', '#2e8a8a', '#d0642a', '#c43a7a', '#e8a0b4', '#9ed4b8', '#9cc4ec', '#bca8e0', '#f2d6a0', '#c4b49a'];
 export const CLOTH_NAMES = ['Carmesí', 'Azul real', 'Bosque', 'Púrpura', 'Oro', 'Castaño', 'Carbón', 'Lino', 'Turquesa', 'Calabaza', 'Fucsia', 'Rosa palo', 'Menta', 'Cielo', 'Lavanda', 'Crema', 'Arena'];
 
-// Ropa de diario: cada pieza sale de uno de los cuatro modelos de KayKit
-export const OUTFIT_KITS = ['Rogue', 'Mage', 'Knight', 'Barbarian'] as const;
-export const TOPS = ['Túnica con capucha', 'Abrigo de botones', 'Cota acolchada', 'Jubón de cazador'];
-export const ARMS = ['Guantes de cuero', 'Mangas con puños', 'Guanteletes', 'Mangas con pelo'];
-export const LEGS = ['Calzas y zapatos', 'Botas de viaje', 'Grebas', 'Botas de pelo'];
+// El equipo de clase depende de la vocación; el atuendo inicial es el conjunto fijo de aldeano.
 export const CAPES = ['Sin capa', 'Capa corta', 'Capa de mago', 'Capa noble', 'Capa de piel'];
-export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Diadema', 'Pluma'];
+export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Pasador metálico', 'Broche rúnico'];
+export const HAIR_ACC_VALUES = [0, 1, 2, 3, 4, 7, 8];
 export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda'];
-export const CITY_WEAR = ['Traje de clase', 'Ropa de diario'];
 export const MAKEUPS = ['Ninguno', 'Pestañas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno'];
 export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036'];
 export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro'];
@@ -168,7 +176,7 @@ export function defaultChar(): CharData {
     name: '', level: 1, experience: 0, location: 'brumaluz', race: 'humano', attributePoints: noBonuses(), sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
-    top: 0, arms: 0, legs: 0, cape: 0, clothA: 7, clothB: 5, hairAcc: 0, acc: 0, makeup: 0, accColor: 0, cityWear: 0,
+    cape: 0, clothA: 7, clothB: 5, hairAcc: 0, hairAccColor: 0, acc: 0, makeup: 0, makeupColor: 2, accColor: 0,
   };
 }
 
@@ -200,7 +208,6 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.skin = clamp(out.skin, R.skins.length);
   out.face = clamp(out.face, FACE_KITS.length);
   out.hair = clamp(out.hair, HAIR_STYLES.length);
-  if (Number(out.beard) === 5) out.beard = 0;
   out.beard = clamp(out.beard, BEARDS.length);
   out.eyeShape = clamp(out.eyeShape, EYE_SHAPES.length);
   out.eyeColor = clamp(out.eyeColor, EYE_COLORS.length);
@@ -212,17 +219,16 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.hairColor = clamp(out.hairColor, HAIR_COLORS.length);
   out.primary = clamp(out.primary, CLOTH.length);
   out.secondary = clamp(out.secondary, CLOTH.length);
-  out.top = clamp(out.top, TOPS.length);
-  out.arms = clamp(out.arms, ARMS.length);
-  out.legs = clamp(out.legs, LEGS.length);
   out.cape = 0;
   out.clothA = clamp(out.clothA, CLOTH.length);
   out.clothB = clamp(out.clothB, CLOTH.length);
-  out.hairAcc = clamp(out.hairAcc, HAIR_ACCS.length);
+  const hairAcc = Number(out.hairAcc);
+  out.hairAcc = Number.isInteger(hairAcc) && hairAcc >= 0 && hairAcc <= 4 ? hairAcc : hairAcc === 7 || hairAcc === 8 ? hairAcc : 0;
+  out.hairAccColor = clamp(out.hairAccColor, ACC_COLORS.length);
   out.acc = clamp(out.acc, ACCS.length);
   out.makeup = clamp(out.makeup, MAKEUPS.length);
+  out.makeupColor = clamp(out.makeupColor, ACC_COLORS.length);
   out.accColor = clamp(out.accColor, ACC_COLORS.length);
-  out.cityWear = clamp(out.cityWear, CITY_WEAR.length);
   const height = Number(out.height);
   const build = Number(out.build);
   out.height = Math.min(Math.max(Number.isFinite(height) ? height : 0.5, 0), 1);
@@ -242,14 +248,14 @@ export function randomChar(): CharData {
     name: randomName(race), level: 1, experience: 0, location: 'brumaluz', race, attributePoints: noBonuses(), sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
-    hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11][rnd(6)], hairColor: rnd(HAIR_COLORS.length),
+    hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11, 12, 13][rnd(8)], hairColor: rnd(HAIR_COLORS.length),
     beard: sex ? 0 : rnd(BEARDS.length), eyeShape: sex ? rnd(7) : [0, 2, 3, 7, 8][rnd(5)], eyeColor: rnd(EYE_COLORS.length),
     brows: rnd(BROWS.length), nose: rnd(NOSES.length), mouth: rnd(MOUTHS.length), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
     cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),
-    top: rnd(TOPS.length), arms: rnd(ARMS.length), legs: rnd(LEGS.length), cape: 0,
+    cape: 0,
     clothA: rnd(CLOTH.length), clothB: rnd(CLOTH.length),
-    hairAcc: Math.random() < 0.5 ? 0 : rnd(HAIR_ACCS.length), acc: Math.random() < 0.6 ? 0 : rnd(ACCS.length),
-    makeup: sex ? 1 + (Math.random() < 0.5 ? 0 : rnd(MAKEUPS.length - 1)) : 0, accColor: rnd(ACC_COLORS.length), cityWear: 0,
+    hairAcc: Math.random() < 0.5 ? 0 : HAIR_ACC_VALUES[rnd(HAIR_ACC_VALUES.length)], hairAccColor: rnd(ACC_COLORS.length), acc: Math.random() < 0.6 ? 0 : rnd(ACCS.length),
+    makeup: sex ? 1 + (Math.random() < 0.5 ? 0 : rnd(MAKEUPS.length - 1)) : 0, makeupColor: rnd(ACC_COLORS.length), accColor: rnd(ACC_COLORS.length),
   };
 }
