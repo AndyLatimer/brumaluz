@@ -31,6 +31,47 @@ where key = 'staff_titles';
 
 -- ---------- Fórmulas (internas) ----------
 
+create table if not exists public.parties (
+  id uuid primary key default gen_random_uuid()
+);
+create table if not exists public.party_members (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  character_id uuid not null unique references public.characters(id) on delete cascade,
+  party_id uuid not null references public.parties(id) on delete cascade,
+  entry_order bigint generated always as identity
+);
+create table if not exists public.party_invites (
+  id uuid primary key default gen_random_uuid(),
+  party_id uuid not null references public.parties(id) on delete cascade,
+  target_user uuid not null references auth.users(id) on delete cascade,
+  expires_at timestamptz not null default now() + interval '90 seconds',
+  unique(party_id, target_user)
+);
+create index if not exists party_members_party_idx on public.party_members(party_id,entry_order);
+create index if not exists party_invites_target_idx on public.party_invites(target_user);
+alter table public.parties enable row level security;
+alter table public.party_members enable row level security;
+alter table public.party_invites enable row level security;
+revoke all on public.parties, public.party_members, public.party_invites from public, anon, authenticated;
+
+-- Dynamic party bonuses never persist in character data or trust client input.
+create or replace function public.game_party_data(p_id uuid, d jsonb)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare peers int := 0;
+begin
+  if to_regclass('public.world_players') is not null then
+    select greatest(count(*)::int - 1, 0) into peers
+    from public.party_members m join public.world_players w on w.user_id=m.user_id and w.character_id=m.character_id
+    where m.party_id=(select party_id from public.party_members where character_id=p_id)
+      and w.seen_at > now()-interval '15 seconds'
+      and exists(select 1 from public.party_members me join public.world_players mine
+        on mine.user_id=me.user_id and mine.character_id=me.character_id
+        where me.character_id=p_id and mine.seen_at > now()-interval '15 seconds');
+  end if;
+  return (d - 'partyPeers') || jsonb_build_object('partyPeers',least(peers,3));
+end $$;
+revoke all on function public.game_party_data(uuid,jsonb) from public, anon, authenticated;
+
 create or replace function public.game_race_bonus(p_race text, p_attr text)
 returns int
 language sql
@@ -80,7 +121,8 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select 60 + (public.game_level(d) - 1) * 12 + public.game_attr_total(d, 'corpulencia') * 8
+  select floor((60 + (public.game_level(d) - 1) * 12 + public.game_attr_total(d, 'corpulencia') * 8)
+    * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int
 $$;
 
 -- Vida actual real: -1 en los datos significa "al máximo".
@@ -132,6 +174,7 @@ begin
   if not found then
     raise exception 'CHARACTER_NOT_FOUND';
   end if;
+  c.data := public.game_party_data(c.id,c.data);
   return c;
 end;
 $$;
@@ -175,8 +218,8 @@ begin
     'overheal', case when coalesce((d ->> 'health')::int, -1) = 0 then 0 else public.game_overheal_now(d) end,
     'overheal_at', extract(epoch from now())
   );
-  update public.characters set data = d, updated_at = now() where id = p_id returning data into result;
-  return result;
+  update public.characters set data = d - 'partyPeers', updated_at = now() where id = p_id returning data into result;
+  return public.game_party_data(p_id,result);
 end;
 $$;
 
@@ -362,7 +405,7 @@ declare
 begin
   perform public.game_require_debug();
   if coalesce((d ->> 'health')::int, -1) = 0 or lvl >= 50 then return d; end if;
-  xp := xp + 200;
+  xp := xp + case when coalesce((d->>'partyPeers')::int,0)>0 then 204 else 200 end;
   while lvl < 50 and xp >= public.game_xp_needed(lvl) loop
     xp := xp - public.game_xp_needed(lvl);
     lvl := lvl + 1;
@@ -738,7 +781,10 @@ as $$
     select kind, (public.game_level(d) - 1) * 6 + case when kind = 'mana'
       then 30 + public.game_attr_total(d, 'intelecto') * 7
       else 50 + public.game_attr_total(d, 'agilidad') * 3 + public.game_attr_total(d, 'corpulencia') * 3
-    end as amount from resource
+    end as base_amount from resource
+  ), boosted as (
+    select kind, floor(base_amount * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int as amount
+    from maximum
   )
   select jsonb_build_object(
     'health', public.game_health(d), 'maxHealth', public.game_max_health(d),
@@ -746,7 +792,7 @@ as $$
     'resourceKind', kind, 'maxResource', amount,
     'resource', case when coalesce((d ->> 'resource')::int, -1) < 0 then amount
       else least(greatest((d ->> 'resource')::int, 0), amount) end
-  ) from maximum
+  ) from boosted
 $$;
 revoke all on function public.game_public_vitals(jsonb) from public, anon, authenticated;
 
@@ -759,7 +805,7 @@ set search_path = ''
 as $$
   select coalesce(jsonb_agg(jsonb_build_object(
     'id', w.character_id, 'userId', w.user_id, 'username', p.username,
-    'vitals', public.game_public_vitals(c.data),
+    'vitals', public.game_public_vitals(public.game_party_data(c.id,c.data)),
     'data', public.game_public_character(c.data) || jsonb_build_object('name', c.name),
     'position', w.position, 'facing', w.facing, 'jump', w.jump, 'wave', w.wave,
     'dead', public.game_health(c.data) = 0
@@ -774,6 +820,21 @@ as $$
       where mine.user_id = p_user_id
     )
 $$;
+
+create or replace function public.game_party_cleanup()
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock(731029,2);
+  delete from public.party_members m where not exists (
+    select 1 from public.world_players w where w.user_id=m.user_id and w.character_id=m.character_id
+    and w.seen_at > now()-interval '15 seconds'
+  );
+  delete from public.party_invites i where i.expires_at<=now()
+    or exists(select 1 from public.party_members m where m.user_id=i.target_user)
+    or not exists(select 1 from public.world_players w where w.user_id=i.target_user and w.seen_at>now()-interval '15 seconds');
+  delete from public.parties p where not exists(select 1 from public.party_members m where m.party_id=p.id);
+end $$;
+revoke all on function public.game_party_cleanup() from public, anon, authenticated;
 
 create or replace function public.world_join(p_character_id uuid, p_session_id uuid)
 returns jsonb
@@ -814,6 +875,7 @@ begin
     dead = excluded.dead,
     movement_credit = case when world_players.character_id = excluded.character_id then world_players.movement_credit else 3 end,
     seen_at = now(), saved_at = now();
+  perform public.game_party_cleanup();
   return jsonb_build_object('position', pos, 'status', 'ok', 'players', public.game_world_snapshot(uid));
 end;
 $$;
@@ -909,6 +971,7 @@ begin
   if not found then return; end if;
   perform public.game_store(c.id, c.data || jsonb_build_object('position', w.position, 'position_at', extract(epoch from now())));
   delete from public.world_players where user_id = uid and session_id = p_session_id;
+  perform public.game_party_cleanup();
 end;
 $$;
 
@@ -931,6 +994,100 @@ create index if not exists friendships_high_idx on public.friendships(user_high)
 create index if not exists friendships_pending_sender_idx on public.friendships(requested_by) where status = 'pending';
 alter table public.friendships enable row level security;
 revoke all on table public.friendships from public, anon, authenticated;
+
+create or replace function public.party_state()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare uid uuid := (select auth.uid()); pid uuid; members jsonb; incoming jsonb; outgoing jsonb;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  perform public.game_party_cleanup();
+  select party_id into pid from public.party_members where user_id=uid;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'userId',m.user_id,'characterId',m.character_id,'username',p.username,'data',public.game_public_character(c.data),
+    'vitals',public.game_public_vitals(public.game_party_data(c.id,c.data)),
+    'position',w.position,'location',coalesce(c.data->>'location','brumaluz')
+  ) order by m.entry_order),'[]'::jsonb) into members
+  from public.party_members m join public.characters c on c.id=m.character_id
+  join public.profiles p on p.user_id=m.user_id join public.world_players w on w.user_id=m.user_id
+  where m.party_id=pid;
+  select coalesce(jsonb_agg(jsonb_build_object('id',i.id,'username',p.username) order by i.expires_at),'[]'::jsonb)
+  into incoming from public.party_invites i join public.party_members leader on leader.party_id=i.party_id
+  join public.profiles p on p.user_id=leader.user_id
+  where i.target_user=uid and leader.entry_order=(select min(entry_order) from public.party_members where party_id=i.party_id);
+  select coalesce(jsonb_agg(jsonb_build_object('id',i.id,'username',p.username) order by i.expires_at),'[]'::jsonb)
+  into outgoing from public.party_invites i join public.profiles p on p.user_id=i.target_user
+  where i.party_id=pid and uid=(select user_id from public.party_members where party_id=pid order by entry_order limit 1);
+  return jsonb_build_object('id',pid,'members',members,'incoming',incoming,'outgoing',outgoing);
+end $$;
+
+create or replace function public.party_invite(p_username text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare uid uuid := (select auth.uid()); target uuid; pid uuid; cid uuid;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  if not exists(select 1 from public.profiles where user_id=uid and username is not null) then
+    raise exception 'PARTY_USERNAME_REQUIRED';
+  end if;
+  perform public.game_party_cleanup();
+  select character_id into cid from public.world_players where user_id=uid and seen_at>now()-interval '15 seconds';
+  if cid is null then raise exception 'PARTY_NOT_PLAYING'; end if;
+  select p.user_id into target from public.profiles p join public.world_players w on w.user_id=p.user_id
+    where lower(p.username collate pg_catalog."C")=lower(ltrim(btrim(p_username),'~') collate pg_catalog."C")
+    and w.seen_at>now()-interval '15 seconds';
+  if target is null then raise exception 'PARTY_TARGET_OFFLINE'; end if;
+  if target=uid then raise exception 'PARTY_SELF'; end if;
+  if exists(select 1 from public.party_members where user_id=target) then raise exception 'PARTY_ALREADY_JOINED'; end if;
+  select party_id into pid from public.party_members where user_id=uid;
+  if pid is null then
+    insert into public.parties default values returning id into pid;
+    insert into public.party_members(user_id,character_id,party_id) values(uid,cid,pid);
+  end if;
+  if uid<>(select user_id from public.party_members where party_id=pid order by entry_order limit 1) then raise exception 'PARTY_LEADER_ONLY'; end if;
+  if (select count(*) from public.party_members where party_id=pid)>=4 then raise exception 'PARTY_FULL'; end if;
+  if exists(select 1 from public.party_invites where party_id=pid and target_user=target) then raise exception 'PARTY_INVITE_EXISTS'; end if;
+  if (select count(*) from public.party_invites where party_id=pid)>=3 then raise exception 'PARTY_INVITE_LIMIT'; end if;
+  insert into public.party_invites(party_id,target_user) values(pid,target);
+end $$;
+
+create or replace function public.party_respond(p_invite_id uuid,p_accept boolean)
+returns void language plpgsql security definer set search_path = '' as $$
+declare uid uuid := (select auth.uid()); invitation public.party_invites; cid uuid;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  if p_accept is null then raise exception 'PARTY_INVITE_INVALID'; end if;
+  perform public.game_party_cleanup();
+  select * into invitation from public.party_invites where id=p_invite_id and target_user=uid;
+  if not found then raise exception 'PARTY_INVITE_INVALID'; end if;
+  if p_accept then
+    select character_id into cid from public.world_players where user_id=uid and seen_at>now()-interval '15 seconds';
+    if cid is null then raise exception 'PARTY_NOT_PLAYING'; end if;
+    if exists(select 1 from public.party_members where user_id=uid) then raise exception 'PARTY_ALREADY_JOINED'; end if;
+    if (select count(*) from public.party_members where party_id=invitation.party_id)>=4 then raise exception 'PARTY_FULL'; end if;
+    insert into public.party_members(user_id,character_id,party_id) values(uid,cid,invitation.party_id);
+    delete from public.party_invites where target_user=uid;
+  else delete from public.party_invites where id=invitation.id;
+  end if;
+end $$;
+
+create or replace function public.party_leave()
+returns void language plpgsql security definer set search_path = '' as $$
+declare uid uuid := (select auth.uid()); pid uuid;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  perform public.game_party_cleanup();
+  delete from public.party_members where user_id=uid returning party_id into pid;
+  if pid is null then raise exception 'PARTY_NOT_JOINED'; end if;
+  perform public.game_party_cleanup();
+end $$;
+
+create or replace function public.party_chat_member(p_party_id uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.party_members m join public.world_players w
+    on w.user_id=m.user_id and w.character_id=m.character_id
+    where m.party_id=p_party_id and m.user_id=(select auth.uid()) and w.seen_at>now()-interval '15 seconds')
+$$;
+revoke all on function public.party_state(),public.party_invite(text),public.party_respond(uuid,boolean),public.party_leave(),public.party_chat_member(uuid) from public,anon;
+grant execute on function public.party_state(),public.party_invite(text),public.party_respond(uuid,boolean),public.party_leave(),public.party_chat_member(uuid) to authenticated;
 
 create or replace function public.friends_list()
 returns jsonb
@@ -1040,16 +1197,20 @@ create table if not exists public.chat_messages (
 -- Por si la tabla se creó con una versión anterior de este archivo.
 alter table public.chat_messages add column if not exists zone text;
 alter table public.chat_messages add column if not exists sender_account text;
+alter table public.chat_messages add column if not exists party_id uuid;
+alter table public.chat_messages add column if not exists party_audience uuid[];
 alter table public.chat_messages drop constraint if exists chat_messages_channel_check;
-alter table public.chat_messages add constraint chat_messages_channel_check check (channel in ('general', 'zone', 'whisper'));
+alter table public.chat_messages add constraint chat_messages_channel_check check (channel in ('general', 'zone', 'whisper','party'));
 create index if not exists chat_messages_created_idx on public.chat_messages (created_at);
 alter table public.chat_messages enable row level security;
 
--- general: todo el servidor; zone: se entrega a todos y el cliente solo muestra la de su mapa; whisper: solo remitente y destinatario.
+-- general/zone: públicos; whisper: participantes; party: destinatarios originales que sigan en el grupo.
 drop policy if exists "Read public and own chat messages" on public.chat_messages;
 create policy "Read public and own chat messages"
   on public.chat_messages for select to authenticated
-  using (channel in ('general', 'zone') or sender_user = (select auth.uid()) or recipient_user = (select auth.uid()));
+  using (channel in ('general', 'zone')
+    or (channel='whisper' and (sender_user=(select auth.uid()) or recipient_user=(select auth.uid())))
+    or (channel='party' and (select auth.uid())=any(party_audience) and public.party_chat_member(party_id)));
 
 revoke all on table public.chat_messages from anon, authenticated;
 grant select on public.chat_messages to authenticated;
@@ -1072,8 +1233,7 @@ begin
   end if;
 end $$;
 
--- Envía un mensaje. p_channel: 'general' (todo el servidor), 'zone' (el mapa del personaje) o 'whisper',
--- que va a una CUENTA (p_to = nombre de usuario de la cuenta, no del personaje).
+-- Canales: general, zone, party o whisper (p_to identifica la cuenta destinataria).
 drop function if exists public.chat_send(uuid, text, text, text);
 create or replace function public.chat_send(p_character_id uuid, p_body text, p_channel text default 'general', p_to text default null)
 returns jsonb
@@ -1088,8 +1248,16 @@ declare
   target_user uuid;
   target_account text;
   msg public.chat_messages;
+  pid uuid;
+  audience uuid[];
 begin
-  if p_channel not in ('general', 'zone', 'whisper') then raise exception 'INVALID_CHANNEL'; end if;
+  if p_channel not in ('general', 'zone', 'whisper','party') then raise exception 'INVALID_CHANNEL'; end if;
+  if p_channel='party' then
+    perform public.game_party_cleanup();
+    select party_id into pid from public.party_members where user_id=c.user_id and character_id=c.id;
+    if pid is null then raise exception 'PARTY_NOT_JOINED'; end if;
+    select array_agg(user_id) into audience from public.party_members where party_id=pid;
+  end if;
   if clean = '' then raise exception 'CHAT_EMPTY'; end if;
   if char_length(clean) > 200 then raise exception 'CHAT_TOO_LONG'; end if;
   if exists (select 1 from public.chat_mutes m where m.user_id = c.user_id and m.until > now()) then raise exception 'CHAT_MUTED'; end if;
@@ -1104,10 +1272,10 @@ begin
     if target_user = c.user_id then raise exception 'CANNOT_WHISPER_SELF'; end if;
   end if;
   delete from public.chat_messages where created_at < now() - interval '3 days';
-  insert into public.chat_messages (channel, zone, sender_user, sender_name, sender_account, sender_title, recipient_user, recipient_name, body)
+  insert into public.chat_messages (channel, zone, sender_user, sender_name, sender_account, sender_title, recipient_user, recipient_name, body,party_id,party_audience)
   values (
     p_channel, case when p_channel = 'zone' then coalesce(c.data ->> 'location', 'brumaluz') end,
-    c.user_id, c.name, me, coalesce(c.data ->> 'title', 'none'), target_user, target_account, clean
+    c.user_id, c.name, me, coalesce(c.data ->> 'title', 'none'), target_user, target_account, clean,pid,audience
   )
   returning * into msg;
   return to_jsonb(msg);

@@ -36,7 +36,7 @@ function position(value: unknown): WorldPosition {
   const p = record(value);
   return { x: number(p.x), z: number(p.z), yaw: number(p.yaw) };
 }
-function vitals(value: unknown): PublicVitals {
+export function parsePublicVitals(value: unknown): PublicVitals {
   const v = record(value);
   const health = number(v.health), maxHealth = number(v.maxHealth), overheal = number(v.overheal);
   const resource = number(v.resource), maxResource = number(v.maxResource);
@@ -55,7 +55,7 @@ function snapshot(value: unknown): WorldSnapshot {
       const p = record(value);
       if (typeof p.id !== 'string' || typeof p.userId !== 'string' || typeof p.dead !== 'boolean'
         || (p.username !== null && typeof p.username !== 'string')) throw new Error('Respuesta multijugador no válida.');
-      return { id: p.id, userId: p.userId, username: p.username, vitals: vitals(p.vitals), data: sanitize(record(p.data)), position: position(p.position), facing: number(p.facing), jump: number(p.jump), wave: number(p.wave), dead: p.dead };
+      return { id: p.id, userId: p.userId, username: p.username, vitals: parsePublicVitals(p.vitals), data: sanitize(record(p.data)), position: position(p.position), facing: number(p.facing), jump: number(p.jump), wave: number(p.wave), dead: p.dead };
     }),
   };
 }

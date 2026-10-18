@@ -284,6 +284,7 @@
       <div class="chat-filters" role="group" aria-label="Filtros del chat">
         <button type="button" class="chat-filter" data-kind="general" aria-pressed="true" title="General|Mensajes de todo el servidor.">General</button>
         <button type="button" class="chat-filter" data-kind="zone" aria-pressed="true" title="Zona|Mensajes de los jugadores de tu mapa.">Zona</button>
+        <button type="button" class="chat-filter" data-kind="party" aria-pressed="true" title="Grupo|Mensajes privados de tu grupo.">Grupo</button>
         <button type="button" class="chat-filter" data-kind="whisper" aria-pressed="true" title="Susurros|Mensajes privados entre cuentas.">Susurros</button>
         <button type="button" class="chat-filter" data-kind="system" aria-pressed="true" title="Sistema|Avisos del juego.">Sistema</button>
         <button type="button" class="chat-filter" data-kind="combat" aria-pressed="true" title="Combate|Daño, curación y golpes.">Combate</button>
@@ -293,7 +294,7 @@
     </header>
     <div class="chat-log" role="log" aria-live="polite" tabindex="-1"></div>
     <form class="chat-form" autocomplete="off">
-      <button type="button" class="chat-channel" title="Canal|Cambia entre General (todo el servidor) y Zona (tu mapa). También /g y /z.">General</button>      <input class="chat-input" type="text" maxlength="200" placeholder="Pulsa Enter para escribir…" aria-label="Mensaje de chat" spellcheck="false">
+      <button type="button" class="chat-channel" title="Canal|Cambia entre General, Zona y Grupo. También /g, /z y /p.">General</button>      <input class="chat-input" type="text" maxlength="200" placeholder="Pulsa Enter para escribir…" aria-label="Mensaje de chat" spellcheck="false">
     </form>
   </section>
 
@@ -324,7 +325,7 @@
   <div id="player-hud" class="player-hud" aria-label="Estado del personaje">
     <div id="hud-class-icon" class="hud-class-icon" aria-hidden="true"></div>
     <div class="hud-bars">
-      <div class="hud-name-row"><strong id="hud-name"></strong><span id="hud-level"></span></div>
+      <div class="hud-name-row"><strong id="hud-name"></strong><span id="hud-level"></span><span id="hud-party-leader" class="party-leader" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 5 5 4-8 4 8 5-5-2 14H5Z"/><path d="M5 16h14"/></svg></span></div>
       <div class="hud-bar hud-health" role="progressbar" aria-label="Vida"><i id="hud-health-fill"></i><i id="hud-health-over" class="hud-over"></i><span id="hud-health-text"></span></div>
       <div class="hud-bar hud-resource" id="hud-resource" role="progressbar"><i id="hud-resource-fill"></i><span id="hud-resource-text"></span></div>
       <div class="hud-bar hud-xp" role="progressbar" aria-label="Experiencia"><i id="hud-xp-fill"></i><span id="hud-xp-text"></span></div>

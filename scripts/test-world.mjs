@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
@@ -37,7 +38,20 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), accounts: new Map(), friends: new Map(), history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), accounts: new Map(), friends: new Map(), parties:new Map(), partyInvites:new Map(), history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+}
+function partyOf(world,userId){return [...world.parties.values()].find(party=>party.members.includes(userId));}
+function cleanupParties(world){
+  for(const [id,party] of world.parties){party.members=party.members.filter(user=>world.players.has(user));if(!party.members.length)world.parties.delete(id);}
+  for(const [id,invite] of world.partyInvites)if(!world.parties.has(invite.partyId)||!world.players.has(invite.target)||partyOf(world,invite.target))world.partyInvites.delete(id);
+}
+function partyMember(world,userId){
+  const p=world.players.get(userId),account=world.accounts.get(userId),peers=partyOf(world,userId).members.length-1;
+  const boosted=value=>Math.floor(value*(1000+peers*15)/1000);
+  const maxHealth=boosted(100+(p.data.level-1)*12+(p.data.attributePoints?.corpulencia??0)*8);
+  const mana=['mago','clerigo'].includes(p.data.cls),maxResource=boosted((mana?65+(p.data.race==='elfo'?14:0):80)+(p.data.level-1)*6+(mana?0:(p.data.attributePoints?.corpulencia??0)*3));
+  return {userId,characterId:p.id,username:account.username||p.data.name,data:p.data,position:p.position,location:'brumaluz',
+    vitals:{health:p.data.health<0?maxHealth:Math.min(p.data.health,maxHealth),maxHealth,overheal:0,resource:maxResource,maxResource,resourceKind:mana?'mana':'stamina'}};
 }
 async function openPlayer(world, account, compatible = true) {
   world.accounts.set(account.user.id, account);
@@ -83,6 +97,38 @@ async function openPlayer(world, account, compatible = true) {
     if (fn === 'set_character_title') { character.data.title = args.p_title; return fulfill({ ...data, title: args.p_title }); }
     if (fn === 'my_titles') return fulfill(account.titles || []);
     const key = account.user.id;
+    if(fn.startsWith('party_')){
+      cleanupParties(world);
+      const party=partyOf(world,key);
+      if(fn==='party_state')return fulfill({
+        id:party?.id||null,members:party?party.members.map(user=>partyMember(world,user)):[],
+        incoming:[...world.partyInvites.values()].filter(i=>i.target===key).map(i=>({id:i.id,username:world.accounts.get(world.parties.get(i.partyId).members[0]).username||world.accounts.get(world.parties.get(i.partyId).members[0]).character.name})),
+        outgoing:party?.members[0]===key?[...world.partyInvites.values()].filter(i=>i.partyId===party.id).map(i=>({id:i.id,username:world.accounts.get(i.target).username||world.accounts.get(i.target).character.name})):[],
+      });
+      if(fn==='party_invite'){
+        const target=[...world.accounts.values()].find(a=>(a.username||a.character.name).toLowerCase()===args.p_username.replace(/^~/,'').toLowerCase());
+        if(!target||!world.players.has(target.user.id))return fulfill({message:'PARTY_TARGET_OFFLINE'},400);
+        if(party&&party.members[0]!==key)return fulfill({message:'PARTY_LEADER_ONLY'},400);
+        if(party?.members.length>=4)return fulfill({message:'PARTY_FULL'},400);
+        if(partyOf(world,target.user.id))return fulfill({message:'PARTY_ALREADY_JOINED'},400);
+        const group=party||{id:randomUUID(),members:[key]};world.parties.set(group.id,group);
+        const invite={id:randomUUID(),partyId:group.id,target:target.user.id};world.partyInvites.set(invite.id,invite);
+      }else if(fn==='party_respond'){
+        const invite=world.partyInvites.get(args.p_invite_id);
+        if(!invite||invite.target!==key)return fulfill({message:'PARTY_INVITE_INVALID'},400);
+        if(args.p_accept){const group=world.parties.get(invite.partyId);if(group.members.length===4)return fulfill({message:'PARTY_FULL'},400);group.members.push(key);}
+        world.partyInvites.delete(invite.id);
+      }else if(fn==='party_leave'&&party){party.members=party.members.filter(user=>user!==key);}
+      return route.fulfill({status:204});
+    }
+    if(fn==='chat_send'){
+      const party=partyOf(world,key);
+      if(args.p_channel==='party'&&!party)return fulfill({message:'PARTY_NOT_JOINED'},400);
+      const row={id:world.history.length+1,channel:args.p_channel,zone:'brumaluz',sender_user:key,sender_name:character.name,sender_account:account.username||character.name,sender_title:character.data.title,body:args.p_body,created_at:new Date().toISOString()};
+      world.history.push(row);
+      for(const [userId,send] of world.chatSockets)if(args.p_channel!=='party'||party.members.includes(userId))send(row);
+      return fulfill(row);
+    }
     if (fn === 'friends_list') {
       const entries = [];
       for (const relation of world.friends.values()) {
@@ -439,7 +485,7 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await social(first.page); await social(second.page);
     await socialRequest(first.page, 'Nobody');
     await first.page.locator('.social-window .account-message.error').waitFor();
-    assert.match(await first.page.locator('.social-window .account-message').textContent(), /No existe/);
+    assert.match(await first.page.locator('.social-friends-panel .account-message').textContent(), /No existe/);
     await socialRequest(first.page, '~Elara');
     await first.page.locator('[data-social="outgoing"] .social-row').waitFor();
     await second.page.locator('[data-social="incoming"] .social-row').waitFor({timeout:15000});
@@ -486,6 +532,7 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
         const bounds = el.getBoundingClientRect();
         return bounds.left >= 0 && bounds.right <= innerWidth && el.scrollWidth <= el.clientWidth
           && [...el.querySelectorAll('button,input')].every(control => {
+            if (!control.getClientRects().length) return true;
             const box = control.getBoundingClientRect();
             return box.left >= bounds.left && box.right <= bounds.right;
           });
@@ -754,6 +801,107 @@ test('target details enforce the 10 metre player-distance limit for camera and c
   } finally {await first.context.close();await second.context.close();}
 });
 
+async function groupTab(page) {
+  if(!await page.locator('#window-backdrop').isVisible()){
+    await page.locator('#player-menu-toggle').click();
+    await page.locator('[data-window="social"]').click();
+  }
+  await page.locator('#social-tab-1').click();
+}
+async function groupInvite(page,username){
+  await page.locator('.party-invite-input').fill(username);
+  await page.locator('.party-invite-form button').click();
+}
+test('parties invite through interactions, default Social to Group, show leader HUD and map, chat privately and transfer leadership', {timeout:240000}, async()=>{
+  const world=backend(),accounts=[fixture('Alric','humano',-6.4),fixture('Elara','elfo',-5.4),fixture('Borin','humano',-3.4),fixture('Daria','humano',-.4)];
+  accounts[0].character.data.level=8;accounts[0].character.data.attributePoints.corpulencia=2;
+  accounts[1].username='moon_account';accounts[1].character.data.cls='mago';
+  const players=[];
+  try {
+    for(const account of accounts){const player=await openPlayer(world,account);players.push(player);await player.enter();}
+    const [first,second,third,fourth]=players;
+    await remote(first.page,accounts[1].character.id);
+    await first.page.keyboard.press('KeyE');
+    await first.page.getByRole('button',{name:'Invitar a grupo',exact:true}).click();
+    await second.page.waitForFunction(()=>document.querySelector('#player-menu-toggle').classList.contains('has-party-invite'));
+    await first.page.keyboard.press('Escape');
+    await groupTab(second.page);
+    await second.page.locator('.party-invitation').getByRole('button',{name:'Aceptar',exact:true}).click();
+    await second.page.locator('.party-member').nth(1).waitFor();
+    await second.page.locator('#window-close').click();
+    await first.page.locator('#party-hud .party-member').waitFor();
+    assert.equal(await first.page.locator('#party-hud .party-member-name strong').textContent(),'Elara');
+    assert.equal(await first.page.locator('#hud-party-leader').isVisible(),true);
+    assert.equal(await second.page.locator('#party-hud .party-leader').count(),1);
+    assert.equal(await first.page.locator('#hud-health-text').textContent(),'203 / 203','200 + 1.5% is exactly 203, without floating-point under-rounding');
+    await first.page.locator('#player-menu-toggle').click();await first.page.locator('[data-window="social"]').click();
+    assert.equal(await first.page.locator('#social-tab-1').getAttribute('aria-selected'),'true');
+    assert.equal(await first.page.locator('.party-panel-content .party-member').count(),2);
+    assert.equal(await first.page.locator('.party-bonus').textContent(),'Bonificación: +2% experiencia · +1.5% vida y recurso máximos');
+    for(const [player,account] of [[third,accounts[2]],[fourth,accounts[3]]]){
+      await groupInvite(first.page,account.character.name);
+      await player.page.waitForFunction(()=>document.querySelector('#player-menu-toggle').classList.contains('has-party-invite'));
+      await groupTab(player.page);
+      await player.page.locator('.party-invitation').getByRole('button',{name:'Aceptar',exact:true}).click();
+      await player.page.locator('#window-close').click();
+    }
+    await first.page.waitForFunction(()=>document.querySelectorAll('.party-panel-content .party-member').length===4);
+    assert.equal(await first.page.locator('.party-invite-input').count(),0);
+    assert.equal(await first.page.locator('.party-bonus').textContent(),'Bonificación: +2% experiencia · +4.5% vida y recurso máximos');
+    assert.equal(await first.page.locator('#hud-health-text').textContent(),'209 / 209');
+    for(const width of [320,390,1280]){
+      await first.page.setViewportSize({width,height:844});
+      assert.ok(await first.page.locator('#social-group-panel').evaluate(el=>el.scrollWidth<=el.clientWidth && [...el.querySelectorAll('input,button')].every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;})));
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`party-social-${width}.png`)});
+    }
+    await first.page.setViewportSize({width:1280,height:800});await first.page.locator('#window-close').click();
+    assert.equal(await first.page.locator('#party-hud .party-member').count(),3);
+    for(const width of [320,1280]){
+      await first.page.setViewportSize({width,height:844});
+      assert.ok(await first.page.locator('#party-hud').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&el.scrollWidth<=el.clientWidth;}));
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`party-hud-${width}.png`)});
+    }
+    const pixels=await first.page.locator('.minimap-canvas').evaluate(canvas=>{
+      const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      let found=0;for(let i=0;i<data.length;i+=4)if(data[i]===121&&data[i+1]===215&&data[i+2]===250)found++;return found;
+    });
+    assert.ok(pixels>0,'Party member markers are rendered cyan on the actual minimap');
+    const outsiderMessages=[];world.chatSockets.set('outsider',row=>outsiderMessages.push(row));
+    await chatReady(world,accounts[0]);await chatReady(world,accounts[1]);
+    await first.page.keyboard.press('Enter');await first.page.locator('.chat-input').fill('/p Adventure together');await first.page.locator('.chat-input').press('Enter');
+    await second.page.locator('.chat-log .k-party').filter({hasText:'Adventure together'}).waitFor();
+    assert.equal(outsiderMessages.length,0);
+    assert.equal(await second.page.locator('.speech-bubble').filter({hasText:'Adventure together'}).count(),0);
+    await first.page.locator('.chat-filter[data-kind="party"]').click();
+    assert.equal(await first.page.locator('.chat-log .k-party').count(),0);
+    await first.page.locator('.chat-filter[data-kind="party"]').click();
+    assert.equal(await first.page.locator('.chat-channel').textContent(),'Grupo');
+    await first.page.locator('.chat-input').fill('Group tab works');
+    await first.page.locator('.chat-input').press('Enter');
+    await second.page.locator('.chat-log .k-party').filter({hasText:'Group tab works'}).waitFor();
+    assert.equal(outsiderMessages.length,0);
+    await second.page.locator('#player-menu-toggle').click();
+    await second.page.locator('[data-window="sheet"]').click();
+    await second.page.waitForFunction(()=>document.querySelector('.sheet-bars .sheet-bar .track span')?.textContent==='104 / 104');
+    assert.equal(await second.page.locator('.sheet-bars .sheet-bar').first().locator('.track span').textContent(),'104 / 104');
+    await first.page.locator('.chat-input').blur();
+    await groupTab(first.page);await first.page.getByRole('button',{name:'Salir del grupo',exact:true}).click();
+    await first.page.waitForFunction(()=>document.querySelectorAll('#party-hud .party-member').length===0);
+    await second.page.waitForFunction(()=>!document.querySelector('#hud-party-leader').hidden);
+    await second.page.waitForFunction(()=>document.querySelector('.sheet-bars .sheet-bar .track span')?.textContent==='103 / 103');
+    await second.page.locator('#window-close').click();
+    await groupTab(second.page);
+    assert.equal(await second.page.locator('.party-panel-content .party-member').first().getAttribute('data-user-id'),accounts[1].user.id);
+    assert.equal(await second.page.locator('.party-invite-input').count(),1,'New leader can invite');
+    await second.page.locator('#window-close').click();
+    await leave(second.page);
+    await third.page.waitForFunction(()=>!document.querySelector('#hud-party-leader').hidden);
+    await first.page.keyboard.press('Enter');await first.page.locator('.chat-input').fill('/p Cannot send after leaving');await first.page.locator('.chat-input').press('Enter');
+    await first.page.locator('.chat-line.error').filter({hasText:'No perteneces a un grupo.'}).waitFor();
+    for(const player of players)assert.deepEqual(player.errors,[]);
+  }finally{for(const player of players)await player.context.close();}
+});
+
 test('closing Social during a delayed refresh cannot populate a different window', { timeout: 120000 }, async () => {
   const world = backend(), a = fixture('Alric','humano',-6.4);
   const player = await openPlayer(world,a);
@@ -799,11 +947,13 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
         assert.ok(bounds && bounds.x >= box.x && bounds.x + bounds.width <= box.x + box.width,'Each interaction button fits inside its panel');
       }
     }
-    assert.equal(await first.page.locator('.player-interaction-medallion svg[viewBox="0 0 48 48"]').count(),3);
+    assert.equal(await first.page.locator('.player-interaction-medallion svg[viewBox="0 0 48 48"]').count(),4);
     assert.equal(await first.page.locator('.player-interaction-label').textContent(),'Añadir amigo');
     assert.equal(await first.page.locator('#player-interactions').getAttribute('aria-busy'),'false');
     assert.equal(await first.page.locator('#player-interaction-name').textContent(),'Elara');
-    assert.equal(await first.page.locator('#player-interactions .player-interaction-action').count(),3);
+    assert.equal(await first.page.locator('#player-interactions .player-interaction-action').count(),4);
+    assert.equal(await first.page.getByRole('button',{name:'Invitar a grupo',exact:true}).count(),1);
+    await first.page.keyboard.press('ArrowLeft');
     await first.page.keyboard.press('ArrowLeft');
     assert.equal(await first.page.locator('.player-interaction-label').textContent(),'Silenciar chat');
     assert.equal(await first.page.locator('.player-interaction-action[aria-pressed="true"]').getAttribute('aria-label'),'Silenciar chat');
@@ -813,6 +963,7 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
     await first.page.keyboard.press('Enter');
     await first.page.getByRole('button',{name:'Silenciar chat',exact:true}).waitFor();
     assert.deepEqual(await first.page.evaluate(()=>JSON.parse(localStorage.getItem('brumaluz-chat-ignored'))),[]);
+    await first.page.keyboard.press('ArrowRight');
     await first.page.keyboard.press('ArrowRight');
     await first.page.keyboard.press('KeyE');
     await first.page.getByRole('button',{name:'Cancelar solicitud',exact:true}).waitFor();
@@ -824,7 +975,7 @@ test('nearby player carousel supports keyboard friend actions, reversible mute a
     await first.page.getByRole('button',{name:'Cancelar solicitud',exact:true}).click();
     await first.page.getByRole('button',{name:'Eliminar amigo',exact:true}).waitFor();
     assert.equal(world.friends.size,1,'A stale cancel action must not remove a newly accepted friend');
-    assert.equal(await first.page.locator('.player-interaction-action').count(),2);
+    assert.equal(await first.page.locator('.player-interaction-action').count(),3);
     first.page.once('dialog',dialog=>dialog.accept());
     await first.page.getByRole('button',{name:'Eliminar amigo',exact:true}).click();
     await first.page.getByRole('button',{name:'Añadir amigo',exact:true}).waitFor();
@@ -916,7 +1067,7 @@ test('NPC interaction still opens its conversation with E', { timeout: 120000 },
   } finally {await player.context.close();}
 });
 
-test('friend requests notify outside Social, mark both menu levels and announce acceptance; Group is a placeholder tab', {timeout:120000}, async () => {
+test('friend requests notify outside Social, mark both menu levels and announce acceptance; Group offers invitations', {timeout:120000}, async () => {
   const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
   const first = await openPlayer(world,a), second = await openPlayer(world,b);
   try {
@@ -936,7 +1087,7 @@ test('friend requests notify outside Social, mark both menu levels and announce 
     assert.equal(await second.page.locator('[data-social="incoming"] .social-avatar').textContent(),'');
     assert.deepEqual(await second.page.locator('.social-stat strong').allTextContents(),['0','1']);
     await second.page.getByRole('tab',{name:'Grupo',exact:true}).click();
-    await second.page.getByText('Próximamente podrás formar un grupo con otros aventureros.',{exact:true}).waitFor();
+    await second.page.getByText('Comienza una aventura en grupo',{exact:true}).waitFor();
     assert.equal(await second.page.locator('#social-friends-panel').isVisible(),false);
     await second.page.keyboard.press('ArrowLeft');
     assert.equal(await second.page.getByRole('tab',{name:'Amigos',exact:true}).getAttribute('aria-selected'),'true');

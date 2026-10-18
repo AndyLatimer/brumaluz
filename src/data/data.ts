@@ -46,6 +46,7 @@ export interface CharData {
   name: string;
   title: TitleId; // título mostrado junto al nombre (ver titles.ts)
   level: number;
+  partyPeers?: number;
   experience: number; // experiencia acumulada dentro del nivel actual
   health: number; // vida actual; -1 = al máximo
   overheal: number; // sobrecuración vigente cuando el servidor la guardó (se pierde con el tiempo, ver OVERHEAL en stats.ts)
@@ -218,6 +219,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   const level = Number(out.level);
   const experience = Number(out.experience);
   out.level = Number.isSafeInteger(level) ? Math.min(Math.max(level, 1), MAX_LEVEL) : 1;
+  out.partyPeers = Number.isInteger(d.partyPeers) ? Math.min(Math.max(Number(d.partyPeers),0),3) : 0;
   out.experience = Number.isSafeInteger(experience) ? Math.max(experience, 0) : 0;
   out.health = Number.isFinite(Number(out.health)) ? Math.max(Math.round(Number(out.health)), -1) : -1;
   out.overheal = Number.isFinite(Number(out.overheal)) ? Math.max(Math.round(Number(out.overheal)), 0) : 0;

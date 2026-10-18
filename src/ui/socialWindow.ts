@@ -3,6 +3,8 @@ import { readFriends as listFriends } from '../services/friends';
 import { CLASSES, type ClassId } from '../data/data';
 import { classIcon } from './classIcons';
 import { t } from './i18n';
+import { getParty, observeParty } from '../services/party';
+import { renderPartyPanel } from './partyPanel';
 
 const ICONS = {
   friend: '<path d="m12 2 8 3v7c0 5-5 8-8 10-3-2-8-5-8-10V5z"/><circle cx="12" cy="9" r="3"/><path d="M7 17a5 5 0 0 1 10 0"/>',
@@ -39,11 +41,7 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   groupPanel.className = 'social-group-panel';
   groupPanel.setAttribute('role', 'tabpanel');
   groupPanel.hidden = true;
-  const groupTitle = document.createElement('h3');
-  groupTitle.textContent = t('Tu próxima aventura, en grupo');
-  const groupText = document.createElement('p');
-  groupText.textContent = t('Próximamente podrás formar un grupo con otros aventureros.');
-  groupPanel.append(icon('friend'), groupTitle, groupText);
+  const closePartyPanel = renderPartyPanel(groupPanel);
   const tabButtons = [friendsPanel, groupPanel].map((panel, index) => {
     const tab = document.createElement('button');
     tab.type = 'button';
@@ -65,6 +63,11 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
       tabButtons[i].tabIndex = i === index ? 0 : -1;
     });
   }
+  const closePartyObserver=observeParty(state=>{
+    tabButtons[1].classList.toggle('has-party-invite',state.incoming.length>0);
+    tabButtons[1].setAttribute('aria-label',state.incoming.length?t('Grupo: {n} invitaciones',{n:state.incoming.length}):t('Grupo'));
+  });
+  if(getParty().id)selectTab(1);
   tabs.onkeydown = (event) => {
     const current = tabButtons.findIndex((tab) => tab === document.activeElement);
     if (current < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -311,5 +314,5 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
   };
   status('Cargando…');
   void poll();
-  return () => { closed = true; clearTimeout(timer); };
+  return () => { closed = true; clearTimeout(timer); closePartyPanel(); closePartyObserver(); };
 }

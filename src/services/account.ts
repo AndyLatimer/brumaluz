@@ -86,6 +86,10 @@ interface Database {
       world_sync: { Args: { p_character_id: string; p_session_id: string; p_state: Json }; Returns: Json };
       world_leave: { Args: { p_character_id: string; p_session_id: string }; Returns: undefined };
       friends_list: { Args: Record<string, never>; Returns: Json };
+      party_state: { Args: Record<string, never>; Returns: Json };
+      party_invite: { Args: { p_username: string }; Returns: undefined };
+      party_respond: { Args: { p_invite_id: string; p_accept: boolean }; Returns: undefined };
+      party_leave: { Args: Record<string, never>; Returns: undefined };
       friend_request: { Args: { p_username: string }; Returns: undefined };
       friend_update: { Args: { p_user_id: string; p_action: string }; Returns: undefined };
     };
@@ -179,6 +183,17 @@ export async function getProfileUsername(userId: string) {
 }
 
 const SERVER_ERRORS: Record<string, string> = {
+  PARTY_USERNAME_REQUIRED: 'Necesitas un nombre de cuenta para invitar a un grupo.',
+  PARTY_NOT_PLAYING: 'Debes estar jugando para formar un grupo.',
+  PARTY_TARGET_OFFLINE: 'Ese jugador no está conectado al mundo.',
+  PARTY_SELF: 'No puedes invitarte a ti mismo.',
+  PARTY_ALREADY_JOINED: 'Ese jugador ya pertenece a un grupo.',
+  PARTY_LEADER_ONLY: 'Solo el líder puede invitar al grupo.',
+  PARTY_FULL: 'El grupo está lleno (4 jugadores).',
+  PARTY_INVITE_EXISTS: 'Ese jugador ya tiene una invitación de este grupo.',
+  PARTY_INVITE_LIMIT: 'Ya tienes tres invitaciones pendientes.',
+  PARTY_INVITE_INVALID: 'La invitación ha caducado o ya no existe.',
+  PARTY_NOT_JOINED: 'No perteneces a un grupo.',
   FRIEND_SELF: 'No puedes añadirte a ti mismo.',
   FRIEND_USERNAME_REQUIRED: 'Necesitas un nombre de cuenta para enviar solicitudes de amistad.',
   FRIEND_ALREADY_EXISTS: 'Ya sois amigos o existe una solicitud pendiente.',
@@ -339,7 +354,11 @@ export async function requestFriend(username: string) {
 export async function updateFriend(userId: string, action: 'accept' | 'remove') {
   await serverCall(requireClient().rpc('friend_update', { p_user_id: userId, p_action: action }).abortSignal(AbortSignal.timeout(8000)));
 }
-export type ChatChannel = 'general' | 'zone' | 'whisper';
+export const fetchParty = () => serverCall(requireClient().rpc('party_state').abortSignal(AbortSignal.timeout(8000)));
+export const sendPartyInvite = (username: string) => serverCall(requireClient().rpc('party_invite',{p_username:username}).abortSignal(AbortSignal.timeout(8000)));
+export const respondPartyInvite = (id: string, accept: boolean) => serverCall(requireClient().rpc('party_respond',{p_invite_id:id,p_accept:accept}).abortSignal(AbortSignal.timeout(8000)));
+export const leaveParty = () => serverCall(requireClient().rpc('party_leave').abortSignal(AbortSignal.timeout(8000)));
+export type ChatChannel = 'general' | 'zone' | 'whisper' | 'party';
 export interface ChatMessage {
   id: number;
   channel: ChatChannel;

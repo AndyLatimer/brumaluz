@@ -2,8 +2,10 @@ import { getProfileUsername, requestFriend, updateFriend, type FriendEntry } fro
 import { readFriends as listFriends } from '../services/friends';
 import { focusChat, isChatIgnored, setChatIgnored } from './chatWindow';
 import { t } from './i18n';
+import { inviteToParty } from '../services/party';
 
 const ICONS = {
+  party: '<path class="icon-enamel" d="m24 4 17 9v21L24 44 7 34V13z"/><circle class="icon-parchment" cx="19" cy="17" r="5"/><circle class="icon-parchment" cx="32" cy="20" r="4"/><path class="icon-parchment" d="M10 34v-5a9 9 0 0 1 18 0v5m0-9a7 7 0 0 1 11 6v3"/><circle class="icon-seal" cx="33" cy="35" r="8"/><path class="icon-mark" d="M33 31v8m-4-4h8"/>',
   friend: '<path class="icon-enamel" d="m24 4 15 6v14c0 10-8 16-15 20C17 40 9 34 9 24V10z"/><path class="icon-detail" d="m24 8 11 5v11c0 7-5 12-11 16-6-4-11-9-11-16V13z"/><circle class="icon-parchment" cx="21" cy="19" r="5"/><path class="icon-parchment" d="M13 33v-3a8 8 0 0 1 15-4"/><circle class="icon-seal" cx="33" cy="31" r="9"/><path class="icon-mark" d="M33 27v8m-4-4h8"/>',
   accept: '<path class="icon-enamel" d="m24 4 15 6v14c0 10-8 16-15 20C17 40 9 34 9 24V10z"/><path class="icon-detail" d="m24 8 11 5v11c0 7-5 12-11 16-6-4-11-9-11-16V13z"/><path class="icon-mark" d="m16 23 6 6 11-13"/><path d="m20 36 4 3 4-3"/>',
   remove: '<path class="icon-enamel" d="m24 4 15 6v14c0 10-8 16-15 20C17 40 9 34 9 24V10z"/><path class="icon-detail" d="m24 8 11 5v11c0 7-5 12-11 16-6-4-11-9-11-16V13z"/><circle class="icon-parchment" cx="21" cy="19" r="5"/><path class="icon-parchment" d="M13 33v-3a8 8 0 0 1 15-4"/><circle class="icon-wax" cx="33" cy="31" r="9"/><path class="icon-mark" d="M29 31h8"/>',
@@ -77,6 +79,7 @@ export function createPlayerInteractions() {
   }
   function render() {
     panel.setAttribute('aria-busy', String(busy));
+    choices.dataset.count = String(actions.length);
     choices.replaceChildren();
     const previous = document.createElement('button');
     previous.type = 'button';
@@ -165,6 +168,10 @@ export function createPlayerInteractions() {
         },
       });
     }
+    actions.push({
+      label:'Invitar a grupo',icon:'party',
+      async run(){await inviteToParty(username);if(generation===version)status(t('Invitación de grupo enviada a ~{name}.',{name:username}));},
+    });
     selected = Math.min(selected, actions.length - 1);
     status(`~${username}`);
     render();

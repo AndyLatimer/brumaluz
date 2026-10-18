@@ -4,9 +4,9 @@ import { t } from './i18n';
 import type { ChatMessage } from '../services/account';
 import { isTitleId, isReservedTitle, PHOENIX_ICON } from '../data/titles';
 
-export type ChatKind = 'general' | 'zone' | 'whisper' | 'system' | 'npc' | 'combat';
+export type ChatKind = 'general' | 'zone' | 'party' | 'whisper' | 'system' | 'npc' | 'combat';
 /** Canales en los que se puede escribir. */
-export type SendChannel = 'general' | 'zone';
+export type SendChannel = 'general' | 'zone' | 'party';
 /** Prefijo que distingue un nombre de CUENTA (susurros) de un nombre de personaje. */
 export const ACCOUNT_MARK = '~';
 
@@ -50,9 +50,10 @@ let lastWhisperFrom: string | null = null;
 let unread = 0;
 const entries: Entry[] = [];
 const seen = new Set<number>();
-const filters: Record<ChatKind, boolean> = { general: true, zone: true, whisper: true, system: true, npc: true, combat: true, ...store.get('filters', {}) };
+const filters: Record<ChatKind, boolean> = { general: true, zone: true, party:true, whisper: true, system: true, npc: true, combat: true, ...store.get('filters', {}) };
 const ignored = new Set<string>(store.get<string[]>('ignored', []));
-let sendChannel: SendChannel = store.get<SendChannel>('channel', 'general') === 'zone' ? 'zone' : 'general';
+const savedChannel = store.get<unknown>('channel', 'general');
+let sendChannel: SendChannel = savedChannel === 'zone' || savedChannel === 'party' ? savedChannel : 'general';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(`#chat ${sel}`)!;
 const root = () => document.getElementById('chat')!;
@@ -105,11 +106,11 @@ function lineElement(e: Entry) {
   const text = document.createElement('span');
   text.className = 'chat-text';
   text.textContent = e.text;
-  if (e.kind === 'general' || e.kind === 'zone') {
-    if (e.kind === 'zone') {
+  if (e.kind === 'general' || e.kind === 'zone' || e.kind==='party') {
+    if (e.kind === 'zone' || e.kind==='party') {
       const tag = document.createElement('span');
       tag.className = 'chat-tag';
-      tag.textContent = `[${t('Zona')}]`;
+      tag.textContent = `[${t(e.kind==='party'?'Grupo':'Zona')}]`;
       line.append(tag, ' ');
     }
     line.append(nameElement(e.name ?? '?', e.title, e.own ? null : e.account), ': ', text);
@@ -170,6 +171,8 @@ export function chatReceive(m: ChatMessage) {
   if (m.channel === 'whisper') {
     if (own) push({ ...base, kind: 'whisper', target: m.recipientName ?? '?' });
     else { lastWhisperFrom = m.senderAccount ?? m.senderName; push({ ...base, kind: 'whisper', name: m.senderName, account: m.senderAccount, title: m.senderTitle }); }
+  } else if(m.channel==='party') {
+    push({...base,kind:'party',name:m.senderName,account:m.senderAccount,title:m.senderTitle});
   } else if (m.channel === 'zone') {
     if (m.zone !== hooks?.zone()) return;
     push({ ...base, kind: 'zone', name: m.senderName, account: m.senderAccount, title: m.senderTitle });
@@ -228,10 +231,10 @@ function setCollapsed(collapsed: boolean) {
 }
 
 function help() {
-  chatSystem(t('Comandos: /g (general) y /z (zona) cambian de canal o envían un mensaje suelto; /w ~cuenta mensaje (susurrar a una cuenta), /r (responder), /ignore ~cuenta, /unignore ~cuenta, /clear.'));
+  chatSystem(t('Comandos: /g (general), /z (zona) y /p (grupo) cambian de canal o envían un mensaje suelto; /w ~cuenta mensaje (susurrar a una cuenta), /r (responder), /ignore ~cuenta, /unignore ~cuenta, /clear.'));
 }
 
-const channelLabel = (c: SendChannel) => t(c === 'zone' ? 'Zona' : 'General');
+const channelLabel = (c: SendChannel) => t(c === 'party' ? 'Grupo' : c === 'zone' ? 'Zona' : 'General');
 
 function setSendChannel(channel: SendChannel) {
   sendChannel = channel;
@@ -261,8 +264,8 @@ async function submit(raw: string) {
         if (!rest.trim()) { setInput(`/w ${ACCOUNT_MARK}${lastWhisperFrom} `); return; }
         await hooks!.send(rest, 'whisper', lastWhisperFrom);
         return;
-      case 'g': case 'general': case 'z': case 'zona': case 'zone': {
-        const channel: SendChannel = ['z', 'zona', 'zone'].includes(name.toLowerCase()) ? 'zone' : 'general';
+      case 'p': case 'grupo': case 'party': case 'g': case 'general': case 'z': case 'zona': case 'zone': {
+        const channel: SendChannel = ['p','grupo','party'].includes(name.toLowerCase())?'party':['z', 'zona', 'zone'].includes(name.toLowerCase()) ? 'zone' : 'general';
         if (rest.trim()) await hooks!.send(rest, channel);
         else { setSendChannel(channel); chatSystem(t('Escribes en el canal: {name}.', { name: channelLabel(channel) })); }
         return;
@@ -323,6 +326,7 @@ export function initChat(h: ChatHooks) {
     button.setAttribute('aria-pressed', String(filters[kind]));
     button.onclick = () => {
       filters[kind] = !filters[kind];
+      if(kind==='party' && filters[kind])setSendChannel('party');
       button.setAttribute('aria-pressed', String(filters[kind]));
       store.set('filters', filters);
       rebuild();
@@ -332,7 +336,7 @@ export function initChat(h: ChatHooks) {
   if (store.get('collapsed', false)) setCollapsed(true);
   initResize();
   setSendChannel(sendChannel);
-  $<HTMLButtonElement>('.chat-channel').onclick = () => { setSendChannel(sendChannel === 'zone' ? 'general' : 'zone'); input.focus(); };
+  $<HTMLButtonElement>('.chat-channel').onclick = () => { setSendChannel(sendChannel === 'general' ? 'zone' : sendChannel==='zone'?'party':'general'); input.focus(); };
 
   form.onsubmit = (e) => {
     e.preventDefault();

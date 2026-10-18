@@ -46,8 +46,10 @@ export const maxOverhealOf = (d: CharData) => Math.floor(maxHealthOf(d) * OVERHE
 
 export const experienceToNextLevel = (level: number) => Math.round(XP_CURVE.base * Math.pow(Math.max(level, 1), XP_CURVE.exponent));
 export const resourceKindOf = (cls: ClassId): ResourceKind => CLASS_RESOURCE[cls];
-export const maxHealthOf = (d: CharData) => evaluate(MAX_HEALTH, d);
-export const maxResourceOf = (d: CharData) => evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d);
+const withPartyBonus = (value: number, d: CharData) =>
+  Math.floor(value * (1000 + Math.min(Math.max(d.partyPeers ?? 0, 0), 3) * 15) / 1000);
+export const maxHealthOf = (d: CharData) => withPartyBonus(evaluate(MAX_HEALTH, d), d);
+export const maxResourceOf = (d: CharData) => withPartyBonus(evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d), d);
 
 export interface Vitals {
   health: number; maxHealth: number; overheal: number;

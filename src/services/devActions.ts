@@ -25,7 +25,7 @@ export function simulateAction(d: CharData, action: CharacterAction) {
     d.health = Math.min(v.maxHealth, total);
     d.overheal = Math.min(v.overheal + Math.max(total - v.maxHealth, 0), maxOverhealOf(d));
   } else if (d.level < MAX_LEVEL) {
-    d.experience += 200;
+    d.experience += (d.partyPeers ?? 0)>0 ? 204 : 200;
     while (d.level < MAX_LEVEL && d.experience >= experienceToNextLevel(d.level)) { d.experience -= experienceToNextLevel(d.level); d.level++; }
     if (d.level >= MAX_LEVEL) d.experience = experienceToNextLevel(MAX_LEVEL);
   }
@@ -76,5 +76,4 @@ export function simulateUse(d: CharData, slot: number) {
   d.health = Math.min(v.maxHealth, v.health + Math.max(1, Math.ceil(v.maxHealth * 0.05)));
   if (d.health >= v.maxHealth) d.health = -1;
 }
-
 

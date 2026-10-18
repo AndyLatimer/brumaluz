@@ -41,6 +41,18 @@ Ejemplo: mago de nivel 2 con Intelecto 8 → 30 + 6 + 8×7 = **92** de maná.
 
 `experienceToNextLevel(L) = round(XP_CURVE.base × L ^ XP_CURVE.exponent)` (100 × L^1.5: 100, 283, 520, 800…).
 
+### Bonificación de grupo
+
+El servidor calcula `partyPeers` (0–3 compañeros conectados, sin contar al propio personaje); es transitorio y no se guarda en el personaje. Las mismas fórmulas se aplican en el cliente para representar sus barras:
+
+```
+máximo con grupo = floor(máximo base × (1 + partyPeers × 0.015))
+```
+
+Se aplica a vida y maná/estamina: +1,5 % con dos integrantes, +3 % con tres y +4,5 % con cuatro. Sin compañeros no hay bonificación. El máximo aumentado no añade una curación explícita; `-1` sigue representando una barra llena.
+
+La experiencia ganada recibe **+2 % fijo** cuando hay al menos un compañero, no +2 % por integrante. La fuente actual, `debug_xp`, concede 204 en vez de 200; la curva necesaria para subir de nivel no cambia. Las fuentes futuras deben aplicar también esta bonificación en el servidor.
+
 ## Cómo ampliarlo
 
 - **Cambiar equilibrado:** edita los números de `MAX_HEALTH`, `MAX_RESOURCE`, `XP_CURVE` o `CLASS_RESOURCE`.

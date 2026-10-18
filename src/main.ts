@@ -23,6 +23,8 @@ import { renderSocial } from './ui/socialWindow';
 import { startFriendNotifications } from './ui/friendNotifications';
 import { createPlayerInteractions } from './ui/playerInteractions';
 import { createTargetFrame, type NpcType, type TargetDetails } from './ui/targetFrame';
+import { getParty, observeParty, startParty, stopParty, partySelf, isPartyLeader } from './services/party';
+import { initPartyHud } from './ui/partyPanel';
 import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
@@ -871,6 +873,7 @@ function enterPlay() {
   startChat();
   stopFriendNotifications?.();
   stopFriendNotifications = !TEST && currentUser ? startFriendNotifications() : null;
+  if(!TEST && currentUser) startParty(currentUser.id,error=>chatSystem(t('No se pudo actualizar el grupo: {error}',{error:errorMessage(error)}),true));
   refreshWorldStatus();
   worldConnection?.start();
 }
@@ -896,6 +899,7 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  stopParty();
   stopFriendNotifications?.();
   stopFriendNotifications = null;
   playerInteractions.close();
@@ -954,8 +958,33 @@ initChat({
 });
 initMinimap({
   player: () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
-  markers: () => npcActors.map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
+  markers: () => [
+    ...npcActors.map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
+    ...getParty().members.filter(member=>member.userId!==partySelf() && member.location===state.location).map(member=>({
+      id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
+    })),
+  ],
   zone: () => LOCATIONS[state.location],
+});
+initPartyHud();
+let previousPartyInvites=new Set<string>();
+observeParty(party=>{
+  const peers=Math.max(0,party.members.length-1);
+  const bonusChanged=(state.partyPeers ?? 0)!==peers;
+  state.partyPeers=peers;
+  const leader=$('#hud-party-leader');
+  leader.hidden=!isPartyLeader();leader.setAttribute('aria-label',t('Líder'));leader.title=t('Líder del grupo');
+  $('#player-menu-toggle').classList.toggle('has-party-invite',party.incoming.length>0);
+  document.querySelector('[data-window="social"]')?.classList.toggle('has-party-invite',party.incoming.length>0);
+  for(const invite of party.incoming) if(!previousPartyInvites.has(invite.id)){
+    toast('Invitación de grupo','~{name} te invita a su grupo. Abre Social → Grupo para responder.',false,{name:invite.username});
+    chatSystem(t('~{name} te invita a su grupo. Abre Social → Grupo para responder.',{name:invite.username}));
+  }
+  previousPartyInvites=new Set(party.incoming.map(invite=>invite.id));
+  if(mode==='play') {
+    updateHud();
+    if(bonusChanged && openWindow==='sheet')setWindow('sheet',false);
+  }
 });
 setChatSpeechListener((name, text, own, userId) => {
   if (own) playerSay(name, text);
