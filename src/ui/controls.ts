@@ -32,6 +32,7 @@ export const CONTROLS: ControlBinding[] = [
   { keys: ['Tab'], caption: 'Tab', label: 'Abrir / cerrar el menú de personaje', group: 'system' },
   { keys: ['KeyI'], caption: 'I', label: 'Abrir / cerrar el inventario', group: 'system' },
   { keys: ['KeyC'], caption: 'C', label: 'Abrir / cerrar la ficha de personaje', group: 'system' },
+  { keys: ['KeyJ'], caption: 'J', label: 'Abrir / cerrar el diario de misiones', group: 'system' },
   { keys: ['KeyO'], caption: 'O', label: 'Abrir / cerrar las opciones', group: 'system' },
   { keys: ['Backquote'], caption: 'º', label: 'Mostrar / ocultar el minimapa', group: 'system' },
   { mouse: 'click', label: 'Ir al punto', group: 'move' },

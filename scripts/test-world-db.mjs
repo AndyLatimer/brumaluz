@@ -23,6 +23,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
   try {
     await client.query('begin');
     await client.query("set local lock_timeout = '5s'; set local statement_timeout = '15s'");
+    await client.query('select pg_advisory_xact_lock(731029,2)');
     await client.query(readFileSync(new URL('../supabase/server.sql', import.meta.url), 'utf8'));
     const a = randomUUID(), b = randomUUID(), ca = randomUUID(), cb = randomUUID(), ca2 = randomUUID();
     const sa = randomUUID(), sb = randomUUID(), replacement = randomUUID();
@@ -55,6 +56,83 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       }
     }
     const motion = (x, extra = {}) => ({ x, z: 0, yaw: 0, facing: 1, jump: 0, wave: 0, ...extra });
+    await t.test('welcome is new-character opt-in, validates every transition and position, persists and rewards exactly once', async () => {
+      await client.query('savepoint welcome_system');
+      try {
+        const appearance=Object.fromEntries(['sex','height','build','skin','face','hair','hairColor','beard','eyeShape','eyeColor',
+          'brows','nose','mouth','detail','trait','primary','secondary','cape','clothA','clothB','hairAcc','hairAccColor','acc','makeup','makeupColor','accColor'].map(key=>[key,0]));
+        const payload={...appearance,name:'Novato',race:'elfo',cls:'mago',attributePoints:{},welcome:{origin:2,stage:'completed'}};
+        await client.query('reset role');
+        await client.query("update public.server_config set value='false' where key='welcome_enabled'");
+        await user(a);
+        const before=await rpc('create_character',[payload]);
+        assert.equal((await rpc('character_enter',[before])).welcome,undefined,'Client cannot opt in or forge completion');
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key in ('welcome_enabled','debug_actions')");
+        await user(a);
+        const id=await rpc('create_character',[{...payload,name:'Aprendiz'}]);
+        let data=await rpc('character_enter',[id]);
+        assert.deepEqual(data.welcome,{origin:null,stage:'available'});
+        assert.equal((await rpc('character_enter',[before])).welcome,undefined,'Activating does not enroll earlier characters');
+        await rejected(()=>rpc('welcome_action',[ca,'origin',0]),/WELCOME_UNAVAILABLE/);
+        await rejected(()=>rpc('welcome_action',[id,'origin',0]),/WELCOME_NOT_PLAYING/);
+        await rejected(()=>rpc('game_require_welcome_complete',[{}]),/permission denied/);
+        await user(b);
+        await rejected(()=>rpc('welcome_action',[id,'origin',0]),/CHARACTER_NOT_FOUND/);
+        await user(a);
+        const session=randomUUID();
+        await rpc('world_join',[id,session]);
+        async function at(x,z,extra={}){
+          await client.query('reset role');
+          await client.query('update public.world_players set position=$1,seen_at=now() where character_id=$2',[{x,z,yaw:0},id]);
+          if(Object.keys(extra).length)await client.query('update public.characters set data=data||$1::jsonb where id=$2',[extra,id]);
+          await user(a);
+        }
+        await at(60,60);
+        await rejected(()=>rpc('welcome_action',[id,'origin',0]),/WELCOME_TOO_FAR/);
+        await at(-6.4,-8.5);
+        await rejected(()=>rpc('welcome_action',[id,'accept']),/WELCOME_INVALID_STATE/);
+        await rejected(()=>rpc('welcome_action',[id,'origin',3]),/WELCOME_INVALID_STATE/);
+        await rejected(()=>rpc('welcome_action',[id,'origin',null]),/WELCOME_INVALID_STATE/);
+        data=await rpc('welcome_action',[id,'origin',1]);
+        assert.deepEqual(data.welcome,{origin:1,stage:'available'});
+        await rejected(()=>rpc('welcome_action',[id,'origin',2]),/WELCOME_INVALID_STATE/);
+        await rejected(()=>rpc('welcome_action',[id,'abandon']),/WELCOME_INVALID_ACTION/);
+        await rejected(()=>rpc('debug_xp',[id]),/WELCOME_REQUIRED/);
+        await rpc('welcome_action',[id,'accept']);
+        await rejected(()=>rpc('welcome_action',[id,'claim']),/WELCOME_INVALID_STATE/);
+        await rejected(()=>rpc('welcome_action',[id,'collect']),/WELCOME_TOO_FAR/);
+        await at(15.8,-5.7,{health:0});
+        await rejected(()=>rpc('welcome_action',[id,'collect']),/WELCOME_DEAD/);
+        await at(15.8,-5.7,{health:-1,inventory:Array.from({length:25},()=>({id:'pan_duro',count:50}))});
+        data=await rpc('welcome_action',[id,'collect']);
+        assert.deepEqual(data.welcome,{origin:1,stage:'found'});
+        const inventory=data.inventory;
+        await rpc('world_leave',[id,session]);
+        data=await rpc('character_enter',[id]);
+        assert.equal(data.welcome.stage,'found','Offline progress and immutable origin survive re-entry');
+        await rejected(()=>rpc('welcome_action',[id,'claim']),/WELCOME_NOT_PLAYING/);
+        await rpc('world_join',[id,randomUUID()]);
+        data=await rpc('welcome_action',[id,'claim']);
+        assert.equal(data.welcome.stage,'completed');
+        assert.equal(data.experience,40);
+        assert.equal(data.wallet.pelines,5);
+        assert.deepEqual(data.inventory,inventory,'Quest items never consume inventory space, even with a full bag');
+        await rejected(()=>rpc('welcome_action',[id,'claim']),/WELCOME_INVALID_STATE/);
+        await rejected(()=>rpc('welcome_action',[id,'collect']),/WELCOME_INVALID_STATE/);
+        const again=await rpc('character_enter',[id]);
+        assert.equal(again.experience,40);
+        assert.equal(again.wallet.pelines,5);
+        await rpc('debug_xp',[id]);
+        await client.query('reset role');
+        await client.query("update public.server_config set value='false' where key='welcome_enabled'");
+        await user(a);
+        await rejected(()=>rpc('welcome_action',[id,'claim']),/ACTION_DISABLED/);
+      } finally {
+        await client.query('rollback to savepoint welcome_system');
+        await client.query('reset role');
+      }
+    });
     await t.test('bread grants flat maxima without healing, renews, pauses offline and expires authoritatively', async () => {
       await client.query('savepoint food_buff');
       try {

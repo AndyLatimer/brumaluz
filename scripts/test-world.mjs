@@ -97,6 +97,19 @@ async function openPlayer(world, account, compatible = true, clockTime) {
     if (fn === 'set_character_title') { character.data.title = args.p_title; return fulfill({ ...data, title: args.p_title }); }
     if (fn === 'my_titles') return fulfill(account.titles || []);
     const key = account.user.id;
+    if(fn==='welcome_action'){
+      if(world.fail.has('welcome'))return fulfill({message:'Temporary quest failure'},503);
+      const q=character.data.welcome;
+      if(!q)return fulfill({message:'WELCOME_UNAVAILABLE'},400);
+      if(args.p_action==='origin'&&q.stage==='available'&&q.origin===null)q.origin=args.p_origin;
+      else if(args.p_action==='accept'&&q.stage==='available'&&q.origin!==null)q.stage='active';
+      else if(args.p_action==='collect'&&q.stage==='active')q.stage='found';
+      else if(args.p_action==='claim'&&q.stage==='found'){
+        q.stage='completed';character.data.experience=(character.data.experience||0)+40;
+        character.data.wallet={...(character.data.wallet||{}),pelines:(character.data.wallet?.pelines||0)+5};
+      }else return fulfill({message:'WELCOME_INVALID_STATE'},400);
+      return fulfill(character.data);
+    }
     if(fn==='trade_action') {
       world.trades ??= new Map();
       for(const tr of world.trades.values()) {
@@ -297,6 +310,134 @@ async function revealChat(page) {
   assert.ok(box,'Chat corner handle must be available');
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
 }
+
+test('welcome systems confirm origins, await server actions, keep a private companion and persist the journal through rewards', {timeout:180000}, async()=>{
+  const world=backend(),a=fixture('Alric','humano',-6.4),b=fixture('Elara','elfo',-5.4);
+  a.character.data.welcome={origin:null,stage:'available'};
+  b.character.data.welcome={origin:null,stage:'available'};
+  const first=await openPlayer(world,a),second=await openPlayer(world,b);
+  const approach=async(page,x,z)=>{
+    await page.evaluate(({x,z})=>window.brumaluz.move(x,z),{x,z});
+    await page.waitForTimeout(800);
+  };
+  const talk=async page=>{
+    await page.evaluate(()=>{
+      const p=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').position;
+      window.brumaluz.move(p.x,p.z+.3);
+    });
+    await page.waitForFunction(()=>document.querySelector('#interact-prompt').textContent.includes('Hablar con Gnomi'));
+    await page.keyboard.press('KeyE');
+    await page.locator('#dialog').waitFor({state:'visible'});
+    assert.equal(await page.locator('.dialog-speaker').textContent(),'Gnomi');
+  };
+  try {
+    await first.enter();await second.enter();
+    await approach(first.page,-6.4,-8.5);
+    await talk(first.page);
+    await first.page.getByRole('button',{name:'Soy de Brumaluz y busco mi primer oficio.'}).click();
+    assert.equal(a.character.data.welcome.origin,null,'Selecting a motive does not persist it before confirmation');
+    await first.page.getByRole('button',{name:'Elegir otro motivo'}).click();
+    await first.page.getByRole('button',{name:'He venido a probar suerte.'}).click();
+    world.rpcDelay.set('welcome_action',600);
+    await first.page.getByRole('button',{name:'Confirmar mi motivo'}).click();
+    assert.equal(await first.page.locator('#dialog').getAttribute('aria-busy'),'true');
+    assert.equal(await first.page.getByRole('button',{name:'Confirmar mi motivo'}).isDisabled(),true);
+    await first.page.keyboard.press('KeyE');
+    await first.page.getByRole('button',{name:'Ayudar a Gnomi'}).waitFor();
+    assert.equal(a.character.data.welcome.origin,1);
+    assert.equal(await first.page.locator('#dialog').getAttribute('aria-busy'),'false');
+    world.rpcDelay.delete('welcome_action');
+    world.fail.add('welcome');
+    await first.page.getByRole('button',{name:'Ayudar a Gnomi'}).click();
+    await first.page.waitForFunction(()=>document.querySelector('#dialog').getAttribute('aria-busy')==='false');
+    assert.equal(a.character.data.welcome.stage,'available');
+    assert.equal(await first.page.locator('#dialog').isVisible(),true,'Server failure leaves the conversation ready to retry');
+    await first.page.locator('#toast').filter({hasText:'Temporary quest failure'}).waitFor();
+    world.fail.delete('welcome');
+    await first.page.getByRole('button',{name:'Ayudar a Gnomi'}).click();
+    await first.page.locator('#dialog').waitFor({state:'hidden'});
+    await first.page.locator('#quest-tracker').waitFor();
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'welcome-companion.png')});
+    await first.page.keyboard.press('KeyJ');
+    await first.page.locator('.quest-entry').waitFor();
+    assert.match(await first.page.locator('.quest-entry').textContent(),/Obligatoria/);
+    assert.equal(await first.page.getByRole('button',{name:/Abandonar/}).count(),0);
+    for(const width of [320,390,1280]){
+      await first.page.setViewportSize({width,height:844});
+      assert.ok(await first.page.locator('.quest-journal').evaluate(el=>el.scrollWidth<=el.clientWidth&&el.getBoundingClientRect().right<=innerWidth),'Journal fits the viewport');
+      const close=await first.page.locator('#window-close').boundingBox();
+      assert.ok(close.y>=0&&close.y+close.height<844-44,'Journal keeps the close button above the chat handle');
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`welcome-journal-${width}.png`)});
+    }
+    await first.page.keyboard.press('Escape');
+    await first.page.setViewportSize({width:1280,height:800});
+    for(const [x,z] of [[-6.4,-3],[3,-3],[10,-3],[15.8,-5.7]])await approach(first.page,x,z);
+    await first.page.waitForFunction(()=>{
+      const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      const p=window.brumaluz.char().root.parent.position;
+      return g.position.distanceTo(p)<3;
+    });
+    assert.equal(b.character.data.welcome.stage,'available','The other player does not share progress or collection');
+    assert.equal(await second.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-lost-badge').visible),false);
+    await first.page.waitForFunction(()=>document.querySelector('#interact-prompt').textContent.includes('Recoger distintivo'));
+    await first.page.keyboard.press('KeyE');
+    await first.page.waitForFunction(()=>document.querySelector('#quest-tracker').textContent.includes('devuélvele'));
+    assert.equal(a.character.data.welcome.stage,'found');
+    await first.page.reload();await first.page.waitForFunction(()=>!!window.brumaluz);
+    await first.enter();
+    await first.page.keyboard.press('KeyJ');
+    await first.page.locator('.quest-key-item').waitFor();
+    assert.match(await first.page.locator('.quest-origin').textContent(),/He venido a probar suerte/);
+    await first.page.keyboard.press('Escape');
+    await talk(first.page);
+    await first.page.getByRole('button',{name:'Devolver el distintivo'}).click();
+    await first.page.waitForFunction(()=>document.querySelector('.dialog-text').textContent.includes('puedo ser útil'));
+    assert.equal(a.character.data.experience,40);
+    assert.equal(a.character.data.wallet.pelines,5);
+    await first.page.keyboard.press('KeyE');
+    await first.page.keyboard.press('KeyJ');
+    assert.equal(await first.page.locator('.quest-key-item').count(),0);
+    assert.equal(await first.page.getByRole('button',{name:'Completadas',exact:true}).getAttribute('aria-pressed'),'true');
+    assert.match(await first.page.locator('.quest-entry footer').textContent(),/Recompensa recibida/);
+    await first.page.keyboard.press('Escape');
+    await first.page.locator('#game-menu-toggle').click();
+    await first.page.locator('#game-menu-options').click();
+    await first.page.locator('#options-backdrop [data-language="en"]').click();
+    await first.page.keyboard.press('Escape');
+    await first.page.keyboard.press('KeyJ');
+    assert.equal(await first.page.locator('#window-title').textContent(),'Quest journal');
+    assert.match(await first.page.locator('.quest-entry footer').textContent(),/Reward received/);
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally {await first.context.close();await second.context.close();}
+});
+
+test('welcome systems offer three distinct origins per race in the isolated development preview', {timeout:90000},async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage();
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  try {
+    await page.goto(`${url}/?test&welcome&graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz);
+    const expected={
+      humano:['Soy de Brumaluz y busco mi primer oficio.','He venido a probar suerte.','Quiero aprender de sus talleres.'],
+      elfo:['Vengo de la Arboleda para aprender.','Quiero conocer la vida de la capital.','Vivo aquí y busco un nuevo rumbo.'],
+      lagto:['He bajado de las Cumbres de Cobre para aprender un oficio.','Quiero conocer qué hay más allá de las montañas.','Vivo aquí y busco un nuevo rumbo.'],
+      pelso:['He llegado desde Luna Argéntea para conocer la capital.','Busco oportunidades en tierra firme.','Vivo aquí y busco un nuevo rumbo.'],
+    };
+    await page.evaluate(()=>window.brumaluz.play());
+    for(const [race,labels] of Object.entries(expected)){
+      await page.evaluate(race=>{
+        window.brumaluz.set({race,welcome:{origin:null,stage:'available'}});
+        window.brumaluz.move(-6.4,-8.5);
+      },race);
+      await page.keyboard.press('KeyE');
+      await page.locator('#dialog').waitFor();
+      assert.deepEqual(await page.locator('.dialog-choice:not(.exit) > span:last-child').allTextContents(),labels);
+      await page.keyboard.press('Escape');
+    }
+    assert.deepEqual(errors,[]);
+  } finally {await context.close();}
+});
 
 test('independent accounts see real remote models, appearance, names, movement and departure in both graphics modes', { timeout: 240000 }, async () => {
   const world = backend(), a = fixture('Alric', 'humano', -6.4), b = fixture('Elara', 'elfo', -5.4);
@@ -1227,6 +1368,8 @@ test('NPC interaction still opens its conversation with E', { timeout: 120000 },
     });
     await player.page.reload();
     await player.enter();
+    assert.equal(await player.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').visible),false,'Legacy characters never get the welcome actor');
+    assert.equal(await player.page.locator('[data-window="quests"]').isVisible(),false);
     await player.page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await player.page.keyboard.press('KeyE');
     await player.page.locator('#dialog').waitFor({state:'visible'});

@@ -12,6 +12,7 @@ export interface MinimapMarker {
   z: number;
   party?: boolean;
   leader?: boolean;
+  quest?: boolean;
 }
 
 export interface MinimapHooks {
@@ -164,7 +165,7 @@ export function updateMinimap() {
       drawn.push({ marker, sx, sy, inside });
       ctx.beginPath();
       ctx.arc(sx, sy, 5.2 * u, 0, Math.PI * 2);
-      ctx.fillStyle = marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : '#8be07a';
+      ctx.fillStyle = marker.quest ? '#f8cf68' : marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : '#8be07a';
       ctx.fill();
       ctx.lineWidth = 1.8 * u;
       ctx.strokeStyle = marker.party ? '#17394d' : '#1d3a18';
@@ -185,7 +186,7 @@ export function updateMinimap() {
       ctx.lineTo(-4 * u, 4.2 * u);
       ctx.lineTo(-4 * u, -4.2 * u);
       ctx.closePath();
-      ctx.fillStyle = marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : 'rgba(139,224,122,.9)';
+      ctx.fillStyle = marker.quest ? '#f8cf68' : marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : 'rgba(139,224,122,.9)';
       ctx.fill();
       ctx.lineWidth = 1.4 * u;
       ctx.strokeStyle = '#1d3a18';

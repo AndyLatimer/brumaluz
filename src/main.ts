@@ -3,13 +3,13 @@ import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
   requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles,
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
-  buyFromVendor, sellToVendor, useItem, moveInventoryItem, sendChatMessage, subscribeChat,
+  buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
 import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
-import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse } from './services/devActions';
+import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse, simulateWelcome } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
 import { applyLanguage, getLanguage, setLanguage, t, raceText, classText } from './ui/i18n';
 import { world } from './world/paint';
@@ -48,6 +48,9 @@ import { initMenuMusic } from './ui/menuMusic';
 import { initBuffLayout, renderBuffs } from './ui/buffs';
 import { beginTransition } from './ui/transitionLoading';
 import type { FoodBuff } from './data/food';
+import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, welcomeObjective, type WelcomeAction } from './data/quests';
+import { createWelcomeWorld } from './world/welcome';
+import { createQuestTracker, renderQuestJournal, welcomeConversation } from './ui/questWindow';
 
 
 // ---------------- Estado ----------------
@@ -283,7 +286,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (!e.repeat && !gameMenuOpen && openWindow !== 'vendor' && (e.target as HTMLElement).tagName !== 'INPUT') {
-    const win = e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : null;
+    const win = e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : null;
     if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
     if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
   }
@@ -323,7 +326,7 @@ const INTERACTIONS: Record<string, () => DialogLine[]> = {
 };
 function nearestInteractable(): Interactable | null {
   let best: Interactable | null = null, bestDistance = Infinity;
-  for (const item of city.interactables) {
+  for (const item of [...city.interactables, ...welcomeWorld.interactions()]) {
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
   }
@@ -341,6 +344,7 @@ function nearestInteraction() {
 }
 function talkTo(npcId: string) {
   pendingTalk = null;
+  if (npcId === 'gnomi') { talkGnomi(); return; }
   const conv = NPCS[npcId]?.conversation;
   if (!conv) return;
   keys.clear();
@@ -360,6 +364,8 @@ function interact() {
     void playerInteractions.open(player);
     return;
   }
+  if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
+  if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   const lines = npcId ? null : item && INTERACTIONS[item.id]?.();
   const conv = npcId && NPCS[npcId] ? NPCS[npcId].conversation : null;
@@ -377,6 +383,14 @@ function clickNpc(e: PointerEvent) {
   if (dead || isDialogOpen() || !npcActors.length) return false;
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  if (welcomeWorld.root.visible && ray.intersectObject(welcomeWorld.root, true).length) {
+    if (holder.position.distanceTo(welcomeWorld.root.position) <= TALK_RANGE) talkGnomi();
+    else {
+      moveTarget = welcomeWorld.root.position.clone();
+      pendingTalk = 'gnomi';
+    }
+    return true;
+  }
   for (const hit of ray.intersectObjects(npcActors.map((n) => n.character.root), true)) {
     const npc = npcActors.find((n) => { let o: THREE.Object3D | null = hit.object; while (o) { if (o === n.character.root) return true; o = o.parent; } return false; });
     if (!npc || !NPCS[npc.id]) continue;
@@ -434,8 +448,9 @@ function updatePlay(dt: number) {
   if (dead) { keys.clear(); moveTarget = null; marker.visible = false; }
   if (pendingTalk) {
     const npc = npcActors.find((n) => n.id === pendingTalk);
-    if (!npc || !moveTarget || dead) pendingTalk = null;
-    else if (Math.hypot(npc.character.root.position.x - holder.position.x, npc.character.root.position.z - holder.position.z) <= TALK_RANGE) talkTo(pendingTalk);
+    const position = pendingTalk === 'gnomi' && welcomeWorld.root.visible ? welcomeWorld.root.position : npc?.character.root.position;
+    if (!position || !moveTarget || dead) pendingTalk = null;
+    else if (Math.hypot(position.x - holder.position.x, position.z - holder.position.z) <= TALK_RANGE) talkTo(pendingTalk);
   }
   const input = new THREE.Vector2(
     (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0),
@@ -539,6 +554,32 @@ async function runOnServer(call: (id: string) => Promise<Record<string, unknown>
   } finally {
     actionBusy = false;
   }
+}
+
+function talkGnomi() {
+  if (!state.welcome || actionBusy) return;
+  keys.clear(); moveTarget = null; pendingTalk = null; marker.visible = false;
+  openConversation(welcomeConversation(state, performWelcome));
+}
+async function performWelcome(action: WelcomeAction, origin?: number) {
+  const stillCurrent = characterContext();
+  const position = action === 'collect' ? WELCOME_BADGE : action === 'claim' ? welcomeWorld.root.position : WELCOME_START;
+  if (Math.hypot(holder.position.x - position.x, holder.position.z - position.z) > (action === 'collect' ? 2.5 : 3.5)) {
+    toast('No se pudo completar la acción', 'Acércate al objetivo para continuar la misión.', true);
+    return false;
+  }
+  const finish = beginTransition('Guardando misión…');
+  try {
+    const success = await runOnServer(id => welcomeAction(id, action, origin), () => simulateWelcome(state, action, origin));
+    if (!success || !stillCurrent()) return false;
+    updateHud();
+    if (openWindow === 'quests') setWindow('quests', false);
+    if (action !== 'origin') {
+      const message = action === 'claim' ? 'Misión completada: 40 XP y 5 pelines.' : action === 'collect' ? 'Has encontrado el distintivo. Habla con Gnomi.' : 'Misión aceptada. Gnomi te acompaña.';
+      toast(WELCOME_TITLE, message);
+    }
+    return true;
+  } finally { finish(); }
 }
 
 /** Vida + sobrecuración: lo que el jugador puede perder antes de caer. */
@@ -827,6 +868,7 @@ function updateHud() {
   for (const [id, label] of hudTips) $(`#${id}-fill`).parentElement!.title = `${t(label)}|${$(`#${id}-text`).textContent}`;
   $('#hud-class-icon').title = `${classText(state)}|${t('Nivel')} ${state.level}`;
   $('#player-menu-toggle').classList.toggle('has-points', unspentAttributePoints(state) > 0);
+  document.querySelector<HTMLButtonElement>('[data-window="quests"]')!.hidden = !state.welcome;
   document.querySelector('#player-menu-panel [data-window="sheet"]')!.classList.toggle('has-points', unspentAttributePoints(state) > 0);
   refreshNameplateText();
 }
@@ -912,6 +954,7 @@ function updateNameplate() {
 
 function enterPlay() {
   playGeneration++;
+  if (TEST && new URLSearchParams(location.search).has('welcome') && !state.welcome) state.welcome = { origin: null, stage: 'available' };
   if (state.health === 0) state.health = -1; // personaje guardado muerto: vuelve con la vida completa
   dead = false;
   $('#death-screen').hidden = true;
@@ -1044,6 +1087,10 @@ initMinimap({
   player: () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
   markers: () => [
     ...npcActors.map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
+    ...(state.welcome && state.welcome.stage !== 'completed' ? [{
+      id: 'welcome', name: t(welcomeObjective(state.welcome)), quest: true,
+      ...(state.welcome.stage === 'active' ? WELCOME_BADGE : { x: welcomeWorld.root.position.x, z: welcomeWorld.root.position.z }),
+    }] : []),
     ...getParty().members.filter(member=>member.userId!==partySelf() && member.location===state.location).map(member=>({
       id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
     })),
@@ -1097,7 +1144,7 @@ function refreshLanguageDependentUI() {
   renderBuffs(state, !foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (openWindow === 'sheet' || openWindow === 'vendor') setWindow(openWindow, false);
+  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests') setWindow(openWindow, false);
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -1137,7 +1184,7 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
-type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social';
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
@@ -1181,15 +1228,17 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   document.body.classList.toggle('window-full', !!win);
   $('#window-backdrop').hidden = !win;
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
+  $('#window-backdrop .game-window').classList.toggle('quest-window-frame', win === 'quests');
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
   $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) { vendor = null; return; }
   if (closeMenu) setPlayerMenuOpen(false, false);
-  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
   if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to));
+  else if (win === 'quests') renderQuestJournal(body, state);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
     setWindow(null);
@@ -2265,6 +2314,48 @@ try {
   throw e;
 }
 scene.add(city.root);
+const welcomeWorld = createWelcomeWorld(scene, city);
+const questTracker = createQuestTracker(() => setWindow('quests'));
+const welcomePlate = document.createElement('div');
+welcomePlate.className = 'nameplate npc welcome-nameplate';
+welcomePlate.textContent = 'Gnomi';
+welcomePlate.hidden = true;
+document.body.append(welcomePlate);
+const questMarker = document.createElement('div');
+questMarker.id = 'quest-objective-marker';
+questMarker.hidden = true;
+document.body.append(questMarker);
+const questAnchor = new THREE.Vector3();
+let welcomeHintSaid = false;
+function updateWelcome(dt: number, time: number) {
+  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isDialogOpen() || !!openWindow ? 0 : dt, time);
+  const visible = mode === 'play' && !dead && !openWindow && !gameMenuOpen && !playerMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
+  questTracker.update(state, visible);
+  welcomePlate.hidden = true;
+  questMarker.hidden = true;
+  if (!welcomeWorld.root.visible || !visible || !state.welcome) return;
+  camera.updateMatrixWorld();
+  questAnchor.copy(welcomeWorld.root.position).add(new THREE.Vector3(0, 1.6, 0)).project(camera);
+  if (questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
+    welcomePlate.hidden = false;
+    welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+  }
+  if (state.welcome.stage === 'completed') return;
+  const target = state.welcome.stage === 'active' ? welcomeWorld.lost.position : welcomeWorld.root.position;
+  const distance = Math.hypot(target.x - holder.position.x, target.z - holder.position.z);
+  if (state.welcome.stage === 'active' && distance < 8 && !welcomeHintSaid) {
+    welcomeHintSaid = true;
+    chatNpc('Gnomi', t('Por aquí estuve mirando los puestos. ¡A ver si mi distintivo también se quedó mirando!'));
+  }
+  if (state.welcome.stage !== 'active') welcomeHintSaid = false;
+  questAnchor.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.9, 0)).project(camera);
+  if (questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
+    questMarker.hidden = false;
+    questMarker.textContent = `${state.welcome.stage === 'available' ? '!' : '◆'} ${Math.round(distance)} m`;
+    questMarker.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+  }
+}
+if (import.meta.hot) import.meta.hot.dispose(() => welcomeWorld.dispose());
 try {
   setMinimapImage(captureTopDown(renderer, scene, city.root, graphics.compatible ? 1024 : lowEnd ? 1536 : 2560));
 } catch (e) {
@@ -2366,6 +2457,11 @@ function updateTargetFrame() {
     targets.push({ id: `npc:${npc.id}`, root: npc.character.root, name: def.name, level: def.level, height: npc.character.d.height,
       vitals: def.vitals, identity: { kind: 'npc', type: def.type, title: def.title } });
   }
+  if (welcomeWorld.root.visible) targets.push({
+    id: 'npc:gnomi', root: welcomeWorld.root, name: 'Gnomi', level: 1, height: 0,
+    vitals: { health: 100, maxHealth: 100, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' },
+    identity: { kind: 'npc', type: 'resident', title: 'Ayudante de acogida' },
+  });
   targetFrame.update(targets, true, holder.position);
 }
 holder.position.copy(city.spawn);
@@ -2391,6 +2487,7 @@ renderer.setAnimationLoop(() => {
   city.update(t, mode === 'play' ? holder.position : undefined);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
+  updateWelcome(dt, t);
   applyCameraShake();
   updateNameplate();
   if (mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);

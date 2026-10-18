@@ -68,6 +68,7 @@ interface Database {
     Views: Record<string, never>;
     Functions: {
       create_character: { Args: { p_data: Json }; Returns: string };
+      welcome_action: { Args: { p_character_id: string; p_action: string; p_origin?: number }; Returns: Json };
       character_enter: { Args: { p_character_id: string }; Returns: Json };
       respawn_character: { Args: { p_character_id: string }; Returns: Json };
       debug_damage: { Args: { p_character_id: string }; Returns: Json };
@@ -185,6 +186,13 @@ export async function getProfileUsername(userId: string) {
 }
 
 const SERVER_ERRORS: Record<string, string> = {
+  WELCOME_REQUIRED: 'Primero debes completar la bienvenida con Gnomi.',
+  WELCOME_UNAVAILABLE: 'Este personaje no tiene pendiente la bienvenida.',
+  WELCOME_DEAD: 'Debes volver a la vida para continuar la bienvenida.',
+  WELCOME_NOT_PLAYING: 'Debes estar conectado a Brumaluz para continuar.',
+  WELCOME_TOO_FAR: 'Acércate al objetivo para continuar la misión.',
+  WELCOME_INVALID_STATE: 'La misión ha cambiado. Revisa su estado antes de continuar.',
+  WELCOME_INVALID_ACTION: 'Esta acción de misión no es válida.',
   PARTY_USERNAME_REQUIRED: 'Necesitas un nombre de cuenta para invitar a un grupo.',
   PARTY_NOT_PLAYING: 'Debes estar jugando para formar un grupo.',
   PARTY_TARGET_OFFLINE: 'Ese jugador no está conectado al mundo.',
@@ -246,6 +254,11 @@ async function serverCall<T>(call: PromiseLike<{ data: T | null; error: { messag
 }
 
 const asRecord = (data: unknown) => data as Record<string, unknown>;
+export async function welcomeAction(character: string, action: string, origin?: number) {
+  return asRecord(await serverCall(requireClient().rpc('welcome_action', {
+    p_character_id: character, p_action: action, p_origin: origin,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
 
 export async function tradeAction(character: string, action: string, trade?: string, target?: string, offer?: Json, revision?: number) {
   const {data,error} = await requireClient().rpc('trade_action', {

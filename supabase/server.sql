@@ -30,6 +30,8 @@ set value = jsonb_set(value, '{reina_de_pompelin}', (
 where key = 'staff_titles';
 
 -- ---------- Fórmulas (internas) ----------
+-- New characters become eligible only after narrative/presentation approval.
+insert into public.server_config(key,value) values('welcome_enabled','false') on conflict(key) do nothing;
 
 create table if not exists public.parties (
   id uuid primary key default gen_random_uuid()
@@ -308,6 +310,9 @@ begin
     'location', 'brumaluz', 'race', p_data ->> 'race', 'cls', p_data ->> 'cls',
     'creationPoints', 2, 'attributePoints', ap, 'position_at', extract(epoch from now())
   );
+  if exists(select 1 from public.server_config where key='welcome_enabled' and value='true') then
+    d:=d||jsonb_build_object('welcome',jsonb_build_object('origin',null,'stage','available'));
+  end if;
 
   -- Solo la apariencia viene del cliente.
   foreach k in array array['sex', 'height', 'build', 'skin', 'face', 'hair', 'hairColor', 'beard', 'eyeShape', 'eyeColor',
@@ -448,6 +453,7 @@ declare
 begin
   perform public.game_require_debug();
   if coalesce((d ->> 'health')::int, -1) = 0 or lvl >= 50 then return d; end if;
+  perform public.game_require_welcome_complete(d);
   xp := xp + case when coalesce((d->>'partyPeers')::int,0)>0 then 204 else 200 end;
   while lvl < 50 and xp >= public.game_xp_needed(lvl) loop
     xp := xp - public.game_xp_needed(lvl);
@@ -1602,3 +1608,59 @@ begin
 end $$;
 revoke all on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) from public,anon;
 grant execute on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) to authenticated;
+
+-- Internal prerequisite for subsequent story content; legacy characters are exempt.
+create or replace function public.game_require_welcome_complete(d jsonb)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+  if jsonb_typeof(d->'welcome')='object' and d->'welcome'->>'stage' is distinct from 'completed'
+    then raise exception 'WELCOME_REQUIRED'; end if;
+end $$;
+revoke all on function public.game_require_welcome_complete(jsonb) from public,anon,authenticated;
+
+create or replace function public.welcome_action(p_character_id uuid,p_action text,p_origin int default null)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  c public.characters:=public.game_lock_character(p_character_id);
+  d jsonb:=c.data; q jsonb:=d->'welcome'; stage text:=q->>'stage'; pos jsonb;
+  lvl int:=public.game_level(d); xp int:=greatest(coalesce((d->>'experience')::int,0),0);
+begin
+  if not exists(select 1 from public.server_config where key='welcome_enabled' and value='true')
+    then raise exception 'ACTION_DISABLED'; end if;
+  if jsonb_typeof(q) is distinct from 'object' then raise exception 'WELCOME_UNAVAILABLE'; end if;
+  if coalesce((d->>'health')::int,-1)=0 then raise exception 'WELCOME_DEAD'; end if;
+  select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
+    and seen_at>now()-interval '15 seconds';
+  if pos is null or coalesce(d->>'location','brumaluz')<>'brumaluz' then raise exception 'WELCOME_NOT_PLAYING'; end if;
+  if p_action in ('origin','accept') and
+    power((pos->>'x')::numeric+6.4,2)+power((pos->>'z')::numeric+8.5,2)>16
+    then raise exception 'WELCOME_TOO_FAR'; end if;
+  if p_action='origin' then
+    if stage<>'available' or q->>'origin' is not null or p_origin is null or p_origin not between 0 and 2
+      then raise exception 'WELCOME_INVALID_STATE'; end if;
+    q:=q||jsonb_build_object('origin',p_origin);
+  elsif p_action='accept' then
+    if stage<>'available' or q->>'origin' is null then raise exception 'WELCOME_INVALID_STATE'; end if;
+    q:=q||jsonb_build_object('stage','active');
+  elsif p_action='collect' then
+    if stage<>'active' then raise exception 'WELCOME_INVALID_STATE'; end if;
+    if power((pos->>'x')::numeric-15.8,2)+power((pos->>'z')::numeric+5.7,2)>9
+      then raise exception 'WELCOME_TOO_FAR'; end if;
+    q:=q||jsonb_build_object('stage','found');
+  elsif p_action='claim' then
+    if stage<>'found' then raise exception 'WELCOME_INVALID_STATE'; end if;
+    q:=q||jsonb_build_object('stage','completed');
+    if lvl<50 then
+      xp:=xp+40;
+      while lvl<50 and xp>=public.game_xp_needed(lvl) loop
+        xp:=xp-public.game_xp_needed(lvl); lvl:=lvl+1;
+      end loop;
+      if lvl>=50 then xp:=public.game_xp_needed(50); end if;
+    end if;
+    d:=public.game_set_pelines(d,public.game_pelines(d)+5)||jsonb_build_object('level',lvl,'experience',xp);
+  else raise exception 'WELCOME_INVALID_ACTION';
+  end if;
+  return public.game_store(c.id,d||jsonb_build_object('welcome',q));
+end $$;
+revoke all on function public.welcome_action(uuid,text,int) from public,anon;
+grant execute on function public.welcome_action(uuid,text,int) to authenticated;

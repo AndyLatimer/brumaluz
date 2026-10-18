@@ -7,6 +7,33 @@ import { ITEMS, VENDOR_STOCK, sellPrice, itemStack } from '../data/items';
 import { INVENTORY_UNLOCKED } from '../data/inventory';
 import type { CharacterAction } from './account';
 import { FOOD_EFFECTS } from '../data/food';
+import { WELCOME_REWARD, welcomeComplete, type WelcomeAction } from '../data/quests';
+
+export function simulateWelcome(d: CharData, action: WelcomeAction, origin?: number) {
+  const q = d.welcome;
+  if (!q) throw new Error('Este personaje no tiene pendiente la bienvenida.');
+  if (d.health === 0) throw new Error('Debes volver a la vida para continuar la bienvenida.');
+  const invalid = () => { throw new Error('La misión ha cambiado. Revisa su estado antes de continuar.'); };
+  if (action === 'origin') {
+    if (q.stage !== 'available' || q.origin !== null || !Number.isInteger(origin) || origin! < 0 || origin! > 2) invalid();
+    q.origin = origin!;
+  } else if (action === 'accept') {
+    if (q.stage !== 'available' || q.origin === null) invalid();
+    q.stage = 'active';
+  } else if (action === 'collect') {
+    if (q.stage !== 'active') invalid();
+    q.stage = 'found';
+  } else {
+    if (q.stage !== 'found') invalid();
+    q.stage = 'completed';
+    addCurrency(d.wallet, 'pelines', WELCOME_REWARD.pelines);
+    if (d.level < MAX_LEVEL) {
+      d.experience += WELCOME_REWARD.experience;
+      while (d.level < MAX_LEVEL && d.experience >= experienceToNextLevel(d.level)) { d.experience -= experienceToNextLevel(d.level); d.level++; }
+      if (d.level >= MAX_LEVEL) d.experience = experienceToNextLevel(MAX_LEVEL);
+    }
+  }
+}
 
 export function simulateAction(d: CharData, action: CharacterAction) {
   if (action === 'respawn') {
@@ -26,6 +53,7 @@ export function simulateAction(d: CharData, action: CharacterAction) {
     d.health = Math.min(v.maxHealth, total);
     d.overheal = Math.min(v.overheal + Math.max(total - v.maxHealth, 0), maxOverhealOf(d));
   } else if (d.level < MAX_LEVEL) {
+    if (!welcomeComplete(d.welcome)) throw new Error('Primero debes completar la bienvenida con Gnomi.');
     d.experience += (d.partyPeers ?? 0)>0 ? 204 : 200;
     while (d.level < MAX_LEVEL && d.experience >= experienceToNextLevel(d.level)) { d.experience -= experienceToNextLevel(d.level); d.level++; }
     if (d.level >= MAX_LEVEL) d.experience = experienceToNextLevel(MAX_LEVEL);

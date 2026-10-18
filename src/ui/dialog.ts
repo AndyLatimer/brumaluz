@@ -19,7 +19,7 @@ export interface DialogChoice {
   /** Opción oculta si devuelve false (para flags de misión, etc.). */
   when?: () => boolean;
   /** Se ejecuta al elegirla (activar flags, dar misiones...). */
-  action?: () => void;
+  action?: () => void | boolean | Promise<void | boolean>;
 }
 
 export interface DialogNode {
@@ -50,6 +50,9 @@ let node: DialogNode | null = null;
 let choices: ChoiceView[] = [];
 let selected = 0;
 let onClose: (() => void) | undefined;
+let revision = 0;
+let busy = false;
+let actionError = '';
 
 const root = () => document.querySelector<HTMLElement>('#dialog')!;
 
@@ -67,6 +70,16 @@ function visibleChoices(n: DialogNode): ChoiceView[] {
 
 function render() {
   const el = root();
+  el.setAttribute('aria-busy', String(busy));
+  let error = el.querySelector<HTMLElement>('.dialog-action-error');
+  if (!error) {
+    error = document.createElement('p');
+    error.className = 'dialog-action-error';
+    error.setAttribute('role', 'alert');
+    el.append(error);
+  }
+  error.textContent = actionError;
+  error.hidden = !actionError;
   const list = el.querySelector<HTMLElement>('.dialog-choices')!;
   const next = el.querySelector<HTMLElement>('.dialog-next')!;
   if (node && conversation) {
@@ -76,6 +89,7 @@ function render() {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'dialog-choice' + (c.exit ? ' exit' : '') + (i === selected ? ' selected' : '');
+      b.disabled = busy;
       const label = t(c.text);
       const marker = document.createElement('span');
       marker.className = 'dialog-choice-mark';
@@ -88,7 +102,7 @@ function render() {
       return b;
     }));
     list.hidden = !choices.length;
-    next.textContent = t(choices.length ? 'Elegir' : node.next ? 'Continuar' : 'Aceptar');
+    next.textContent = t(busy ? 'Guardando…' : choices.length ? 'Elegir' : node.next ? 'Continuar' : 'Aceptar');
     return;
   }
   const line = lines[index];
@@ -104,6 +118,7 @@ function markSelected() {
 
 export function openDialog(next: DialogLine[], closed?: () => void) {
   if (!next.length) return;
+  revision++; busy = false; actionError = '';
   lines = next;
   index = 0;
   conversation = null;
@@ -126,6 +141,7 @@ function goTo(id: string) {
 }
 
 export function openConversation(next: Conversation, closed?: () => void) {
+  revision++; busy = false; actionError = '';
   conversation = next;
   lines = [];
   onClose = closed;
@@ -135,6 +151,7 @@ export function openConversation(next: Conversation, closed?: () => void) {
 
 export function closeDialog() {
   if (!isDialogOpen()) return;
+  revision++; busy = false; actionError = '';
   root().hidden = true;
   conversation = null;
   node = null;
@@ -146,30 +163,51 @@ export function closeDialog() {
 
 /** Elige la respuesta número `i` (0 = primera). */
 export function chooseDialog(i: number) {
+  if (busy) return;
   const view = choices[i];
   if (!view) return;
   if (view.exit) { closeDialog(); return; }
   logger?.(null, view.choice!.text);
-  view.choice!.action?.();
-  if (view.choice!.next) goTo(view.choice!.next); else closeDialog();
+  const version = revision;
+  const finish = (success: void | boolean) => {
+    if (version !== revision) return;
+    busy = false;
+    if (success === false) { render(); return; }
+    if (view.choice!.next) goTo(view.choice!.next); else closeDialog();
+  };
+  const fail = (error: unknown) => {
+    if (version !== revision) return;
+    busy = false;
+    actionError = error instanceof Error ? t(error.message) : t('No se pudo completar la acción');
+    console.error('Error en la conversación:', error);
+    render();
+  };
+  actionError = '';
+  try {
+    const result = view.choice!.action?.();
+    if (result instanceof Promise) {
+      busy = true; render();
+      void result.then(finish, fail);
+    } else finish(result);
+  } catch (error) { fail(error); }
 }
 
 /** Esc / Tab: sale de la conversación (equivale a «[Salir de la conversación]») salvo en escenas obligadas (`noExit`). */
 export function exitDialog() {
-  if (!isDialogOpen() || node?.noExit) return;
+  if (!isDialogOpen() || node?.noExit || busy) return;
   closeDialog();
 }
 
 /** Mueve la selección de respuestas (+1 abajo, -1 arriba). */
 export function moveDialogChoice(delta: number) {
-  if (!choices.length) return;
+  if (!choices.length || busy) return;
   selected = (selected + delta + choices.length) % choices.length;
   markSelected();
 }
 
 /** Tecla E: elige la respuesta marcada, avanza o cierra. */
 export function advanceDialog() {
-  if (!isDialogOpen()) return;
+  if (!isDialogOpen() || busy) return;
   if (node) {
     if (choices.length) chooseDialog(selected);
     else if (node.next) goTo(node.next);
