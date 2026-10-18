@@ -54,6 +54,33 @@ alter table public.party_members enable row level security;
 alter table public.party_invites enable row level security;
 revoke all on public.parties, public.party_members, public.party_invites from public, anon, authenticated;
 
+-- Solo descuenta tiempo confirmado de presencia; una concesión caducada se detiene en su último latido.
+create or replace function public.game_food_data(p_id uuid, d jsonb)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  seen timestamptz;
+  stamp numeric := extract(epoch from now());
+  remaining numeric;
+begin
+  if d -> 'foodBuff' ->> 'itemId' = 'pan_duro' then
+    if to_regclass('public.world_players') is not null then
+      select seen_at into seen from public.world_players where character_id=p_id;
+    end if;
+    remaining := least(900, greatest(0, coalesce((d -> 'foodBuff' ->> 'remaining')::numeric,0)));
+    if seen is not null then
+      remaining := greatest(0, remaining - greatest(0,
+        extract(epoch from case when seen > now()-interval '15 seconds' then now() else seen end)
+        - coalesce((d ->> 'food_at')::numeric, stamp)));
+    end if;
+    d := jsonb_set(d, '{foodBuff}', case when remaining > 0
+      then jsonb_build_object('itemId','pan_duro','remaining',remaining) else 'null'::jsonb end);
+  else
+    d := jsonb_set(d, '{foodBuff}', 'null'::jsonb);
+  end if;
+  return d || jsonb_build_object('food_at',stamp,'foodRevision',coalesce((d->>'foodRevision')::bigint,0));
+end $$;
+revoke all on function public.game_food_data(uuid,jsonb) from public, anon, authenticated;
+
 -- Dynamic party bonuses never persist in character data or trust client input.
 create or replace function public.game_party_data(p_id uuid, d jsonb)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
@@ -123,6 +150,7 @@ set search_path = ''
 as $$
   select floor((60 + (public.game_level(d) - 1) * 12 + public.game_attr_total(d, 'corpulencia') * 8)
     * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int
+    + case when d->'foodBuff'->>'itemId'='pan_duro' and (d->'foodBuff'->>'remaining')::numeric>0 then 5 else 0 end
 $$;
 
 -- Vida actual real: -1 en los datos significa "al máximo".
@@ -174,7 +202,7 @@ begin
   if not found then
     raise exception 'CHARACTER_NOT_FOUND';
   end if;
-  c.data := public.game_party_data(c.id,c.data);
+  c.data := public.game_food_data(c.id,public.game_party_data(c.id,c.data));
   return c;
 end;
 $$;
@@ -214,6 +242,7 @@ as $$
 declare
   result jsonb;
 begin
+  d := public.game_food_data(p_id,d);
   d := d || jsonb_build_object(
     'overheal', case when coalesce((d ->> 'health')::int, -1) = 0 then 0 else public.game_overheal_now(d) end,
     'overheal_at', extract(epoch from now())
@@ -430,7 +459,10 @@ immutable
 set search_path = ''
 as $$
   select case p_item
+    when 'pan_duro' then jsonb_build_object('value', 4, 'food_seconds', 900)
     when 'pocion_vida_minuscula' then jsonb_build_object('value', 10, 'heal_pct', 5)
+    when 'pocion_mana_minuscula' then jsonb_build_object('value', 10, 'resource_pct', 5, 'resource_kind', 'mana')
+    when 'pocion_estamina_minuscula' then jsonb_build_object('value', 10, 'resource_pct', 5, 'resource_kind', 'stamina')
     else null
   end
 $$;
@@ -443,7 +475,7 @@ immutable
 set search_path = ''
 as $$
   select case p_vendor
-    when 'testiculos' then array['pocion_vida_minuscula']
+    when 'testiculos' then array['pocion_vida_minuscula', 'pocion_mana_minuscula', 'pocion_estamina_minuscula', 'pan_duro']
     else array[]::text[]
   end
 $$;
@@ -590,7 +622,7 @@ begin
 end;
 $$;
 
--- Usar un objeto de la mochila. Las pociones curan un % de la vida máxima (sin sobrecuración).
+-- Las pociones restauran un % de vida (sin sobrecuración) o del recurso de la clase.
 create or replace function public.use_item(p_character_id uuid, p_slot int)
 returns jsonb
 language plpgsql
@@ -603,11 +635,31 @@ declare
   item jsonb;
   maxh int := public.game_max_health(d);
   total int;
+  vitals jsonb;
+  item_id text;
 begin
   if coalesce((d ->> 'health')::int, -1) = 0 then return d; end if;
   if p_slot is null or p_slot not between 0 and 24 then raise exception 'INVALID_ITEM'; end if;
-  item := public.game_item(public.game_inventory(d) -> p_slot ->> 'id');
+  item_id := public.game_inventory(d) -> p_slot ->> 'id';
+  item := public.game_item(item_id);
   if item is null then raise exception 'INVALID_ITEM'; end if;
+  if item -> 'food_seconds' is not null then
+    vitals := public.game_public_vitals(d);
+    d := public.game_remove_item(d,p_slot);
+    d := d || jsonb_build_object('health',(vitals->>'health')::int,'resource',(vitals->>'resource')::int,
+      'foodBuff',jsonb_build_object('itemId',item_id,'remaining',(item->>'food_seconds')::int),
+      'foodRevision',coalesce((d->>'foodRevision')::bigint,0)+1,'food_at',extract(epoch from now()));
+    return public.game_store(c.id,d);
+  end if;
+  if item -> 'resource_pct' is not null then
+    vitals := public.game_public_vitals(d);
+    if item ->> 'resource_kind' <> vitals ->> 'resourceKind' then raise exception 'WRONG_RESOURCE'; end if;
+    maxh := (vitals ->> 'maxResource')::int;
+    if (vitals ->> 'resource')::int >= maxh then raise exception 'RESOURCE_FULL'; end if;
+    total := least(maxh, (vitals ->> 'resource')::int + greatest(1, ceil(maxh * (item ->> 'resource_pct')::int / 100.0)::int));
+    d := public.game_remove_item(d, p_slot);
+    return public.game_store(c.id, d || jsonb_build_object('resource', case when total >= maxh then -1 else total end));
+  end if;
   if item -> 'heal_pct' is null then raise exception 'ITEM_NOT_USABLE'; end if;
   if public.game_health(d) >= maxh then raise exception 'NOTHING_TO_HEAL'; end if;
   total := least(maxh, public.game_health(d) + greatest(1, ceil(maxh * (item ->> 'heal_pct')::int / 100.0)::int));
@@ -787,7 +839,8 @@ as $$
       else 50 + public.game_attr_total(d, 'agilidad') * 3 + public.game_attr_total(d, 'corpulencia') * 3
     end as base_amount from resource
   ), boosted as (
-    select kind, floor(base_amount * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int as amount
+    select kind, floor(base_amount * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int
+      + case when d->'foodBuff'->>'itemId'='pan_duro' and (d->'foodBuff'->>'remaining')::numeric>0 then 3 else 0 end as amount
     from maximum
   )
   select jsonb_build_object(
@@ -809,7 +862,7 @@ set search_path = ''
 as $$
   select coalesce(jsonb_agg(jsonb_build_object(
     'id', w.character_id, 'userId', w.user_id, 'username', p.username,
-    'vitals', public.game_public_vitals(public.game_party_data(c.id,c.data)),
+    'vitals', public.game_public_vitals(public.game_food_data(c.id,public.game_party_data(c.id,c.data))),
     'data', public.game_public_character(c.data) || jsonb_build_object('name', c.name),
     'position', w.position, 'facing', w.facing, 'jump', w.jump, 'wave', w.wave,
     'dead', public.game_health(c.data) = 0
@@ -879,8 +932,10 @@ begin
     dead = excluded.dead,
     movement_credit = case when world_players.character_id = excluded.character_id then world_players.movement_credit else 3 end,
     seen_at = now(), saved_at = now();
+  c.data := public.game_store(c.id,c.data);
   perform public.game_party_cleanup();
-  return jsonb_build_object('position', pos, 'status', 'ok', 'players', public.game_world_snapshot(uid));
+  return jsonb_build_object('position', pos, 'status', 'ok', 'players', public.game_world_snapshot(uid),
+    'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'));
 end;
 $$;
 
@@ -948,11 +1003,12 @@ begin
     jump = case when is_dead then 0 else v_jump end, wave = v_wave,
     dead = is_dead, movement_credit = least(3, credit), seen_at = now()
     where user_id = uid;
-  if now() - w.saved_at >= interval '5 seconds' then
+  if now() - w.saved_at >= interval '5 seconds' or now()-w.seen_at >= interval '15 seconds' then
     perform public.game_store(c.id, c.data || jsonb_build_object('position', w.position, 'position_at', extract(epoch from now())));
     update public.world_players set saved_at = now() where user_id = uid;
   end if;
-  return jsonb_build_object('status', status, 'position', w.position, 'players', public.game_world_snapshot(uid));
+  return jsonb_build_object('status', status, 'position', w.position, 'players', public.game_world_snapshot(uid),
+    'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'));
 end;
 $$;
 
@@ -1008,7 +1064,7 @@ begin
   select party_id into pid from public.party_members where user_id=uid;
   select coalesce(jsonb_agg(jsonb_build_object(
     'userId',m.user_id,'characterId',m.character_id,'username',p.username,'data',public.game_public_character(c.data),
-    'vitals',public.game_public_vitals(public.game_party_data(c.id,c.data)),
+    'vitals',public.game_public_vitals(public.game_food_data(c.id,public.game_party_data(c.id,c.data))),
     'position',w.position,'location',coalesce(c.data->>'location','brumaluz')
   ) order by m.entry_order),'[]'::jsonb) into members
   from public.party_members m join public.characters c on c.id=m.character_id

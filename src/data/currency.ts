@@ -35,7 +35,7 @@ export const CURRENCIES: Record<CurrencyId, CurrencyDef> = {
 export const CURRENCY_ORDER: CurrencyId[] = ['pelines', 'lagrimas'];
 
 /** Icono SVG de una moneda; usar siempre este helper para que sea idéntico en toda la UI. */
-export const currencyIcon = (id: CurrencyId) => `<svg viewBox="0 0 24 24" aria-hidden="true">${CURRENCIES[id].icon}</svg>`;
+export const currencyIcon = (id: CurrencyId) => `<svg class="currency-icon currency-icon-${id}" viewBox="0 0 24 24" aria-hidden="true">${CURRENCIES[id].icon}</svg>`;
 
 export type Wallet = Record<CurrencyId, number>;
 

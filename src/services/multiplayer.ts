@@ -1,6 +1,7 @@
 import { sanitize, type CharData } from '../data/data';
 import { joinWorld, leaveWorld, syncWorld } from './account';
 import type { Vitals } from '../data/stats';
+import { parseFoodBuff, type FoodBuff } from '../data/food';
 
 export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'>;
 
@@ -22,6 +23,7 @@ export interface WorldSnapshot {
   status: 'ok' | 'corrected';
   position: WorldPosition;
   players: WorldPlayer[];
+  food?: { buff: FoodBuff | null; revision: number; at: number };
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -49,8 +51,16 @@ export function parsePublicVitals(value: unknown): PublicVitals {
 function snapshot(value: unknown): WorldSnapshot {
   const data = record(value);
   if ((data.status !== 'ok' && data.status !== 'corrected') || !Array.isArray(data.players)) throw new Error('Respuesta multijugador no válida.');
+  let food: WorldSnapshot['food'];
+  if (data.food !== undefined) {
+    const value = record(data.food);
+    const buff = parseFoodBuff(value.buff), revision = number(value.revision), at = number(value.at);
+    if ((value.buff !== null && !buff) || !Number.isSafeInteger(revision) || revision < 0 || at < 0) throw new Error('Respuesta multijugador no válida.');
+    food = { buff, revision, at };
+  }
   return {
     status: data.status, position: position(data.position),
+    food,
     players: data.players.map((value) => {
       const p = record(value);
       if (typeof p.id !== 'string' || typeof p.userId !== 'string' || typeof p.dead !== 'boolean'

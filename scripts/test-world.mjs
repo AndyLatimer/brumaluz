@@ -174,7 +174,9 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       if (Math.hypot(motion.x - player.position.x, motion.z - player.position.z) > 20) status = 'corrected';
       else { player.position = { x: motion.x, z: motion.z, yaw: motion.yaw }; player.facing = motion.facing; player.jump = motion.jump; player.wave = motion.wave; }
     }
-    const response = { status, position: { ...player.position }, players: [...world.players.values()].filter((p) => p.userId !== key).map((p) => ({
+    const response = { status, position: { ...player.position },
+      food: { buff: character.data.foodBuff ?? null, revision: character.data.foodRevision ?? 0, at: Date.now() / 1000 },
+      players: [...world.players.values()].filter((p) => p.userId !== key).map((p) => ({
       ...p, position: { ...p.position }, username: world.accounts.get(p.userId).username || p.data.name,
       vitals: p.vitals || { health: p.dead ? 0 : 80, maxHealth: 100, overheal: 0, resource: 35, maxResource: 70, resourceKind: ['mago','clerigo'].includes(p.data.cls) ? 'mana' : 'stamina' },
     })) };
@@ -1225,6 +1227,66 @@ test('menus hide the action bar except Inventory and chat can be revealed by hov
   } finally {await player.context.close();}
 });
 
+test('video graphics selector shares access mode and reloads in both directions', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100)), page = player.page;
+  try {
+    await player.enter();
+    await page.keyboard.press('KeyO');
+    const button = page.locator('#opt-graphics-mode');
+    assert.equal(await button.textContent(), 'Gráficos: compatible');
+    assert.equal(await button.textContent(), await page.locator('#graphics-mode').textContent());
+    await page.locator('#options-backdrop [data-language="en"]').click();
+    assert.equal(await button.textContent(), 'Graphics: compatibility');
+    assert.match(await page.locator('[data-pane="video"] .options-hint').textContent(), /reloads the game/);
+    await Promise.all([page.waitForURL(url => !url.searchParams.has('graphics')), button.click()]);
+    await page.locator('.character-card .btn.gold').first().waitFor({ timeout: 60000 });
+    assert.equal(await page.locator('#graphics-mode').textContent(), 'Gráficos: normal');
+    await player.enter();
+    await page.keyboard.press('KeyO');
+    assert.equal(await button.textContent(), 'Gráficos: normal');
+    await Promise.all([page.waitForURL(url => url.searchParams.get('graphics') === 'compatible'), button.click()]);
+    await page.locator('.character-card .btn.gold').first().waitFor({ timeout: 60000 });
+    assert.equal(await page.locator('#graphics-mode').textContent(), 'Gráficos: compatible');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('default chat width follows the action bar while manual size persists', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100)), page = player.page;
+  try {
+    await player.enter();
+    for (const width of [1280, 1920, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.waitForFunction(() => {
+        const bar = document.querySelector('#action-bar').getBoundingClientRect();
+        const chat = document.querySelector('#chat').getBoundingClientRect();
+        return Math.abs(chat.left - bar.right - 12) <= 1 && Math.abs(chat.right - innerWidth + 12) <= 1;
+      });
+      assert.equal(await page.evaluate(() => localStorage.getItem('brumaluz-chat-size')), null);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => {
+      const chat = document.querySelector('#chat').getBoundingClientRect();
+      return chat.left >= 0 && chat.right <= innerWidth && chat.width >= 250;
+    });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const handle = await page.locator('.chat-resize').boundingBox();
+    await page.mouse.move(handle.x + 7, handle.y + 7);
+    await page.mouse.down();
+    await page.mouse.move(handle.x - 73, handle.y - 33, { steps: 5 });
+    await page.mouse.up();
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('brumaluz-chat-size')));
+    assert.ok(stored.w > 300);
+    await page.setViewportSize({ width: 1920, height: 900 });
+    assert.equal(Math.round((await page.locator('#chat').boundingBox()).width), Math.round(stored.w));
+    await page.reload();
+    await page.locator('.character-card .btn.gold').first().waitFor({ timeout: 30000 });
+    await player.enter();
+    assert.equal(Math.round((await page.locator('#chat').boundingBox()).width), Math.round(stored.w));
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
 test('chat minimizes into a bottom tab, restores size, and corner preview stays temporary', {timeout:120000}, async()=>{
   const world=backend(), a=fixture('Alric','humano',100), player=await openPlayer(world,a);
   try {
@@ -1256,6 +1318,566 @@ test('chat minimizes into a bottom tab, restores size, and corner preview stays 
     assert.equal((await player.page.locator('#chat').boundingBox()).height,minimized.height);
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
+});
+
+test('character sheet details stay responsive and preserve attribute drafts, limits and confirmation', { timeout: 120000 }, async () => {
+  const account = fixture('Alric', 'humano', 100);
+  Object.assign(account.character.data, { level: 3, health: 90, resource: 60, experience: 40, overheal: 12 });
+  const player = await openPlayer(backend(), account), page = player.page;
+  let confirmed = 0;
+  await page.route('**/rest/v1/rpc/spend_attribute_points', route => {
+    assert.deepEqual(route.request().postDataJSON().p_points, { corpulencia: 1 });
+    confirmed++;
+    account.character.data.attributePoints.corpulencia = 1;
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(account.character.data) });
+  });
+  const openSheet = async () => {
+    await page.locator('#player-menu-toggle').click();
+    await page.locator('[data-window="sheet"]').click();
+  };
+  const attr = id => page.locator(`.sheet-attr[data-attribute="${id}"]`);
+  try {
+    await player.enter();
+    await openSheet();
+    assert.equal(await page.locator('.sheet-name-row strong').textContent(), 'Alric');
+    assert.equal(await page.locator('.sheet-level b').textContent(), '3');
+    assert.equal(await page.locator('.sheet-attr-icon svg').count(), 7);
+    assert.equal(await attr('pericia').locator('.sheet-attr-description').textContent(), 'Mejora la artesanía y la alquimia: velocidad de creación y probabilidad de obtener mejores objetos.');
+    assert.equal(await page.locator('.sheet-vitals h3').textContent(), 'Estado del personaje');
+    assert.doesNotMatch(await page.locator('.sheet-attributes').textContent(), /Base 5|Raza \+|Asignados/);
+    assert.equal(await attr('fuerza').locator('b').textContent(), '7');
+    assert.equal(await page.locator('.sheet-bar.hp [role="meter"]').getAttribute('aria-valuemax'), '124');
+    assert.equal(await page.locator('.sheet-bar.hp .track span').textContent(), '90 / 124');
+    assert.equal(await page.locator('.sheet-bar.stamina .track span').textContent(), '60 / 92');
+    assert.equal(await page.locator('.sheet-progress-note').textContent(), '480 EXP para el nivel 4');
+    assert.equal(await page.locator('.sheet-overheal').count(), 0);
+    assert.doesNotMatch(await page.locator('.sheet').textContent(), /Sobrecuración/);
+    await attr('corpulencia').focus();
+    await attr('corpulencia').hover();
+    await page.waitForTimeout(350);
+    assert.equal(await page.locator('#game-tooltip').isVisible(), false);
+    assert.equal(await page.locator('.sheet-attr[title], .sheet-attr[data-tip]').count(), 0);
+    await page.locator('.sheet-bar.hp').focus();
+    await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#game-tooltip').textContent(), /Tu salud actual y máxima/);
+    await page.locator('.sheet-bar.stamina').focus();
+    await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#game-tooltip').textContent(), /energía física/);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('button', { name: 'Añadir un punto a Corpulencia', exact: true }).scrollIntoViewIfNeeded();
+    const beforeDraftScroll = await page.locator('#window-body').evaluate(el => el.scrollTop);
+    await page.getByRole('button', { name: 'Añadir un punto a Corpulencia', exact: true }).click();
+    assert.ok(Math.abs(await page.locator('#window-body').evaluate(el => el.scrollTop) - beforeDraftScroll) <= 1, 'Editing preserves the mobile reading position');
+    assert.equal(await attr('corpulencia').evaluate(el => el.contains(document.activeElement)), true, 'Editing keeps keyboard focus on the attribute');
+    assert.equal(await attr('corpulencia').locator('b.pending').textContent(), '6');
+    assert.equal(await attr('corpulencia').locator('.sheet-draft').textContent(), '+1 sin confirmar');
+    assert.equal(await page.getByRole('button', { name: 'Añadir un punto a Fuerza', exact: true }).isDisabled(), true);
+    assert.equal(confirmed, 0, 'Editing a draft does not persist it');
+    assert.equal(await page.locator('.sheet-bar.hp .track span').textContent(), '90 / 124', 'Drafts do not change confirmed vitals');
+    await page.getByRole('button', { name: 'Quitar un punto de Corpulencia', exact: true }).click();
+    assert.equal(await attr('corpulencia').locator('.sheet-draft').count(), 0);
+    assert.equal(await page.locator('#window-confirm').isVisible(), false);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.getByRole('button', { name: 'Añadir un punto a Corpulencia', exact: true }).click();
+    await page.locator('#window-confirm').click();
+    await page.waitForFunction(() => document.querySelector('.sheet-bar.hp .track span')?.textContent === '90 / 132');
+    assert.equal(confirmed, 1);
+    assert.equal(await page.locator('.sheet-attr-add').count(), 0);
+    assert.equal(await attr('corpulencia').locator('.sheet-attr-description').textContent(), 'Aumenta la vida máxima y la resistencia al daño.');
+    await page.locator('.title-button').click();
+    await page.locator('.title-option').first().waitFor({ state: 'visible' });
+    await page.locator('.title-button').click();
+    for (const [width, height] of [[1280, 800], [768, 1024], [390, 844], [320, 568]]) {
+      await page.setViewportSize({ width, height });
+      const layout = await page.locator('.sheet-window-frame').evaluate(frame => {
+        const box = frame.getBoundingClientRect(), body = frame.querySelector('#window-body');
+        return { fits: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
+          noOverflow: body.scrollWidth <= body.clientWidth };
+      });
+      assert.ok(layout.fits && layout.noOverflow, `Sheet fits ${width}×${height}`);
+      const status = page.locator('.sheet-bar.xp');
+      await status.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(100);
+      await page.mouse.move(0, 0);
+      await status.evaluate(el => el.blur());
+      await status.focus();
+      await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+      const tip = await page.locator('#game-tooltip').boundingBox();
+      assert.ok(tip.x >= 0 && tip.x + tip.width <= width && tip.y >= 0 && tip.y + tip.height <= height);
+      assert.equal(await page.locator('#window-close').isVisible(), true);
+      if (process.env.PLAYWRIGHT_SCREENSHOT_DIR) {
+        await page.mouse.move(0, 0);
+        await page.locator('#window-close').focus();
+        await page.locator('#window-body').evaluate(el => el.scrollTop = 0);
+        await page.screenshot({ path: join(process.env.PLAYWRIGHT_SCREENSHOT_DIR, `character-sheet-${width}.png`) });
+      }
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    assert.equal(await page.locator('.sheet-vitals h3').textContent(), 'Character status');
+    assert.equal(await attr('corpulencia').locator('.sheet-attr-description').textContent(), 'Increases maximum health and damage resistance.');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('character sheet handles mana, maximum level and capped attributes without empty overheal', { timeout: 120000 }, async () => {
+  const account = fixture('Alric', 'humano', 100);
+  Object.assign(account.character.data, { level: 50, cls: 'mago', overheal: 0, attributePoints: { fuerza: 10 } });
+  const player = await openPlayer(backend(), account), page = player.page;
+  try {
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    await player.enter();
+    await page.locator('#player-menu-toggle').click();
+    await page.locator('[data-window="sheet"]').click();
+    assert.equal(await page.locator('.sheet-progress-note').textContent(), 'Maximum level reached');
+    assert.equal(await page.locator('.sheet-overheal').count(), 0);
+    assert.equal(await page.locator('.sheet-bar.mana [role="meter"]').getAttribute('aria-label'), 'Mana');
+    await page.locator('.sheet-bar.mana').focus();
+    await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#game-tooltip').textContent(), /magical energy/);
+    assert.equal(await page.locator('.sheet-attr[data-attribute="fuerza"] b').textContent(), '15');
+    assert.equal(await page.getByRole('button', { name: 'Add one point to Strength', exact: true }).isDisabled(), true);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('login remembers only the opted-in email and forgets it when unchecked', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100));
+  const page = player.page;
+  try {
+    await page.addInitScript(() => {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) localStorage.removeItem(key);
+      }
+    });
+    await page.reload();
+    const form = page.locator('#auth-form');
+    await form.waitFor({ state: 'visible' });
+    const email = page.locator('#auth-email'), remember = page.locator('#auth-remember');
+    assert.equal(await remember.isChecked(), false);
+    await email.fill('remember@example.test');
+    assert.equal(await page.evaluate(() => localStorage.getItem('brumaluz-remembered-email')), null);
+    await remember.check();
+    assert.equal(await page.evaluate(() => localStorage.getItem('brumaluz-remembered-email')), 'remember@example.test');
+    await page.locator('#auth-password').fill('never-save-this-password');
+    await page.reload();
+    await form.waitFor({ state: 'visible' });
+    assert.equal(await email.inputValue(), 'remember@example.test');
+    assert.equal(await remember.isChecked(), true);
+    assert.equal(await page.locator('#auth-password').inputValue(), '');
+    assert.equal(await page.evaluate(() => Object.values(localStorage).some(value => value.includes('never-save-this-password'))), false);
+    await email.fill('updated@example.test');
+    await page.locator('[data-auth-mode="register"]').click();
+    assert.equal(await remember.isVisible(), false);
+    await page.locator('[data-auth-mode="login"]').click();
+    assert.equal(await remember.isChecked(), true);
+    await page.reload();
+    await form.waitFor({ state: 'visible' });
+    assert.equal(await email.inputValue(), 'updated@example.test');
+    await remember.uncheck();
+    assert.equal(await page.evaluate(() => localStorage.getItem('brumaluz-remembered-email')), null);
+    assert.equal(await email.inputValue(), 'updated@example.test', 'Unchecking must not erase the current input');
+    await page.reload();
+    await form.waitFor({ state: 'visible' });
+    assert.equal(await email.inputValue(), '');
+    assert.equal(await remember.isChecked(), false);
+    await page.locator('[data-language="en"]').first().click();
+    assert.equal(await page.locator('#remember-email-field span').textContent(), 'Remember me');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('bread shows a timed food buff above the action bar without healing and renews until expiry', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100), true, new Date('2026-10-18T12:00:00'));
+  const page = player.page;
+  try {
+    await page.goto(`${url}/?test&graphics=compatible`);
+    await page.waitForFunction(() => !!window.brumaluz);
+    await page.evaluate(() => {
+      window.brumaluz.set({ cls: 'guerrero', health: -1, resource: -1, attributePoints: { fuerza: 2 },
+        inventory: [{ id: 'pan_duro', count: 3 }] });
+      window.brumaluz.play();
+    });
+    await page.waitForFunction(() => document.body.classList.contains('playing'));
+    await page.keyboard.press('KeyI');
+    const bread = page.locator('.inv-grid [data-item-id="pan_duro"]');
+    await bread.hover();
+    await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.item-tip-category').textContent(), 'Comida');
+    assert.match(await page.locator('#game-tooltip').textContent(), /15 minutos de conexión/);
+    assert.equal(await page.locator('.item-tip-sale b').textContent(), '2 Pelines');
+    await bread.dragTo(page.locator('.ab-slot').first());
+    await bread.click();
+    const buff = page.locator('.food-buff');
+    assert.equal(await page.locator('#hud-health-text').textContent(), '100 / 105');
+    assert.equal(await page.locator('#hud-resource-text').textContent(), '80 / 83');
+    assert.equal(await buff.locator('span').textContent(), '15:00');
+    assert.equal(await bread.locator('i').textContent(), '2');
+    await page.locator('#window-close').click();
+    for (const width of [1280, 390, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      const badge = await buff.boundingBox(), bar = await page.locator('#action-bar').boundingBox();
+      assert.ok(badge.x >= 0 && badge.x + badge.width <= width);
+      assert.ok(badge.y + badge.height <= bar.y - 6, 'Buff is above, not overlapping the quick bar');
+    }
+    await page.waitForTimeout(100);
+    await page.mouse.move(0, 0);
+    await buff.evaluate(el => el.blur());
+    await buff.focus();
+    await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#game-tooltip').textContent(), /Origen: Pan duro/);
+    assert.match(await page.locator('#game-tooltip').textContent(), /se pausa al desconectarte/);
+    if (process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.PLAYWRIGHT_SCREENSHOT_DIR, 'bread-buff.png') });
+    await page.clock.fastForward(60000);
+    assert.equal(await buff.locator('span').textContent(), '14:00');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.keyboard.press('Digit1');
+    const renewedAt = await page.evaluate(() => performance.now());
+    assert.equal(await buff.locator('span').textContent(), '15:00');
+    assert.equal(await page.locator('.food-buff').count(), 1, 'Renewal does not stack buffs');
+    assert.equal(await page.locator('#hud-health-text').textContent(), '100 / 105');
+    await page.keyboard.press('KeyC');
+    assert.equal(await buff.isVisible(), false, 'Buff follows the action bar visibility');
+    assert.equal(await page.locator('.sheet-bar.hp .track span').textContent(), '100 / 105');
+    await page.locator('#window-close').click();
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    await buff.focus();
+    await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#game-tooltip').textContent(), /Source: Stale bread/);
+    await page.locator('[data-language="es"]').first().dispatchEvent('click');
+    const elapsedSinceRenewal = await page.evaluate(start => performance.now() - start, renewedAt);
+    await page.clock.fastForward(Math.max(0, Math.floor(899000 - elapsedSinceRenewal)));
+    assert.equal(await buff.locator('span').textContent(), '0:01');
+    assert.equal(await page.locator('#hud-resource-text').textContent(), '80 / 83');
+    await page.clock.fastForward(1100);
+    await page.waitForTimeout(100);
+    assert.equal(await page.locator('#active-buffs').evaluate(el => el.hidden), true, JSON.stringify({
+      errors: player.errors, timer: await buff.locator('span').allTextContents(),
+      graphicsError: await page.locator('#graphics-error').isVisible(),
+      playing: await page.locator('body').evaluate(el => el.classList.contains('playing')),
+    }));
+    assert.equal(await page.locator('#hud-health-text').textContent(), '100 / 100');
+    assert.equal(await page.locator('#hud-resource-text').textContent(), '80 / 80');
+    assert.equal(await buff.count(), 0);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('food timer pauses on connection failure, restores from server and ignores stale revisions', { timeout: 120000 }, async () => {
+  const account = fixture('Alric', 'humano', 100), world = backend();
+  Object.assign(account.character.data, { foodBuff: { itemId: 'pan_duro', remaining: 600 }, foodRevision: 2 });
+  const player = await openPlayer(world, account), page = player.page;
+  try {
+    await player.enter();
+    const buff = page.locator('.food-buff');
+    await buff.waitFor({ state: 'visible' });
+    world.fail.add(account.user.id);
+    await page.waitForFunction(() => document.querySelector('.food-buff')?.classList.contains('paused'));
+    const paused = await buff.locator('span').textContent();
+    await page.waitForTimeout(2200);
+    assert.equal(await buff.locator('span').textContent(), paused);
+    account.character.data.foodBuff.remaining = 590;
+    world.fail.delete(account.user.id);
+    await page.waitForFunction(() => !document.querySelector('.food-buff')?.classList.contains('paused'));
+    assert.match(await buff.locator('span').textContent(), /^9:5\d$/);
+    account.character.data.foodRevision = 1;
+    account.character.data.foodBuff.remaining = 100;
+    await page.waitForTimeout(800);
+    assert.match(await buff.locator('span').textContent(), /^9:[45]\d$/, 'An old food revision cannot replace the current buff');
+    account.character.data.foodRevision = 2;
+    account.character.data.foodBuff.remaining = 590;
+    await leave(page);
+    await page.waitForTimeout(1000);
+    await player.enter();
+    assert.match(await buff.locator('span').textContent(), /^9:5\d$/);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('potion shop fits desktop and mobile and local resource potions enforce class and caps', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100)), page = player.page;
+  try {
+    await page.goto(`${url}/?test&graphics=compatible`);
+    await page.waitForFunction(() => !!window.brumaluz);
+    await page.evaluate(() => {
+      window.brumaluz.set({ cls: 'mago', resource: 10, health: -1, wallet: { pelines: 100 }, inventory: [] });
+      window.brumaluz.play();
+    });
+    await page.waitForFunction(() => document.body.classList.contains('playing'));
+    const shop = async () => {
+      await page.evaluate(() => { const p = window.brumaluz.city().npcSites[0].position; window.brumaluz.move(p.x, p.z + 0.6); });
+      await page.keyboard.press('KeyE');
+      await page.locator('.dialog-choice').filter({ hasText: 'Comerciar' }).click();
+    };
+    await shop();
+    assert.equal(await page.locator('.vendor-col').first().locator('.vendor-row').count(), 4);
+    for (const width of [1280, 768, 390, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      assert.ok(await page.locator('#window-body').evaluate(el => el.scrollWidth <= el.clientWidth), `Commerce fits ${width}px`);
+      const row = page.locator('.vendor-col').first().locator('[data-item-id="pocion_mana_minuscula"]');
+      await row.scrollIntoViewIfNeeded();
+      await row.hover();
+      await page.locator('#game-tooltip').waitFor({ state: 'visible' });
+      assert.match(await page.locator('#game-tooltip').textContent(), /5 % de tu maná máximo/);
+      if (process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.PLAYWRIGHT_SCREENSHOT_DIR, `commerce-${width}.png`) });
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const stock = id => page.locator('.vendor-col').first().locator(`[data-item-id="${id}"] button`);
+    await stock('pocion_mana_minuscula').click();
+    await stock('pocion_estamina_minuscula').click();
+    assert.equal(await page.locator('.vendor-banner .currency b').textContent(), '80');
+    await page.locator('#window-close').click();
+    await page.keyboard.press('KeyI');
+    await page.locator('.inv-grid [data-item-id="pocion_mana_minuscula"]').click();
+    assert.equal(await page.locator('#hud-resource-text').textContent(), '14 / 65');
+    await page.locator('.inv-grid [data-item-id="pocion_estamina_minuscula"]').click();
+    assert.match(await page.locator('#toast').textContent(), /no corresponde/);
+    assert.match(await page.locator('.inv-grid [data-item-id="pocion_estamina_minuscula"]').getAttribute('aria-label'), /1 unidades/);
+    await page.locator('#window-close').click();
+    await page.evaluate(() => window.brumaluz.set({ cls: 'guerrero', resource: 79 }));
+    await page.keyboard.press('KeyI');
+    await page.locator('.inv-grid [data-item-id="pocion_estamina_minuscula"]').click();
+    assert.equal(await page.locator('#hud-resource-text').textContent(), '80 / 80');
+    await page.locator('#window-close').click();
+    await shop();
+    await stock('pocion_estamina_minuscula').click();
+    await page.locator('#window-close').click();
+    await page.keyboard.press('KeyI');
+    await page.locator('.inv-grid [data-item-id="pocion_estamina_minuscula"]').click();
+    assert.match(await page.locator('#toast').textContent(), /recurso completo/);
+    assert.match(await page.locator('.inv-grid [data-item-id="pocion_estamina_minuscula"]').getAttribute('aria-label'), /1 unidades/);
+    await page.locator('#window-close').click();
+    await shop();
+    const purse = page.locator('.vendor-banner .currency b');
+    const beforeSale = Number(await purse.textContent());
+    await page.locator('.vendor-col').nth(1).locator('[data-item-id="pocion_estamina_minuscula"] button').click();
+    assert.equal(Number(await purse.textContent()), beforeSale + 5);
+    assert.equal(await page.locator('.vendor-empty').isVisible(), true);
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    assert.equal(await page.locator('.vendor-banner strong').textContent(), 'Provisions for the road');
+    await page.locator('[data-language="es"]').first().dispatchEvent('click');
+    await page.locator('#window-close').click();
+    await page.evaluate(() => window.brumaluz.set({ wallet: { pelines: 0 } }));
+    await shop();
+    assert.equal(await page.locator('.vendor-col').first().locator('button:disabled').count(), 4);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('inventory item cards share tooltips with equipment, action bar and vendor without changing use or drag', { timeout: 120000 }, async () => {
+  const account = fixture('Alric', 'humano', 100);
+  Object.assign(account.character.data, {
+    health: 60, wallet: { pelines: 100, lagrimas: 0 },
+    inventory: [{ id: 'pocion_vida_minuscula', count: 3 }],
+    equipment: { head: { id: 'pocion_vida_minuscula', count: 1 } },
+  });
+  const player = await openPlayer(backend(), account);
+  const page = player.page;
+  let used = 0;
+  await page.route('**/rest/v1/rpc/use_item', route => {
+    assert.equal(route.request().postDataJSON().p_slot, 0);
+    used++;
+    account.character.data.health += 5;
+    account.character.data.inventory[0].count--;
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(account.character.data) });
+  });
+  const tooltip = page.locator('#game-tooltip');
+  async function inspect(target) {
+    await page.mouse.move(0, 0);
+    await target.hover();
+    await tooltip.waitFor({ state: 'visible' });
+    assert.equal(await tooltip.locator('.item-tip-name').textContent(), 'Poción de vida minúscula');
+    assert.equal(await tooltip.locator('.item-tip-category').textContent(), 'Consumible');
+    assert.equal(await tooltip.locator('.item-tip-effects li').textContent(), 'Restaura un 5 % de tu vida máxima.');
+    assert.match(await tooltip.locator('.item-tip-description').textContent(), /pequeño frasco/);
+    assert.equal(await tooltip.locator('.item-tip-sale b').textContent(), '5 Pelines');
+    assert.equal(await tooltip.locator('.item-tip-sale small').count(), 0);
+    assert.doesNotMatch(await tooltip.textContent(), /Apilable|por unidad/);
+    assert.equal(await tooltip.locator('.item-tip-stats').count(), 0, 'Do not invent equipment stats for a potion');
+    assert.equal(await target.getAttribute('title'), null);
+    assert.equal(await target.getAttribute('aria-describedby'), 'game-tooltip');
+    await page.waitForTimeout(180);
+    const anchor = await target.boundingBox(), card = await tooltip.boundingBox();
+    const viewport = page.viewportSize();
+    if (anchor.x + anchor.width + 10 + card.width <= viewport.width - 6) {
+      assert.ok(Math.abs(card.x - anchor.x - anchor.width - 10) <= 1, 'Item tooltip anchors to the right with a small gap');
+    } else if (anchor.x - 10 - card.width >= 6) {
+      assert.ok(Math.abs(card.x + card.width + 10 - anchor.x) <= 1, 'Item tooltip flips to the left near the right edge');
+    }
+    assert.ok(card.x + card.width <= anchor.x || card.x >= anchor.x + anchor.width
+      || card.y + card.height <= anchor.y || card.y >= anchor.y + anchor.height, 'Tooltip must not cover its item');
+    return tooltip.textContent();
+  }
+  try {
+    await player.enter();
+    await page.keyboard.press('KeyI');
+    const item = page.locator('.inv-grid [data-item-id]').first();
+    assert.equal(await page.locator('.inv-grid .inv-slot:not(.locked)').count(), 25);
+    assert.equal(await page.locator('.inv-capacity').textContent(), '1 / 25');
+    assert.equal(await page.locator('.inv-purse .currency').count(), 2);
+    assert.ok((await page.locator('.inv-purse').boundingBox()).height <= 42, 'Desktop purse stays compact');
+    assert.equal(await page.locator('.equip-art').count(), 9);
+    assert.equal(await item.locator('b').count(), 0, 'Keep slot contents uncluttered');
+    const expected = await inspect(item);
+    const coinStyle = icon => icon.evaluate(svg => {
+      const properties = ['fill', 'stroke', 'strokeWidth', 'strokeLinecap', 'strokeLinejoin', 'filter'];
+      return [svg, ...svg.children].map(part => Object.fromEntries(properties.map(key => [key, getComputedStyle(part)[key]])));
+    });
+    assert.deepEqual(await coinStyle(tooltip.locator('.currency-icon-pelines')),
+      await coinStyle(page.locator('.inv-purse .currency-icon-pelines')),
+      'Tooltip and purse must use identical coin artwork styling');
+    assert.equal(await inspect(page.locator('.inv-slot.equip.filled')), expected);
+    const portrait = page.locator('.doll-portrait');
+    const before = await portrait.evaluate(canvas => canvas.toDataURL());
+    const stage = await page.locator('.doll-stage').boundingBox();
+    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stage.x + stage.width / 2 + 45, stage.y + stage.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForFunction(previous => document.querySelector('.doll-portrait').toDataURL() !== previous, before);
+    await item.dragTo(page.locator('.ab-slot').first());
+    assert.equal(used, 0, 'Dragging must not consume a potion');
+    assert.equal(await inspect(page.locator('.ab-slot.filled')), expected);
+    await item.click();
+    await page.waitForFunction(() => document.querySelector('.inv-grid [data-item-id] i')?.textContent === '2');
+    await tooltip.waitFor({ state: 'hidden' });
+    assert.equal(used, 1);
+    assert.equal(await page.locator('#hud-health-text').textContent(), '65 / 100');
+    assert.equal(await page.locator('.ab-slot.filled i').textContent(), '2');
+    await page.locator('.currency.pelines').hover();
+    await tooltip.waitFor({ state: 'visible' });
+    assert.equal(await tooltip.evaluate(el => el.classList.contains('item-tooltip')), false, 'Generic tooltips keep their short format');
+    assert.equal(await tooltip.locator('strong').textContent(), 'Pelines');
+    await page.keyboard.press('Escape');
+    await tooltip.waitFor({ state: 'hidden' });
+    await page.evaluate(() => {
+      const p = window.brumaluz.city().npcSites[0].position;
+      window.brumaluz.move(p.x, p.z + 0.6);
+    });
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-choice').filter({ hasText: 'Comerciar' }).click();
+    const stock = page.locator('.vendor-col').first().locator('.vendor-row').first();
+    const owned = page.locator('.vendor-col').nth(1).locator('.vendor-row');
+    assert.equal(await inspect(stock), expected);
+    assert.equal(await stock.locator('.vendor-price b').textContent(), '10', 'Buy price remains unchanged');
+    assert.equal(await inspect(owned), expected);
+    assert.equal(await owned.locator('.vendor-price b').textContent(), '5');
+    await page.keyboard.press('Escape');
+    await tooltip.waitFor({ state: 'hidden' });
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('inventory and item tooltips fit narrow viewports, support focus and translate content', { timeout: 120000 }, async () => {
+  const account = fixture('Alric', 'humano', 100);
+  account.character.data.inventory = [{ id: 'pocion_vida_minuscula', count: 99 }];
+  const player = await openPlayer(backend(), account);
+  const page = player.page;
+  try {
+    await player.enter();
+    await page.keyboard.press('KeyI');
+    const item = page.locator('.inv-grid [data-item-id]');
+    const tooltip = page.locator('#game-tooltip');
+    for (const size of [{ width: 1280, height: 800 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+      await page.setViewportSize(size);
+      await item.scrollIntoViewIfNeeded();
+      const layout = await page.locator('.inv').evaluate(el => ({
+        width: el.clientWidth, content: el.scrollWidth,
+        gridWidth: el.querySelector('.inv-grid').clientWidth, gridContent: el.querySelector('.inv-grid').scrollWidth,
+        slots: [...el.querySelectorAll('.inv-grid .inv-slot:not(.locked)')].map(slot => slot.getBoundingClientRect().width),
+      }));
+      assert.ok(layout.content <= layout.width + 1, JSON.stringify({ size, layout }));
+      assert.ok(layout.gridContent <= layout.gridWidth + 1, JSON.stringify({ size, layout }));
+      assert.ok(layout.slots.every(width => width >= 30), JSON.stringify({ size, layout }));
+      await page.mouse.move(0, 0);
+      await item.evaluate(el => el.blur());
+      await item.focus();
+      await tooltip.waitFor({ state: 'visible' });
+      const box = await tooltip.boundingBox();
+      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= size.width && box.y + box.height <= size.height, JSON.stringify({ size, box }));
+      assert.equal(await item.getAttribute('aria-describedby'), 'game-tooltip');
+    }
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    await tooltip.waitFor({ state: 'hidden' });
+    await page.mouse.move(0, 0);
+    await item.hover();
+    await tooltip.waitFor({ state: 'visible' });
+    assert.equal(await tooltip.locator('.item-tip-name').textContent(), 'Minuscule health potion');
+    assert.equal(await tooltip.locator('.item-tip-category').textContent(), 'Consumable');
+    assert.equal(await tooltip.locator('.item-tip-effects li').textContent(), 'Restores 5% of your maximum health.');
+    assert.match(await tooltip.locator('.item-tip-description').textContent(), /little glass bottle/);
+    assert.match(await tooltip.locator('.item-tip-sale').textContent(), /Sell value5 Pelines/);
+    assert.doesNotMatch(await tooltip.textContent(), /Stackable|per unit/);
+    await page.keyboard.press('Escape');
+    await tooltip.waitFor({ state: 'hidden' });
+    assert.equal(await item.getAttribute('aria-describedby'), null);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('party and zone chat use distinct colors across messages, tags, filters and channel selector', { timeout: 120000 }, async () => {
+  const world = backend(), account = fixture('Alric', 'humano', 100);
+  const player = await openPlayer(world, account);
+  const page = player.page;
+  try {
+    await player.enter();
+    await chatReady(world, account);
+    for (const [index, channel] of ['zone', 'party'].entries()) {
+      world.chatSockets.get(account.user.id)({
+        id: index + 1, channel, zone: 'brumaluz', sender_user: account.user.id,
+        sender_name: 'Alric', sender_account: 'Alric', sender_title: 'recien_llegado',
+        created_at: new Date().toISOString(), body: `${channel} color check`,
+      });
+    }
+    await page.locator('.chat-log .k-party').waitFor({ state: 'attached' });
+    const colors = await page.evaluate(() => {
+      const color = selector => getComputedStyle(document.querySelector(selector)).color;
+      return {
+        party: color('.chat-line.k-party'), partyTag: color('.chat-line.k-party .chat-tag'),
+        zone: color('.chat-line.k-zone'), zoneTag: color('.chat-line.k-zone .chat-tag'),
+        partyFilter: color('.chat-filter[data-kind="party"]'),
+      };
+    });
+    assert.equal(colors.party, 'rgb(242, 183, 129)');
+    assert.equal(colors.partyTag, colors.party);
+    assert.equal(colors.partyFilter, colors.party);
+    assert.equal(colors.zone, 'rgb(207, 234, 255)');
+    assert.equal(colors.zoneTag, 'rgb(159, 216, 255)');
+    await page.keyboard.press('Enter');
+    await page.locator('.chat-channel').click();
+    await page.waitForFunction(() => document.querySelector('.chat-channel').dataset.channel === 'zone');
+    await page.locator('.chat-channel').click();
+    assert.equal(await page.locator('.chat-channel').getAttribute('data-channel'), 'party');
+    assert.equal(await page.locator('.chat-channel').evaluate(el => getComputedStyle(el).color), colors.party);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('NPC interactions stay out of chat while spontaneous nearby barks remain', { timeout: 120000 }, async () => {
+  const player = await openPlayer(backend(), fixture('Alric', 'humano', 100), true, new Date(2026, 9, 18, 12));
+  const page = player.page;
+  try {
+    await player.enter();
+    await page.evaluate(() => {
+      const p = window.brumaluz.city().npcSites[0].position;
+      window.brumaluz.move(p.x, p.z + 0.6);
+    });
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-choice').filter({ hasText: /^\s*1\.\s*Hola$/ }).click();
+    await page.locator('.dialog-text').filter({ hasText: '¡Hola! Si estás leyendo esto' }).waitFor();
+    const log = page.locator('.chat-log');
+    assert.doesNotMatch(await log.textContent(), /¡Saludos, viajero!|¡Hola! Si estás leyendo esto|Hola/);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => {
+      const p = window.brumaluz.city().npcSites[0].position;
+      window.brumaluz.move(p.x, p.z + 0.6);
+    });
+    await page.clock.fastForward(84_000);
+    assert.match(await log.textContent(), /¿Alguien ha visto mi documentación|Psst, viajero|Un día más depurando/);
+    assert.match(await log.textContent(), /Testículos, the Debugger/);
+    assert.doesNotMatch(await log.textContent(), /¡Saludos, viajero!|¡Hola! Si estás leyendo esto/);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
 });
 
 test('damage absorbed by overheal preserves full-health sentinel and only zero health kills', { timeout: 120000 }, async () => {

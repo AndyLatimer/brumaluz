@@ -74,8 +74,11 @@ export function createGraphics(canvas: HTMLCanvasElement) {
   if (compatible && !requested) {
     console.warn('[Brumaluz graphics] EXT_color_buffer_float no disponible; se activa el modo compatible.');
   }
-  document.getElementById('graphics-mode')!.textContent = t(compatible ? 'Gráficos: compatible' : 'Gráficos: normal');
-  document.getElementById('graphics-mode')!.onclick = () => reloadGraphics(!compatible);
+  for (const id of ['graphics-mode', 'opt-graphics-mode']) {
+    const button = document.getElementById(id)!;
+    button.textContent = t(compatible ? 'Gráficos: compatible' : 'Gráficos: normal');
+    button.onclick = () => reloadGraphics(!compatible);
+  }
   console.info('[Brumaluz graphics]', { compatible, context: renderer.getContext().getContextAttributes(), maxTextureSize: renderer.capabilities.maxTextureSize, maxSamples: renderer.capabilities.maxSamples });
 
   return {

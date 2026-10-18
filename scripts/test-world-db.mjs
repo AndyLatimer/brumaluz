@@ -55,6 +55,135 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       }
     }
     const motion = (x, extra = {}) => ({ x, z: 0, yaw: 0, facing: 1, jump: 0, wave: 0, ...extra });
+    await t.test('bread grants flat maxima without healing, renews, pauses offline and expires authoritatively', async () => {
+      await client.query('savepoint food_buff');
+      try {
+        await client.query('reset role');
+        await client.query('update public.characters set data=$1 where id=$2', [{
+          name: 'Alric', race: 'humano', cls: 'guerrero', level: 1, health: -1, resource: -1,
+          wallet: { pelines: 100 }, inventory: [], attributePoints: { fuerza: 2 }, location,
+        }, ca]);
+        await user(a);
+        let result = await rpc('vendor_buy', [ca, 'testiculos', 'pan_duro']);
+        assert.equal(result.wallet.pelines, 96);
+        result = await rpc('use_item', [ca, 0]);
+        assert.deepEqual(result.foodBuff, { itemId: 'pan_duro', remaining: 900 });
+        assert.equal(result.health, 100, 'Eating at full health does not heal the extra capacity');
+        assert.equal(result.resource, 80, 'Eating at full resource does not refill the extra capacity');
+        assert.equal(result.inventory[0], null);
+        assert.equal(result.foodRevision, 1);
+        await rejected(() => rpc('use_item', [cb, 0]), /CHARACTER_NOT_FOUND/);
+        await rejected(() => rpc('game_food_data', [ca, result]), /permission denied/);
+        await client.query('reset role');
+        let v = await rpc('game_public_vitals', [result]);
+        assert.equal(v.maxHealth, 105);
+        assert.equal(v.maxResource, 83);
+        v = await rpc('game_public_vitals', [{ ...result, partyPeers: 3 }]);
+        assert.equal(v.maxHealth, 109, 'Food is added after the party multiplier');
+        assert.equal(v.maxResource, 86);
+        // Without presence, old timestamps never spend food duration.
+        await client.query("update public.characters set data=data || jsonb_build_object('food_at',extract(epoch from now())-86400) where id=$1", [ca]);
+        await user(a);
+        result = await rpc('character_enter', [ca]);
+        assert.equal(result.foodBuff.remaining, 900);
+        const joined = await rpc('world_join', [ca, sa]);
+        assert.equal(joined.food.buff.remaining, 900);
+        await client.query('reset role');
+        await client.query("update public.characters set data=data || jsonb_build_object('food_at',extract(epoch from now())-30) where id=$1", [ca]);
+        await user(a);
+        let synced = await rpc('world_sync', [ca, sa, motion(0)]);
+        assert.equal(synced.food.buff.remaining, 870);
+        await rpc('vendor_buy', [ca, 'testiculos', 'pan_duro']);
+        result = await rpc('use_item', [ca, 0]);
+        assert.equal(result.foodBuff.remaining, 900, 'Eating another renews rather than stacks');
+        assert.equal(result.foodRevision, 2);
+        assert.equal(result.health, 100);
+        await client.query('reset role');
+        v = await rpc('game_public_vitals', [result]);
+        assert.equal(v.maxHealth, 105);
+        assert.equal(v.maxResource, 83);
+        // Abrupt loss: only the last confirmed heartbeat counts, not the offline gap.
+        await client.query("update public.characters set data=data || jsonb_build_object('food_at',extract(epoch from now())-600) where id=$1", [ca]);
+        await client.query("update public.world_players set seen_at=now()-interval '590 seconds' where character_id=$1", [ca]);
+        await user(a);
+        synced = await rpc('world_sync', [ca, sa, motion(0)]);
+        assert.equal(synced.food.buff.remaining, 890);
+        synced = await rpc('world_sync', [ca, sa, motion(0)]);
+        assert.equal(synced.food.buff.remaining, 890, 'Reconnect reanchors the timer without charging the gap twice');
+        await rpc('world_leave', [ca, sa]);
+        await client.query('reset role');
+        await client.query("update public.characters set data=data || jsonb_build_object('food_at',extract(epoch from now())-3600) where id=$1", [ca]);
+        await user(a);
+        result = await rpc('character_enter', [ca]);
+        assert.equal(result.foodBuff.remaining, 890, 'Graceful exit keeps the remaining duration across relog');
+        const resumed = await rpc('world_join', [ca, replacement]);
+        assert.equal(resumed.food.buff.remaining, 890);
+        await rejected(() => rpc('world_sync', [ca, sa, motion(0)]), /WORLD_SESSION_REPLACED/);
+        await rpc('world_leave', [ca, sa]);
+        assert.equal((await rpc('world_sync', [ca, replacement, motion(0)])).food.buff.remaining, 890);
+        await user(b);
+        await rpc('character_enter', [cb]);
+        const observer = await rpc('world_join', [cb, sb]);
+        const target = observer.players.find(p => p.id === ca);
+        assert.equal(target.vitals.maxHealth, 105);
+        for (const key of ['foodBuff', 'foodRevision', 'food_at', 'inventory']) assert.equal(key in target.data, false);
+        await client.query('reset role');
+        await client.query("update public.characters set data=data || jsonb_build_object('food_at',extract(epoch from now())-891,'health',105,'resource',83) where id=$1", [ca]);
+        await user(a);
+        synced = await rpc('world_sync', [ca, replacement, motion(0)]);
+        assert.equal(synced.food.buff, null);
+        assert.equal(synced.food.revision, 2);
+        await client.query('reset role');
+        const expired = await rpc('game_food_data', [ca, (await client.query('select data from public.characters where id=$1', [ca])).rows[0].data]);
+        v = await rpc('game_public_vitals', [expired]);
+        assert.equal(v.maxHealth, 100); assert.equal(v.health, 100);
+        assert.equal(v.maxResource, 80); assert.equal(v.resource, 80);
+      } finally {
+        await client.query('rollback to savepoint food_buff');
+        await client.query('release savepoint food_buff');
+      }
+    });
+    await t.test('resource potions trade, restore the correct resource and reject without consuming', async () => {
+      await client.query('savepoint resource_potions');
+      try {
+        for (const [cls, item, wrong, maximum] of [
+          ['mago', 'pocion_mana_minuscula', 'pocion_estamina_minuscula', 65],
+          ['guerrero', 'pocion_estamina_minuscula', 'pocion_mana_minuscula', 80],
+        ]) {
+          await client.query('reset role');
+          await client.query('update public.characters set data=$1 where id=$2', [{
+            name: 'Alric', race: 'humano', cls, level: 1, health: -1, resource: 10,
+            wallet: { pelines: 100 }, inventory: [], attributePoints: { fuerza: 2 },
+          }, ca]);
+          await user(a);
+          let result = await rpc('vendor_buy', [ca, 'testiculos', item]);
+          assert.equal(result.wallet.pelines, 90);
+          result = await rpc('use_item', [ca, 0]);
+          assert.equal(result.resource, 10 + Math.ceil(maximum * 0.05));
+          assert.equal(result.health, -1);
+          assert.equal(result.inventory[0], null);
+          await rpc('vendor_buy', [ca, 'testiculos', wrong]);
+          await rejected(() => rpc('use_item', [ca, 0]), /WRONG_RESOURCE/);
+          result = await rpc('vendor_sell', [ca, 'testiculos', 0]);
+          assert.equal(result.wallet.pelines, 85);
+          await rpc('vendor_buy', [ca, 'testiculos', item]);
+          await client.query('reset role');
+          await client.query("update public.characters set data=data || '{\"resource\":-1}'::jsonb where id=$1", [ca]);
+          await user(a);
+          await rejected(() => rpc('use_item', [ca, 0]), /RESOURCE_FULL/);
+          result = (await client.query('select data from public.characters where id=$1', [ca])).rows[0].data;
+          assert.equal(result.inventory[0].count, 1);
+          await client.query('reset role');
+          await client.query("update public.characters set data=data || jsonb_build_object('resource',$1::int) where id=$2", [maximum - 1, ca]);
+          await user(a);
+          result = await rpc('use_item', [ca, 0]);
+          assert.equal(result.resource, -1);
+        }
+      } finally {
+        await client.query('rollback to savepoint resource_potions');
+        await client.query('release savepoint resource_potions');
+      }
+    });
     await t.test('overheal absorbs damage before health and preserves full-health encoding', async () => {
       await client.query('savepoint overheal_damage');
       try {

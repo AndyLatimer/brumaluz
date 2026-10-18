@@ -2,6 +2,7 @@ import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAI
 import { emptyWallet, sanitizeWallet, type Wallet } from './currency';
 import { DEFAULT_TITLE, isTitleId, type TitleId } from './titles';
 import { emptyEquipment, emptyInventory, sanitizeEquipment, sanitizeInventory, type Equipment, type InventorySlots } from './inventory';
+import { parseFoodBuff, type FoodBuff } from './food';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
@@ -51,6 +52,8 @@ export interface CharData {
   health: number; // vida actual; -1 = al máximo
   overheal: number; // sobrecuración vigente cuando el servidor la guardó (se pierde con el tiempo, ver OVERHEAL en stats.ts)
   resource: number; // maná o estamina actual según la clase; -1 = al máximo
+  foodBuff: FoodBuff | null;
+  foodRevision: number;
   wallet: Wallet; // monedas (ver currency.ts)
   inventory: InventorySlots;
   equipment: Equipment;
@@ -205,7 +208,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
+    name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
     cape: 0, clothA: 7, clothB: 5, hairAcc: 0, hairAccColor: 0, acc: 0, makeup: 0, makeupColor: 2, accColor: 0,
@@ -224,6 +227,8 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.health = Number.isFinite(Number(out.health)) ? Math.max(Math.round(Number(out.health)), -1) : -1;
   out.overheal = Number.isFinite(Number(out.overheal)) ? Math.max(Math.round(Number(out.overheal)), 0) : 0;
   out.resource = Number.isFinite(Number(out.resource)) ? Math.max(Math.round(Number(out.resource)), -1) : -1;
+  out.foodBuff = parseFoodBuff(d.foodBuff);
+  out.foodRevision = Number.isSafeInteger(d.foodRevision) && Number(d.foodRevision) >= 0 ? Number(d.foodRevision) : 0;
   out.wallet = sanitizeWallet(d.wallet, d.gold);
   delete (out as unknown as Record<string, unknown>).gold;
   out.inventory = sanitizeInventory(out.inventory);
@@ -295,7 +300,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
+    name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11, 12, 13][rnd(8)], hairColor: rnd(HAIR_COLORS.length),

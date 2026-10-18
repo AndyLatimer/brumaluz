@@ -85,6 +85,10 @@
         <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254" />
         <label for="auth-password">Contraseña</label>
         <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="8" />
+        <label id="remember-email-field" for="auth-remember">
+          <input id="auth-remember" name="remember" type="checkbox" />
+          <span>Recuérdame</span>
+        </label>
         <div id="confirm-password-field" hidden>
           <label for="auth-confirm-password">Repite la contraseña</label>
           <input id="auth-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" />
@@ -282,6 +286,7 @@
   </div>
 
   <div id="action-bar" class="action-bar" role="toolbar" aria-label="Barra de acceso rápido"></div>
+  <div id="active-buffs" class="active-buffs" role="group" aria-label="Efectos activos" hidden></div>
   <section id="chat" class="chat" aria-label="Chat">
     <div class="chat-resize" title="Arrastra para cambiar el tamaño"></div>
     <header class="chat-head">
@@ -388,6 +393,11 @@
         <button type="button" role="tab" class="options-tab" data-tab="controls" aria-selected="false">Controles</button>
       </div>
       <div class="options-pane" data-pane="video" role="tabpanel">
+        <div class="options-row">
+          <span class="options-label">Modo gráfico</span>
+          <button id="opt-graphics-mode" type="button" class="btn ghost" title="Cambiar modo gráfico (recarga la página)">Gráficos: normal</button>
+        </div>
+        <p class="options-hint">Cambiar el modo gráfico recarga el juego. El modo compatible desactiva efectos gráficos avanzados.</p>
         <p class="options-label">Idioma</p>
         <div class="language-switch options-language-switch" aria-label="Idioma">
           <button type="button" data-language="es" aria-label="Español">

@@ -186,7 +186,7 @@ export function chatReceive(m: ChatMessage) {
 /** Línea del filtro Combate (daño recibido, curación...). */
 export function chatCombat(text: string, tone?: 'heal' | 'dealt') { push({ kind: 'combat', time: new Date(), text, tone }); }
 export function chatSystem(text: string, error = false) { push({ kind: 'system', time: new Date(), text, error }); }
-/** Lo que dice un NPC (diálogo o comentario cercano). */
+/** Comentario espontáneo de un NPC cercano, fuera del diálogo de interacción. */
 export function chatNpc(speaker: string, text: string) { push({ kind: 'npc', time: new Date(), name: speaker, text }); }
 /** Lo que respondes tú en una conversación con un NPC. */
 export function chatSelfSay(name: string, text: string) { push({ kind: 'npc', time: new Date(), name, text, own: true }); }
@@ -300,7 +300,20 @@ function initResize() {
     el.style.setProperty('--chat-h', `${h}px`);
     return { w, h };
   };
-  let size = saved ? apply(saved.w, saved.h) : apply(300, 210);
+  let customSize = saved !== null;
+  let actionBarWidth = 0;
+  const defaultWidth = () => {
+    const available = innerWidth / 2 - actionBarWidth / 2 - 24;
+    return actionBarWidth > 0 && available >= MIN_SIZE.w ? available : 300;
+  };
+  let size = saved ? apply(saved.w, saved.h) : apply(defaultWidth(), 210);
+  const actionBar = document.querySelector<HTMLElement>('#action-bar')!;
+  new ResizeObserver(() => {
+    const width = actionBar.getBoundingClientRect().width;
+    if (width <= 0) return;
+    actionBarWidth = width;
+    if (!customSize && !start) size = apply(defaultWidth(), size.h);
+  }).observe(actionBar);
   const handle = $<HTMLElement>('.chat-resize');
   let start: { x: number; y: number; w: number; h: number } | null = null;
   handle.onpointerdown = (e) => {
@@ -312,8 +325,10 @@ function initResize() {
     if (!start) return;
     size = apply(start.w + (start.x - e.clientX), start.h + (start.y - e.clientY));
   };
-  handle.onpointerup = handle.onpointercancel = () => { if (start) { start = null; store.set('size', size); } };
-  window.addEventListener('resize', () => { size = apply(size.w, size.h); });
+  handle.onpointerup = handle.onpointercancel = () => {
+    if (start) { start = null; customSize = true; store.set('size', size); }
+  };
+  window.addEventListener('resize', () => { size = apply(customSize ? size.w : defaultWidth(), size.h); });
 }
 
 export function initChat(h: ChatHooks) {

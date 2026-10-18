@@ -44,6 +44,8 @@ import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
 import { loadSettings, saveSettings } from './services/settings';
 import { initMenuMusic } from './ui/menuMusic';
+import { initBuffLayout, renderBuffs } from './ui/buffs';
+import type { FoodBuff } from './data/food';
 
 
 // ---------------- Estado ----------------
@@ -516,9 +518,14 @@ async function runOnServer(call: (id: string) => Promise<Record<string, unknown>
     if (activeCharacterId) {
       const data = await call(activeCharacterId);
       if (!stillCurrent()) return false;
-      Object.assign(state, sanitize(data));
+      const next = sanitize(data);
+      const at = typeof data.food_at === 'number' ? data.food_at : 0;
+      const foodCurrent = next.foodRevision > state.foodRevision || (next.foodRevision === state.foodRevision && at >= foodSampleAt);
+      if (!foodCurrent) { next.foodBuff = state.foodBuff; next.foodRevision = state.foodRevision; }
+      Object.assign(state, next);
+      if (foodCurrent) resetFoodTimer(at);
     }
-    else if (TEST) simulate();
+    else if (TEST) { tickFood(); simulate(); resetFoodTimer(); }
     else return false;
     resetOverheal();
     renderActionBar();
@@ -533,6 +540,42 @@ async function runOnServer(call: (id: string) => Promise<Record<string, unknown>
 
 /** Vida + sobrecuración: lo que el jugador puede perder antes de caer. */
 const totalHealth = () => { const v = vitalsOf(state); return v.health + v.overheal; };
+let foodBase = 0, foodSince = 0, foodSampleAt = 0, foodRunning = false;
+function resetFoodTimer(at = 0) {
+  foodBase = state.foodBuff?.remaining ?? 0;
+  foodSince = performance.now();
+  foodSampleAt = at;
+  renderBuffs(state, !foodRunning);
+}
+function setFoodRunning(running: boolean) {
+  tickFood();
+  foodRunning = running;
+  resetFoodTimer(foodSampleAt);
+}
+function receiveFood(food: { buff: FoodBuff | null; revision: number; at: number }) {
+  if (food.revision < state.foodRevision || (food.revision === state.foodRevision && food.at < foodSampleAt)) return;
+  const hadBuff = !!state.foodBuff;
+  state.foodBuff = food.buff;
+  state.foodRevision = food.revision;
+  resetFoodTimer(food.at);
+  if (hadBuff !== !!state.foodBuff) {
+    updateHud();
+    if (openWindow === 'sheet') setWindow('sheet', false);
+  }
+}
+function tickFood() {
+  const buff = state.foodBuff;
+  if (!buff || !foodRunning) return;
+  const remaining = Math.max(0, foodBase - (performance.now() - foodSince) / 1000);
+  if (remaining <= 0) {
+    state.foodBuff = null;
+    updateHud();
+    if (openWindow === 'sheet') setWindow('sheet', false);
+  } else {
+    buff.remaining = remaining;
+    renderBuffs(state, false);
+  }
+}
 /** La sobrecuración se pierde con el tiempo: el servidor guarda el valor al recibirla y el cliente lo descuenta en pantalla. */
 let overhealBase = 0, overhealSince = 0;
 function resetOverheal() { overhealBase = state.overheal; overhealSince = performance.now(); }
@@ -701,8 +744,11 @@ const sellItem = (slot: number) => vendorTransaction((id, v) => sellToVendor(id,
 async function useInventoryItem(slot: number) {
   if (dead) return;
   const before = totalHealth();
+  const resourceBefore = vitalsOf(state).resource;
   if (!(await runOnServer((id) => useItem(id, slot), () => simulateUse(state, slot)))) return;
   const healed = totalHealth() - before;
+  const restored = vitalsOf(state).resource - resourceBefore;
+  if (restored > 0) chatCombat(t('Recuperas {n} puntos de {resource}.', { n: restored, resource: t(vitalsOf(state).resourceKind === 'mana' ? 'Maná' : 'Estamina') }), 'heal');
   if (healed > 0) chatCombat(t('Te curas {n} puntos de vida.', { n: healed }), 'heal');
   updateHud();
   if (healed > 0) {
@@ -739,6 +785,7 @@ function applyCameraShake() {
 
 function updateHud() {
   renderActionBar();
+  renderBuffs(state, !foodRunning);
   const v = vitalsOf(state);
   const pct = (a: number, b: number) => `${Math.round((a / b) * 100)}%`;
   const setBar = (id: string, value: number, max: number, text: string) => {
@@ -858,6 +905,7 @@ function enterPlay() {
   document.body.classList.remove('dead');
   updateHud();
   mode = 'play';
+  if (TEST) { resetFoodTimer(); setFoodRunning(true); }
   document.body.classList.add('playing');
   menuMusic.sync();
   void setAmbientEnabled(ambientEnabled);
@@ -904,6 +952,7 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  setFoodRunning(false);
   stopParty();
   stopFriendNotifications?.();
   stopFriendNotifications = null;
@@ -996,8 +1045,8 @@ setChatSpeechListener((name, text, own, userId) => {
   else remotePlayers.say(userId, name, text);
 });
 setDialogLogger((speaker, text) => {
-  if (speaker === null) { chatSelfSay(state.name, t(text)); char.speak(speechSeconds(text)); }
-  else { chatNpc(speaker, t(text)); npcSay(speaker, t(text)); }
+  if (speaker === null) char.speak(speechSeconds(text));
+  else npcSay(speaker, t(text));
 });
 
 function refreshLanguageDependentUI() {
@@ -1010,8 +1059,10 @@ function refreshLanguageDependentUI() {
     button.title = t(button.dataset.language === 'es' ? 'Español' : 'English');
   }
   refreshUI();
+  renderBuffs(state, !foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
+  if (openWindow === 'sheet' || openWindow === 'vendor') setWindow(openWindow, false);
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -1078,6 +1129,13 @@ let pointDraft: Partial<Record<AttributeId, number>> = {};
 const draftTotal = () => Object.values(pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
 
 function setWindow(win: PlayerWindow | null, closeMenu = true) {
+  const body = $('#window-body');
+  const refreshingSheet = win === 'sheet' && openWindow === 'sheet';
+  const sheetScroll = refreshingSheet ? body.scrollTop : 0;
+  const focused = refreshingSheet && document.activeElement instanceof HTMLElement && body.contains(document.activeElement)
+    ? document.activeElement : null;
+  const focusedAttribute = focused?.closest<HTMLElement>('[data-attribute]');
+  const focusedControl = focusedAttribute && focused instanceof HTMLButtonElement ? [...focusedAttribute.querySelectorAll('button')].indexOf(focused) : -1;
   playerInteractions.close();
   closeSocial?.();
   closeSocial = null;
@@ -1088,14 +1146,14 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   document.body.classList.toggle('window-full', !!win);
   $('#window-backdrop').hidden = !win;
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
+  $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
   $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) { vendor = null; return; }
   if (closeMenu) setPlayerMenuOpen(false, false);
-  const body = $('#window-body');
   $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social');
-  $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory');
+  $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
   if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot));
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
@@ -1122,7 +1180,12 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
     },
   });
   $('#window-confirm').hidden = win !== 'sheet' || draftTotal() === 0;
-  $<HTMLButtonElement>('#window-close').focus();
+  const restoredAttribute = focusedAttribute?.dataset.attribute
+    ? body.querySelector<HTMLElement>(`[data-attribute="${CSS.escape(focusedAttribute.dataset.attribute)}"]`) : null;
+  const restoredControl = restoredAttribute?.querySelectorAll('button')[focusedControl];
+  const focusTarget = restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
+  (focusTarget ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet });
+  body.scrollTop = sheetScroll;
 }
 $('#window-confirm').onclick = async () => {
   const confirm = $<HTMLButtonElement>('#window-confirm');
@@ -1814,6 +1877,7 @@ async function loadWorldState() {
     const data = await enterCharacter(characterId);
     if (!stillCurrent()) return false;
     Object.assign(state, sanitize(data));
+    resetFoodTimer(typeof data.food_at === 'number' ? data.food_at : 0);
     resetOverheal();
     const titles = await getMyTitles();
     if (!stillCurrent()) return false;
@@ -1836,6 +1900,7 @@ function refreshWorldStatus() {
   setMapPlayerCount(worldRetrying ? null : remotePlayers.list().length + 1);
 }
 function receiveWorld(value: WorldSnapshot) {
+  if (value.food) receiveFood(value.food);
   state.position = value.position;
   if (value.status === 'corrected') {
     holder.position.set(value.position.x, city.groundY(value.position.x, value.position.z), value.position.z);
@@ -1857,6 +1922,7 @@ async function prepareMultiplayer() {
     stale: () => { remotePlayers.clear(); refreshWorldStatus(); },
     connection: (status) => {
       worldRetrying = status === 'retrying';
+      setFoodRunning(!worldRetrying);
       refreshWorldStatus();
       if (worldRetrying) chatSystem(t('Conexión al mundo interrumpida. Reintentando…'));
     },
@@ -1870,9 +1936,11 @@ async function prepareMultiplayer() {
   const initial = await connection.join();
   if (worldConnection !== connection || !initial) throw new Error(t('La entrada al mundo se ha cancelado.'));
   state.position = initial.position;
+  if (initial.food) receiveFood(initial.food);
   remotePlayers.receive(initial.players);
 }
 function stopMultiplayer() {
+  setFoodRunning(false);
   const connection = worldConnection;
   worldConnection = null;
   const stopped = connection?.stop();
@@ -1902,6 +1970,23 @@ function startNewCharacter() {
 }
 
 const authForm = $<HTMLFormElement>('#auth-form');
+const rememberEmailKey = 'brumaluz-remembered-email';
+const authEmail = $<HTMLInputElement>('#auth-email');
+const rememberEmail = $<HTMLInputElement>('#auth-remember');
+const rememberedEmail = localStorage.getItem(rememberEmailKey);
+if (rememberedEmail) {
+  authEmail.value = rememberedEmail;
+  rememberEmail.checked = true;
+}
+function persistRememberedEmail() {
+  if (rememberEmail.checked && authEmail.value.trim() && authEmail.validity.valid) {
+    localStorage.setItem(rememberEmailKey, authEmail.value.trim());
+  } else localStorage.removeItem(rememberEmailKey);
+}
+rememberEmail.addEventListener('change', persistRememberedEmail);
+authEmail.addEventListener('input', () => {
+  if (authMode === 'login') persistRememberedEmail();
+});
 let authMode: 'login' | 'register' = 'login';
 document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]').forEach((button) => {
   button.onclick = () => {
@@ -1920,6 +2005,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]').forEach((button
     usernameField.hidden = authMode !== 'register';
     usernameInput.required = authMode === 'register';
     $('#forgot-password').hidden = authMode !== 'login';
+    $('#remember-email-field').hidden = authMode !== 'login';
     $<HTMLInputElement>('#auth-password').autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
     $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
     $('#auth-message').textContent = '';
@@ -1957,6 +2043,7 @@ authForm.addEventListener('submit', async (event) => {
         await syncAccount(result.user);
       }
     } else {
+      persistRememberedEmail();
       const result = await signIn(email, password);
       await syncAccount(result.user);
     }
@@ -2250,7 +2337,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(t - last, 0.05);
   last = t;
   world.uTime.value = t;
-  if (mode === 'play') { updatePlay(dt); tickOverheal(); }
+  if (mode === 'play') { updatePlay(dt); tickOverheal(); tickFood(); }
   else if (!dragging) {
     holder.rotation.y += spinVel;
     spinVel *= 0.92;
@@ -2274,6 +2361,7 @@ renderer.setAnimationLoop(() => {
 });
 
 requestAnimationFrame(() => setTimeout(() => $('#loading').classList.add('hide'), 400));
+initBuffLayout();
 syncBackdropTime();
 window.setInterval(syncBackdropTime, 60_000);
 if (TEST) {

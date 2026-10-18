@@ -1,8 +1,9 @@
 // Barra de acceso rápido (teclas 1-0): por ahora solo guarda objetos usables, como las pociones.
 // La barra es solo una disposición de la interfaz: qué objeto hay en cada hueco se guarda en el navegador,
 // pero usar el objeto (efecto, existencias) lo decide siempre el servidor.
-import { itemDef, itemIcon, itemLabel } from '../data/items';
+import { itemDef, itemIcon } from '../data/items';
 import { t } from './i18n';
+import { setItemTooltip } from './itemTooltip';
 
 export const ACTION_BAR_SIZE = 10;
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -89,11 +90,11 @@ function slotElement(id: string | null, index: number) {
   key.textContent = KEYS[index];
   slot.append(key);
   if (id) {
-    const def = itemDef(id)!;
     const count = hooks.count(id);
     slot.classList.add('filled');
     slot.classList.toggle('empty', count === 0);
-    slot.title = `${t(itemLabel(id))}|${t(def.description)}`;
+    setItemTooltip(slot, id);
+    slot.tabIndex = 0;
     slot.insertAdjacentHTML('afterbegin', itemIcon(id));
     const amount = document.createElement('i');
     amount.textContent = String(count);

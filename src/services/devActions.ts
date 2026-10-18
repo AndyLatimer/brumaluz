@@ -6,6 +6,7 @@ import { addCurrency, spendCurrency } from '../data/currency';
 import { ITEMS, VENDOR_STOCK, sellPrice, itemStack } from '../data/items';
 import { INVENTORY_UNLOCKED } from '../data/inventory';
 import type { CharacterAction } from './account';
+import { FOOD_EFFECTS } from '../data/food';
 
 export function simulateAction(d: CharData, action: CharacterAction) {
   if (action === 'respawn') {
@@ -71,9 +72,24 @@ export function simulateSell(d: CharData, slot: number) {
 export function simulateUse(d: CharData, slot: number) {
   if (d.health === 0) return;
   const v = vitalsOf(d);
-  if (v.health >= v.maxHealth) throw new Error('Ya tienes la vida completa.');
+  const item = d.inventory[slot];
+  if (!item || !ITEMS[item.id]) throw new Error('Ese objeto no existe.');
+  const food = ITEMS[item.id].food;
+  if (food) {
+    removeItem(d, slot);
+    d.health = v.health;
+    d.resource = v.resource;
+    d.foodBuff = { itemId: food, remaining: FOOD_EFFECTS[food].duration };
+    d.foodRevision++;
+    return;
+  }
+  const restore = ITEMS[item.id].restore;
+  if (!restore) throw new Error('Ese objeto no se puede usar.');
+  if (restore.kind !== 'health' && restore.kind !== v.resourceKind) throw new Error('Esta poción no corresponde al recurso de tu clase.');
+  const health = restore.kind === 'health';
+  const current = health ? v.health : v.resource, max = health ? v.maxHealth : v.maxResource;
+  if (current >= max) throw new Error(health ? 'Ya tienes la vida completa.' : 'Ya tienes el recurso completo.');
   removeItem(d, slot);
-  d.health = Math.min(v.maxHealth, v.health + Math.max(1, Math.ceil(v.maxHealth * 0.05)));
-  if (d.health >= v.maxHealth) d.health = -1;
+  const total = Math.min(max, current + Math.max(1, Math.ceil(max * restore.percent / 100)));
+  d[health ? 'health' : 'resource'] = total >= max ? -1 : total;
 }
-

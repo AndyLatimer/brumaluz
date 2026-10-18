@@ -2,6 +2,7 @@
 // Todos los números de equilibrado están en las tablas de abajo: edítalos aquí y se aplican
 // en todo el juego. Explicación completa en docs/STATS.md.
 import { CharData, ClassId, AttributeId, RACES, ATTRIBUTE_BASE_VALUE } from './data';
+import { foodEffect } from './food';
 
 export type ResourceKind = 'mana' | 'stamina';
 
@@ -48,8 +49,8 @@ export const experienceToNextLevel = (level: number) => Math.round(XP_CURVE.base
 export const resourceKindOf = (cls: ClassId): ResourceKind => CLASS_RESOURCE[cls];
 const withPartyBonus = (value: number, d: CharData) =>
   Math.floor(value * (1000 + Math.min(Math.max(d.partyPeers ?? 0, 0), 3) * 15) / 1000);
-export const maxHealthOf = (d: CharData) => withPartyBonus(evaluate(MAX_HEALTH, d), d);
-export const maxResourceOf = (d: CharData) => withPartyBonus(evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d), d);
+export const maxHealthOf = (d: CharData) => withPartyBonus(evaluate(MAX_HEALTH, d), d) + (foodEffect(d.foodBuff)?.maxHealth ?? 0);
+export const maxResourceOf = (d: CharData) => withPartyBonus(evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d), d) + (foodEffect(d.foodBuff)?.maxResource ?? 0);
 
 export interface Vitals {
   health: number; maxHealth: number; overheal: number;

@@ -217,6 +217,8 @@ const SERVER_ERRORS: Record<string, string> = {
   INVALID_ITEM: 'Ese objeto no existe.',
   ITEM_NOT_USABLE: 'Ese objeto no se puede usar.',
   NOTHING_TO_HEAL: 'Ya tienes la vida completa.',
+  WRONG_RESOURCE: 'Esta poción no corresponde al recurso de tu clase.',
+  RESOURCE_FULL: 'Ya tienes el recurso completo.',
   CHAT_EMPTY: 'No puedes enviar un mensaje vacío.',
   CHAT_TOO_LONG: 'El mensaje es demasiado largo (máximo 200 caracteres).',
   CHAT_RATE_LIMIT: 'Estás escribiendo demasiado rápido. Espera unos segundos.',
