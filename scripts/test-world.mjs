@@ -136,6 +136,20 @@ async function openPlayer(world, account, compatible = true) {
   const exp = Math.floor(Date.now() / 1000) + 3600;
   const jwt = `${Buffer.from('{"alg":"HS256","typ":"JWT"}').toString('base64url')}.${Buffer.from(JSON.stringify({ sub: account.user.id, exp })).toString('base64url')}.test-signature`;
   await page.addInitScript(({ project, jwt, exp, user }) => {
+    const NativeAudioContext = window.AudioContext;
+    window.__audioContexts = [];
+    window.AudioContext = class extends NativeAudioContext {
+      constructor(...args) {
+        super(...args);
+        window.__audioContexts.push(this);
+        const createGain = this.createGain.bind(this);
+        this.createGain = () => {
+          const gain = createGain();
+          if (!this.testMaster) this.testMaster = gain;
+          return gain;
+        };
+      }
+    };
     localStorage.setItem(`sb-${project}-auth-token`, JSON.stringify({ access_token: jwt, refresh_token: 'test-refresh', token_type: 'bearer', expires_at: exp, expires_in: 3600, user }));
     localStorage.setItem('brumaluz-ambient', 'off');
     localStorage.setItem('brumaluz-language', 'es');
@@ -160,6 +174,11 @@ async function leave(page) {
 async function chatReady(world, player) {
   for (let attempt = 0; attempt < 100 && !world.chatSockets.has(player.user.id); attempt++) await new Promise(resolve=>setTimeout(resolve,50));
   assert.ok(world.chatSockets.has(player.user.id),'Mock live chat subscription must be ready');
+}
+async function revealChat(page) {
+  const box=await page.locator('.chat-peek').boundingBox();
+  assert.ok(box,'Chat corner handle must be available');
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
 }
 
 test('independent accounts see real remote models, appearance, names, movement and departure in both graphics modes', { timeout: 240000 }, async () => {
@@ -436,6 +455,21 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     assert.equal(await first.page.locator('.social-avatar .class-icon').count(),1);
     assert.equal(await first.page.locator('.social-avatar').getAttribute('aria-label'),'Mago');
     assert.equal(await first.page.locator('#social-username').getAttribute('aria-describedby'),'social-invitation-help');
+    const stats=await first.page.locator('.social-stat').evaluateAll(cards=>cards.map(card=>{
+      const bounds=card.getBoundingClientRect();
+      const value=card.querySelector('.social-stat-value').getBoundingClientRect();
+      const label=card.querySelector('span').getBoundingClientRect();
+      return {centered:Math.abs((bounds.left+bounds.right-value.left-value.right)/2)<1 && Math.abs((bounds.left+bounds.right-label.left-label.right)/2)<1,valueY:value.top};
+    }));
+    assert.ok(stats.every(stat=>stat.centered),'Statistic values and labels must be centered');
+    assert.ok(Math.abs(stats[0].valueY-stats[1].valueY)<1,'Both totals share the same baseline');
+    assert.equal(await first.page.locator('.social-details dt svg').count(),2);
+    const detailGap=await first.page.locator('.social-details').evaluate(dl=>{
+      const first=dl.querySelector('dd').getBoundingClientRect();
+      const second=dl.querySelectorAll('dt')[1].getBoundingClientRect();
+      return second.left-first.right;
+    });
+    assert.ok(detailGap>=0 && detailGap<=22,'Character and location must remain grouped');
     for (const width of [320,390,1280]) {
       await first.page.setViewportSize({width,height:844});
       const fits = await first.page.locator('.social-window').evaluate(el => {
@@ -744,6 +778,8 @@ test('menus hide the action bar except Inventory and chat can be revealed by hov
     assert.equal(await player.page.locator('#action-bar').isVisible(),false);
     const chatBox=await player.page.locator('#chat').boundingBox();
     await player.page.mouse.move(chatBox.x+chatBox.width-10,chatBox.y+10);
+    assert.equal(await player.page.locator('#chat').evaluate(el=>el.classList.contains('hover-revealed')),false);
+    await revealChat(player.page);
     await player.page.waitForFunction(()=>getComputedStyle(document.querySelector('#chat')).opacity==='1');
     assert.equal(await player.page.locator('#chat').evaluate(el=>getComputedStyle(el).pointerEvents),'auto');
     await player.page.mouse.move(5,5);
@@ -760,7 +796,7 @@ test('menus hide the action bar except Inventory and chat can be revealed by hov
     await player.page.keyboard.press('Escape');
     assert.equal(await player.page.locator('#action-bar').isVisible(),true);
     await player.page.locator('#chat').evaluate(el=>el.classList.add('faded'));
-    await player.page.mouse.move(chatBox.x+chatBox.width-10,chatBox.y+10);
+    await revealChat(player.page);
     await player.page.waitForFunction(()=>!document.querySelector('#chat').classList.contains('faded'));
     const scrollbar=await player.page.locator('.chat-log').evaluate(el=>getComputedStyle(el).scrollbarColor);
     assert.equal(scrollbar,'rgb(185, 148, 90) rgb(40, 26, 16)');
@@ -774,6 +810,80 @@ test('menus hide the action bar except Inventory and chat can be revealed by hov
     await player.page.locator('.chat-log').getByText('Second connection message',{exact:true}).waitFor();
     assert.doesNotMatch(await player.page.locator('.chat-log').textContent(),/Old server history|First connection message|Message while disconnected/);
     assert.equal(historyRequests,0);
+    assert.deepEqual(player.errors,[]);
+  } finally {await player.context.close();}
+});
+
+test('chat minimizes into a bottom tab, restores size, and corner preview stays temporary', {timeout:120000}, async()=>{
+  const world=backend(), a=fixture('Alric','humano',100), player=await openPlayer(world,a);
+  try {
+    await player.enter();
+    const expanded=await player.page.locator('#chat').boundingBox();
+    await player.page.getByRole('button',{name:'Minimizar chat',exact:true}).click();
+    const minimized=await player.page.locator('#chat').boundingBox();
+    assert.ok(minimized.height<=40 && minimized.width<=120);
+    assert.equal(Math.round(minimized.y+minimized.height),788);
+    assert.equal(await player.page.locator('.chat-log').isVisible(),false);
+    await player.page.getByRole('button',{name:'Abrir chat',exact:true}).click();
+    assert.equal((await player.page.locator('#chat').boundingBox()).height,expanded.height);
+    await player.page.getByRole('button',{name:'Minimizar chat',exact:true}).click();
+    await social(player.page);
+    await revealChat(player.page);
+    await player.page.waitForFunction(()=>getComputedStyle(document.querySelector('#chat')).opacity==='1');
+    assert.equal(await player.page.locator('.chat-log').isVisible(),true);
+    await player.page.locator('.chat-input').fill('Draft');
+    await player.page.mouse.move(5,5);
+    assert.equal(await player.page.locator('#chat').evaluate(el=>getComputedStyle(el).opacity),'1');
+    await player.page.locator('.chat-input').press('Escape');
+    await player.page.waitForFunction(()=>getComputedStyle(document.querySelector('#chat')).opacity==='0');
+    await player.page.locator('#window-close').click();
+    assert.equal((await player.page.locator('#chat').boundingBox()).height,minimized.height);
+    assert.deepEqual(player.errors,[]);
+  } finally {await player.context.close();}
+});
+
+test('ambient sound switch changes actual output and respects volume and repeated toggles', {timeout:120000}, async()=>{
+  const world=backend(), a=fixture('Alric','humano',100), player=await openPlayer(world,a);
+  try {
+    await player.enter();
+    await player.page.keyboard.press('KeyO');
+    await player.page.locator('[data-tab="sound"]').click();
+    await player.page.locator('#opt-ambient').click();
+    await player.page.waitForFunction(()=>document.querySelector('#opt-ambient').getAttribute('aria-checked')==='true');
+    await player.page.waitForFunction(()=>window.__audioContexts.some(context=>context.state==='running'));
+    const sample=()=>player.page.evaluate(async()=>{
+      const context=window.__audioContexts[0];
+      const analyser=context.createAnalyser();
+      context.testMaster.connect(analyser);
+      await new Promise(resolve=>setTimeout(resolve,150));
+      const data=new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(data);
+      context.testMaster.disconnect(analyser);
+      return Math.sqrt(data.reduce((sum,value)=>sum+value*value,0)/data.length);
+    });
+    await player.page.waitForTimeout(1800);
+    const enabled=await sample();
+    assert.ok(enabled>0.0001,`Enabled ambient must produce sound, got RMS ${enabled}`);
+    await player.page.locator('#opt-ambient').click();
+    await player.page.waitForTimeout(2400);
+    const disabled=await sample();
+    assert.ok(disabled<enabled/20,`Disabled ambient must be silent: ${disabled} vs ${enabled}`);
+    await player.page.locator('#opt-ambient').click();
+    await player.page.waitForTimeout(1800);
+    assert.ok(await sample()>0.0001);
+    await player.page.evaluate(()=>window.__audioContexts[0].suspend());
+    await player.page.locator('#opt-ambient').click();
+    await player.page.locator('#opt-ambient').click();
+    await player.page.waitForFunction(()=>window.__audioContexts[0].state==='running');
+    await player.page.waitForTimeout(800);
+    assert.ok(await sample()>0.0001,'Toggle must restore suspended browser audio');
+    await player.page.locator('#opt-master-volume').fill('0');
+    await player.page.waitForTimeout(800);
+    assert.ok(await sample()<0.0001,'Master volume must mute ambient output');
+    await player.page.locator('#opt-master-volume').fill('80');
+    await player.page.waitForTimeout(800);
+    assert.ok(await sample()>0.0001,'Master volume must restore ambient output');
+    assert.equal(await player.page.locator('#opt-ambient').getAttribute('aria-checked'),'true');
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
 });

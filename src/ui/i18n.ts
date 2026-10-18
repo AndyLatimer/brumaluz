@@ -3,6 +3,8 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Mostrar chat temporalmente': 'Show chat temporarily',
+  'Activando sonido ambiental…': 'Starting ambient sound…',
   'Tus amigos': 'Your friends',
   '({n} conectados)': '({n} online)',
   'Solo puedes susurrar a amigos conectados.': 'You can only whisper to online friends.',

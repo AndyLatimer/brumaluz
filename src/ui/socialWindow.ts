@@ -11,6 +11,8 @@ const ICONS = {
   whisper: '<path d="M4 5h16v13H9l-5 4zM8 9h8m-8 4h5"/>',
   accept: '<path d="m12 2 8 3v7c0 5-5 8-8 10-3-2-8-5-8-10V5zM8 12l3 3 6-7"/>',
   remove: '<path d="M6 6l12 12M18 6 6 18"/>',
+  character: '<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',
+  location: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
 };
 function icon(kind: keyof typeof ICONS) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -155,7 +157,10 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
       number.textContent = String(count);
       const caption = document.createElement('span');
       caption.textContent = t(label);
-      stat.append(icon(kind), number, caption);
+      const value = document.createElement('div');
+      value.className = 'social-stat-value';
+      value.append(icon(kind), number);
+      stat.append(value, caption);
       if (kind === 'friend') {
         const connected = document.createElement('small');
         connected.className = 'social-connected-total';
@@ -218,7 +223,7 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
             for (const [label, value] of [['Personaje', entry.characterName], ['Ubicación', entry.location === 'brumaluz' ? 'Brumaluz' : entry.location]] as const) {
               if (!value) continue;
               const dt = document.createElement('dt');
-              dt.textContent = t(label);
+              dt.append(icon(label === 'Personaje' ? 'character' : 'location'), document.createTextNode(t(label)));
               const dd = document.createElement('dd');
               dd.textContent = label === 'Personaje' ? value : t(value);
               details.append(dt, dd);

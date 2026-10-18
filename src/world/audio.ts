@@ -5,6 +5,7 @@ export class AmbientSoundscape {
   private bellTimer: number | undefined;
   private active = false;
   private level = 1;
+  private generation = 0;
 
   get enabled() {
     return this.active;
@@ -22,23 +23,25 @@ export class AmbientSoundscape {
   }
 
   async setEnabled(enabled: boolean) {
-    if (enabled && this.active) {
-      if (this.context?.state === 'suspended') await this.context.resume();
-      return;
-    }
+    const generation = ++this.generation;
     this.active = enabled;
+    window.clearTimeout(this.birdsTimer);
+    window.clearTimeout(this.bellTimer);
+    this.birdsTimer = undefined;
+    this.bellTimer = undefined;
     if (!enabled) {
-      this.master?.gain.setTargetAtTime(0, this.context!.currentTime, 0.35);
-      window.clearTimeout(this.birdsTimer);
-      window.clearTimeout(this.bellTimer);
-      this.birdsTimer = undefined;
-      this.bellTimer = undefined;
+      if (this.master && this.context) {
+        this.master.gain.cancelAndHoldAtTime(this.context.currentTime);
+        this.master.gain.setTargetAtTime(0, this.context.currentTime, 0.08);
+      }
       return;
     }
     if (!this.context) this.createSoundscape();
     await this.context!.resume();
-    if (!this.active) return;
-    this.master!.gain.setTargetAtTime(0.72 * this.level, this.context!.currentTime, 0.8);
+    if (generation !== this.generation || !this.active) return;
+    if (this.context!.state !== 'running') throw new Error('No se pudo iniciar el sonido ambiental.');
+    this.master!.gain.cancelAndHoldAtTime(this.context!.currentTime);
+    this.master!.gain.setTargetAtTime(0.72 * this.level, this.context!.currentTime, 0.15);
     this.scheduleBirds();
   }
 

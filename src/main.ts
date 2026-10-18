@@ -1116,14 +1116,18 @@ document.addEventListener('click', (event) => {
   if (playerMenuOpen && event.target instanceof Node && !$('#player-menu').contains(event.target)) setPlayerMenuOpen(false, false);
 });
 
+let ambientChange = 0;
 async function setAmbientEnabled(enabled: boolean) {
+  const version = ++ambientChange;
   ambientEnabled = enabled;
   refreshAmbientControls();
   localStorage.setItem('brumaluz-ambient', enabled ? 'on' : 'off');
+  $('#options-message').textContent = enabled ? t('Activando sonido ambiental…') : '';
   try {
     await ambientSoundscape.setEnabled(enabled);
+    if (version === ambientChange) $('#options-message').textContent = '';
   } catch (error) {
-    reportAmbientError(error);
+    if (version === ambientChange) reportAmbientError(error);
   }
 }
 

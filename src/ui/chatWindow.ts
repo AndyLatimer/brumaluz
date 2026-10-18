@@ -215,6 +215,9 @@ export const isChatFocused = () => document.activeElement === $<HTMLInputElement
 
 function setCollapsed(collapsed: boolean) {
   root().classList.toggle('collapsed', collapsed);
+  root().classList.remove('hover-revealed', 'peek-expanded');
+  if (collapsed) $<HTMLInputElement>('.chat-input').blur();
+  wake();
   const button = $<HTMLButtonElement>('.chat-collapse');
   button.setAttribute('aria-expanded', String(!collapsed));
   const label = t(collapsed ? 'Abrir chat' : 'Minimizar chat');
@@ -348,16 +351,42 @@ export function initChat(h: ChatHooks) {
   document.addEventListener('brumaluz-language-change', () => { setSendChannel(sendChannel); rebuild(); });
   // Sin mensajes nuevos ni uso, el chat se apaga poco a poco hasta ocultarse; cualquier mensaje o interacción lo devuelve.
   const chat = root();
+  const minimizedLabel = document.createElement('span');
+  minimizedLabel.className = 'chat-minimized-label';
+  minimizedLabel.textContent = 'Chat';
+  chat.querySelector('.chat-head')!.prepend(minimizedLabel);
+  const peek = document.createElement('button');
+  peek.type = 'button';
+  peek.className = 'chat-peek';
+  peek.setAttribute('aria-controls', 'chat');
+  peek.setAttribute('aria-label', t('Mostrar chat temporalmente'));
+  peek.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4zM8 8h8m-8 4h5"/></svg><span>Chat</span><span aria-hidden="true">↑</span>';
+  document.body.append(peek);
+  peek.addEventListener('pointerenter', () => {
+    chat.classList.add('hover-revealed', 'peek-expanded');
+    wake();
+  });
+  peek.onclick = () => focusChat();
   window.addEventListener('pointermove', (event) => {
     if (!document.body.classList.contains('playing') || document.body.classList.contains('dead')) return;
     const bounds = chat.getBoundingClientRect();
     const hovered = event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
-    chat.classList.toggle('hover-revealed', hovered);
-    if (hovered) wake();
+    const handleBounds = peek.getBoundingClientRect();
+    const onHandle = event.clientX >= handleBounds.left && event.clientX <= handleBounds.right && event.clientY >= handleBounds.top && event.clientY <= handleBounds.bottom;
+    if (chat.classList.contains('hover-revealed') && !hovered && !onHandle) {
+      chat.classList.remove('hover-revealed');
+      if (!chat.matches(':focus-within')) chat.classList.remove('peek-expanded');
+    }
+    if (hovered && chat.classList.contains('hover-revealed')) wake();
   }, { passive: true });
+  chat.addEventListener('focusout', () => {
+    queueMicrotask(() => {
+      if (!chat.matches(':focus-within') && !chat.classList.contains('hover-revealed')) chat.classList.remove('peek-expanded');
+    });
+  });
   for (const type of ['pointerenter', 'pointerdown', 'focusin', 'wheel']) chat.addEventListener(type, wake, { passive: true });
   window.setInterval(() => {
-    if (performance.now() - lastActivity > FADE_AFTER_MS && !chat.matches(':hover, :focus-within')) chat.classList.add('faded');
+    if (performance.now() - lastActivity > FADE_AFTER_MS && !chat.classList.contains('collapsed') && !chat.matches(':hover, :focus-within')) chat.classList.add('faded');
   }, 500);
 }
 
