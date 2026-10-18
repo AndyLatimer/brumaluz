@@ -37,7 +37,7 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), fail: new Set(), delay: new Map(), counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
 }
 async function openPlayer(world, account, compatible = true) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -48,13 +48,19 @@ async function openPlayer(world, account, compatible = true) {
   await context.route(/https:\/\/[^/]+\.supabase\.co\//, async (route) => {
     const request = route.request(), path = new URL(request.url()).pathname;
     const fulfill = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+    if (path === '/auth/v1/logout' && world.logoutFails) return fulfill({ msg: 'Logout temporarily unavailable' }, 500);
     if (path.startsWith('/auth/v1/')) return fulfill(account.user);
     if (path === '/rest/v1/profiles') return fulfill({ username: account.character.name });
-    if (path === '/rest/v1/characters') return fulfill([account.character]);
+    if (path === '/rest/v1/characters') return fulfill(account.characters || [account.character]);
     if (path === '/rest/v1/chat_messages') return fulfill([]);
     const fn = path.split('/').at(-1);
     const args = request.postDataJSON();
-    if (fn === 'character_enter') return fulfill(account.character.data);
+    const character = (account.characters || [account.character]).find((c) => c.id === args.p_character_id) || account.character;
+    const data = { ...character.data };
+    if (world.rpcDelay.has(fn)) await new Promise((resolve) => setTimeout(resolve, world.rpcDelay.get(fn)));
+    if (fn === 'character_enter') return fulfill(data);
+    if (fn === 'create_character') return fulfill(randomUUID());
+    if (fn === 'set_character_title') return fulfill({ ...data, title: args.p_title });
     if (fn === 'my_titles') return fulfill([]);
     const key = account.user.id;
     if (fn === 'world_leave') {
@@ -65,7 +71,7 @@ async function openPlayer(world, account, compatible = true) {
     if (world.fail.has(key)) return fulfill({ message: 'Temporary connection failure' }, 503);
     let player = world.players.get(key);
     if (fn === 'world_join') {
-      player = { id: account.character.id, userId: key, session: args.p_session_id, data: account.character.data, position: { ...account.character.data.position }, facing: Math.PI, jump: 0, wave: 0, dead: false };
+      player = { id: character.id, userId: key, session: args.p_session_id, data: character.data, position: { ...character.data.position }, facing: Math.PI, jump: 0, wave: 0, dead: false };
       world.players.set(key, player);
     } else if (!player || player.session !== args.p_session_id) return fulfill({ message: 'WORLD_SESSION_REPLACED' }, 400);
     world.counts.set(key, (world.counts.get(key) || 0) + 1);
@@ -104,6 +110,7 @@ async function leave(page) {
   await page.locator('#game-menu-toggle').click();
   await page.locator('#game-menu-characters').click();
   await page.waitForFunction(() => !document.body.classList.contains('playing'));
+  await page.locator('.character-card .btn.gold').first().waitFor({ state: 'visible' });
 }
 
 test('independent accounts see real remote models, appearance, names, movement and departure in both graphics modes', { timeout: 240000 }, async () => {
@@ -170,8 +177,11 @@ test('network errors retry sequentially; delayed snapshots cannot recreate actor
     await remote(first.page, b.character.id);
     world.fail.add(a.user.id);
     await first.page.waitForFunction(() => document.getElementById('multiplayer-status').classList.contains('error'));
+    await first.page.waitForFunction(() => window.brumaluz.players().length === 0, null, { timeout: 25000 });
+    assert.match(await first.page.locator('#multiplayer-status').textContent(), /Reintentando/);
     world.fail.delete(a.user.id);
     await first.page.waitForFunction(() => !document.getElementById('multiplayer-status').classList.contains('error'));
+    await remote(first.page, b.character.id);
     world.delay.set(a.user.id, 800);
     await first.page.waitForTimeout(300);
     await leave(first.page);
@@ -192,11 +202,102 @@ test('signing out during a delayed join cannot reopen the world or leave remote 
     const joining = player.page.waitForRequest((request) => request.url().endsWith('/rpc/world_join'));
     await player.page.locator('.character-card .btn.gold').first().click();
     await joining;
-    await player.page.locator('#sign-out').dispatchEvent('click');
+    await player.page.locator('#sign-out').click();
     await player.page.locator('#auth-form').waitFor({ state: 'visible' });
     await player.page.waitForTimeout(3500);
     assert.equal(await player.page.locator('body').evaluate((body) => body.classList.contains('playing')), false);
     assert.equal(await player.page.evaluate(() => window.brumaluz.players().length), 0);
+    assert.equal(world.players.has(a.user.id), false);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('only one character entry can run at a time', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4), other = fixture('Borin', 'elfo', -5.4);
+  a.characters = [a.character, { ...other.character, user_id: a.user.id }];
+  world.rpcDelay.set('character_enter', 1000);
+  const player = await openPlayer(world, a);
+  try {
+    await player.page.locator('.character-card .btn.gold').nth(0).dispatchEvent('click');
+    await player.page.locator('.character-card .btn.gold').nth(1).dispatchEvent('click');
+    await player.page.waitForFunction(() => document.body.classList.contains('playing'));
+    assert.equal(world.players.get(a.user.id).id, a.character.id);
+    assert.equal(await player.page.evaluate(() => window.brumaluz.char().d.name), 'Alric');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('a late title response cannot overwrite another character or reopen the sheet', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4), other = fixture('Borin', 'elfo', -5.4);
+  a.characters = [a.character, { ...other.character, user_id: a.user.id }];
+  const player = await openPlayer(world, a);
+  try {
+    await player.enter();
+    await player.page.locator('#player-menu-toggle').click();
+    await player.page.locator('[data-window="sheet"]').click();
+    world.rpcDelay.set('set_character_title', 5000);
+    await player.page.locator('.title-button').click();
+    const sent = player.page.waitForRequest((request) => request.url().endsWith('/rpc/set_character_title'));
+    await player.page.locator('.title-option').filter({ hasText: 'Sin título' }).click();
+    await sent;
+    await player.page.locator('#window-close').click();
+    await leave(player.page);
+    await player.page.locator('.character-card .btn.gold').nth(1).click();
+    await player.page.waitForFunction(() => document.body.classList.contains('playing'));
+    await player.page.waitForTimeout(5200);
+    assert.equal(await player.page.evaluate(() => window.brumaluz.char().d.name), 'Borin');
+    await player.page.locator('#player-menu-toggle').click();
+    await player.page.locator('[data-window="sheet"]').click();
+    assert.equal(await player.page.locator('.sheet-name-row strong').textContent(), 'Borin');
+    assert.match(await player.page.locator('.title-button').textContent(), /Recién llegado/);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('failed remote logout still closes the local world and shows a visible error', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4);
+  const player = await openPlayer(world, a);
+  try {
+    await player.enter();
+    world.logoutFails = true;
+    await player.page.locator('#game-menu-toggle').click();
+    await player.page.locator('#game-menu-logout').click();
+    await player.page.locator('#auth-form').waitFor({ state: 'visible' });
+    await player.page.locator('#toast.error.show').waitFor();
+    assert.equal(await player.page.locator('body').evaluate((body) => body.classList.contains('playing')), false);
+    assert.equal(world.players.has(a.user.id), false);
+    assert.match(await player.page.locator('#toast').textContent(), /Logout temporarily unavailable/);
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('prototype names in old character data cannot crash appearance sanitization', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4);
+  a.character.data.race = 'toString';
+  a.character.data.cls = 'constructor';
+  const player = await openPlayer(world, a);
+  try {
+    await player.enter();
+    assert.equal(await player.page.evaluate(() => window.brumaluz.char().d.race), 'humano');
+    assert.equal(await player.page.evaluate(() => window.brumaluz.char().d.cls), 'guerrero');
+    assert.deepEqual(player.errors, []);
+  } finally { await player.context.close(); }
+});
+
+test('a delayed character creation cannot pull the user back into the world after returning to selection', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric', 'humano', -6.4);
+  const player = await openPlayer(world, a);
+  try {
+    await player.page.locator('#new-character').click();
+    await player.page.evaluate(() => window.brumaluz.set({ name: 'Borin', attributePoints: { fuerza: 2 }, creationPoints: 2 }));
+    world.rpcDelay.set('create_character', 2000);
+    const sent = player.page.waitForRequest((request) => request.url().endsWith('/rpc/create_character'));
+    await player.page.locator('#enter').click();
+    await sent;
+    await player.page.locator('#account-characters').click();
+    await player.page.locator('.character-card .btn.gold').first().waitFor({ state: 'visible' });
+    await player.page.waitForTimeout(2500);
+    assert.equal(await player.page.locator('body').evaluate((body) => body.classList.contains('playing')), false);
     assert.equal(world.players.has(a.user.id), false);
     assert.deepEqual(player.errors, []);
   } finally { await player.context.close(); }

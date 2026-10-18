@@ -177,10 +177,15 @@ export function chatNpc(speaker: string, text: string) { push({ kind: 'npc', tim
 /** Lo que respondes tú en una conversación con un NPC. */
 export function chatSelfSay(name: string, text: string) { push({ kind: 'npc', time: new Date(), name, text, own: true }); }
 
+let chatGeneration = 0;
 export function clearChat() {
+  chatGeneration++;
   entries.length = 0;
   seen.clear();
   lastWhisperFrom = null;
+  unread = 0;
+  delete $<HTMLElement>('.chat-collapse').dataset.unread;
+  $<HTMLInputElement>('.chat-input').value = '';
   rebuild();
 }
 
@@ -226,6 +231,7 @@ async function submit(raw: string) {
   const text = raw.trim();
   if (!text) return;
   const command = /^\/(\S+)\s*(.*)$/s.exec(text);
+  const generation = chatGeneration;
   try {
     if (!command) { await hooks!.send(text, sendChannel); return; }
     const [, name, rest] = command;
@@ -266,7 +272,7 @@ async function submit(raw: string) {
       default: chatSystem(t('Comando desconocido: /{name}. Escribe /ayuda.', { name }), true);
     }
   } catch (error) {
-    chatSystem(error instanceof Error ? error.message : String(error), true);
+    if (generation === chatGeneration) chatSystem(error instanceof Error ? error.message : String(error), true);
   }
 }
 function initResize() {

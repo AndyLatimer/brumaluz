@@ -661,8 +661,8 @@ begin
     return jsonb_build_object('status', 'dead', 'position', d -> 'position');
   end if;
   if p_x is null or p_z is null or p_yaw is null
-    or p_x <> p_x or p_z <> p_z or p_yaw <> p_yaw
-    or abs(p_x) > cfg_limit or abs(p_z) > cfg_limit then
+    or not (p_x between -cfg_limit and cfg_limit and p_z between -cfg_limit and cfg_limit
+      and p_yaw between -1000000 and 1000000) then
     return jsonb_build_object('status', 'too_far', 'position', coalesce(d -> 'position', jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0)));
   end if;
   if dt < 2 then
@@ -757,6 +757,10 @@ begin
   if p_session_id is null then raise exception 'INVALID_WORLD_STATE'; end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
   c := public.game_lock_character(p_character_id);
+  select * into previous from public.world_players where user_id = uid;
+  if previous.character_id is not null and previous.character_id <> c.id then
+    perform public.game_lock_character(previous.character_id);
+  end if;
   select * into previous from public.world_players where user_id = uid for update;
   -- Conserva la posición más reciente al abrir otra pestaña, sin retroceder al último checkpoint.
   if previous.character_id is not null and not previous.dead then
@@ -765,7 +769,7 @@ begin
       || jsonb_build_object('position', previous.position, 'position_at', extract(epoch from now())));
   end if;
   if previous.character_id = c.id and not previous.dead then pos := previous.position;
-  else pos := coalesce(c.data -> 'position', jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0));
+  else pos := coalesce(nullif(c.data -> 'position', 'null'::jsonb), jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0));
   end if;
   insert into public.world_players(user_id, character_id, session_id, position, facing, dead)
     values(uid, c.id, p_session_id, pos, coalesce((pos ->> 'yaw')::double precision, 0) + pi(), public.game_health(c.data) = 0)
@@ -830,7 +834,7 @@ begin
   credit := least(3, w.movement_credit) + cfg_speed * least(15, greatest(0, extract(epoch from now() - w.seen_at)));
   distance := sqrt(power(px - (w.position ->> 'x')::double precision, 2) + power(pz - (w.position ->> 'z')::double precision, 2));
   if w.dead and not is_dead then
-    w.position := coalesce(c.data -> 'position', jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0));
+    w.position := coalesce(nullif(c.data -> 'position', 'null'::jsonb), jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0));
     status := 'corrected';
   elsif is_dead or distance > credit then
     status := 'corrected';
@@ -864,9 +868,10 @@ declare
 begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
+  select * into c from public.characters where id = p_character_id and user_id = uid for update;
+  if not found then return; end if;
   select * into w from public.world_players where user_id = uid and character_id = p_character_id and session_id = p_session_id for update;
   if not found then return; end if;
-  c := public.game_lock_character(p_character_id);
   perform public.game_store(c.id, c.data || jsonb_build_object('position', w.position, 'position_at', extract(epoch from now())));
   delete from public.world_players where user_id = uid and session_id = p_session_id;
 end;

@@ -39,6 +39,7 @@ body.playing #multiplayer-status.error { color: #ffb7a0; }
 #loading.hide { opacity: 0; pointer-events: none; }
 #graphics-mode { position: fixed; left: 12px; top: 12px; z-index: 51; font-size: 12px; }
 body.playing #graphics-mode { display: none; }
+body.characters-visible #graphics-mode { top: auto; bottom: 12px; }
 #graphics-error:not([hidden]) { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(26,16,18,.9); }
 #graphics-error .frame { width: min(600px, 100%); max-height: 90vh; overflow: auto; padding: 24px; background: var(--parch); }
 #graphics-error h2 { font-family: 'Cinzel', serif; }

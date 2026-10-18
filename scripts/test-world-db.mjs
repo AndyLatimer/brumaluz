@@ -26,12 +26,13 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
     await client.query(readFileSync(new URL('../supabase/server.sql', import.meta.url), 'utf8'));
     const a = randomUUID(), b = randomUUID(), ca = randomUUID(), cb = randomUUID(), ca2 = randomUUID();
     const sa = randomUUID(), sb = randomUUID(), replacement = randomUUID();
+    const location = `test_${randomUUID()}`;
     for (const id of [a, b]) {
       await client.query('insert into auth.users(id, raw_user_meta_data) values($1, $2)', [id, { username: `test_${id.replaceAll('-', '').slice(0, 12)}` }]);
     }
     for (const [id, user, name] of [[ca, a, 'Alric'], [cb, b, 'Elara'], [ca2, a, 'Borin']]) {
       await client.query('insert into public.characters(id,user_id,name,data) values($1,$2,$3,$4)', [
-        id, user, name, { name, race: 'humano', cls: 'guerrero', health: -1, level: 1, title: 'none', skin: 2, hair: 3, wallet: { pelines: 999 }, inventory: ['private'], attributePoints: { fuerza: 2 }, position: { x: 0, z: 0, yaw: 0 } },
+        id, user, name, { name, location, race: 'humano', cls: 'guerrero', health: -1, level: 1, title: 'none', skin: 2, hair: 3, wallet: { pelines: 999 }, inventory: ['private'], attributePoints: { fuerza: 2 }, position: { x: 0, z: 0, yaw: 0 } },
       ]);
     }
     async function user(id) {
@@ -139,6 +140,37 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await rpc('world_leave', [ca, replacement]);
       const saved = await client.query('select data from public.characters where id=$1', [ca]);
       assert.deepEqual(saved.rows[0].data.position, result.position);
+    });
+    await t.test('JSON null positions fall back to spawn and can immediately sync and leave', async () => {
+      await client.query('reset role');
+      await client.query("update public.characters set data=jsonb_set(data,'{position}','null') where id=$1", [ca]);
+      await user(a);
+      const joined = await rpc('world_join', [ca, replacement]);
+      assert.equal(typeof joined.position.x, 'number');
+      assert.equal(typeof joined.position.z, 'number');
+      assert.equal(joined.position.yaw, 0);
+      const synced = await rpc('world_sync', [ca, replacement, { ...motion(joined.position.x), z: joined.position.z }]);
+      assert.equal(synced.status, 'ok');
+      await client.query('reset role');
+      await client.query('update public.world_players set dead=true where user_id=$1', [a]);
+      await user(a);
+      const revived = await rpc('world_sync', [ca, replacement, { ...motion(joined.position.x), z: joined.position.z }]);
+      assert.equal(revived.status, 'corrected');
+      assert.deepEqual(revived.position, joined.position);
+      await rpc('world_leave', [ca, replacement]);
+    });
+    await t.test('legacy position saves reject non-finite camera angles without corrupting stored data', async () => {
+      for (const yaw of ['NaN', 'Infinity', '-Infinity']) {
+        const result = await rpc('save_character_position', [ca, 0, 0, yaw]);
+        assert.equal(result.status, 'too_far');
+      }
+      const { rows } = await client.query('select data from public.characters where id=$1', [ca]);
+      assert.equal(typeof rows[0].data.position.yaw, 'number');
+    });
+    await t.test('late leave after character deletion is harmless', async () => {
+      await rpc('world_join', [ca2, replacement]);
+      await client.query('delete from public.characters where id=$1', [ca2]);
+      await rpc('world_leave', [ca2, replacement]);
     });
   } finally {
     await client.query('rollback');

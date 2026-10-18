@@ -49,6 +49,7 @@ let currentUsername: string | null = null;
 let cachedCharacters: SavedCharacter[] = [];
 let accountSyncId = 0;
 let savingCharacter = false;
+let enteringWorld = false;
 let passwordRecoveryUser: User | null = null;
 
 // ---------------- Render ----------------
@@ -76,6 +77,15 @@ scene.add(holder);
 
 let tab = 'raza';
 let mode: 'create' | 'play' = 'create';
+let playGeneration = 0;
+function characterContext() {
+  const character = state;
+  const characterId = activeCharacterId;
+  const userId = currentUser?.id;
+  const generation = playGeneration;
+  const accountGeneration = accountSyncId;
+  return () => state === character && activeCharacterId === characterId && currentUser?.id === userId && playGeneration === generation && accountSyncId === accountGeneration;
+}
 let city: City;
 let char: Character;
 let pendingHop = false;
@@ -458,16 +468,21 @@ async function serverAction(action: CharacterAction): Promise<boolean> {
 /** Ejecuta una petición al servidor con el personaje activo (o su simulación local en ?test) y copia el resultado al estado. */
 async function runOnServer(call: (id: string) => Promise<Record<string, unknown>>, simulate: () => void): Promise<boolean> {
   if (actionBusy) return false;
+  const stillCurrent = characterContext();
   actionBusy = true;
   try {
-    if (activeCharacterId) Object.assign(state, sanitize(await call(activeCharacterId)));
+    if (activeCharacterId) {
+      const data = await call(activeCharacterId);
+      if (!stillCurrent()) return false;
+      Object.assign(state, sanitize(data));
+    }
     else if (TEST) simulate();
     else return false;
     resetOverheal();
     renderActionBar();
     return true;
   } catch (error) {
-    toast('No se pudo completar la acción', errorMessage(error), true);
+    if (stillCurrent()) toast('No se pudo completar la acción', errorMessage(error), true);
     return false;
   } finally {
     actionBusy = false;
@@ -793,6 +808,7 @@ function updateNameplate() {
 }
 
 function enterPlay() {
+  playGeneration++;
   if (state.health === 0) state.health = -1; // personaje guardado muerto: vuelve con la vida completa
   dead = false;
   $('#death-screen').hidden = true;
@@ -829,7 +845,9 @@ function startChat() {
     return;
   }
   const id = ++chatSeq;
-  void fetchChatHistory().then((list) => { if (id === chatSeq) list.forEach(chatReceive); }).catch(() => {});
+  void fetchChatHistory().then((list) => { if (id === chatSeq) list.forEach(chatReceive); }).catch((error) => {
+    if (id === chatSeq) chatSystem(errorMessage(error), true);
+  });
   const off = subscribeChat((m) => { if (id === chatSeq) chatReceive(m); });
   chatUnsubscribe = off;
 }
@@ -840,6 +858,7 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  playGeneration++;
   stopMultiplayer();
   stopChat();
   dead = false;
@@ -887,7 +906,9 @@ initChat({
       playerSay(state.name, body);
       return;
     }
-    chatReceive(await sendChatMessage(activeCharacterId, body, channel, to));
+    const sequence = chatSeq;
+    const message = await sendChatMessage(activeCharacterId, body, channel, to);
+    if (sequence === chatSeq) chatReceive(message);
   },
 });
 initMinimap({
@@ -987,13 +1008,9 @@ function setWindow(win: 'inventory' | 'sheet' | 'vendor' | null, closeMenu = tru
   if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot));
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else renderSheet(body, state, renderer, async (title) => {
-    try {
-      if (activeCharacterId) Object.assign(state, sanitize(await setCharacterTitle(activeCharacterId, title)));
-      else if (TEST) state.title = title;
-      else return;
-    } catch (error) {
-      toast('No se pudo guardar', errorMessage(error), true);
-    }
+    const stillCurrent = characterContext();
+    await runOnServer((id) => setCharacterTitle(id, title), () => { state.title = title; });
+    if (!stillCurrent()) return;
     updateHud();
     if (openWindow === 'sheet') setWindow('sheet', false);
   }, {
@@ -1016,17 +1033,20 @@ $('#window-confirm').onclick = async () => {
   const confirm = $<HTMLButtonElement>('#window-confirm');
   if (confirm.disabled) return;
   confirm.disabled = true;
+  const stillCurrent = characterContext();
+  const draft = { ...pointDraft };
   try {
-    if (activeCharacterId) Object.assign(state, sanitize(await spendAttributePoints(activeCharacterId, pointDraft as Record<string, number>)));
-    else if (TEST) simulateSpend(state, pointDraft);
+    if (!(await runOnServer((id) => spendAttributePoints(id, draft), () => simulateSpend(state, draft)))) return;
     pointDraft = {};
   } catch (error) {
     toast('No se pudo guardar', errorMessage(error), true);
   } finally {
     confirm.disabled = false;
   }
-  updateHud();
-  setWindow('sheet', false);
+  if (stillCurrent()) {
+    updateHud();
+    if (openWindow === 'sheet') setWindow('sheet', false);
+  }
 };
 
 $('#player-menu-toggle').onclick = () => setPlayerMenuOpen(!playerMenuOpen);
@@ -1468,13 +1488,18 @@ function displayCharacters(characters: SavedCharacter[]) {
     play.className = 'btn gold';
     play.textContent = t('Jugar');
     play.onclick = async () => {
+      if (enteringWorld) return;
+      enteringWorld = true;
       play.disabled = true;
-      loadCharacter(saved);
-      const entered = await loadWorldState();
-      play.disabled = false;
-      if (!entered) return;
-      showEditor();
-      enterPlay();
+      try {
+        loadCharacter(saved);
+        if (!(await loadWorldState())) return;
+        showEditor();
+        enterPlay();
+      } finally {
+        enteringWorld = false;
+        play.disabled = false;
+      }
     };
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -1502,6 +1527,7 @@ let characterPendingDeletion: SavedCharacter | null = null;
 let deletingCharacter = false;
 
 function openDeleteDialog(character: SavedCharacter) {
+  if (enteringWorld) return;
   characterPendingDeletion = character;
   $('#delete-dialog-description').textContent = t('Vas a borrar definitivamente a {name}. Esta acción no se puede deshacer.', { name: character.name });
   deleteNameInput.disabled = false;
@@ -1614,7 +1640,7 @@ async function syncAccount(sessionUser: User | null) {
     showAuthScreen();
     return;
   }
-  if (currentUser?.id === sessionUser.id && (mode === 'play' || worldConnection)) return;
+  if (currentUser?.id === sessionUser.id && (mode === 'play' || worldConnection || enteringWorld || savingCharacter)) return;
   if (currentUser?.id !== sessionUser.id) stopMultiplayer();
   if (currentUser && currentUser.id !== sessionUser.id && mode === 'play') exitPlay();
   await loadCharacterSelection(sessionUser);
@@ -1656,11 +1682,14 @@ async function createCurrentCharacter() {
   if (activeCharacterId) return true;
   if (savingCharacter || !currentUser || !validCharacterName()) return false;
   savingCharacter = true;
+  const stillCurrent = characterContext();
   try {
-    activeCharacterId = await createCharacter(state);
+    const id = await createCharacter(state);
+    if (!stillCurrent()) return false;
+    activeCharacterId = id;
     return true;
   } catch (error) {
-    toast('No se pudo guardar', errorMessage(error), true);
+    if (stillCurrent()) toast('No se pudo guardar', errorMessage(error), true);
     return false;
   } finally {
     savingCharacter = false;
@@ -1719,6 +1748,7 @@ async function prepareMultiplayer() {
   const connection = new WorldConnection(activeCharacterId, {
     motion: () => ({ x: holder.position.x, z: holder.position.z, yaw, facing: holder.rotation.y, jump: Math.min(0.7, Math.max(0, jumpHeight)), wave: waveSequence }),
     receive: receiveWorld,
+    stale: () => { remotePlayers.clear(); refreshWorldStatus(); },
     connection: (status) => {
       worldRetrying = status === 'retrying';
       refreshWorldStatus();
@@ -1748,15 +1778,17 @@ window.addEventListener('pagehide', stopMultiplayer);
 window.addEventListener('pageshow', (event) => { if (event.persisted && mode === 'play') void returnToCharacters(); });
 
 async function returnToCharacters() {
+  const user = currentUser;
   if (mode === 'play') {
-    await stopMultiplayer();
+    const stopped = stopMultiplayer();
     exitPlay();
+    await stopped;
   }
-  if (currentUser) await loadCharacterSelection(currentUser);
+  if (user && currentUser?.id === user.id) await loadCharacterSelection(user);
 }
 
 function startNewCharacter() {
-  if (!currentUser || $<HTMLButtonElement>('#new-character').disabled) return;
+  if (!currentUser || enteringWorld || $<HTMLButtonElement>('#new-character').disabled) return;
   state = defaultChar();
   state.name = randomName(state.race);
   activeCharacterId = null;
@@ -1890,6 +1922,7 @@ $('#sign-out').onclick = async () => {
     await signOut();
     await syncAccount(null);
   } catch (error) {
+    toast('No se pudo completar la acción', errorMessage(error), true);
     $('#character-message').textContent = errorMessage(error);
     $('#character-message').classList.add('error');
   }
@@ -1903,12 +1936,13 @@ $('#game-menu-logout').onclick = async () => {
   logoutButton.disabled = true;
   $('#game-menu-message').textContent = t('Cerrando sesión…');
   try {
-    if (mode === 'play') await stopMultiplayer();
+    if (mode === 'play') await returnToCharacters();
     await signOut();
     await syncAccount(null);
   } catch (error) {
-    $('#game-menu-message').textContent = errorMessage(error);
-    $('#game-menu-message').classList.add('error');
+    toast('No se pudo completar la acción', errorMessage(error), true);
+    $('#character-message').textContent = errorMessage(error);
+    $('#character-message').classList.add('error');
   } finally {
     logoutButton.disabled = false;
   }
@@ -1920,23 +1954,34 @@ document.addEventListener('click', (event) => {
   }
 });
 $('#enter').onclick = async () => {
+  if (enteringWorld) return;
   if (unspentAttributePoints(state) > 0) {
     toast('Un momento…', 'Reparte todos tus puntos de atributo antes de empezar.', true);
     return;
   }
-  if (ambientEnabled) {
-    try {
-      await ambientSoundscape.prepare();
-    } catch (error) {
-      reportAmbientError(error);
+  enteringWorld = true;
+  const enter = $<HTMLButtonElement>('#enter');
+  enter.disabled = true;
+  const stillCurrent = characterContext();
+  try {
+    if (ambientEnabled) {
+      try {
+        await ambientSoundscape.prepare();
+      } catch (error) {
+        reportAmbientError(error);
+      }
     }
+    if (!stillCurrent()) return;
+    if (!(await createCurrentCharacter())) return;
+    if (!(await loadWorldState())) return;
+    focus = 'body';
+    enterPlay();
+    setTimeout(() => { if (mode === 'play') { char.wave(); waveSequence++; } }, 60);
+    toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: state.name });
+  } finally {
+    enteringWorld = false;
+    enter.disabled = false;
   }
-  if (!(await createCurrentCharacter())) return;
-  if (!(await loadWorldState())) return;
-  focus = 'body';
-  enterPlay();
-  setTimeout(() => { if (mode === 'play') { char.wave(); waveSequence++; } }, 60);
-  toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: state.name });
 };
 
 async function initializeAccountAccess() {

@@ -231,8 +231,8 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.position = pos && [pos.x, pos.z, pos.yaw].every((n) => typeof n === 'number' && Number.isFinite(n))
     ? { x: pos.x!, z: pos.z!, yaw: pos.yaw! }
     : null;
-  if (!(out.race in RACES)) out.race = 'humano';
-  if (!(out.cls in CLASSES)) out.cls = 'guerrero';
+  if (!Object.prototype.hasOwnProperty.call(RACES, out.race)) out.race = 'humano';
+  if (!Object.prototype.hasOwnProperty.call(CLASSES, out.cls)) out.cls = 'guerrero';
   if (out.sex !== 0 && out.sex !== 1) out.sex = 0;
   const R = RACES[out.race];
   const rawPoints = d.attributePoints && typeof d.attributePoints === 'object'

@@ -47,6 +47,7 @@ function snapshot(value: unknown): WorldSnapshot {
 interface WorldHooks {
   motion(): WorldMotion;
   receive(value: WorldSnapshot): void;
+  stale(): void;
   connection(status: 'connected' | 'retrying'): void;
   replaced(): void;
 }
@@ -98,7 +99,7 @@ export class WorldConnection {
         }
         if (!this.retrying) { this.retrying = true; this.hooks.connection('retrying'); }
         if (performance.now() - this.lastSuccess > 15000) {
-          this.hooks.receive({ status: 'ok', position: this.hooks.motion(), players: [] });
+          this.hooks.stale();
         }
       } finally {
         if (!this.closed) this.timer = setTimeout(() => this.tick(), this.retrying ? 1500 : 250);
