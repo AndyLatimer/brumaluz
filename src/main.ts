@@ -1065,6 +1065,11 @@ observeParty(party=>{
     chatSystem(t('~{name} te invita a su grupo. Abre Social → Grupo para responder.',{name:invite.username}));
   }
   previousPartyInvites=new Set(party.incoming.map(invite=>invite.id));
+  for(const response of party.responses){
+    const message=response.accepted?'~{name} ha aceptado tu invitación y se ha unido al grupo.':'~{name} ha rechazado tu invitación de grupo.';
+    toast('Invitación de grupo',message,false,{name:response.username});
+    chatSystem(t(message,{name:response.username}));
+  }
   if(mode==='play') {
     updateHud();
     if(bonusChanged && openWindow==='sheet')setWindow('sheet',false);

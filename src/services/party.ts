@@ -12,8 +12,9 @@ export interface PartyMember {
   location: string;
 }
 export interface PartyInvite { id: string; username: string }
-export interface PartyState { id: string | null; members: PartyMember[]; incoming: PartyInvite[]; outgoing: PartyInvite[] }
-const empty = (): PartyState => ({ id: null, members: [], incoming: [], outgoing: [] });
+export interface PartyResponse extends PartyInvite { accepted: boolean }
+export interface PartyState { id: string | null; members: PartyMember[]; incoming: PartyInvite[]; outgoing: PartyInvite[]; responses: PartyResponse[] }
+const empty = (): PartyState => ({ id: null, members: [], incoming: [], outgoing: [], responses: [] });
 let current = empty();
 let self: string | null = null;
 let generation = 0;
@@ -42,7 +43,13 @@ function parse(value: unknown): PartyState {
     return { userId:text(member.userId),characterId:text(member.characterId),username:member.username,
       data:sanitize(record(member.data)),vitals:parsePublicVitals(member.vitals),position:{x:pos.x,z:pos.z},location:text(member.location) };
   });
-  return { id:row.id,members,incoming:invites(row.incoming),outgoing:invites(row.outgoing) };
+  if (!Array.isArray(row.responses)) throw new Error('Respuesta de grupo no válida.');
+  const responses=row.responses.map(item=>{
+    const response=record(item);
+    if(typeof response.accepted!=='boolean') throw new Error('Respuesta de grupo no válida.');
+    return {id:text(response.id),username:text(response.username),accepted:response.accepted};
+  });
+  return { id:row.id,members,incoming:invites(row.incoming),outgoing:invites(row.outgoing),responses };
 }
 function publish(state: PartyState) { current=state; for(const observer of observers) observer(state); }
 export const getParty = () => current;

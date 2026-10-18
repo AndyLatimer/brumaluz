@@ -38,7 +38,7 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), accounts: new Map(), friends: new Map(), parties:new Map(), partyInvites:new Map(), history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), accounts: new Map(), friends: new Map(), parties:new Map(), partyInvites:new Map(), partyResponses:[], history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
 }
 function partyOf(world,userId){return [...world.parties.values()].find(party=>party.members.includes(userId));}
 function cleanupParties(world){
@@ -156,11 +156,15 @@ async function openPlayer(world, account, compatible = true, clockTime) {
     if(fn.startsWith('party_')){
       cleanupParties(world);
       const party=partyOf(world,key);
-      if(fn==='party_state')return fulfill({
+      if(fn==='party_state'){
+        const responses=world.partyResponses.filter(response=>response.recipient===key);
+        world.partyResponses=world.partyResponses.filter(response=>response.recipient!==key);
+        return fulfill({
         id:party?.id||null,members:party?party.members.map(user=>partyMember(world,user)):[],
         incoming:[...world.partyInvites.values()].filter(i=>i.target===key).map(i=>({id:i.id,username:world.accounts.get(world.parties.get(i.partyId).members[0]).username||world.accounts.get(world.parties.get(i.partyId).members[0]).character.name})),
         outgoing:party?.members[0]===key?[...world.partyInvites.values()].filter(i=>i.partyId===party.id).map(i=>({id:i.id,username:world.accounts.get(i.target).username||world.accounts.get(i.target).character.name})):[],
-      });
+        responses:responses.map(({id,username,accepted})=>({id,username,accepted})),
+      });}
       if(fn==='party_invite'){
         const target=[...world.accounts.values()].find(a=>(a.username||a.character.name).toLowerCase()===args.p_username.replace(/^~/,'').toLowerCase());
         if(!target||!world.players.has(target.user.id))return fulfill({message:'PARTY_TARGET_OFFLINE'},400);
@@ -172,8 +176,11 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       }else if(fn==='party_respond'){
         const invite=world.partyInvites.get(args.p_invite_id);
         if(!invite||invite.target!==key)return fulfill({message:'PARTY_INVITE_INVALID'},400);
-        if(args.p_accept){const group=world.parties.get(invite.partyId);if(group.members.length===4)return fulfill({message:'PARTY_FULL'},400);group.members.push(key);}
+        const group=world.parties.get(invite.partyId);
+        if(args.p_accept){if(group.members.length===4)return fulfill({message:'PARTY_FULL'},400);group.members.push(key);}
+        world.partyResponses.push({id:randomUUID(),recipient:group.members[0],username:account.username||character.name,accepted:args.p_accept});
         world.partyInvites.delete(invite.id);
+        if(!args.p_accept&&group.members.length===1&&![...world.partyInvites.values()].some(i=>i.partyId===group.id))world.parties.delete(group.id);
       }else if(fn==='party_leave'&&party){party.members=party.members.filter(user=>user!==key);}
       return route.fulfill({status:204});
     }
@@ -628,6 +635,12 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await first.page.waitForFunction(()=>document.querySelector('.social-friend-level')?.textContent==='Nivel 12');
     for (const width of [320,390,1280]) {
       await first.page.setViewportSize({width,height:844});
+      const badges=await first.page.locator('.social-count').evaluateAll(elements=>elements.map(el=>{
+        const box=el.getBoundingClientRect(),head=el.parentElement.getBoundingClientRect();
+        const css=getComputedStyle(el);
+        return {right:head.right-box.right,center:Math.abs((box.top+box.bottom-head.top-head.bottom)/2),spacing:css.letterSpacing};
+      }));
+      assert.ok(badges.every(b=>Math.abs(b.right-13)<1&&b.center<1&&['0px','normal'].includes(b.spacing)),`Section counts align at the right edge and are vertically centered without inherited letter spacing: ${width} ${JSON.stringify(badges)}`);
       const fits = await first.page.locator('.social-window').evaluate(el => {
         const bounds = el.getBoundingClientRect();
         return bounds.left >= 0 && bounds.right <= innerWidth && el.scrollWidth <= el.clientWidth
@@ -912,6 +925,31 @@ async function groupInvite(page,username){
   await page.locator('.party-invite-input').fill(username);
   await page.locator('.party-invite-form button').click();
 }
+test('party rejection notifies the inviter once and removes the solo group without losing other invitations', {timeout:120000}, async()=>{
+  const world=backend(),accounts=[fixture('Alric','humano',-6.4),fixture('Elara','elfo',-5.4),fixture('Borin','humano',-3.4)];
+  const players=[];
+  try {
+    for(const account of accounts){const player=await openPlayer(world,account);players.push(player);await player.enter();}
+    const [first,second,third]=players;
+    await groupTab(first.page);
+    await groupInvite(first.page,'Elara');
+    await groupInvite(first.page,'Borin');
+    await groupTab(second.page);
+    await second.page.locator('.party-invitation').getByRole('button',{name:'Rechazar',exact:true}).click();
+    const message=first.page.locator('.chat-log').getByText('~Elara ha rechazado tu invitación de grupo.',{exact:true});
+    await message.waitFor({state:'attached'});
+    assert.equal(await first.page.locator('.party-pending').count(),1,'The other invitation remains available');
+    await groupTab(third.page);
+    await third.page.locator('.party-invitation').getByRole('button',{name:'Rechazar',exact:true}).click();
+    await first.page.locator('.chat-log').getByText('~Borin ha rechazado tu invitación de grupo.',{exact:true}).waitFor({state:'attached'});
+    await first.page.waitForFunction(()=>document.querySelector('#hud-party-leader').hidden);
+    assert.equal(await first.page.locator('.party-panel-content .party-member').count(),0);
+    assert.equal(await first.page.locator('.party-vacant').count(),1);
+    await first.page.waitForTimeout(2400);
+    assert.equal(await message.count(),1,'Polling does not repeat a response notification');
+    assert.deepEqual(players.flatMap(player=>player.errors),[]);
+  } finally {for(const player of players)await player.context.close();}
+});
 test('parties invite through interactions, default Social to Group, show leader HUD and map, chat privately and transfer leadership', {timeout:240000}, async()=>{
   const world=backend(),accounts=[fixture('Alric','humano',-6.4),fixture('Elara','elfo',-5.4),fixture('Borin','humano',-3.4),fixture('Daria','humano',-.4)];
   accounts[0].character.data.level=8;accounts[0].character.data.attributePoints.corpulencia=2;
@@ -938,6 +976,7 @@ test('parties invite through interactions, default Social to Group, show leader 
     await second.page.locator('.party-member').nth(1).waitFor();
     await second.page.locator('#window-close').click();
     await first.page.locator('#party-hud .party-member').waitFor();
+    await first.page.locator('.chat-log').getByText('~moon_account ha aceptado tu invitación y se ha unido al grupo.',{exact:true}).waitFor({state:'attached'});
     assert.equal(await first.page.locator('#party-hud .party-member-name strong').textContent(),'Elara');
     assert.equal(await first.page.locator('#hud-party-leader').isVisible(),true);
     assert.equal(await second.page.locator('#party-hud .party-leader').count(),1);

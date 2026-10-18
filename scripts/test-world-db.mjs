@@ -461,6 +461,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await client.query('update public.profiles set username=$1 where user_id=$2',[leader.username,leader.user]);
       await user(leader.user);
       await rejected(()=>client.query('select * from public.party_members'),/permission denied/);
+      await rejected(()=>client.query('select * from public.party_responses'),/permission denied/);
       await rejected(()=>rpc('game_party_cleanup',[]),/permission denied/);
       await rejected(()=>rpc('party_invite',[leader.username]),/PARTY_SELF/);
       await rpc('party_invite',[second.username]);
@@ -475,6 +476,27 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await user(second.user);
       await rpc('party_respond',[invitation.id,false]);
       assert.equal((await rpc('party_state',[])).id,null);
+      assert.deepEqual((await rpc('party_state',[])).responses,[],'Responses are private to the leader');
+      await user(leader.user);
+      const declined=await rpc('party_state',[]);
+      assert.equal(declined.id,null,'Rejecting the last invitation removes the solo placeholder group');
+      assert.deepEqual(declined.members,[]);
+      assert.equal(declined.responses.length,1);
+      assert.equal(declined.responses[0].username,second.username);
+      assert.equal(declined.responses[0].accepted,false);
+      assert.deepEqual((await rpc('party_state',[])).responses,[],'A response is delivered only once');
+      await rpc('party_invite',[second.username]);
+      await rpc('party_invite',[third.username]);
+      await user(second.user);
+      await rpc('party_respond',[(await rpc('party_state',[])).incoming[0].id,false]);
+      await user(leader.user);
+      const pending=await rpc('party_state',[]);
+      assert.equal(pending.members.length,1,'A solo placeholder remains while another invitation is pending');
+      assert.equal(pending.outgoing[0].username,third.username);
+      await user(third.user);
+      await rpc('party_respond',[(await rpc('party_state',[])).incoming[0].id,false]);
+      await user(leader.user);
+      assert.equal((await rpc('party_state',[])).id,null,'Rejecting the remaining invitation clears the placeholder');
       await user(leader.user);await rpc('party_invite',[second.username]);
       await user(second.user);invitation=(await rpc('party_state',[])).incoming[0];
       await client.query('reset role');
@@ -485,6 +507,12 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await user(leader.user);await rpc('party_invite',[second.username]);
       await user(second.user);invitation=(await rpc('party_state',[])).incoming[0];
       await rpc('party_respond',[invitation.id,true]);
+      await user(leader.user);
+      const joined=await rpc('party_state',[]);
+      assert.equal(joined.responses.length,1);
+      assert.equal(joined.responses[0].username,second.username);
+      assert.equal(joined.responses[0].accepted,true);
+      await user(second.user);
       const pair=await rpc('party_state',[]);
       assert.equal(pair.members.length,2);
       assert.equal(pair.members[0].vitals.maxHealth,211);
@@ -501,6 +529,13 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       assert.equal((await client.query('select id from public.chat_messages where id=$1',[message.id])).rowCount,0);
       await user(leader.user);
       for(const f of [third,fourth,outsider])await rpc('party_invite',[f.username]);
+      await user(outsider.user);
+      await rpc('party_respond',[(await rpc('party_state',[])).incoming[0].id,false]);
+      await user(leader.user);
+      const stillTogether=await rpc('party_state',[]);
+      assert.equal(stillTogether.members.length,2,'A rejection does not dissolve an established group');
+      assert.equal(stillTogether.outgoing.length,2,'Other invitations remain pending');
+      await rpc('party_invite',[outsider.username]);
       for(const f of [third,fourth]){
         await user(f.user);const i=(await rpc('party_state',[])).incoming[0];await rpc('party_respond',[i.id,true]);
       }

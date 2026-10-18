@@ -47,12 +47,22 @@ create table if not exists public.party_invites (
   expires_at timestamptz not null default now() + interval '90 seconds',
   unique(party_id, target_user)
 );
+create table if not exists public.party_responses (
+  id uuid primary key default gen_random_uuid(),
+  recipient_user uuid not null references auth.users(id) on delete cascade,
+  username text not null,
+  accepted boolean not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists party_responses_recipient_idx on public.party_responses(recipient_user);
 create index if not exists party_members_party_idx on public.party_members(party_id,entry_order);
 create index if not exists party_invites_target_idx on public.party_invites(target_user);
 alter table public.parties enable row level security;
 alter table public.party_members enable row level security;
 alter table public.party_invites enable row level security;
+alter table public.party_responses enable row level security;
 revoke all on public.parties, public.party_members, public.party_invites from public, anon, authenticated;
+revoke all on public.party_responses from public, anon, authenticated;
 
 -- Solo descuenta tiempo confirmado de presencia; una concesión caducada se detiene en su último latido.
 create or replace function public.game_food_data(p_id uuid, d jsonb)
@@ -884,6 +894,7 @@ create or replace function public.game_party_cleanup()
 returns void language plpgsql security definer set search_path = '' as $$
 begin
   perform pg_catalog.pg_advisory_xact_lock(731029,2);
+  delete from public.party_responses where created_at<=now()-interval '5 minutes';
   delete from public.party_members m where not exists (
     select 1 from public.world_players w where w.user_id=m.user_id and w.character_id=m.character_id
     and w.seen_at > now()-interval '15 seconds'
@@ -1059,7 +1070,7 @@ revoke all on table public.friendships from public, anon, authenticated;
 
 create or replace function public.party_state()
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare uid uuid := (select auth.uid()); pid uuid; members jsonb; incoming jsonb; outgoing jsonb;
+declare uid uuid := (select auth.uid()); pid uuid; members jsonb; incoming jsonb; outgoing jsonb; responses jsonb;
 begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   perform public.game_party_cleanup();
@@ -1079,7 +1090,12 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('id',i.id,'username',p.username) order by i.expires_at),'[]'::jsonb)
   into outgoing from public.party_invites i join public.profiles p on p.user_id=i.target_user
   where i.party_id=pid and uid=(select user_id from public.party_members where party_id=pid order by entry_order limit 1);
-  return jsonb_build_object('id',pid,'members',members,'incoming',incoming,'outgoing',outgoing);
+  with delivered as (
+    delete from public.party_responses where recipient_user=uid returning id,username,accepted,created_at
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('id',id,'username',username,'accepted',accepted) order by created_at,id),'[]'::jsonb)
+    into responses from delivered;
+  return jsonb_build_object('id',pid,'members',members,'incoming',incoming,'outgoing',outgoing,'responses',responses);
 end $$;
 
 create or replace function public.party_invite(p_username text)
@@ -1128,6 +1144,15 @@ begin
     insert into public.party_members(user_id,character_id,party_id) values(uid,cid,invitation.party_id);
     delete from public.party_invites where target_user=uid;
   else delete from public.party_invites where id=invitation.id;
+  end if;
+  insert into public.party_responses(recipient_user,username,accepted)
+    select leader.user_id,p.username,p_accept from public.party_members leader
+    join public.profiles p on p.user_id=uid where leader.party_id=invitation.party_id
+    order by leader.entry_order limit 1;
+  if not p_accept then
+    delete from public.parties p where p.id=invitation.party_id
+      and (select count(*) from public.party_members where party_id=p.id)=1
+      and not exists(select 1 from public.party_invites where party_id=p.id);
   end if;
 end $$;
 

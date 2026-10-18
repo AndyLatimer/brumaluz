@@ -3,6 +3,8 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  '~{name} ha aceptado tu invitación y se ha unido al grupo.': '~{name} accepted your invitation and joined the party.',
+  '~{name} ha rechazado tu invitación de grupo.': '~{name} declined your party invitation.',
   'Tu mochila ha cambiado. Vuelve a mover el objeto.': 'Your backpack changed. Please try moving the item again.',
   'Cancelar oferta': 'Cancel offer',
   'Tu mochila': 'Your backpack',
