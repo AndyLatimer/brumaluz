@@ -42,6 +42,10 @@ import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
 import { loadSettings, saveSettings } from './services/settings';
 
+import { inject } from '@vercel/analytics';
+
+// Initialize Vercel Web Analytics
+inject();
 
 // ---------------- Estado ----------------
 let state: CharData = defaultChar();
