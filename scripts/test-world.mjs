@@ -826,6 +826,14 @@ test('parties invite through interactions, default Social to Group, show leader 
     await second.page.waitForFunction(()=>document.querySelector('#player-menu-toggle').classList.contains('has-party-invite'));
     await first.page.keyboard.press('Escape');
     await groupTab(second.page);
+    assert.equal(await second.page.locator('.party-vacant').count(),1);
+    assert.deepEqual(await second.page.locator('.party-bonus-seal strong').allTextContents(),['—','—']);
+    assert.equal(await second.page.locator('.party-invite-field > span').textContent(),'~');
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await second.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'party-invitation.png')});
+    await second.page.setViewportSize({width:320,height:844});
+    assert.ok(await second.page.locator('#social-group-panel').evaluate(el=>el.scrollWidth<=el.clientWidth && [...el.querySelectorAll('input,button')].every(control=>{const r=control.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;})),'Invitation, response buttons and account field fit a 320px screen');
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await second.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'party-invitation-320.png')});
+    await second.page.setViewportSize({width:1280,height:800});
     await second.page.locator('.party-invitation').getByRole('button',{name:'Aceptar',exact:true}).click();
     await second.page.locator('.party-member').nth(1).waitFor();
     await second.page.locator('#window-close').click();
@@ -837,7 +845,15 @@ test('parties invite through interactions, default Social to Group, show leader 
     await first.page.locator('#player-menu-toggle').click();await first.page.locator('[data-window="social"]').click();
     assert.equal(await first.page.locator('#social-tab-1').getAttribute('aria-selected'),'true');
     assert.equal(await first.page.locator('.party-panel-content .party-member').count(),2);
-    assert.equal(await first.page.locator('.party-bonus').textContent(),'Bonificación: +2% experiencia · +1.5% vida y recurso máximos');
+    assert.equal(await first.page.locator('.party-roster .party-vacant').count(),1);
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'party-social-two.png')});
+    const invitationField=first.page.locator('.party-invite-input');
+    await invitationField.fill('draft_account');await invitationField.focus();
+    await first.page.waitForTimeout(2300);
+    assert.equal(await invitationField.inputValue(),'draft_account','Group polling preserves the invitation draft');
+    assert.equal(await invitationField.evaluate(el=>el===document.activeElement),true,'Group polling preserves focus');
+    assert.equal(await first.page.locator('.party-bonus').getAttribute('aria-label'),'Bonificación: +2% experiencia · +1.5% vida y recurso máximos');
+    assert.deepEqual(await first.page.locator('.party-bonus-seal strong').allTextContents(),['+2%','+1.5%']);
     for(const [player,account] of [[third,accounts[2]],[fourth,accounts[3]]]){
       await groupInvite(first.page,account.character.name);
       await player.page.waitForFunction(()=>document.querySelector('#player-menu-toggle').classList.contains('has-party-invite'));
@@ -847,11 +863,17 @@ test('parties invite through interactions, default Social to Group, show leader 
     }
     await first.page.waitForFunction(()=>document.querySelectorAll('.party-panel-content .party-member').length===4);
     assert.equal(await first.page.locator('.party-invite-input').count(),0);
-    assert.equal(await first.page.locator('.party-bonus').textContent(),'Bonificación: +2% experiencia · +4.5% vida y recurso máximos');
+    assert.equal(await first.page.locator('.party-bonus').getAttribute('aria-label'),'Bonificación: +2% experiencia · +4.5% vida y recurso máximos');
+    assert.deepEqual(await first.page.locator('.party-bonus-seal strong').allTextContents(),['+2%','+4.5%']);
+    assert.equal(await first.page.locator('.party-seats .filled').count(),4);
+    assert.equal(await first.page.locator('.party-roster .party-member-role').count(),4);
+    assert.equal(await first.page.locator('.party-roster .is-leader').count(),1);
     assert.equal(await first.page.locator('#hud-health-text').textContent(),'209 / 209');
     for(const width of [320,390,1280]){
       await first.page.setViewportSize({width,height:844});
       assert.ok(await first.page.locator('#social-group-panel').evaluate(el=>el.scrollWidth<=el.clientWidth && [...el.querySelectorAll('input,button')].every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;})));
+      const columns=await first.page.locator('.party-roster').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+      assert.equal(columns,width>600?2:1,'Roster uses paired cards on desktop, stacked on mobile');
       if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`party-social-${width}.png`)});
     }
     await first.page.setViewportSize({width:1280,height:800});await first.page.locator('#window-close').click();
@@ -859,6 +881,11 @@ test('parties invite through interactions, default Social to Group, show leader 
     for(const width of [320,1280]){
       await first.page.setViewportSize({width,height:844});
       assert.ok(await first.page.locator('#party-hud').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&el.scrollWidth<=el.clientWidth;}));
+      for(const card of await first.page.locator('#party-hud .party-member').all()) {
+        const box=await card.boundingBox();
+        assert.ok(box.width<=(width===320?150:174) && box.height<=44,'Party HUD cards remain significantly smaller than the player HUD');
+        assert.equal(await card.getByRole('meter').count(),2,'Compact cards retain both live vitals');
+      }
       if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`party-hud-${width}.png`)});
     }
     const pixels=await first.page.locator('.minimap-canvas').evaluate(canvas=>{

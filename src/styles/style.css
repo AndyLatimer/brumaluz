@@ -663,17 +663,44 @@ body.playing.dead .action-bar { display: none; }
 body.window-open .action-bar { z-index: 61; }
 body.playing.ui-menu-open:not(.inventory-open) .action-bar { display: none; }
 .social-friend-level { display: inline-block; padding: 1px 6px; border: 1px solid #ad844b88; border-radius: 8px; background: #ead5aa; color: #65431f; font-size: 10px; font-weight: 700; white-space: nowrap; vertical-align: middle; }
-.party-panel-content { display: grid; gap: 10px; }
+.party-panel-content { display: grid; gap: 14px; }
 .party-panel-content h3 { margin: 0; color: var(--wood-2); font: 700 15px 'Cinzel', serif; }
-.party-bonus { margin: 0; padding: 9px 12px; border: 1px solid #ad844b66; border-radius: 9px; background: #fff6de99; color: #4b6737; font-size: 13px; }
-.party-member { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #ad844b77; border-radius: 10px; background: linear-gradient(135deg,#62482f,#2c1c12); color: #fff0d7; box-shadow: inset 0 1px #ffdf9d22; }
+.party-icon { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.party-banner { display: flex; align-items: center; gap: 14px; padding: 4px 0 14px; border-bottom: 1px solid #ad844b66; }
+.party-banner-crest { display: grid; place-items: center; flex: none; width: 52px; height: 60px; color: #f6d38a; border: 1px solid #b79151; border-radius: 15px 15px 24px 24px; background: radial-gradient(ellipse at top,#587366,#233c32); box-shadow: 0 2px 0 #654823, inset 0 0 0 3px #243c32, inset 0 0 0 4px #d3b57866; }
+.social-group-panel .party-banner-crest svg { width: 35px; height: 39px; }
+.party-banner-text { flex: 1; min-width: 0; }
+.party-eyebrow { display: block; margin-bottom: 5px; color: #80613b; font-size: 11px; font-style: italic; letter-spacing: .5px; }
+.party-banner h3 { padding: 0; font-size: 17px; line-height: 1.4; overflow-wrap: anywhere; }
+.party-banner h3::after { display: none; }
+.party-seats { display: flex; gap: 6px; padding: 8px; border-block: 1px solid #ad844b66; }
+.party-seats i { width: 7px; height: 7px; border: 1px solid #a78758; transform: rotate(45deg); background: #997b4820; }
+.party-seats .filled { background: #52745e; border-color: #35533d; box-shadow: inset 0 0 0 1px #c9df9d66; }
+.party-bonus { display: grid; grid-template-columns: 1fr 1fr; padding: 9px 0; border-block: 1px solid #ad844b44; background: linear-gradient(90deg,#a7875810,#fff9e9aa,#a7875810); color: #8a7758; }
+.party-bonus.is-active { color: #426147; }
+.party-bonus-seal { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 3px 7px; padding: 0 8px; text-align: center; }
+.party-bonus-seal + .party-bonus-seal { border-left: 1px solid #ad844b55; }
+.party-bonus-seal strong { font: 700 19px 'Cinzel',serif; }
+.party-bonus-seal span { grid-column: 1 / -1; font-size: 12px; }
+.party-roster { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.party-member { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px; min-width: 0; border: 1px solid #a88954; border-radius: 5px 12px 5px 12px; background: radial-gradient(ellipse at top left,#785b3533,transparent 70%), repeating-linear-gradient(0deg,#ffffff02 0 1px,transparent 1px 4px), linear-gradient(120deg,#493624,#2b2118); color: #fff0d7; box-shadow: inset 0 0 0 3px #261b1277, inset 0 0 0 4px #c4a36a33, 0 2px 3px #4d311b22; }
+.party-member::after { content: ''; position: absolute; right: 5px; bottom: 5px; width: 3px; height: 3px; background: #bb975d; transform: rotate(45deg); }
+.party-member.is-leader { border-color: #bd9551; background: radial-gradient(ellipse at top left,#bd934944,transparent 70%),linear-gradient(120deg,#503d27,#2b2118); }
 .party-class { display: grid; place-items: center; flex: none; }
-.party-class .class-icon { width: 42px; height: 46px; }
-.party-member-details { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.party-roster .party-class { width: 46px; height: 54px; border: 1px solid #c4a36a55; border-radius: 16px 16px 20px 20px; background: radial-gradient(ellipse at top,#bc975b22,#130e0a55); box-shadow: inset 0 0 0 2px #20170f66; }
+.party-roster .party-class .class-icon { width: 35px; height: 38px; filter: drop-shadow(0 2px 2px #0008); }
+.party-member-role { color: #bfa77c; font: 9px/1.4 'Cinzel',serif; }
+.party-member.is-leader .party-member-role { color: #efd192; }
+.party-member-details { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .party-member-name { display: flex; align-items: center; gap: 5px; color: #ffe2a0; font: 700 11px 'Cinzel',serif; }
 .party-member-name strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .party-member-name > span:not(.party-leader) { white-space: nowrap; color: #e8d2a0; font-size: 10px; }
 .party-member small { color: #d7bb8e; overflow-wrap: anywhere; }
+.party-member-identity { display: flex; flex-wrap: wrap; gap: 3px 10px; padding-bottom: 3px; }
+.party-member-identity small { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 11px; }
+.party-member-identity small:last-child { color: #b5c4a0; }
+.party-roster .party-member-details { gap: 3px; }
+.social-group-panel .party-member-identity svg { width: 11px; height: 12px; }
 .party-leader { display: inline-flex; flex: none; color: #ffd470; }
 .party-leader svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 1.5; fill: #bc813844; stroke-linejoin: round; }
 .party-bar { position: relative; overflow: hidden; height: 13px; border: 1px solid #170e09; border-radius: 6px; background: #170e09; }
@@ -681,26 +708,49 @@ body.playing.ui-menu-open:not(.inventory-open) .action-bar { display: none; }
 .party-bar.mana i { background: linear-gradient(#6ab4f0,#2a5ab8); }
 .party-bar.stamina i { background: linear-gradient(#a8dc62,#4a8a2a); }
 .party-bar span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 9px 'Cinzel',serif; color: #fff; text-shadow: 0 1px 2px #000; }
-.party-invitation { padding: 10px; border: 1px solid #ad844b77; border-radius: 10px; background: #fff6de77; }
-.party-invitation p { margin: 0 0 8px; }
-.party-invitation button + button { margin-left: 8px; }
-.party-invite-form { display: flex; flex-wrap: wrap; gap: 8px; }
-.party-invite-form input { flex: 1; min-width: 100px; width: 0; padding: 8px 10px; border: 1px solid #ad844b; border-radius: 7px; background: #fffaf0; color: var(--ink); font: inherit; }
-.party-pending { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.party-vacant { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 18px 12px; border: 1px dashed #a7875877; border-radius: 4px 12px; color: #8b704b; font-size: 13px; font-style: italic; text-align: center; background: radial-gradient(ellipse,#fff7e8aa,transparent); }
+.social-group-panel .party-vacant svg { width: 25px; height: 25px; }
+.party-invitation { display: grid; grid-template-columns: auto 1fr 1fr; gap: 8px; align-items: center; padding: 12px; border: 1px solid #b2945f; border-left: 3px solid #567462; border-radius: 4px 12px; background: repeating-linear-gradient(0deg,transparent 0 23px,#a787580e 23px 24px),#fff6de99; }
+.party-invitation p { grid-column: 2 / -1; margin: 0; overflow-wrap: anywhere; }
+.party-invitation-seal { grid-row: 1 / 3; color: #526d55; }
+.social-group-panel .party-invitation-seal svg { width: 28px; height: 34px; }
+.party-invitation .btn { min-width: 0; padding: 7px 10px; font-size: 11px; }
+.party-invite-form { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+.party-invite-field { flex: 1; min-width: 120px; display: flex; align-items: center; gap: 5px; padding: 0 10px; border: 1px solid #b09461; border-radius: 5px; background: #fff8e7; box-shadow: inset 0 2px 4px #76512a18; }
+.party-invite-field > span { color: #9a8465; font-size: 18px; }
+.party-invite-field:focus-within { outline: 2px solid #ad844b; outline-offset: 2px; }
+.party-invite-form input { min-width: 0; width: 100%; padding: 10px 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+.party-invite-form .btn { display: flex; justify-content: center; align-items: center; gap: 7px; padding: 8px 12px; font-size: 11px; }
+.party-pending { margin: 0; padding-left: 12px; border-left: 2px solid #aa874e77; font-size: 12px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.party-leave.btn { justify-self: end; padding: 6px 2px; border: 0; border-bottom: 1px solid #a1715066; border-radius: 0; box-shadow: none; background: none; color: #865141; font-size: 10px; }
+.party-leave.btn:hover { color: #9d342b; background: #a1715011; }
 #party-hud { display: none; }
-body.playing #party-hud { display: grid; gap: 6px; position: fixed; top: 116px; left: 14px; z-index: 11; width: 220px; pointer-events: none; }
+body.playing #party-hud { display: grid; gap: 4px; position: fixed; top: 112px; left: 18px; z-index: 11; width: 174px; pointer-events: none; }
 body.playing.ui-menu-open #party-hud, body.playing.dead #party-hud { display: none; }
-.party-member-compact { padding: 6px; gap: 6px; border: 2px solid #b9945a; }
-.party-member-compact .class-icon { width: 30px; height: 34px; }
-.party-member-compact .party-member-name { font-size: 10px; }
-.party-member-compact .party-member-name > span:not(.party-leader) { font-size: 9px; }
-.party-member-compact .party-bar { height: 11px; }
+.party-member-compact { padding: 5px 7px 5px 5px; gap: 5px; border-radius: 4px 9px 4px 9px; }
+.party-member-compact .class-icon { width: 23px; height: 27px; }
+.party-member-compact .party-member-details { gap: 2px; }
+.party-member-compact .party-member-name { font-size: 9px; line-height: 12px; gap: 3px; }
+.party-member-compact .party-member-name > span:not(.party-leader) { font-size: 8px; }
+.party-member-compact .party-leader svg { width: 11px; height: 11px; }
+.party-member-compact .party-bar { height: 8px; border-radius: 3px; }
+.party-member-compact .party-bar span { font-size: 7px; line-height: 1; }
 .has-party-invite { position: relative; }
 .has-party-invite::before { content: '!'; position: absolute; top: -5px; left: -5px; display: grid; place-items: center; width: 17px; height: 17px; border: 1px solid #4c6554; border-radius: 50%; background: #8bdded; color: #193d44; font: 900 12px serif; box-shadow: 0 1px 4px #0005; }
 #hud-party-leader { color: #ffd470; font-size: 9px; }
 #hud-party-leader[hidden] { display: none; }
 .chat-line.k-party, .chat-filter[data-kind=party][aria-pressed=true] { color: #92ddf5; }
-@media(max-width:760px) { body.playing #party-hud { top: 204px; left: 10px; width: 170px; } .party-member-compact .class-icon { width: 24px; height: 28px; } .party-member-compact .party-member-name { font-size: 9px; } }
+@media(max-width:760px) { body.playing #party-hud { top: 204px; left: 10px; width: 150px; } }
+@media(max-width:600px) {
+  .party-roster { grid-template-columns: minmax(0,1fr); }
+  .party-banner { gap: 9px; flex-wrap: wrap; }
+  .party-banner-crest { width: 38px; height: 46px; }
+  .social-group-panel .party-banner-crest svg { width: 26px; height: 30px; }
+  .party-banner h3 { font-size: 14px; }
+  .party-eyebrow { font-size: 10px; }
+  .party-seats { margin-left: auto; }
+  .party-invite-form .btn { flex: 1; }
+}
 #target-frame { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 12; display: flex; align-items: center; gap: 8px; width: 310px; max-width: calc(100vw - 24px); box-sizing: border-box; padding: 7px 10px 7px 7px; border: 2px solid #b9945a; border-radius: 12px 12px 16px 16px; background: linear-gradient(145deg, #422c20f2, #20150ff2); color: #fff0d7; box-shadow: 0 0 0 2px #24160dc9, inset 0 1px #f6d59166, 0 5px 18px #0007; pointer-events: none; }
 #target-frame[hidden] { display: none; }
 .target-emblem { display: grid; place-items: center; width: 36px; height: 42px; flex: none; border: 1px solid #bb94546b; border-radius: 11px; background: radial-gradient(#9b703d66, #20150f); }
@@ -829,7 +879,7 @@ body.window-open .minimap { z-index: 61; }
 .social-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 1; padding: 9px 12px; border: 1px solid #ad844b88; border-radius: 9px; background: #fff5dc66; color: var(--ink-soft); font: 700 14px 'Cinzel', serif; cursor: pointer; }
 .social-tabs button[aria-selected="true"] { background: linear-gradient(#68492c, #352113); color: var(--gold-hi); border-color: var(--gold-lo); box-shadow: inset 0 0 0 2px #e3b45a22, 0 2px 5px #3b251633; }
 .social-tabs button:focus-visible { outline: 2px solid var(--gold-lo); outline-offset: 2px; }
-.social-group-panel { display: grid; gap: 12px; padding: 14px; border: 1px solid #ad844b77; border-radius: 12px; background: #fff5dc66; color: var(--ink-soft); }
+.social-group-panel { display: grid; gap: 12px; padding: 4px 0; color: var(--ink-soft); }
 .social-group-panel p { margin: 0; }
 .social-window svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .social-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
