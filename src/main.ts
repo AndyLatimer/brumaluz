@@ -22,6 +22,7 @@ import { RemotePlayers } from './world/players';
 import { renderSocial } from './ui/socialWindow';
 import { startFriendNotifications } from './ui/friendNotifications';
 import { createPlayerInteractions } from './ui/playerInteractions';
+import { createTargetFrame, type NpcType, type TargetDetails } from './ui/targetFrame';
 import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
@@ -2100,7 +2101,15 @@ try {
 }
 
 // ---------------- NPCs ----------------
-interface NpcDef { name: string; look: Partial<CharData>; conversation: Conversation; barks?: string[]; }
+interface NpcDef {
+  name: string;
+  look: Partial<CharData>;
+  type: NpcType;
+  level: number;
+  vitals: TargetDetails['vitals'];
+  conversation: Conversation;
+  barks?: string[];
+}
 // Mismas opciones y mismo orden en todos los nodos del NPC de prueba.
 const testChoices: DialogChoice[] = [
   { text: 'Hola', next: 'hola' },
@@ -2113,6 +2122,9 @@ const testChoices: DialogChoice[] = [
 const NPCS: Record<string, NpcDef> = {
   testiculos: {
     name: 'Testículos, the Debugger',
+    type: 'debug',
+    level: 1,
+    vitals: { health: 100, maxHealth: 100, overheal: 0, resource: 100, maxResource: 100, resourceKind: 'mana' },
     look: { race: 'elfo', sex: 0, hair: 4, hairColor: 8, clothA: 2, clothB: 9 },
     barks: [
       '¿Alguien ha visto mi documentación? Ah, no, no tengo.',
@@ -2169,6 +2181,20 @@ window.setInterval(() => {
     npcSay(NPCS[npc.id].name, line);
   }
 }, 4000);
+const targetFrame = createTargetFrame(canvas, camera, city.root);
+function updateTargetFrame() {
+  const enabled = mode === 'play' && !dead && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
+  if (!enabled) { targetFrame.update([], false, holder.position); return; }
+  const targets: TargetDetails[] = remotePlayers.list().map((player) => ({
+    ...player, identity: { kind: 'player', username: player.username, cls: player.cls },
+  }));
+  for (const npc of npcActors) {
+    const def = NPCS[npc.id];
+    targets.push({ id: `npc:${npc.id}`, root: npc.character.root, name: def.name, level: def.level,
+      vitals: def.vitals, identity: { kind: 'npc', type: def.type } });
+  }
+  targetFrame.update(targets, true, holder.position);
+}
 holder.position.copy(city.spawn);
 holder.rotation.y = city.spawnYaw - 0.3;
 rebuildNow();
@@ -2196,6 +2222,7 @@ renderer.setAnimationLoop(() => {
   updateNameplate();
   if (mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);
   updateInteractPrompt();
+  updateTargetFrame();
   if (mode === 'play') updateMinimap();
   try {
     if (TEST) renderer.render(scene, camera); else stage.render();

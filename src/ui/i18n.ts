@@ -3,6 +3,12 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Nivel {n}': 'Level {n}',
+  'Detalle del objetivo': 'Target details',
+  'Depuración': 'Debug',
+  'Comerciante': 'Merchant',
+  'Habitante': 'Townsfolk',
+  'Personaje no jugador': 'Non-player character',
   'Mostrar chat temporalmente': 'Show chat temporarily',
   'Activando sonido ambiental…': 'Starting ambient sound…',
   'Tus amigos': 'Your friends',

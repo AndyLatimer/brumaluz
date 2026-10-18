@@ -61,6 +61,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await rejected(() => client.query('select * from public.world_players'), /permission denied/);
       await rejected(() => rpc('game_world_snapshot', [b]), /permission denied/);
       await rejected(() => rpc('game_public_character', [{}]), /permission denied/);
+      await rejected(() => rpc('game_public_vitals', [{}]), /permission denied/);
       await client.query('set local role anon');
       await rejected(() => rpc('world_join', [ca, sa]), /permission denied/);
     });
@@ -72,9 +73,28 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       assert.equal(joined.players.length, 1);
       assert.equal(joined.players[0].data.name, 'Alric');
       assert.equal(joined.players[0].data.skin, 2);
+      const target = joined.players[0];
+      assert.equal(typeof target.username, 'string');
+      assert.deepEqual(target.vitals, { health: 100, maxHealth: 100, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' });
       for (const key of ['wallet', 'inventory', 'attributePoints', 'health']) assert.equal(key in joined.players[0].data, false);
       await user(a);
       assert.equal((await rpc('world_sync', [ca, sa, motion(1)])).players[0].id, cb);
+    });
+    await t.test('target vitals use authoritative allocated attributes, resource caps and current health', async () => {
+      await client.query('reset role');
+      await client.query("update public.characters set data=data || $1::jsonb where id=$2", [
+        JSON.stringify({ cls: 'mago', level: 7, health: 41, resource: 23, attributePoints: { intelecto: 4, corpulencia: 3 } }), cb,
+      ]);
+      await user(a);
+      const target = (await rpc('world_sync', [ca, sa, motion(1)])).players[0];
+      assert.equal(target.data.level, 7);
+      assert.deepEqual(target.vitals, { health: 41, maxHealth: 196, overheal: 0, resource: 23, maxResource: 129, resourceKind: 'mana' });
+      assert.equal('attributePoints' in target.data, false);
+      await client.query('reset role');
+      await client.query("update public.characters set data=data || $1::jsonb where id=$2", [
+        JSON.stringify({ cls: 'guerrero', level: 1, health: -1, resource: -1, attributePoints: { fuerza: 2 } }), cb,
+      ]);
+      await user(a);
     });
     await t.test('movement bucket prevents sustained overspeed and accepts realistic latency', async () => {
       assert.equal((await rpc('world_sync', [ca, sa, motion(2)])).status, 'ok');
@@ -192,6 +212,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       assert.equal(pending.online, false);
       assert.equal(pending.characterName, null);
       assert.equal(pending.characterClass, null);
+      assert.equal(pending.characterLevel, null);
       await user(outsider);
       assert.deepEqual(await rpc('friends_list', []), []);
       await rejected(() => rpc('friend_update', [a, 'accept']), /FRIEND_NOT_FOUND/);
@@ -207,6 +228,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       assert.equal(friend.online, true);
       assert.equal(friend.characterName, 'Elara');
       assert.equal(friend.characterClass, 'guerrero');
+      assert.equal(friend.characterLevel, 1);
       assert.equal(friend.location, location);
       assert.equal('email' in friend, false);
       await client.query('reset role');
@@ -215,6 +237,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       const offline = (await rpc('friends_list', []))[0];
       assert.equal(offline.online, false);
       assert.equal(offline.characterClass, null);
+      assert.equal(offline.characterLevel, null);
       await rpc('friend_update', [b, 'remove']);
       await user(b);
       assert.deepEqual(await rpc('friends_list', []), []);

@@ -1,11 +1,16 @@
 import { sanitize, type CharData } from '../data/data';
 import { joinWorld, leaveWorld, syncWorld } from './account';
+import type { Vitals } from '../data/stats';
+
+export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'>;
 
 export interface WorldPosition { x: number; z: number; yaw: number }
 export interface WorldMotion extends WorldPosition { facing: number; jump: number; wave: number }
 export interface WorldPlayer {
   id: string;
   userId: string;
+  username: string | null;
+  vitals: PublicVitals;
   data: CharData;
   position: WorldPosition;
   facing: number;
@@ -31,6 +36,16 @@ function position(value: unknown): WorldPosition {
   const p = record(value);
   return { x: number(p.x), z: number(p.z), yaw: number(p.yaw) };
 }
+function vitals(value: unknown): PublicVitals {
+  const v = record(value);
+  const health = number(v.health), maxHealth = number(v.maxHealth), overheal = number(v.overheal);
+  const resource = number(v.resource), maxResource = number(v.maxResource);
+  if (maxHealth <= 0 || maxResource <= 0 || health < 0 || health > maxHealth || overheal < 0
+    || resource < 0 || resource > maxResource || (v.resourceKind !== 'mana' && v.resourceKind !== 'stamina')) {
+    throw new Error('Respuesta multijugador no válida.');
+  }
+  return { health, maxHealth, overheal, resource, maxResource, resourceKind: v.resourceKind };
+}
 function snapshot(value: unknown): WorldSnapshot {
   const data = record(value);
   if ((data.status !== 'ok' && data.status !== 'corrected') || !Array.isArray(data.players)) throw new Error('Respuesta multijugador no válida.');
@@ -38,8 +53,9 @@ function snapshot(value: unknown): WorldSnapshot {
     status: data.status, position: position(data.position),
     players: data.players.map((value) => {
       const p = record(value);
-      if (typeof p.id !== 'string' || typeof p.userId !== 'string' || typeof p.dead !== 'boolean') throw new Error('Respuesta multijugador no válida.');
-      return { id: p.id, userId: p.userId, data: sanitize(record(p.data)), position: position(p.position), facing: number(p.facing), jump: number(p.jump), wave: number(p.wave), dead: p.dead };
+      if (typeof p.id !== 'string' || typeof p.userId !== 'string' || typeof p.dead !== 'boolean'
+        || (p.username !== null && typeof p.username !== 'string')) throw new Error('Respuesta multijugador no válida.');
+      return { id: p.id, userId: p.userId, username: p.username, vitals: vitals(p.vitals), data: sanitize(record(p.data)), position: position(p.position), facing: number(p.facing), jump: number(p.jump), wave: number(p.wave), dead: p.dead };
     }),
   };
 }

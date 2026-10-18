@@ -662,6 +662,29 @@ body.playing .action-bar { display: flex; gap: 6px; position: fixed; left: 50%; 
 body.playing.dead .action-bar { display: none; }
 body.window-open .action-bar { z-index: 61; }
 body.playing.ui-menu-open:not(.inventory-open) .action-bar { display: none; }
+.social-friend-level { display: inline-block; padding: 1px 6px; border: 1px solid #ad844b88; border-radius: 8px; background: #ead5aa; color: #65431f; font-size: 10px; font-weight: 700; white-space: nowrap; vertical-align: middle; }
+#target-frame { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 12; display: flex; align-items: center; gap: 10px; width: 346px; max-width: calc(100vw - 24px); box-sizing: border-box; padding: 10px 14px 10px 10px; border: 2px solid #b9945a; border-radius: 14px 14px 20px 20px; background: linear-gradient(145deg, #422c20f2, #20150ff2); color: #fff0d7; box-shadow: 0 0 0 2px #24160dc9, inset 0 1px #f6d59166, 0 5px 18px #0007; pointer-events: none; }
+#target-frame[hidden] { display: none; }
+.target-emblem { display: grid; place-items: center; width: 54px; height: 60px; flex: none; border: 1px solid #bb94546b; border-radius: 16px; background: radial-gradient(#9b703d66, #20150f); }
+.target-emblem .class-icon { width: 54px; height: 54px; filter: drop-shadow(0 2px 2px #0009); }
+.target-emblem > svg:not(.class-icon) { width: 34px; height: 34px; fill: none; stroke: #b8e89c; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.target-info { min-width: 0; flex: 1; }
+.target-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.target-name { min-width: 0; flex: 1; font: 700 13px 'Cinzel', serif; overflow-wrap: anywhere; text-shadow: 0 1px 2px #000; }
+.target-level { flex: none; border: 1px solid #dbb05a; border-radius: 7px; padding: 2px 5px; background: linear-gradient(#f5d68e, #bb8642); color: #39220f; font-size: 10px; font-weight: 800; box-shadow: inset 0 1px #fff3cc; }
+.target-identity { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 7px; color: #d7bb8e; font-size: 10px; }
+.target-identity span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.target-username { color: #d2c3ac; }
+#target-frame.npc .target-name, #target-frame.npc .target-kind { color: #b8e89c; }
+#target-frame.npc .target-emblem { border-color: #91bd6966; }
+.target-meter { position: relative; height: 15px; overflow: hidden; border: 1px solid #100c08; border-radius: 5px; background: #130b08; box-shadow: 0 1px #c99e5033; }
+.target-meter + .target-meter { margin-top: 4px; }
+.target-meter i { display: block; height: 100%; background: linear-gradient(#c95b50, #852a28); box-shadow: inset 0 1px #ffd5bb55; }
+.target-meter span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 10px/1 sans-serif; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+.target-resource i { background: linear-gradient(#589ed6, #2c5199); }
+.target-resource.stamina i { background: linear-gradient(#a8dc62, #4a8a2a); }
+@media (max-width: 1100px) { #target-frame { top: 100px; } }
+@media (max-width: 600px) { #target-frame { top: 104px; width: 300px; padding: 7px 10px 7px 7px; gap: 7px; } .target-emblem { width: 42px; height: 54px; } .target-emblem .class-icon { width: 44px; height: 44px; } .target-name { font-size: 11px; } }
 .chat { display: none; --chat-w: 300px; --chat-h: 210px; }
 body.playing .chat { display: flex; flex-direction: column; position: fixed; right: 12px; bottom: 12px; z-index: 14; width: var(--chat-w); height: var(--chat-h); border: 2px solid rgba(185,148,90,.7); border-radius: 12px; background: rgba(24,14,8,.5); box-shadow: 0 4px 14px rgba(0,0,0,.4); opacity: .82; transition: opacity .15s, background .15s; }
 body.playing .chat:hover, body.playing .chat:focus-within { opacity: 1; background: rgba(24,14,8,.82); }

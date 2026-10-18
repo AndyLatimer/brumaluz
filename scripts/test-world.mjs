@@ -89,7 +89,7 @@ async function openPlayer(world, account, compatible = true) {
         if (![relation.from, relation.to].includes(key)) continue;
         const target = world.accounts.get(relation.from === key ? relation.to : relation.from);
         const player = relation.accepted ? world.players.get(target.user.id) : null;
-        entries.push({ userId: target.user.id, username: target.username || target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, characterClass: player?.data.cls || null, location: player ? 'brumaluz' : null });
+        entries.push({ userId: target.user.id, username: target.username || target.character.name, status: relation.accepted ? 'friend' : relation.from === key ? 'outgoing' : 'incoming', online: !!player, characterName: player?.data.name || null, characterClass: player?.data.cls || null, characterLevel: player?.data.level || null, location: player ? 'brumaluz' : null });
       }
       return fulfill(entries);
     }
@@ -128,7 +128,10 @@ async function openPlayer(world, account, compatible = true) {
       if (Math.hypot(motion.x - player.position.x, motion.z - player.position.z) > 20) status = 'corrected';
       else { player.position = { x: motion.x, z: motion.z, yaw: motion.yaw }; player.facing = motion.facing; player.jump = motion.jump; player.wave = motion.wave; }
     }
-    const response = { status, position: { ...player.position }, players: [...world.players.values()].filter((p) => p.userId !== key).map((p) => ({ ...p, position: { ...p.position } })) };
+    const response = { status, position: { ...player.position }, players: [...world.players.values()].filter((p) => p.userId !== key).map((p) => ({
+      ...p, position: { ...p.position }, username: world.accounts.get(p.userId).username || p.data.name,
+      vitals: p.vitals || { health: p.dead ? 0 : 80, maxHealth: 100, overheal: 0, resource: 35, maxResource: 70, resourceKind: ['mago','clerigo'].includes(p.data.cls) ? 'mana' : 'stamina' },
+    })) };
     if (world.delay.has(key)) await new Promise((resolve) => setTimeout(resolve, world.delay.get(key)));
     world.active.set(key, world.active.get(key) - 1);
     return fulfill(response);
@@ -446,7 +449,8 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     await first.page.locator('[data-social="friend"] .social-row').waitFor({timeout:15000});
     assert.equal(await first.page.locator('.social-online').textContent(),'Conectado');
     assert.equal(await first.page.locator('.social-details dt').allTextContents().then(labels=>labels.join(',')),'Personaje,Ubicación');
-    assert.deepEqual(await first.page.locator('.social-details dd').allTextContents(),['Elara','Brumaluz']);
+    assert.deepEqual(await first.page.locator('.social-details dd').allTextContents(),['Elara Nivel 1','Brumaluz']);
+    assert.equal(await first.page.locator('.social-friend-level').textContent(),'Nivel 1');
     assert.deepEqual(await first.page.locator('.social-stat strong').allTextContents(),['1','0']);
     assert.equal(await first.page.locator('.social-connected-total').textContent(),'(1 conectados)');
     assert.equal(await first.page.locator('.social-introduction').count(),0);
@@ -470,6 +474,8 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
       return second.left-first.right;
     });
     assert.ok(detailGap>=0 && detailGap<=22,'Character and location must remain grouped');
+    world.players.get(b.user.id).data.level = 12;
+    await first.page.waitForFunction(()=>document.querySelector('.social-friend-level')?.textContent==='Nivel 12');
     for (const width of [320,390,1280]) {
       await first.page.setViewportSize({width,height:844});
       const fits = await first.page.locator('.social-window').evaluate(el => {
@@ -492,6 +498,7 @@ test('Social supports requests, acceptance, online presence, whisper, cancellati
     assert.equal(await first.page.locator('.social-offline').textContent(), 'Desconectado');
     assert.equal(await first.page.getByRole('button',{name:'Susurrar',exact:true}).isDisabled(),true);
     assert.equal(await first.page.locator('.social-avatar .class-icon').count(),0);
+    assert.equal(await first.page.locator('.social-friend-level').count(),0);
     first.page.once('dialog', dialog => dialog.accept());
     await first.page.getByRole('button', {name:'Eliminar amigo',exact:true}).click();
     await first.page.locator('[data-social="friend"] .social-row').waitFor({state:'detached'});
@@ -521,6 +528,87 @@ test('queen title uses the same reserved phoenix styling in the picker and remot
     assert.equal(await first.page.locator(`[data-player-id="${b.character.id}"] .phoenix`).count(),1);
     assert.deepEqual([...first.errors,...second.errors],[]);
   } finally {await first.context.close(); await second.context.close();}
+});
+
+async function hoverActor(page, plate) {
+  const bounds = await plate.boundingBox();
+  assert.ok(bounds, 'Target nameplate is visible');
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height + 55);
+}
+
+test('target frame shows hovered players and NPC types, live vitals, camera aim and menu cleanup', { timeout: 120000 }, async () => {
+  const world = backend(), a = fixture('Alric','humano',-6.4), b = fixture('Elara','elfo',-5.4);
+  b.username = 'moon_account';
+  b.character.data.cls = 'mago';
+  b.character.data.level = 12;
+  const first = await openPlayer(world,a), second = await openPlayer(world,b);
+  try {
+    await first.enter(); await second.enter();
+    await remote(first.page,b.character.id);
+    await first.page.waitForTimeout(1500);
+    await hoverActor(first.page, first.page.locator(`[data-player-id="${b.character.id}"]`));
+    const frame = first.page.locator('#target-frame');
+    await frame.waitFor({state:'visible'});
+    assert.equal(await frame.getAttribute('data-target-id'),b.character.id);
+    assert.equal(await frame.locator('.target-name').textContent(),'Elara');
+    assert.equal(await frame.locator('.target-username').textContent(),'~moon_account');
+    assert.equal(await frame.locator('.target-kind').textContent(),'Mago');
+    assert.equal(await frame.locator('.target-level').textContent(),'Nivel 12');
+    assert.equal(await frame.locator('.class-icon').count(),1);
+    assert.equal(await frame.getByRole('meter',{name:'Vida',exact:true}).getAttribute('aria-valuenow'),'80');
+    assert.equal(await frame.getByRole('meter',{name:'Maná',exact:true}).getAttribute('aria-valuemax'),'70');
+    world.players.get(b.user.id).vitals = { health: 17, maxHealth: 196, overheal: 0, resource: 9, maxResource: 129, resourceKind:'mana' };
+    await first.page.waitForFunction(()=>document.querySelector('.target-health').getAttribute('aria-valuenow')==='17');
+    assert.equal(await frame.locator('.target-resource span').textContent(),'Maná 9 / 129');
+    await first.page.mouse.move(1278,798);
+    await frame.waitFor({state:'hidden'});
+    await first.page.evaluate(()=>{
+      const target=window.brumaluz.players()[0].root.position;
+      window.brumaluz.move(target.x,target.z+.6);
+      window.brumaluz.view(0,.55,12);
+    });
+    await first.page.waitForTimeout(2500);
+    await frame.waitFor({state:'visible'});
+    assert.equal(await frame.getAttribute('data-target-id'),b.character.id,'Camera center selects without pointer hovering the actor');
+    await first.page.evaluate(()=>window.brumaluz.move(180,180));
+    await frame.waitFor({state:'hidden'});
+    await first.page.locator('#player-menu-toggle').click();
+    await frame.waitFor({state:'hidden'});
+    await first.page.locator('#player-menu-toggle').click();
+    const npcPosition = await first.page.evaluate(()=>{
+      const p=window.brumaluz.city().npcSites[0].position;
+      window.brumaluz.move(p.x,p.z+3);
+      return {x:p.x,z:p.z};
+    });
+    await first.page.waitForTimeout(2000);
+    await hoverActor(first.page,first.page.locator('.nameplate.npc').first());
+    await first.page.waitForFunction(()=>!document.querySelector('#target-frame').hidden && document.querySelector('#target-frame').dataset.targetId==='npc:testiculos');
+    assert.equal(await frame.locator('.target-kind').textContent(),'Depuración');
+    assert.equal(await frame.locator('.target-name').textContent(),'Testículos, the Debugger');
+    assert.equal(await frame.locator('.class-icon').count(),0,'NPC has a type icon, not a character class');
+    assert.equal(await frame.locator('.target-emblem svg').count(),1);
+    assert.equal(await frame.locator('.target-username').textContent(),'Personaje no jugador');
+    for (const width of [320,390,1280]) {
+      await first.page.setViewportSize({width,height:844});
+      await first.page.evaluate(({x,z})=>{
+        window.brumaluz.move(x,z+.6);
+        window.brumaluz.view(0,.55,12);
+      },npcPosition);
+      await first.page.mouse.move(width-2,842);
+      await first.page.waitForTimeout(1800);
+      await frame.waitFor({state:'visible'});
+      const fits=await frame.evaluate(el=>{
+        const box=el.getBoundingClientRect();
+        const hud=document.querySelector('#player-hud').getBoundingClientRect();
+        return box.left>=0 && box.right<=innerWidth && el.scrollWidth<=el.clientWidth
+          && (box.left>=hud.right || box.top>=hud.bottom);
+      });
+      assert.equal(fits,true,`Target frame fits ${width}px without overlapping player HUD`);
+    }
+    await leave(first.page);
+    await frame.waitFor({state:'hidden'});
+    assert.deepEqual([...first.errors,...second.errors],[]);
+  } finally { await first.context.close(); await second.context.close(); }
 });
 
 test('closing Social during a delayed refresh cannot populate a different window', { timeout: 120000 }, async () => {

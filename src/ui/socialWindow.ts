@@ -226,6 +226,12 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
               dt.append(icon(label === 'Personaje' ? 'character' : 'location'), document.createTextNode(t(label)));
               const dd = document.createElement('dd');
               dd.textContent = label === 'Personaje' ? value : t(value);
+              if (label === 'Personaje' && entry.characterLevel !== null) {
+                const level = document.createElement('span');
+                level.className = 'social-friend-level';
+                level.textContent = t('Nivel {n}', { n: entry.characterLevel });
+                dd.append(' ', level);
+              }
               details.append(dt, dd);
             }
             info.append(details);

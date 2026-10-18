@@ -726,6 +726,30 @@ as $$
   ])
 $$;
 
+create or replace function public.game_public_vitals(d jsonb)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  with resource as (
+    select case when d ->> 'cls' in ('mago', 'clerigo') then 'mana' else 'stamina' end as kind
+  ), maximum as (
+    select kind, (public.game_level(d) - 1) * 6 + case when kind = 'mana'
+      then 30 + public.game_attr_total(d, 'intelecto') * 7
+      else 50 + public.game_attr_total(d, 'agilidad') * 3 + public.game_attr_total(d, 'corpulencia') * 3
+    end as amount from resource
+  )
+  select jsonb_build_object(
+    'health', public.game_health(d), 'maxHealth', public.game_max_health(d),
+    'overheal', case when public.game_health(d) = 0 then 0 else public.game_overheal_now(d) end,
+    'resourceKind', kind, 'maxResource', amount,
+    'resource', case when coalesce((d ->> 'resource')::int, -1) < 0 then amount
+      else least(greatest((d ->> 'resource')::int, 0), amount) end
+  ) from maximum
+$$;
+revoke all on function public.game_public_vitals(jsonb) from public, anon, authenticated;
+
 create or replace function public.game_world_snapshot(p_user_id uuid)
 returns jsonb
 language sql
@@ -734,13 +758,15 @@ security definer
 set search_path = ''
 as $$
   select coalesce(jsonb_agg(jsonb_build_object(
-    'id', w.character_id, 'userId', w.user_id,
+    'id', w.character_id, 'userId', w.user_id, 'username', p.username,
+    'vitals', public.game_public_vitals(c.data),
     'data', public.game_public_character(c.data) || jsonb_build_object('name', c.name),
     'position', w.position, 'facing', w.facing, 'jump', w.jump, 'wave', w.wave,
     'dead', public.game_health(c.data) = 0
   ) order by w.character_id), '[]'::jsonb)
   from public.world_players w
   join public.characters c on c.id = w.character_id
+  join public.profiles p on p.user_id = w.user_id
   where w.user_id <> p_user_id and w.seen_at > now() - interval '15 seconds'
     and coalesce(c.data ->> 'location', 'brumaluz') = (
       select coalesce(me.data ->> 'location', 'brumaluz')
@@ -921,7 +947,8 @@ begin
     'userId', p.user_id, 'username', p.username,
     'status', case when f.status = 'accepted' then 'friend' when f.requested_by = uid then 'outgoing' else 'incoming' end,
     'online', w.user_id is not null,
-    'characterName', c.name, 'location', c.data ->> 'location', 'characterClass', c.data ->> 'cls'
+    'characterName', c.name, 'location', c.data ->> 'location', 'characterClass', c.data ->> 'cls',
+    'characterLevel', case when c.id is not null then public.game_level(c.data) else null end
   ) order by lower(p.username)), '[]'::jsonb) into result
   from public.friendships f
   join public.profiles p on p.user_id = case when f.user_low = uid then f.user_high else f.user_low end

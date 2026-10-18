@@ -125,6 +125,7 @@ export class RemotePlayers {
   list() {
     return [...this.actors.values()].map((actor) => ({
       id: actor.player.id, userId: actor.player.userId, name: actor.player.data.name, root: actor.character.root,
+      username: actor.player.username, cls: actor.player.data.cls, level: actor.player.data.level, vitals: actor.player.vitals,
     }));
   }
 
