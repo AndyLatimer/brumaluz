@@ -5,6 +5,19 @@ export interface WelcomeProgress { origin: number | null; stage: WelcomeStage }
 export type WelcomeAction = 'origin' | 'accept' | 'collect' | 'claim';
 export const WELCOME_TITLE = 'Algo pequeño, algo importante';
 export const WELCOME_REWARD = { experience: 40, pelines: 5 };
+export type ShadowQuest = 'active' | 'defeated' | 'completed';
+export const SHADOW_TITLE = 'Una sombra entre el ganado';
+export function shadowObjective(stage: ShadowQuest | null) {
+  return stage === 'completed' ? 'Has recogido una esencia desconocida.'
+    : stage === 'defeated' ? 'Abre el cuerpo de la criatura y recoge sus restos.'
+    : stage === 'active' ? 'Investiga y derrota a la criatura junto al ganado.'
+    : 'Habla con Isberto, el granjero de las afueras.';
+}
+export function parseShadowQuest(value: unknown): ShadowQuest | null {
+  if (value === undefined || value === null) return null;
+  if (value !== 'active' && value !== 'defeated' && value !== 'completed') throw new Error('Progreso de Isberto no válido.');
+  return value;
+}
 export function questItems(progress: WelcomeProgress | null) {
   return progress?.stage === 'found' ? [{
     id: 'gnomi-guild-badge',

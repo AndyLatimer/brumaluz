@@ -1,6 +1,7 @@
 import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
 import type { CharData } from '../data/data';
 import type { SkillId } from '../data/combat';
+import type { EquipmentSlot, ItemStack } from '../data/inventory';
 
 export const MAX_CHARACTERS_PER_ACCOUNT = 5;
 
@@ -92,6 +93,8 @@ interface Database {
       combat_start: { Args: { p_character_id: string }; Returns: Json };
       combat_action: { Args: { p_character_id: string; p_action: string }; Returns: Json };
       combat_stop: { Args: { p_character_id: string }; Returns: Json };
+      change_equipment: { Args: { p_character_id: string; p_slot: string; p_bag: number | null; p_expected: Json }; Returns: Json };
+      loot_corpse: { Args: { p_character_id: string; p_instance_id: string; p_slot?: number | null }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
       party_invite: { Args: { p_username: string }; Returns: undefined };
@@ -236,6 +239,14 @@ const SERVER_ERRORS: Record<string, string> = {
   COMBAT_COOLDOWN: 'La acción todavía se está recuperando.',
   COMBAT_NOT_ENOUGH_RESOURCE: 'No tienes suficiente recurso.',
   COMBAT_HEALTH_FULL: 'Ya tienes la vida completa.',
+  COMBAT_WEAPON_REQUIRED: 'Equipa un arma de tu clase para atacar.',
+  EQUIPMENT_CHANGED: 'Tu equipo o mochila ha cambiado. Vuelve a intentarlo.',
+  EQUIPMENT_INVALID: 'Ese objeto no se puede equipar en esta ranura con tu clase.',
+  LOOT_PENDING: 'Recoge primero los restos de la criatura caída.',
+  LOOT_INVALID: 'Ese cuerpo ya no está disponible.',
+  LOOT_EMPTY: 'Ya has recogido el botín de este cuerpo.',
+  LOOT_TOO_FAR: 'Acércate al cuerpo para recoger el botín.',
+  SHADOW_QUEST_COMPLETED: 'Ya has completado el encargo de Isberto.',
   SKILL_INVALID: 'Esa habilidad no pertenece a tu clase.',
   SKILL_CHANGED: 'El rango ha cambiado. Revisa la habilidad antes de mejorarla.',
   SKILL_MAX_RANK: 'La habilidad ya tiene el rango máximo.',
@@ -330,6 +341,16 @@ export async function combatAction(id: string, action: 'attack' | SkillId) {
 }
 export async function stopCombat(id: string) {
   return asRecord(await serverCall(requireClient().rpc('combat_stop',{p_character_id:id})));
+}
+export async function changeEquipment(id: string, slot: EquipmentSlot, bag: number | null, expected: ItemStack) {
+  return asRecord(await serverCall(requireClient().rpc('change_equipment', {
+    p_character_id: id, p_slot: slot, p_bag: bag, p_expected: { ...expected },
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+export async function lootCorpse(id: string, instanceId: string, slot: number | null) {
+  return asRecord(await serverCall(requireClient().rpc('loot_corpse', {
+    p_character_id: id, p_instance_id: instanceId, p_slot: slot,
+  }).abortSignal(AbortSignal.timeout(10000))));
 }
 
 export async function upgradeCharacterSkill(id: string, skill: SkillId, expectedRank: number) {

@@ -125,6 +125,28 @@ quedan bloqueados.
 - Hay un comentario contextual cerca del mercado. Los textos se traducen
   al español/inglés y se consideran provisionales hasta su aprobación.
 
+## Después de Gnomi: Isberto
+
+Solo después de devolver el distintivo aparece Isberto. El rastreador, el
+minimapa y la flecha de borde pasan a señalar al granjero. Su tarjeta ofrece
+**Una sombra entre el ganado**: investigar a la criatura, derrotarla y examinar
+sus restos. Salir del diálogo no acepta la misión ni crea un enemigo.
+Aceptar llama a `combat_start`, que guarda `shadowQuest: active` junto al
+encuentro personal. No hay recompensas ficticias de XP ni pelines en la tarjeta.
+
+La victoria cambia la fase a `defeated`; el objetivo pasa al cadáver. Abrirlo
+no completa la misión: hay que recoger su **Esencia sombría**, un objeto real de
+mochila cuyo significado todavía no conocemos. `loot_corpse` cambia la fase a
+`completed` solo cuando no queda botín y conserva el cuerpo vacío al reconectar.
+No se puede reiniciar un encuentro completado ni sustituir un cadáver con
+botín pendiente. Si el jugador muere, Isberto permite volver a investigar.
+El diario conserva por separado la bienvenida y el encargo de Isberto;
+al completarlos ambos se ocultan el rastreador y su guía de objetivo.
+
+El acompañamiento consume los puntos alcanzados de la estela antes de mover,
+mantiene la animación entre segmentos y gira según el desplazamiento resuelto
+por colisiones. Durante un diálogo Gnomi descansa sin deslizarse.
+
 ## Validación de desarrollo
 
 No se debe activar la bandera en producción para hacer pruebas.

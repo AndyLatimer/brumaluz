@@ -131,6 +131,10 @@ contenido del juego relacionado.
   falta concretar su posición y el recorrido sobre el mapa.
 - La recompensa de esta primera misión será de **40 puntos de experiencia
   y 5 pelines**.
+- Después de completar la misión de Gnomi aparece **Isberto**, que ofrece
+  investigar a la criatura junto al ganado. Derrotarla deja un cadáver
+  saqueable con una **Esencia sombría** garantizada. Su significado y uso no
+  se conocen todavía; recogerla completa ese encargo, sin añadir XP ni pelines.
 - La bienvenida será **solo para personajes nuevos**. Los personajes que
   existían antes de incorporar el sistema no recibirán esta misión ni
   tendrán que repetir su comienzo.
@@ -212,5 +216,5 @@ su historia ni sus implicaciones políticas.
 - Detalles del distintivo, lugar del encuentro y recorrido de búsqueda.
 - Guion concreto de la primera misión y respuestas del jugador.
 - Diseño visual del diario, seguimiento y marcador.
-- Siguientes encargos después de recuperar el distintivo; no están aprobados
-  nuevos personajes, instituciones ni acontecimientos para esa continuación.
+- Continuación después del encargo de Isberto y significado de la Esencia
+  sombría; no están aprobados nuevos personajes, instituciones ni acontecimientos.

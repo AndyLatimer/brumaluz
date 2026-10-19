@@ -3,7 +3,7 @@ import { emptyWallet, sanitizeWallet, type Wallet } from './currency';
 import { DEFAULT_TITLE, isTitleId, type TitleId } from './titles';
 import { emptyEquipment, emptyInventory, sanitizeEquipment, sanitizeInventory, type Equipment, type InventorySlots } from './inventory';
 import { parseFoodBuff, type FoodBuff } from './food';
-import { parseWelcome, type WelcomeProgress } from './quests';
+import { parseWelcome, parseShadowQuest, type ShadowQuest, type WelcomeProgress } from './quests';
 import { COMBAT_KITS, skillRank, type SkillRanks } from './combat';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
@@ -46,6 +46,7 @@ const noBonuses = (): AttributeBonuses => ({
 });
 
 export interface CharData {
+  shadowQuest: ShadowQuest | null;
   welcome: WelcomeProgress | null;
   name: string;
   title: TitleId; // título mostrado junto al nombre (ver titles.ts)
@@ -212,7 +213,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    welcome: null, skillRanks: {},
+    welcome: null, shadowQuest: null, skillRanks: {},
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
@@ -234,6 +235,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.resource = Number.isFinite(Number(out.resource)) ? Math.max(Math.round(Number(out.resource)), -1) : -1;
   out.foodBuff = parseFoodBuff(d.foodBuff);
   out.welcome = parseWelcome(d.welcome);
+  out.shadowQuest = parseShadowQuest(d.shadowQuest);
   out.foodRevision = Number.isSafeInteger(d.foodRevision) && Number(d.foodRevision) >= 0 ? Number(d.foodRevision) : 0;
   out.wallet = sanitizeWallet(d.wallet, d.gold);
   delete (out as unknown as Record<string, unknown>).gold;
@@ -308,7 +310,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    welcome: null, skillRanks: {},
+    welcome: null, shadowQuest: null, skillRanks: {},
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],

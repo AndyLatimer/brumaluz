@@ -20,7 +20,7 @@ export interface ActionBarHooks {
   bound: (item: string) => boolean;
   /** Se pidió usar el objeto del hueco. */
   use: (item: string) => void;
-  skill: () => { id: string; cls: ClassId; rank: number; icon: string; cooldown: number; available: boolean };
+  skill: () => { id: string; cls: ClassId; rank: number; icon: string; cooldown: number; duration: number; available: boolean };
   useSkill: () => void;
 }
 
@@ -81,8 +81,22 @@ export function toggleActionBarPage() {
 export function renderActionBar(force = false) {
   load();
   const skill = hooks.skill();
-  const next = `${page}|${skill.id}:${skill.rank}:${Math.ceil(skill.cooldown)}:${skill.available}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
-  if (!force && next === signature) return;
+  const next = `${page}|${skill.id}:${skill.rank}:${skill.available}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
+  const updateCooldown = () => {
+    root().querySelectorAll<HTMLElement>('.ab-slot[data-skill-id]').forEach(slot => {
+      const recovering = skill.cooldown > 0;
+      const wasRecovering = slot.classList.contains('on-cooldown');
+      slot.classList.toggle('on-cooldown', recovering);
+      slot.style.setProperty('--cooldown-sweep', `${Math.min(1, skill.cooldown / skill.duration) * 360}deg`);
+      const timer = slot.querySelector<HTMLElement>('.ab-cooldown-time');
+      if (timer) timer.textContent = recovering ? skill.cooldown < 1 ? skill.cooldown.toFixed(1) : String(Math.ceil(skill.cooldown)) : '';
+      slot.setAttribute('aria-description', t(recovering ? 'Recuperándose: {n} s' : 'Habilidad lista', { n: Math.ceil(skill.cooldown) }));
+      if (wasRecovering && !recovering) {
+        slot.classList.remove('skill-ready'); void slot.offsetWidth; slot.classList.add('skill-ready');
+      }
+    });
+  };
+  if (!force && next === signature) { updateCooldown(); return; }
   signature = next;
   const switcher = document.createElement('button');
   switcher.type = 'button';
@@ -91,6 +105,7 @@ export function renderActionBar(force = false) {
   switcher.innerHTML = `<kbd>Z</kbd><span>${page + 1}</span>`;
   switcher.onclick = () => { toggleActionBarPage(); switcher.blur(); };
   root().replaceChildren(switcher, ...slots.map((id, i) => slotElement(id, i)));
+  updateCooldown();
   if (force) {
     const bar = root();
     bar.classList.remove('flipping');
@@ -125,8 +140,13 @@ function slotElement(id: string | null, index: number) {
     if (!isSkill) slot.setAttribute('aria-label', slot.title.split('|')[0]);
     slot.insertAdjacentHTML('afterbegin', isSkill ? skill.icon : itemIcon(id));
     const amount = document.createElement('i');
-    amount.textContent = isSkill ? skill.cooldown > 0 ? String(Math.ceil(skill.cooldown)) : '' : String(count);
+    amount.textContent = isSkill ? '' : String(count);
     slot.append(amount);
+    if (isSkill) {
+      const sweep = document.createElement('span'); sweep.className = 'ab-cooldown-sweep'; sweep.setAttribute('aria-hidden','true');
+      const timer = document.createElement('span'); timer.className = 'ab-cooldown-time'; timer.setAttribute('aria-hidden','true');
+      slot.append(sweep, timer);
+    }
     slot.draggable = true;
     slot.addEventListener('dragstart', (e) => {
       e.dataTransfer?.setData(DRAG_TYPE, JSON.stringify({ id, from: index, page }));

@@ -12,6 +12,7 @@ import { TITLES, TITLE_ORDER, isReservedTitle, isTitleAvailable, PHOENIX_ICON, t
 import { t, getLanguage, raceText, classText } from './i18n';
 import { setItemTooltip } from './itemTooltip';
 import { createQuestItems } from './questWindow';
+import { EQUIPPABLE } from '../data/equipment';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
   const node = document.createElement(tag);
@@ -54,9 +55,10 @@ export function goldLine(d: CharData, includePremium = true) {
   return row;
 }
 
-function equipCell(d: CharData, slot: EquipmentSlot) {
+function equipCell(d: CharData, slot: EquipmentSlot, onUnequip?: (slot: EquipmentSlot) => void) {
   const item = d.equipment[slot];
-  const cell = el('div', `inv-slot equip${item ? ' filled' : ''}`);
+  const cell = el(item && onUnequip ? 'button' : 'div', `inv-slot equip${item ? ' filled' : ''}`);
+  if (cell instanceof HTMLButtonElement) cell.type = 'button';
   cell.title = `${t(SLOT_LABEL[slot])}|${t(item ? item.id : 'Ranura vacía')}`;
   cell.dataset.slot = slot;
   cell.innerHTML = `<svg class="equip-art" viewBox="0 0 24 24" aria-hidden="true">${SLOT_ICON[slot]}</svg>`;
@@ -65,6 +67,10 @@ function equipCell(d: CharData, slot: EquipmentSlot) {
     cell.removeAttribute('title');
     setItemTooltip(cell, item.id, item.bound);
     cell.tabIndex = 0;
+    if (onUnequip) {
+      cell.onclick = () => onUnequip(slot);
+      cell.setAttribute('aria-label', `${t('Desequipar')}: ${t(itemLabel(item.id))}`);
+    }
     if (itemDef(item.id)) {
       cell.innerHTML = itemIcon(item.id);
       cell.append(el('small', undefined, t(SLOT_LABEL[slot])));
@@ -88,7 +94,7 @@ function inventoryHeading(icon: keyof typeof INVENTORY_ICONS, label: string) {
   return heading;
 }
 
-export function renderInventory(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onUse?: (slot: number) => void, onMove?: (from: number, to: number) => void) {
+export function renderInventory(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onUse?: (slot: number) => void, onMove?: (from: number, to: number) => void, onEquip?: (slot: number) => void, onUnequip?: (slot: EquipmentSlot) => void) {
   container.replaceChildren();
   const wrap = el('div', 'inv');
 
@@ -97,8 +103,8 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   const doll = el('div', 'doll');
   const left = el('div', 'doll-col');
   const right = el('div', 'doll-col');
-  for (const slot of EQUIPMENT_SLOTS.slice(0, 5)) left.append(equipCell(d, slot));
-  for (const slot of EQUIPMENT_SLOTS.slice(5)) right.append(equipCell(d, slot));
+  for (const slot of EQUIPMENT_SLOTS.slice(0, 5)) left.append(equipCell(d, slot, onUnequip));
+  for (const slot of EQUIPMENT_SLOTS.slice(5)) right.append(equipCell(d, slot, onUnequip));
   const stage = el('div', 'doll-stage');
   const turntable = createCharacterTurntable(d, renderer, { scale: 2, aspect: 200 / 390 });
   const portrait = turntable.canvas;
@@ -122,6 +128,7 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   rotateHint.innerHTML = inventoryIcon('rotate');
   rotateHint.append(t('Arrastra para girar'));
   equip.append(rotateHint);
+  if (onEquip) equip.append(el('p', 'inv-hint', t('Pulsa una pieza para desequiparla; pulsa su objeto en la mochila para equiparla.')));
 
   const bag = el('div', 'inv-bag');
   const used = d.inventory.slice(0, INVENTORY_UNLOCKED).filter(Boolean).length;
@@ -134,7 +141,8 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   for (let i = 0; i < INVENTORY_UNLOCKED; i++) {
     const item = d.inventory[i];
     const def = item ? itemDef(item.id) : undefined;
-    const usable = !!(item && onUse && def?.usable);
+    const equippable = !!(item && onEquip && EQUIPPABLE[item.id]);
+    const usable = !!(item && onUse && def?.usable) || equippable;
     const cell = el(usable ? 'button' : 'div', `inv-slot${item ? ' filled' : ''}`);
     if (cell instanceof HTMLButtonElement) cell.type = 'button';
     cell.dataset.index = String(i);
@@ -147,6 +155,11 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
       if (onUse && def?.usable) {
         cell.classList.add('usable');
         cell.onclick = () => { if (source === null) onUse(i); };
+      }
+      if (equippable && onEquip) {
+        cell.classList.add('usable');
+        cell.setAttribute('aria-label', `${t('Equipar')}: ${t(itemLabel(item.id))}`);
+        cell.onclick = () => { if (source === null) onEquip(i); };
       }
       if (onMove || def?.usable) {
         cell.draggable = true;

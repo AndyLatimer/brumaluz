@@ -134,8 +134,11 @@ function render() {
     const coins = document.createElement('span');
     coins.className = 'dialog-quest-coins';
     coins.textContent = t('{n} pelines', { n: quest.pelines });
-    rewards.append(rewardsLabel, xp, coins);
-    card.append(heading, objective, rewards);
+    rewards.append(rewardsLabel);
+    if (quest.experience > 0) rewards.append(xp);
+    if (quest.pelines > 0) rewards.append(coins);
+    card.append(heading, objective);
+    if (quest.experience > 0 || quest.pelines > 0) card.append(rewards);
     list.before(card);
   }
   if (node && conversation) {

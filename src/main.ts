@@ -5,12 +5,12 @@ import {
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
-  startCombat, combatAction, stopCombat,
+  startCombat, combatAction, changeEquipment, lootCorpse,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
 import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
-import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse, simulateWelcome } from './services/devActions';
+import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse, simulateWelcome, addItem } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
 import { applyLanguage, getLanguage, setLanguage, t, raceText, classText } from './ui/i18n';
 import { world } from './world/paint';
@@ -51,7 +51,10 @@ import { initMenuMusic } from './ui/menuMusic';
 import { initBuffLayout, renderBuffs } from './ui/buffs';
 import { beginTransition } from './ui/transitionLoading';
 import type { FoodBuff } from './data/food';
-import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, welcomeObjective, type WelcomeAction } from './data/quests';
+import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, SHADOW_TITLE, shadowObjective, welcomeObjective, parseShadowQuest, type WelcomeAction } from './data/quests';
+import { EQUIPPABLE, hasCombatWeapon, transferEquipment } from './data/equipment';
+import type { EquipmentSlot } from './data/inventory';
+import { renderLoot } from './ui/lootWindow';
 import { createWelcomeWorld } from './world/welcome';
 import { createQuestTracker, renderQuestJournal, welcomeConversation } from './ui/questWindow';
 import { COMBAT_KITS, MAX_SKILL_RANK, resolveCombat, skillRank, unspentSkillPoints, upgradeSkill, type CombatState } from './data/combat';
@@ -450,7 +453,10 @@ const INTERACTIONS: Record<string, () => DialogLine[]> = {
 };
 function nearestInteractable(): Interactable | null {
   let best: Interactable | null = null, bestDistance = Infinity;
-  for (const item of [...city.interactables, ...welcomeWorld.interactions()]) {
+  const corpses: Interactable[] = combatTargetRoot && combatEncounter?.status === 'defeated'
+    ? [{ id: 'corpse:shadowling', position: combatTargetRoot.position, radius: 3, label: 'Registrar cuerpo' }] : [];
+  if (corpses[0] && !combatEncounter?.looted && holder.position.distanceTo(corpses[0].position) <= 3) return corpses[0];
+  for (const item of [...corpses, ...city.interactables, ...welcomeWorld.interactions()]) {
     if (item.id === 'npc:isberto' && !isbertoUnlocked()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -493,6 +499,7 @@ function interact() {
   }
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
+  if (item?.id === 'corpse:shadowling') { setWindow('loot'); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   if (npcId) { talkTo(npcId); return; }
   const lines = item && INTERACTIONS[item.id]?.();
@@ -510,6 +517,11 @@ function clickNpc(e: PointerEvent) {
   if (dead || isDialogOpen() || !npcActors.length) return false;
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  if (combatTargetRoot && combatEncounter?.status === 'defeated' && ray.intersectObject(combatTargetRoot, true).length) {
+    if (holder.position.distanceTo(combatTargetRoot.position) <= 3) setWindow('loot');
+    else toast('Botín', 'Acércate al cuerpo para recoger el botín.', true);
+    return true;
+  }
   if(combatTargetRoot&&combatEncounter?.status==='active'&&ray.intersectObject(combatTargetRoot,true).length){
     lockCombatTarget(true);
     return true;
@@ -680,29 +692,11 @@ function tickWorldCombat(time:number) {
   nextCombatAttack=time+kit.interval;
   void performWorldCombatAction('attack');
 }
-async function fleeWorldCombat() {
-  combatAuto=false;pendingCombatSkill=false;
-  if(!combatEncounter||combatEncounter.status!=='active')return;
-  if(!activeCharacterId&&TEST){
-    setCombatEncounter({...combatEncounter,status:'fled'});
-    localCombatState=null;
-    chatCombat(t('Te has retirado del combate.'));
-    return;
-  }
-  const characterId=activeCharacterId;
-  if(!characterId)return;
-  const stillCurrent=characterContext();
-  try{
-    const result=await stopCombat(characterId);
-    if(!stillCurrent())return;
-    applyCombatResult(result);
-    chatCombat(t('Te has retirado del combate.'));
-  }catch(error){toast('No se pudo completar la acción',errorMessage(error),true);}
-}
 function useWorldCombatSkill() {
   if (mode !== 'play' || dead || combatBusy) return;
   if (performance.now() < skillReadyAt) { toast('Habilidad', 'La acción se está recuperando.', true); return; }
   const kit = COMBAT_KITS[state.cls];
+  if (!kit.skill.healing && !hasCombatWeapon(state)) { toast('Combate', 'Equipa un arma de tu clase para atacar.', true); return; }
   if (vitalsOf(state).resource < kit.skill.cost) { toast('Habilidad', 'No tienes recurso suficiente.', true); return; }
   if (!kit.skill.healing && (!lockedEnemy || combatEncounter?.status !== 'active')) {
     toast('Habilidad', 'Fija un enemigo visible con F.', true); return;
@@ -725,6 +719,7 @@ function releaseCombatTarget() {
   $('#combat-auto').setAttribute('aria-pressed', 'false');
 }
 function lockCombatTarget(clicked = false) {
+  if (!hasCombatWeapon(state)) { toast('Combate', 'Equipa un arma de tu clase para atacar.', true); return; }
   if (combatEncounter?.status !== 'active' || !combatTargetRoot || (!clicked && targetFrame.current()?.id !== 'enemy:shadowling')) {
     toast('Combate', 'Mira a un enemigo visible para fijarlo con F.', true); return;
   }
@@ -765,6 +760,7 @@ async function runOnServer(call: (id: string) => Promise<Record<string, unknown>
       const foodCurrent = next.foodRevision > state.foodRevision || (next.foodRevision === state.foodRevision && at >= foodSampleAt);
       if (!foodCurrent) { next.foodBuff = state.foodBuff; next.foodRevision = state.foodRevision; }
       Object.assign(state, next);
+      if (data.combatEncounter !== undefined) setCombatEncounter(data.combatEncounter);
       if (foodCurrent) resetFoodTimer(at);
     }
     else if (TEST) { tickFood(); simulate(); resetFoodTimer(); }
@@ -1025,6 +1021,18 @@ async function moveInventorySlot(from: number, to: number) {
   });
   if (moved && openWindow === 'inventory') setWindow('inventory',false);
 }
+async function updateEquipment(slot: EquipmentSlot, bag: number | null) {
+  const source = bag === null ? state.equipment[slot] : state.inventory[bag];
+  if (!source || dead) return;
+  if (!(await runOnServer(id => changeEquipment(id, slot, bag, source), () => transferEquipment(state, slot, bag, source)))) return;
+  if (!hasCombatWeapon(state)) releaseCombatTarget();
+  rebuildNow(); updateHud();
+  if (openWindow === 'inventory') setWindow('inventory', false);
+}
+function equipInventoryItem(bag: number) {
+  const item = state.inventory[bag], meta = item && EQUIPPABLE[item.id];
+  if (meta) void updateEquipment(meta.slot, bag);
+}
 
 /** Usa un objeto de la mochila (clic en el hueco). */
 async function useInventoryItem(slot: number) {
@@ -1055,8 +1063,8 @@ initActionBar({
   },
   skill: () => ({
     id: skillAction(state.cls), cls: state.cls, rank: skillRank(state), icon: skillIcon(COMBAT_KITS[state.cls].skill.id),
-    cooldown: Math.max(0, (skillReadyAt - performance.now()) / 1000),
-    available: !dead && vitalsOf(state).resource >= COMBAT_KITS[state.cls].skill.cost,
+    cooldown: Math.max(0, (skillReadyAt - performance.now()) / 1000), duration: COMBAT_KITS[state.cls].skill.cooldown,
+    available: !dead && (COMBAT_KITS[state.cls].skill.healing === true || hasCombatWeapon(state)) && vitalsOf(state).resource >= COMBAT_KITS[state.cls].skill.cost,
   }),
   useSkill: useWorldCombatSkill,
 });
@@ -1295,7 +1303,6 @@ $('#combat-auto').addEventListener('click',()=>{
   if (lockedEnemy && combatAuto) releaseCombatTarget();
   else lockCombatTarget();
 });
-$('#combat-flee').addEventListener('click',()=>void fleeWorldCombat());
 $('#respawn').addEventListener('click', respawn);
 const RACE_ICONS: Record<Race, string> = { humano: '🛡️', elfo: '🌿', lagto: '🦎', pelso: '🐱' };
 const CLASS_ICONS: Record<ClassId, string> = { guerrero: classIcon('guerrero'), mago: classIcon('mago'), picaro: classIcon('picaro'), clerigo: classIcon('clerigo'), explorador: classIcon('explorador') };
@@ -1342,6 +1349,10 @@ initMinimap({
     ...(state.welcome && state.welcome.stage !== 'completed' ? [{
       id: 'welcome', name: t(welcomeObjective(state.welcome)), quest: true,
       ...(state.welcome.stage === 'active' ? WELCOME_BADGE : { x: welcomeWorld.root.position.x, z: welcomeWorld.root.position.z }),
+    }] : []),
+    ...(isbertoUnlocked() && state.shadowQuest !== 'completed' ? [{
+      id:'shadow-quest',name:t(shadowObjective(state.shadowQuest)),quest:true,
+      x:combatTargetRoot?.position.x ?? -3,z:combatTargetRoot?.position.z ?? (TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z),
     }] : []),
     ...getParty().members.filter(member=>member.userId!==partySelf() && member.location===state.location).map(member=>({
       id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
@@ -1436,7 +1447,7 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
-type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills';
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills' | 'loot';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
@@ -1492,7 +1503,13 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social' || win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
-  if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to));
+  if (win === 'loot') {
+    moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
+    $('#window-title').textContent = t('Botín de la criatura');
+    if (combatEncounter?.status === 'defeated') renderLoot(body, combatEncounter, collectCorpseLoot);
+    else { setWindow(null); return; }
+  }
+  else if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to), equipInventoryItem, slot => void updateEquipment(slot, null));
   else if (win === 'skills') renderSkills(body, state, assignSkillToActionBar, async (id, rank) => {
     const previousView = body.firstElementChild;
     const success = await runOnServer(character => upgradeCharacterSkill(character, id, rank), () => upgradeSkill(state, id, rank));
@@ -2629,8 +2646,10 @@ function updateWelcome(dt: number, time: number) {
     welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
   }
   if (!state.welcome) return;
-  if (state.welcome.stage === 'completed') return;
-  const target = state.welcome.stage === 'active' ? welcomeWorld.lost.position : welcomeWorld.root.position;
+  if (state.welcome.stage === 'completed' && state.shadowQuest === 'completed') return;
+  const shadowTarget = state.welcome.stage === 'completed'
+    ? combatTargetRoot?.position ?? npcActors.find(npc => npc.id === 'isberto')?.character.root.position : null;
+  const target = shadowTarget ?? (state.welcome.stage === 'active' ? welcomeWorld.lost.position : welcomeWorld.root.position);
   const distance = Math.hypot(target.x - holder.position.x, target.z - holder.position.z);
   if (state.welcome.stage === 'active' && !welcomeTravelSaid && Math.hypot(holder.position.x - WELCOME_START.x, holder.position.z - WELCOME_START.z) > 5 && distance > 8) {
     welcomeTravelSaid = true;
@@ -2695,6 +2714,22 @@ const testChoices: DialogChoice[] = [
   { text: 'Recibir 100 pelines', next: 'dinero', action: () => void receiveMoney() },
   { text: 'Comerciar', action: () => openVendor('testiculos') },
 ];
+function isbertoConversation(): Conversation {
+  const text = state.shadowQuest === 'completed'
+    ? 'Has encontrado algo entre sus restos. No sé qué es. Guárdalo por ahora.'
+    : state.shadowQuest === 'defeated' ? 'La criatura ha caído. Mira si ha quedado algo entre sus restos.'
+    : state.shadowQuest === 'active' ? 'La criatura sigue junto al ganado. Ten cuidado.'
+    : 'Una cosa negra y rara se ha metido entre el ganado. No reconozco la criatura, y a estas alturas ya he tenido bastantes aventuras. Si te ves con ganas, échale un ojo. Yo me quedo vigilando el camino.';
+  const offer = !state.shadowQuest;
+  return {
+    speaker:'Isberto', subtitle:'Granjero · explorador retirado', start:'intro',
+    nodes:{intro:{text,
+      ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Investiga a la criatura, derrótala y examina sus restos.',experience:0,pelines:0}} : {}),
+      ...(offer || (state.shadowQuest === 'active' && combatEncounter?.status !== 'active')
+        ? {choices:[{text:offer ? 'Aceptar misión' : 'Volver a investigar',action:beginIsbertoEncounter}]} : {}),
+    }},
+  };
+}
 const NPCS: Record<string, NpcDef> = {
   isberto: {
     name:'Isberto',
@@ -2703,15 +2738,7 @@ const NPCS: Record<string, NpcDef> = {
     level:1,
     vitals:{health:100,maxHealth:100,overheal:0,resource:50,maxResource:50,resourceKind:'stamina'},
     look:{race:'humano',sex:0,hair:3,hairColor:5,beard:2,clothA:3,clothB:6,height:.45,build:.62},
-    conversation:{
-      speaker:'Isberto',subtitle:'Granjero · explorador retirado',start:'intro',
-      nodes:{
-        intro:{
-          text:'Una cosa negra y rara se ha metido entre el ganado. No reconozco la criatura, y a estas alturas ya he tenido bastantes aventuras. Si te ves con ganas, échale un ojo. Yo me quedo vigilando el camino.',
-          choices:[{text:'Voy a echar un vistazo.',action:beginIsbertoEncounter}],
-        },
-      },
-    },
+    get conversation() { return isbertoConversation(); },
   },
   testiculos: {
     name: 'Testículos, the Debugger',
@@ -2797,14 +2824,23 @@ function buildShadowling(encounter:CombatEncounter) {
   return root;
 }
 function setCombatEncounter(value:unknown) {
+  const previousStatus = combatEncounter?.status;
   combatEncounter=parseCombatEncounter(value);
-  if(combatEncounter?.status==='active'){
+  if(combatEncounter?.status==='active'||combatEncounter?.status==='defeated'){
     if(!combatTargetRoot)combatTargetRoot=buildShadowling(combatEncounter);
     combatTargetRoot.position.set(combatEncounter.x,city.groundY(combatEncounter.x,combatEncounter.z),combatEncounter.z);
-    $('#combat-controls').hidden=false;
+    const corpse = combatEncounter.status === 'defeated';
+    combatTargetRoot.name = corpse ? 'combat-corpse' : 'combat-enemy';
+    combatTargetRoot.rotation.z = corpse ? Math.PI / 2 : 0;
+    combatTargetRoot.scale.setScalar(corpse ? .8 : 1);
+    combatTargetRoot.position.y += corpse ? .12 : 0;
+    if (corpse) releaseCombatTarget();
+    $('#combat-controls').hidden=corpse;
     $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
     const ring = combatTargetRoot.getObjectByName('combat-lock-ring');
-    if (ring) ring.visible = lockedEnemy;
+    if (ring) ring.visible = !corpse && lockedEnemy;
+    combatTargetRoot.userData.looted = combatEncounter.looted;
+    if (corpse && previousStatus !== 'defeated') chatCombat(t('La criatura extraña ha caído.'));
   }else{
     if(combatTargetRoot){
       scene.remove(combatTargetRoot);
@@ -2825,6 +2861,7 @@ function applyCombatResult(value:Record<string,unknown>) {
     state.health=vitals.health;state.resource=vitals.resource;state.overheal=vitals.overheal;
   }
   if(value.encounter!==undefined)setCombatEncounter(value.encounter);
+  if(value.quest !== undefined) state.shadowQuest = parseShadowQuest(value.quest);
   if (typeof value.skillCooldown === 'number') skillReadyAt = performance.now() + Math.max(0, value.skillCooldown) * 1000;
   if(state.health===0&&combatEncounter?.status==='active')setCombatEncounter({...combatEncounter,status:'failed'});
   resetOverheal();updateHud();
@@ -2839,8 +2876,34 @@ function applyCombatResult(value:Record<string,unknown>) {
   }
   if(combatEncounter?.status==='defeated'){
     combatAuto=false;
-    chatCombat(t('La criatura extraña ha caído.'));
   }
+}
+async function collectCorpseLoot(slot: number | null) {
+  const corpse = combatEncounter;
+  if (!corpse || corpse.status !== 'defeated' || !corpse.instanceId || !combatTargetRoot) return false;
+  if (holder.position.distanceTo(combatTargetRoot.position) > 3) {
+    toast('Botín', 'Acércate al cuerpo para recoger el botín.', true); return false;
+  }
+  const instanceId = corpse.instanceId;
+  const stillCurrent = characterContext();
+  const success = await runOnServer(id => lootCorpse(id, instanceId, slot), () => {
+    const remaining = corpse.loot.map(item => item ? { ...item } : null);
+    const inventory = state.inventory.map(item => item ? { ...item } : null);
+    try {
+      remaining.forEach((item, i) => {
+        if (!item || (slot !== null && slot !== i)) return;
+        for (let n = 0; n < item.count; n++) addItem(state, item.id);
+        remaining[i] = null;
+      });
+    } catch (error) { state.inventory = inventory; throw error; }
+    const looted = remaining.every(item => !item);
+    setCombatEncounter({ ...corpse, loot: remaining, looted });
+    if (looted) state.shadowQuest = 'completed';
+  });
+  if (!success || !stillCurrent()) return false;
+  updateHud();
+  if (openWindow === 'loot') setWindow('loot', false);
+  return true;
 }
 async function beginIsbertoEncounter() {
   if (!isbertoUnlocked()) {
@@ -2850,6 +2913,9 @@ async function beginIsbertoEncounter() {
   if(!activeCharacterId){
     if(!TEST)throw new Error('Inicia sesión con un personaje para empezar el combate.');
     const vitals=vitalsOf(state);
+    if (state.shadowQuest === 'completed') throw new Error('Ya has completado el encargo de Isberto.');
+    if (combatEncounter?.status === 'defeated' && !combatEncounter.looted) throw new Error('Recoge primero los restos de la criatura caída.');
+    state.shadowQuest = 'active';
     localCombatState={
       health:vitals.health,maxHealth:vitals.maxHealth,resource:vitals.resource,
       enemyHealth:100,nextAttack:0,nextSkill:0,
@@ -2857,6 +2923,7 @@ async function beginIsbertoEncounter() {
     setCombatEncounter({
       id:'shadowling',status:'active',health:100,maxHealth:100,
       x:LOCAL_COMBAT_SITE.x+3.5,z:LOCAL_COMBAT_SITE.z,enemyAttackAt:performance.now()/1000+2,
+      instanceId: crypto.randomUUID(), loot: [], looted: false,
     });
     releaseCombatTarget();nextCombatAttack=0;nextLocalEnemyAttack=performance.now()/1000+2;
     return true;
@@ -2871,6 +2938,7 @@ async function beginIsbertoEncounter() {
 async function performWorldCombatAction(action:'attack'|'skill') {
   if(combatBusy)return;
   const healing = action === 'skill' && state.cls === 'clerigo';
+  if (!healing && !hasCombatWeapon(state)) { releaseCombatTarget(); toast('Combate', 'Equipa un arma de tu clase para atacar.', true); return; }
   if (!healing && (!lockedEnemy || !combatEncounter || combatEncounter.status !== 'active')) return;
   if(!activeCharacterId&&TEST){
     const current = vitalsOf(state);
@@ -2884,7 +2952,9 @@ async function performWorldCombatAction(action:'attack'|'skill') {
       localCombatState=result.state;
       if (action === 'skill') skillReadyAt = performance.now() + COMBAT_KITS[state.cls].skill.cooldown * 1000;
       applyCombatResult({
-        ...(combatEncounter ? {encounter:{...combatEncounter,health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active'}} : {}),
+        ...(combatEncounter ? {encounter:{...combatEncounter,health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active',
+          ...(result.state.enemyHealth === 0 ? {loot:[{id:'esencia_sombria',count:1,bound:true}],looted:false} : {})},
+          quest: result.state.enemyHealth === 0 ? 'defeated' : 'active'} : {}),
         vitals:{health:result.state.health,maxHealth:result.state.maxHealth,overheal:0,
           resource:result.state.resource,maxResource:vitalsOf(state).maxResource,resourceKind:vitalsOf(state).resourceKind},
         damage:result.damage.reduce((sum,hit)=>sum+hit,0),healing:result.healing,

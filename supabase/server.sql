@@ -519,6 +519,7 @@ immutable
 set search_path = ''
 as $$
   select case p_item
+    when 'esencia_sombria' then '{"value":0,"bound":true,"sellable":false,"stack":50}'::jsonb
     when 'espada_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
     when 'escudo_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
     when 'baston_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
@@ -567,6 +568,26 @@ as $$
 $$;
 
 -- Mochila de 25 huecos (relleno con null si el personaje aún no tiene).
+create or replace function public.game_equipment_item(p_item text)
+returns jsonb language sql immutable set search_path='' as $$
+  select case p_item
+    when 'espada_inicial' then '{"slot":"weapon","cls":"guerrero"}'::jsonb
+    when 'escudo_inicial' then '{"slot":"offhand","cls":"guerrero"}'::jsonb
+    when 'baston_inicial' then '{"slot":"weapon","cls":"mago"}'::jsonb
+    when 'daga_inicial' then '{"slot":"weapon","cls":"picaro"}'::jsonb
+    when 'daga_secundaria_inicial' then '{"slot":"offhand","cls":"picaro"}'::jsonb
+    when 'varita_inicial' then '{"slot":"weapon","cls":"clerigo"}'::jsonb
+    when 'libro_inicial' then '{"slot":"offhand","cls":"clerigo"}'::jsonb
+    when 'ballesta_inicial' then '{"slot":"weapon","cls":"explorador"}'::jsonb
+  end
+$$;
+create or replace function public.game_has_weapon(d jsonb)
+returns boolean language sql immutable set search_path='' as $$
+  select coalesce(public.game_equipment_item(d->'equipment'->'weapon'->>'id')->>'cls'=d->>'cls'
+    and public.game_equipment_item(d->'equipment'->'weapon'->>'id')->>'slot'='weapon',false)
+$$;
+revoke all on function public.game_equipment_item(text),public.game_has_weapon(jsonb) from public,anon,authenticated;
+
 create or replace function public.game_inventory(d jsonb)
 returns jsonb
 language sql
@@ -686,7 +707,7 @@ begin
   if p_slot is null or p_slot not between 0 and 24 then raise exception 'INVALID_ITEM'; end if;
   item := public.game_item(public.game_inventory(d) -> p_slot ->> 'id');
   if item is null then raise exception 'INVALID_ITEM'; end if;
-  if public.game_inventory(d) -> p_slot ->> 'id' = any(array[
+  if coalesce((item->>'sellable')::boolean,true)=false or public.game_inventory(d) -> p_slot ->> 'id' = any(array[
     'espada_inicial','escudo_inicial','baston_inicial','daga_inicial',
     'daga_secundaria_inicial','varita_inicial','libro_inicial','ballesta_inicial'
   ]) then raise exception 'ITEM_NOT_SELLABLE'; end if;
@@ -1072,15 +1093,19 @@ begin
   end if;
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
   if c.data->'combatEncounter'->>'status'='active' then raise exception 'COMBAT_ALREADY_ACTIVE'; end if;
+  if c.data->'combatEncounter'->>'status'='defeated' and c.data->'combatEncounter'->>'looted' is distinct from 'true'
+    then raise exception 'LOOT_PENDING'; end if;
+  if c.data->>'shadowQuest'='completed' then raise exception 'SHADOW_QUEST_COMPLETED'; end if;
   encounter:=jsonb_build_object(
     'id','shadowling','status','active','health',100,'maxHealth',100,
+    'instanceId',gen_random_uuid()::text,'loot','[]'::jsonb,'looted',false,
     'x',sx+3.5,'z',sz,'enemyAttackAt',stamp+2
   );
-  c.data:=c.data||jsonb_build_object('combatEncounter',encounter,'combat_at',stamp);
+  c.data:=c.data||jsonb_build_object('combatEncounter',encounter,'combat_at',stamp,'shadowQuest','active');
   c.data:=public.game_store(c.id,c.data);
   return jsonb_build_object(
     'encounter',encounter,'vitals',public.game_public_vitals(c.data),
-    'damage',0,'healing',0
+    'damage',0,'healing',0,'quest',c.data->>'shadowQuest'
   );
 end;
 $$;
@@ -1135,6 +1160,7 @@ begin
     and seen_at>now()-interval '15 seconds' for update;
   if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  if not healing and not public.game_has_weapon(c.data) then raise exception 'COMBAT_WEAPON_REQUIRED'; end if;
   if not healing and (encounter->>'status' is distinct from 'active' or encounter->>'id' is distinct from 'shadowling') then raise exception 'COMBAT_NO_TARGET'; end if;
 
   attack_range:=case cls when 'guerrero' then 1.8 when 'mago' then 6 when 'picaro' then 1.6
@@ -1192,6 +1218,12 @@ begin
     encounter:=encounter||jsonb_build_object(
       'health',enemy_hp,'status',case when enemy_hp=0 then 'defeated' else 'active' end
     );
+    if enemy_hp=0 then
+      encounter:=encounter||jsonb_build_object(
+        'instanceId',coalesce(encounter->>'instanceId',gen_random_uuid()::text),
+        'loot',jsonb_build_array(jsonb_build_object('id','esencia_sombria','count',1,'bound',true)),'looted',false);
+      c.data:=c.data||jsonb_build_object('shadowQuest','defeated');
+    end if;
     c.data:=jsonb_set(c.data,'{combatEncounter}',encounter);
   end if;
   c.data:=public.game_store(c.id,c.data);
@@ -1201,7 +1233,8 @@ begin
   return jsonb_build_object(
     'encounter',c.data->'combatEncounter','vitals',public.game_public_vitals(c.data),
     'damage',total_damage,'healing',healed,
-    'skillCooldown',greatest(0,coalesce((c.data->>'combatNextSkill')::numeric,0)-stamp)
+    'skillCooldown',greatest(0,coalesce((c.data->>'combatNextSkill')::numeric,0)-stamp),
+    'quest',c.data->>'shadowQuest'
   );
 end;
 $$;
@@ -1984,6 +2017,93 @@ begin
 end $$;
 revoke all on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) from public,anon;
 grant execute on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) to authenticated;
+
+create or replace function public.change_equipment(p_character_id uuid,p_slot text,p_bag int,p_expected jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  c public.characters; inv jsonb; equipment jsonb; source jsonb; target jsonb; meta jsonb; free int;
+begin
+  perform pg_catalog.pg_advisory_xact_lock(731029,3);
+  c:=public.game_lock_character(p_character_id);
+  if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  if p_slot is null or p_slot not in ('head','pendant','chest','hands','ring','weapon','offhand','legs','feet','trinket')
+    or (p_bag is not null and p_bag not between 0 and 24) then raise exception 'EQUIPMENT_INVALID'; end if;
+  inv:=public.game_inventory(c.data);
+  equipment:=coalesce(c.data->'equipment','{}'::jsonb);
+  source:=case when p_bag is null then equipment->p_slot else inv->p_bag end;
+  if jsonb_typeof(source) is distinct from 'object' or jsonb_typeof(p_expected) is distinct from 'object'
+    or source->>'id' is distinct from p_expected->>'id'
+    or source->>'count' is distinct from p_expected->>'count'
+    or coalesce((source->>'bound')::boolean,false) is distinct from coalesce((p_expected->>'bound')::boolean,false)
+    then raise exception 'EQUIPMENT_CHANGED'; end if;
+  meta:=public.game_equipment_item(source->>'id');
+  if p_bag is not null and (meta is null or meta->>'slot' is distinct from p_slot or meta->>'cls' is distinct from c.data->>'cls'
+    or source->>'count'<>'1') then raise exception 'EQUIPMENT_INVALID'; end if;
+  if p_bag is null then
+    select i into free from generate_series(0,24) i where inv->i='null'::jsonb order by i limit 1;
+    if free is null then raise exception 'INVENTORY_FULL'; end if;
+    inv:=jsonb_set(inv,array[free::text],source);
+    equipment:=jsonb_set(equipment,array[p_slot],'null'::jsonb);
+  else
+    target:=coalesce(equipment->p_slot,'null'::jsonb);
+    inv:=jsonb_set(inv,array[p_bag::text],target);
+    equipment:=jsonb_set(equipment,array[p_slot],source);
+  end if;
+  update public.player_trades set revision=revision+1,accepted_a=false,accepted_b=false,
+    offer_a=case when a=c.id then '{"items":[],"pelines":0}'::jsonb else offer_a end,
+    offer_b=case when b=c.id then '{"items":[],"pelines":0}'::jsonb else offer_b end
+    where status in ('invited','open') and c.id in(a,b);
+  return public.game_store(c.id,c.data||jsonb_build_object('inventory',inv,'equipment',equipment));
+end $$;
+revoke all on function public.change_equipment(uuid,text,int,jsonb) from public,anon;
+grant execute on function public.change_equipment(uuid,text,int,jsonb) to authenticated;
+
+create or replace function public.loot_corpse(p_character_id uuid,p_instance_id text,p_slot int default null)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  c public.characters; encounter jsonb; loot jsonb; pos jsonb; entry jsonb; i int; n int;
+begin
+  perform pg_catalog.pg_advisory_xact_lock(731029,3);
+  c:=public.game_lock_character(p_character_id);
+  if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  encounter:=c.data->'combatEncounter'; loot:=encounter->'loot';
+  if encounter->>'status' is distinct from 'defeated'
+    or p_instance_id is null or encounter->>'instanceId' is distinct from p_instance_id
+    then raise exception 'LOOT_INVALID'; end if;
+  if encounter->>'looted'='true' or jsonb_typeof(loot) is distinct from 'array' or jsonb_array_length(loot)=0
+    then raise exception 'LOOT_EMPTY'; end if;
+  if p_slot is not null and (p_slot<0 or p_slot>=jsonb_array_length(loot) or loot->p_slot='null'::jsonb)
+    then raise exception 'LOOT_INVALID'; end if;
+  select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
+    and seen_at>now()-interval '15 seconds' for update;
+  if pos is null or coalesce(c.data->>'location','brumaluz')<>'brumaluz'
+    then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  if sqrt(power((pos->>'x')::numeric-(encounter->>'x')::numeric,2)
+    +power((pos->>'z')::numeric-(encounter->>'z')::numeric,2))>3 then raise exception 'LOOT_TOO_FAR'; end if;
+  for i in 0..jsonb_array_length(loot)-1 loop
+    if p_slot is not null and i<>p_slot then continue; end if;
+    entry:=loot->i;
+    if jsonb_typeof(entry)<>'object' then continue; end if;
+    for n in 1..(entry->>'count')::int loop c.data:=public.game_add_item(c.data,entry->>'id'); end loop;
+    loot:=jsonb_set(loot,array[i::text],'null'::jsonb);
+  end loop;
+  encounter:=encounter||jsonb_build_object('loot',loot,'looted',not exists(select 1 from jsonb_array_elements(loot) x where jsonb_typeof(x)='object'));
+  c.data:=c.data||jsonb_build_object('combatEncounter',encounter);
+  if encounter->>'looted'='true' then c.data:=c.data||jsonb_build_object('shadowQuest','completed'); end if;
+  return public.game_store(c.id,c.data);
+end $$;
+revoke all on function public.loot_corpse(uuid,text,int) from public,anon;
+grant execute on function public.loot_corpse(uuid,text,int) to authenticated;
+
+-- Preserve pre-loot defeated encounters as recoverable bodies, without resetting any completed loot.
+update public.characters set data=data||jsonb_build_object('shadowQuest','active')
+where data->'combatEncounter'->>'status' in ('active','failed','fled') and not (data ? 'shadowQuest');
+update public.characters set data=data||jsonb_build_object(
+  'shadowQuest','defeated','combatEncounter',data->'combatEncounter'||jsonb_build_object(
+    'instanceId',gen_random_uuid()::text,'looted',false,
+    'loot',jsonb_build_array(jsonb_build_object('id','esencia_sombria','count',1,'bound',true))))
+where data->'combatEncounter'->>'status'='defeated' and not (data->'combatEncounter' ? 'loot')
+  and data->>'shadowQuest' is distinct from 'completed';
 
 -- Internal prerequisite for subsequent story content; legacy characters are exempt.
 create or replace function public.game_require_welcome_complete(d jsonb)

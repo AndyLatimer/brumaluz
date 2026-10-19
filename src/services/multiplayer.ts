@@ -2,6 +2,7 @@ import { sanitize, type CharData } from '../data/data';
 import { joinWorld, leaveWorld, syncWorld } from './account';
 import type { Vitals } from '../data/stats';
 import { parseFoodBuff, type FoodBuff } from '../data/food';
+import type { ItemStack } from '../data/inventory';
 
 export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'>;
 
@@ -36,6 +37,9 @@ export interface CombatEncounter {
   x: number;
   z: number;
   enemyAttackAt: number;
+  instanceId: string | null;
+  loot: (ItemStack | null)[];
+  looted: boolean;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -55,6 +59,17 @@ export function parseCombatEncounter(value: unknown): CombatEncounter | null {
   const encounter=record(value);
   const health=number(encounter.health),maxHealth=number(encounter.maxHealth);
   const status=encounter.status;
+  if (encounter.instanceId !== undefined && encounter.instanceId !== null && typeof encounter.instanceId !== 'string') throw new Error('Identidad de cuerpo no válida.');
+  const loot: (ItemStack | null)[] = [];
+  if (encounter.loot !== undefined) {
+    if (!Array.isArray(encounter.loot)) throw new Error('Botín no válido.');
+    for (const item of encounter.loot) {
+      if (item === null) { loot.push(null); continue; }
+      const row = record(item);
+      if (typeof row.id !== 'string' || !Number.isSafeInteger(row.count) || Number(row.count) < 1) throw new Error('Botín no válido.');
+      loot.push({ id: row.id, count: Number(row.count), ...(row.bound === true ? { bound: true } : {}) });
+    }
+  }
   if(encounter.id!=='shadowling'||(status!=='active'&&status!=='defeated'&&status!=='fled'&&status!=='failed')
     ||maxHealth<=0||health<0||health>maxHealth||number(encounter.enemyAttackAt)<0) {
     throw new Error('Respuesta de combate no válida.');
@@ -62,6 +77,8 @@ export function parseCombatEncounter(value: unknown): CombatEncounter | null {
   return {
     id:'shadowling',status,health,maxHealth,
     x:number(encounter.x),z:number(encounter.z),enemyAttackAt:number(encounter.enemyAttackAt),
+    instanceId: typeof encounter.instanceId === 'string' ? encounter.instanceId : null,
+    loot, looted: encounter.looted === true,
   };
 }
 export function parsePublicVitals(value: unknown): PublicVitals {

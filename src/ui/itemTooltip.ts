@@ -1,6 +1,7 @@
 import { currencyIcon } from '../data/currency';
 import { itemDef, itemIcon, itemLabel, sellPrice } from '../data/items';
 import { getLanguage, t } from './i18n';
+import { EQUIPPABLE } from '../data/equipment';
 
 export function setItemTooltip(target: HTMLElement, id: string, bound = false) {
   target.dataset.itemId = id;
@@ -66,6 +67,11 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   description.className = 'item-tip-description';
   description.textContent = t(item.description);
   container.append(description);
+  if (EQUIPPABLE[id]) {
+    const hint = document.createElement('small');
+    hint.textContent = t('Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.');
+    container.append(hint);
+  }
   if (item.sellable === false) return;
 
   const footer = document.createElement('div');

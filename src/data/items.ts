@@ -24,6 +24,12 @@ export interface ItemDef {
 }
 
 export const ITEMS: Record<string, ItemDef> = {
+  esencia_sombria: {
+    id: 'esencia_sombria', label: 'Esencia sombría', category: 'Objeto desconocido',
+    description: 'Un resto oscuro de la criatura. No sabes qué es ni para qué sirve.',
+    value: 0, bound: true, sellable: false,
+    icon: '<path d="M12 2c5 5 8 9 7 14-1 5-12 7-14 0C3 11 9 8 12 2Z" fill="#443258" stroke="#bb9cd5" stroke-width="1.2"/><path d="M12 7c3 4 4 7 2 10-3 3-6 0-5-3" fill="#9170b2"/><path d="m12 10 2 3-2 5-2-4Z" fill="#dac4ee"/><path d="m4 5 1 2m14-1 1-2M3 18l2-1" stroke="#c7a8e0"/>',
+  },
   ...Object.fromEntries([
     ['espada_inicial', 'Espada de principiante', 'Espada', '<path d="m6 18 11-14 3-1-1 4L8 20ZM4 15l6 5M3 21l3-4" fill="#c0cad0" stroke="#725338"/>'],
     ['escudo_inicial', 'Escudo de principiante', 'Escudo', '<path d="M5 4h14v9c0 4-7 8-7 8s-7-4-7-8Z" fill="#8b6746" stroke="#d5b778"/><path d="M12 5v14M6 11h12" stroke="#d5b778"/>'],

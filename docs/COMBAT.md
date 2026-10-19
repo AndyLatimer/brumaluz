@@ -19,10 +19,11 @@ SQL actualizado antes del cliente. Las pruebas en la base configurada se
 ejecutan con rollback y son independientes de la aplicación persistente del SQL.
 
 `src/data/combat.ts` conserva el balance y el resolver puro del banco local.
-El SQL añade RPC de inicio/ataque/retirada y estado personal del rival,
+El SQL añade RPC de inicio/ataque y estado personal del rival,
 validando presencia, posición, alcance, recargas y recursos en servidor.
-La conversación de Isberto inicia un encuentro personal en el mundo 3D, con
-objetivo seleccionable, aproximación, ataque automático, habilidad y retirada.
+La conversación de Isberto ofrece una misión explícita que, al aceptarla, inicia
+un encuentro personal en el mundo 3D, con objetivo seleccionable, aproximación,
+ataque automático y habilidad. Ya no hay botón de retirada.
 Isberto permanece oculto e ininteractuable hasta completar la bienvenida de
 Gnomi. `combat_start` y las acciones ofensivas comprueban ese estado en el servidor;
 la ausencia de progreso o una fase incompleta se rechaza con `WELCOME_REQUIRED`.
@@ -31,7 +32,8 @@ El cliente de prueba simula el encuentro localmente; el mundo conectado usa
 los RPC autoritativos y los latidos para el daño del enemigo. Una derrota del
 jugador cierra el encuentro sin presentarla como victoria sobre el enemigo.
 La bandera `combat_enabled` permanece desactivada por defecto. No hay todavía
-botín, XP de combate ni avance de misión. Nunca se debe enviar al servidor el
+XP de combate ni recompensas monetarias. La victoria deja un cadáver con botín
+y recoger su esencia completa el encargo de Isberto. Nunca se debe enviar al servidor el
 resultado calculado por el prototipo como daño o progreso autoritativos.
 
 ## Habilidades y objetivo fijado
@@ -54,7 +56,10 @@ resultado calculado por el prototipo como daño o progreso autoritativos.
   huecos, retirarlos con clic derecho o usar «Añadir a la barra rápida». La
   disposición sigue siendo privada por personaje y se conserva en el navegador.
 - Las teclas `1–0` y el clic ejecutan habilidades desde la barra; `Z` cambia de
-  página. La barra muestra la cuenta atrás y el estado sin recurso suficiente.
+  página. La barra muestra un barrido radial de recarga, cuenta atrás con décimas
+  en el último segundo y un destello al quedar lista (sin animación si se solicita
+  movimiento reducido). Se actualiza el mismo nodo para conservar arrastre,
+  foco y tooltips. También señala la falta de recurso o arma.
   `R` ya no tiene un atajo especial para la habilidad.
 - `F` fija el enemigo visible y activa ataque automático y aproximación. También
   puede seleccionarse pulsando su modelo. El encuentro no ataca automáticamente
@@ -63,7 +68,8 @@ resultado calculado por el prototipo como daño o progreso autoritativos.
   la cámara y moverse. El movimiento manual cancela la aproximación, no la
   selección; los ataques continúan si el enemigo está al alcance. No se fuerza
   la orientación de la cámara. `Esc` libera el objetivo sin terminar el encuentro;
-  el botón «Retirarse» sí termina la pelea. Muerte, salida, derrota o alejarse
+  no existe acción de retirada en la interfaz. El RPC antiguo `combat_stop`
+  se conserva solo para compatibilidad con clientes anteriores. Muerte, salida, derrota o alejarse
   más de 35 m limpian el bloqueo.
 - `combat_action` acepta identificadores de habilidades y valida que correspondan
   a la clase, además de presencia, vida, recurso, recarga y alcance. El argumento
@@ -140,6 +146,38 @@ del creador conserva su presentación anterior. El snapshot público incorpora
 equipo para que las armas también sean visibles a otros jugadores; no publica
 la mochila, monedas ni el progreso personal.
 
+En Inventario, pulsar una pieza equipada la mueve al primer hueco libre de la
+mochila y la retira del modelo; pulsar un objeto equipable de la mochila lo
+equipa. Si ya había una pieza en esa ranura, vuelve al hueco origen de la mochila.
+Se conservan vinculación, cantidad y tooltips. Una mochila llena impide desequipar,
+sin destruir el objeto. La reconstrucción actualiza mundo, retrato e inventario;
+el snapshot público actualiza también a los otros jugadores.
+
+`change_equipment` valida propiedad, vida, pieza esperada, clase y ranura,
+con el mismo orden de bloqueo que el comercio. Cada cambio invalida ambas
+aceptaciones y la oferta propia, evitando intercambiar referencias obsoletas.
+No se entregan armas nuevas a los personajes antiguos. Sin arma principal
+de su clase no se puede atacar ni usar habilidades ofensivas; Curación sigue
+permitida sin arma. Desequiparla cancela el ataque automático y el bloqueo.
+
+## Cadáveres y botín
+
+La victoria conserva el modelo como cuerpo caído, sin objetivo hostil ni daño.
+`E` cerca del cuerpo (o pulsar el modelo a menos de 3 m) abre su contenido;
+abrirlo no recoge nada. Se puede pulsar un objeto o **Recoger todo**. El cadáver
+vacío permanece visible y se conserva al reconectar.
+
+El encuentro guarda `instanceId`, `loot` y `looted` en el servidor. Cada derrota
+de esta criatura deja una **Esencia sombría**, vinculada, no vendible, apilable
+hasta 50 y no utilizable. Su descripción no revela su significado.
+`loot_corpse` comprueba propiedad, vida, presencia reciente, distancia e identidad
+del cuerpo, y guarda inventario, botín restante y misión en la misma transacción.
+Una mochila llena no consume el botín; una repetición no lo duplica.
+El formato admite varias entradas y recogida individual para futuras criaturas;
+no se han inventado enemigos ni tablas de recompensas adicionales.
+Los encuentros derrotados anteriores a este sistema reciben una sola vez un
+cuerpo recuperable, sin reponer botín ya registrado ni reiniciar misiones completadas.
+
 ## Banco de pruebas
 
 Con `npm run dev`, abrir `/combat.html`. Es una escena 3D en tiempo real solo
@@ -190,8 +228,8 @@ o permiso explícito para usar la configurada con rollback.
 
 ## Trabajo pendiente
 
-El encuentro conectado todavía no concede recompensas ni progresa la misión;
-también faltan la validación visual final del emplazamiento, el arte definitivo
+El encuentro conectado no concede XP ni pelines; su recompensa material es la
+esencia y el encargo termina al recogerla. Falta el arte definitivo
 de la criatura. Las pruebas SQL ya pasaron en Brumaluz dentro de una transacción
 con rollback antes de aplicar el archivo. No habilitar la bienvenida ni el
 combate sin autorización, ni inventar recompensas o desbloqueos de historia.

@@ -1,5 +1,5 @@
 import type { CharData } from '../data/data';
-import { ORIGINS, ORIGIN_REPLIES, WELCOME_TITLE, WELCOME_REWARD, questItems, welcomeObjective, type WelcomeAction } from '../data/quests';
+import { ORIGINS, ORIGIN_REPLIES, WELCOME_TITLE, WELCOME_REWARD, SHADOW_TITLE, shadowObjective, questItems, welcomeObjective, type WelcomeAction } from '../data/quests';
 import { currencyIcon } from '../data/currency';
 import type { Conversation } from './dialog';
 import { t } from './i18n';
@@ -112,8 +112,22 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
   function display(completed: boolean) {
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === Number(completed))));
     content.replaceChildren();
+    if (data.shadowQuest && (data.shadowQuest === 'completed') === completed) {
+      const shadow = document.createElement('article'); shadow.className = 'quest-entry shadow-quest';
+      const header = document.createElement('header');
+      const title = document.createElement('h3'); title.textContent = t(SHADOW_TITLE);
+      const giver = document.createElement('span'); giver.className = 'quest-giver'; giver.textContent = 'Isberto';
+      header.append(title, giver);
+      const description = document.createElement('p'); description.textContent = t('Isberto te ha pedido investigar a la criatura que ronda su ganado.');
+      const objective = document.createElement('section'); objective.className = 'quest-objective';
+      const label = document.createElement('small'); label.textContent = t(completed ? 'Completada' : 'Siguiente paso');
+      const text = document.createElement('p'); text.textContent = t(shadowObjective(data.shadowQuest));
+      objective.append(label, text);
+      shadow.append(header, description, objective); content.append(shadow);
+    }
     const progress = data.welcome;
     if (!progress || (progress.stage === 'completed') !== completed) {
+      if (content.children.length) return;
       const empty = document.createElement('p'); empty.className = 'quest-empty';
       empty.textContent = t(completed ? 'Todavía no hay misiones completadas.' : 'No tienes misiones activas.');
       content.append(empty); return;
@@ -151,7 +165,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
     const button = document.createElement('button'); button.type = 'button'; button.textContent = t(label);
     button.onclick = () => display(i === 1); tabs.append(button); buttons.push(button);
   });
-  root.append(tabs, content); container.append(root); display(data.welcome?.stage === 'completed');
+  root.append(tabs, content); container.append(root); display(data.shadowQuest ? data.shadowQuest === 'completed' : data.welcome?.stage === 'completed');
 }
 
 export function createQuestTracker(open: () => void) {
@@ -187,22 +201,23 @@ export function createQuestTracker(open: () => void) {
   let signature = '';
   return {
     update(data: CharData, visible: boolean) {
-      root.hidden = !visible || !data.welcome || data.welcome.stage === 'completed';
+      const shadow = data.welcome?.stage === 'completed' && data.shadowQuest !== 'completed';
+      root.hidden = !visible || !data.welcome || (data.welcome.stage === 'completed' && !shadow);
       if (root.hidden || !data.welcome) return;
-      const key = `${JSON.stringify(data.welcome)}:${t('Diario')}`;
+      const key = `${JSON.stringify(data.welcome)}:${data.shadowQuest}:${t('Diario')}`;
       if (key === signature) return;
       signature = key;
       root.setAttribute('aria-label', t('Misión seguida'));
       heading.textContent = t('Misiones');
       journal.setAttribute('aria-label', t('Abrir diario'));
       refreshToggle();
-      label.textContent = t('Bienvenida · Obligatoria');
-      title.textContent = t(WELCOME_TITLE);
-      objective.textContent = t(welcomeObjective(data.welcome));
-      const step = data.welcome.stage === 'found' ? 2 : data.welcome.stage === 'active' ? 1 : 0;
+      label.textContent = shadow ? 'Isberto' : t('Bienvenida · Obligatoria');
+      title.textContent = t(shadow ? SHADOW_TITLE : WELCOME_TITLE);
+      objective.textContent = t(shadow ? shadowObjective(data.shadowQuest) : welcomeObjective(data.welcome));
+      const step = shadow ? data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome.stage === 'found' ? 2 : data.welcome.stage === 'active' ? 1 : 0;
       progress.textContent = t('Paso {current} de {total}', { current: step + 1, total: 3 });
       progress.style.setProperty('--quest-progress', `${step / 2 * 100}%`);
-      button.setAttribute('aria-label', `${t('Abrir diario')}: ${t(WELCOME_TITLE)}`);
+      button.setAttribute('aria-label', `${t('Abrir diario')}: ${t(shadow ? SHADOW_TITLE : WELCOME_TITLE)}`);
     },
   };
 }

@@ -98,6 +98,36 @@ async function openPlayer(world, account, compatible = true, clockTime) {
     if (fn === 'set_character_title') { character.data.title = args.p_title; return fulfill({ ...data, title: args.p_title }); }
     if (fn === 'my_titles') return fulfill(account.titles || []);
     const key = account.user.id;
+    if(fn==='change_equipment'){
+      if(world.fail.has('equipment'))return fulfill({message:'Temporary equipment failure'},503);
+      const {p_slot:slot,p_bag:bag,p_expected:expected}=args;
+      const inv=Array.from({length:25},(_,i)=>character.data.inventory?.[i]??null);
+      const equipment={...(character.data.equipment??{})};
+      const source=bag===null?equipment[slot]:inv[bag];
+      if(JSON.stringify(source)!==JSON.stringify(expected))return fulfill({message:'EQUIPMENT_CHANGED'},400);
+      if(bag===null){
+        const free=inv.findIndex(item=>!item);
+        if(free<0)return fulfill({message:'INVENTORY_FULL'},400);
+        inv[free]=source;equipment[slot]=null;
+      }else{inv[bag]=equipment[slot]??null;equipment[slot]=source;}
+      Object.assign(character.data,{equipment,inventory:inv});
+      return fulfill(character.data);
+    }
+    if(fn==='loot_corpse'){
+      const corpse=character.data.combatEncounter;
+      if(!corpse||corpse.instanceId!==args.p_instance_id)return fulfill({message:'LOOT_INVALID'},400);
+      if(corpse.looted)return fulfill({message:'LOOT_EMPTY'},400);
+      if(world.fail.has('loot'))return fulfill({message:'INVENTORY_FULL'},400);
+      const inv=Array.from({length:25},(_,i)=>character.data.inventory?.[i]??null);
+      const free=inv.findIndex(item=>!item);
+      if(free<0)return fulfill({message:'INVENTORY_FULL'},400);
+      inv[free]=corpse.loot[0];
+      character.data.combatEncounter={...corpse,loot:[null],looted:true};
+      Object.assign(character.data,{inventory:inv,shadowQuest:'completed'});
+      const player=world.players.get(key);
+      if(player)player.encounter=character.data.combatEncounter;
+      return fulfill(character.data);
+    }
     if(fn==='upgrade_skill'){
       if(world.fail.has('skill'))return fulfill({message:'Temporary skill failure'},503);
       const ids={guerrero:'heavy_strike',mago:'arcane_discharge',picaro:'double_slash',clerigo:'healing',explorador:'precise_shot'};
@@ -278,7 +308,7 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       const resourceKind=['mago','clerigo'].includes(character.data.cls)?'mana':'stamina';
       player = { id: character.id, userId: key, session: args.p_session_id, data: character.data, position: { ...character.data.position }, facing: Math.PI, jump: 0, wave: 0, dead: false,
         vitals:world.combatSimulationEnabled?{health:100,maxHealth:100,overheal:0,resource:80,maxResource:80,resourceKind}:undefined,
-        encounter:world.combatSimulationEnabled?null:undefined,nextEnemyAttack:0 };
+        encounter:character.data.combatEncounter??(world.combatSimulationEnabled?null:undefined),nextEnemyAttack:0 };
       world.players.set(key, player);
     } else if (!player || player.session !== args.p_session_id) return fulfill({ message: 'WORLD_SESSION_REPLACED' }, 400);
     world.counts.set(key, (world.counts.get(key) || 0) + 1);
@@ -373,6 +403,7 @@ test('starter equipment renders every class weapon without replacing novice clot
     await player.enter();
     assert.equal(await player.page.evaluate(()=>!!window.brumaluz.char().root.getObjectByName('1H_Sword')),false,'Legacy characters remain unarmed');
     for(const [cls,weapon,offhand,models] of kits){
+      Object.assign(account.character.data,{cls,equipment:{weapon:{id:weapon,count:1,bound:true},offhand:offhand?{id:offhand,count:1,bound:true}:null},inventory:[]});
       await player.page.evaluate(({cls,weapon,offhand})=>window.brumaluz.set({
         cls,equipment:{
           weapon:{id:weapon,count:1,bound:true},
@@ -387,8 +418,26 @@ test('starter equipment renders every class weapon without replacing novice clot
       assert.equal(rendered.novice,true,`${cls} keeps novice clothes`);
       await player.page.keyboard.press('KeyI');
       assert.ok(await player.page.locator(`#window-body [data-item-id="${weapon}"]`).count()>0,`${cls} equipment tooltip in inventory`);
+      await player.page.locator('.equip[data-slot="weapon"]').click();
+      await player.page.locator(`.inv-grid [data-item-id="${weapon}"]`).waitFor();
+      assert.equal(await player.page.evaluate(name=>!!window.brumaluz.char().root.getObjectByName(name),models[0]),false,`${cls} unequipped model disappears`);
+      assert.deepEqual(account.character.data.inventory[0],{id:weapon,count:1,bound:true});
+      await player.page.locator(`.inv-grid [data-item-id="${weapon}"]`).hover();
+      await player.page.locator('#game-tooltip').filter({hasText:'equipar'}).waitFor();
+      await player.page.locator(`.inv-grid [data-item-id="${weapon}"]`).click();
+      await player.page.waitForFunction(name=>!!window.brumaluz.char().root.getObjectByName(name),models[0]);
+      assert.equal(account.character.data.inventory[0],null);
       await player.page.keyboard.press('Escape');
     }
+    world.fail.add('equipment');
+    await player.page.keyboard.press('KeyI');
+    await player.page.locator('.equip[data-slot="weapon"]').click();
+    await player.page.locator('#toast').filter({hasText:'Temporary equipment failure'}).waitFor();
+    assert.equal(await player.page.evaluate(()=>!!window.brumaluz.char().root.getObjectByName('1H_Crossbow')),true,'Failed transfers keep the equipped mesh');
+    world.fail.delete('equipment');
+    await player.page.keyboard.press('Escape');
+    await leave(player.page);await player.page.reload();await player.page.waitForFunction(()=>!!window.brumaluz);await player.enter();
+    assert.equal(await player.page.evaluate(()=>!!window.brumaluz.char().root.getObjectByName('1H_Crossbow')),true,'Equipment persists after reconnect');
   }finally{await player.context.close();}
 });
 
@@ -1725,20 +1774,103 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     await page.getByRole('button',{name:'Minimize quests',exact:true}).waitFor();
     assert.match(await page.locator('.quest-tracker-progress').textContent(),/Step 2 of 3/);
     await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'completed'}}));
+    await page.locator('.quest-tracker-objective').filter({hasText:'Isberto'}).waitFor();
+    await page.evaluate(()=>window.brumaluz.set({shadowQuest:'completed'}));
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
     assert.equal(await marker.isVisible(),false);
     assert.deepEqual(errors,[]);
   }finally{await context.close();}
 });
 
-test('Isberto starts the local real-time shadowling encounter with working combat controls', {timeout:120000}, async()=>{
+test('online corpse looting retries after a full-bag rejection and persists an empty body after reconnect', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('Saqueador','humano',4.5);
+  world.combatSimulationEnabled=true;
+  Object.assign(account.character.data,{
+    position:{x:4.5,z:-62.35,yaw:0},welcome:{origin:0,stage:'completed'},shadowQuest:'defeated',
+    combatEncounter:{id:'shadowling',instanceId:randomUUID(),status:'defeated',health:0,maxHealth:100,
+      x:3.5,z:-62.35,enemyAttackAt:0,loot:[{id:'esencia_sombria',count:1,bound:true}],looted:false},
+  });
+  const player=await openPlayer(world,account);
+  try{
+    await player.enter();
+    await player.page.locator('#interact-label').filter({hasText:'Registrar cuerpo'}).waitFor();
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('.loot-item').waitFor();
+    world.fail.add('loot');
+    await player.page.getByRole('button',{name:'Recoger todo',exact:true}).click();
+    await player.page.locator('.loot-status').filter({hasText:'Vuelve a intentarlo'}).waitFor();
+    assert.equal(account.character.data.combatEncounter.looted,false);
+    world.fail.delete('loot');
+    await player.page.getByRole('button',{name:'Recoger todo',exact:true}).click();
+    await player.page.locator('.loot-empty').waitFor();
+    await player.page.keyboard.press('Escape');
+    await leave(player.page);await player.page.reload();await player.page.waitForFunction(()=>!!window.brumaluz);await player.enter();
+    await player.page.waitForFunction(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')?.userData.looted);
+    assert.equal(account.character.data.inventory.filter(item=>item?.id==='esencia_sombria').length,1);
+    await player.page.keyboard.press('KeyI');
+    await player.page.locator('[data-item-id="esencia_sombria"]').waitFor();
+    await player.page.locator('[data-item-id="esencia_sombria"]').hover();
+    await player.page.locator('#game-tooltip').filter({hasText:'No sabes qué es ni para qué sirve.'}).waitFor();
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('Gnomi locomotion advances the rig continuously and rests during dialogue without sliding', {timeout:60000}, async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage();
+  try{
+    await page.goto(`${url}/?test&welcome&graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz);
+    await page.evaluate(()=>{
+      window.brumaluz.set({welcome:{origin:0,stage:'active'},position:{x:-6.4,z:-8.5,yaw:0}});
+      window.brumaluz.play();
+    });
+    const samples=await page.evaluate(async()=>{
+      const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      const poses=[],gaits=[];
+      let previous=g.position.clone(),moved=0;
+      for(let i=0;i<100;i++){
+        window.brumaluz.move(-6.4+i*.1,-8.5);
+        await new Promise(requestAnimationFrame);
+        if(g.position.distanceTo(previous)>.001){
+          moved++;gaits.push(g.userData.gait);
+          const pose=[];g.traverse(object=>{if(object.isBone)pose.push(...object.quaternion.toArray().map(v=>v.toFixed(3)));});
+          poses.push(pose.join(','));
+        }
+        previous.copy(g.position);
+      }
+      return {moved,uniquePoses:new Set(poses).size,idleWhileMoving:gaits.filter(gait=>gait==='idle').length};
+    });
+    assert.ok(samples.moved>20,`Gnomi follows the player: ${JSON.stringify(samples)}`);
+    assert.ok(samples.uniquePoses>10,'The rig changes pose while following');
+    assert.equal(samples.idleWhileMoving,0,'Reached waypoints do not reset locomotion between trail segments');
+    await page.evaluate(()=>{
+      const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      window.brumaluz.move(g.position.x,g.position.z);
+    });
+    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('#dialog').waitFor({state:'visible'});
+    const idle=await page.evaluate(async()=>{
+      const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal'),before=g.position.clone();
+      await new Promise(resolve=>setTimeout(resolve,300));
+      return {gait:g.userData.gait,distance:g.position.distanceTo(before)};
+    });
+    assert.equal(idle.gait,'idle');assert.equal(idle.distance,0);
+  }finally{await context.close();}
+});
+
+test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and exactly one mysterious essence', {timeout:120000}, async()=>{
   const context=await browser.newContext({viewport:{width:1280,height:800}});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   try{
     await page.goto(`${url}/?test&welcome&graphics=compatible`);
     await page.waitForFunction(()=>!!window.brumaluz);
-    await page.evaluate(()=>window.brumaluz.play());
+    await page.evaluate(()=>{
+      window.brumaluz.set({cls:'guerrero',equipment:{weapon:{id:'espada_inicial',count:1,bound:true}}});
+      window.brumaluz.play();
+    });
     await page.waitForFunction(()=>document.body.classList.contains('playing'));
     await page.evaluate(()=>{
       const isberto=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
@@ -1780,6 +1912,7 @@ test('Isberto starts the local real-time shadowling encounter with working comba
     await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await page.keyboard.press('KeyE');
     await page.locator('#dialog').waitFor({state:'visible'});
+    await page.locator('.dialog-quest-card').filter({hasText:'Una sombra entre el ganado'}).waitFor();
     await page.locator('.dialog-choice').first().click();
     await page.waitForFunction(()=>!document.querySelector('#combat-controls').hidden);
     await page.evaluate(()=>{
@@ -1793,16 +1926,43 @@ test('Isberto starts the local real-time shadowling encounter with working comba
     await page.keyboard.press('Digit1');
     await page.locator('.chat-log').getByText('Golpeas a la criatura extraña por 18.',{exact:true}).waitFor();
     assert.equal(await page.locator('#combat-controls').isVisible(),true);
-    await page.locator('#combat-flee').click();
+    assert.equal(await page.locator('#combat-flee').count(),0,'There is no retreat button');
+    const slot=page.locator('.ab-slot[data-skill-id="heavy_strike"]');
+    await slot.locator('.ab-cooldown-time').filter({hasText:/[1-6]/}).waitFor();
+    await slot.evaluate(el=>el.dataset.testIdentity='preserved');
+    await page.waitForTimeout(300);
+    assert.equal(await slot.getAttribute('data-test-identity'),'preserved','Cooldown updates preserve slot DOM and tooltips');
     await page.waitForFunction(()=>document.querySelector('#combat-controls').hidden);
+    await page.waitForFunction(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse'));
+    await page.evaluate(()=>{
+      const corpse=window.brumaluz.city().root.parent.getObjectByName('combat-corpse');
+      window.brumaluz.move(corpse.position.x,corpse.position.z+1);
+    });
+    await page.locator('#interact-label').filter({hasText:'Registrar cuerpo'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('.loot-item').filter({hasText:'Esencia sombría'}).waitFor();
+    await page.locator('.loot-item').hover();
+    await page.locator('#game-tooltip').filter({hasText:'No sabes qué es ni para qué sirve.'}).waitFor();
+    await page.getByRole('button',{name:'Recoger todo',exact:true}).click();
+    await page.locator('.loot-empty').waitFor();
+    await page.keyboard.press('Escape');
+    await page.locator('#quest-tracker').waitFor({state:'hidden'});
+    await page.keyboard.press('KeyI');
+    await page.locator('.inv-bag [data-item-id="esencia_sombria"]').waitFor();
+    assert.equal(await page.locator('.inv-bag [data-item-id="esencia_sombria"]').count(),1);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('KeyJ');
+    await page.getByRole('button',{name:'Completadas',exact:true}).click();
+    assert.equal(await page.locator('.quest-entry').count(),2,'Both Gnomi and Isberto remain in the completed journal');
     assert.deepEqual(errors,[]);
   }finally{await context.close();}
 });
 
-test('online Isberto combat uses mocked RPC state for start, enemy damage, skill and retreat', {timeout:120000}, async()=>{
+test('online Isberto combat uses mocked RPC state for start, enemy damage, skill and target release without retreat', {timeout:120000}, async()=>{
   const world=backend(),account=fixture('Alric','humano',-3);
   world.combatSimulationEnabled=true;
   account.character.data.welcome={origin:0,stage:'completed'};
+  account.character.data.equipment={weapon:{id:'espada_inicial',count:1,bound:true}};
   account.character.data.position={x:-3,z:-62.35,yaw:0};
   const player=await openPlayer(world,account);
   try{
@@ -1843,10 +2003,9 @@ test('online Isberto combat uses mocked RPC state for start, enemy damage, skill
     await player.page.waitForFunction(()=>document.querySelector('#target-frame')?.dataset.locked==='false');
     assert.equal(world.players.get(account.user.id).encounter.status,'active','Escape releases the target without pretending to retreat from the encounter');
     assert.equal(await player.page.locator('#game-menu-panel').isVisible(),false);
-    await player.page.locator('#combat-flee').click();
-    await player.page.waitForFunction(()=>document.querySelector('#combat-controls').hidden);
-    assert.equal(world.combatCalls.some(call=>call.fn==='combat_stop'),true,'Retreat uses the online RPC');
-    assert.equal(world.players.get(account.user.id).encounter.status,'fled');
+    assert.equal(await player.page.locator('#combat-flee').count(),0);
+    assert.equal(world.combatCalls.some(call=>call.fn==='combat_stop'),false,'Releasing a target never sends a retreat RPC');
+    assert.equal(world.players.get(account.user.id).encounter.status,'active');
     assert.deepEqual(player.errors,[]);
   }finally{await player.context.close();}
 });
@@ -1863,11 +2022,11 @@ test('skillbook lists each class starter skill, supports responsive quickbar dra
     ]) {
       await page.goto(`${url}/?test&graphics=compatible`);
       await page.waitForFunction(()=>!!window.brumaluz);
-      await page.evaluate(cls=>{
+      await page.evaluate(({cls,weapon})=>{
         localStorage.removeItem('brumaluz-actionbar:test');
-        window.brumaluz.set({cls,health:60,resource:50});
+        window.brumaluz.set({cls,health:60,resource:50,equipment:{weapon:{id:weapon,count:1,bound:true}}});
         window.brumaluz.play();
-      },cls);
+      },{cls,weapon:({guerrero:'espada_inicial',mago:'baston_inicial',picaro:'daga_inicial',clerigo:'varita_inicial',explorador:'ballesta_inicial'})[cls]});
       await page.keyboard.press('KeyK');
       await page.locator('.skills-book').waitFor();
       assert.equal(await page.locator('.skill-card').count(),1);
@@ -1899,7 +2058,7 @@ test('skillbook lists each class starter skill, supports responsive quickbar dra
       if(cls==='clerigo') {
         await page.keyboard.press('Digit5');
         await page.waitForFunction(()=>document.querySelector('#hud-health-text').textContent==='92 / 100');
-        assert.ok(Number(await page.locator(`.ab-slot[data-skill-id="${id}"] i`).textContent())>0,'Skill cooldown is shown on quickbar');
+        assert.ok(Number(await page.locator(`.ab-slot[data-skill-id="${id}"] .ab-cooldown-time`).textContent())>0,'Skill cooldown is shown on quickbar');
         await page.keyboard.press('Digit5');
         assert.equal(await page.locator('#hud-health-text').textContent(),'92 / 100','Cooldown prevents repeated healing');
       } else {

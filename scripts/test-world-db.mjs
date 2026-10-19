@@ -15,6 +15,7 @@ if (process.argv.includes('--configured')) {
   }
 }
 const url = process.env.SUPABASE_TEST_DB_URL || (process.argv.includes('--configured') ? process.env.SUPABASE_DB_URL : null);
+const weaponFor = cls => ({weapon:{id:({guerrero:'espada_inicial',mago:'baston_inicial',picaro:'daga_inicial',clerigo:'varita_inicial',explorador:'ballesta_inicial'})[cls],count:1,bound:true}});
 
 test('world RPCs validate multiplayer state without persisting test data', { timeout: 120000 }, async (t) => {
   assert.ok(url, 'Set SUPABASE_TEST_DB_URL, or explicitly authorize the configured database with --configured');
@@ -309,6 +310,140 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         await client.query('release savepoint online_regeneration');
       }
     });
+    await t.test('reapplying SQL migrates legacy corpses once without refilling looted bodies or changing feature flags', async () => {
+      await client.query('savepoint corpse_migration');
+      try {
+        await client.query('reset role');
+        const body={id:'shadowling',status:'defeated',health:0,maxHealth:100,x:3.5,z:-62.35,enemyAttackAt:0};
+        await client.query('update public.characters set data=$1 where id=$2',[{combatEncounter:body},ca]);
+        await client.query('update public.characters set data=$1 where id=$2',[{
+          shadowQuest:'completed',combatEncounter:{...body,instanceId:'already-looted',loot:[null],looted:true},
+        },cb]);
+        await client.query('update public.characters set data=$1 where id=$2',[{combatEncounter:{...body,status:'active',health:100}},ca2]);
+        const flags=await client.query("select key,value from public.server_config where key in ('welcome_enabled','combat_enabled','debug_actions') order by key");
+        const sql=readFileSync(new URL('../supabase/server.sql',import.meta.url),'utf8');
+        await client.query(sql);
+        const {rows:[migrated]}=await client.query('select data from public.characters where id=$1',[ca]);
+        assert.equal(migrated.data.shadowQuest,'defeated');
+        assert.equal(typeof migrated.data.combatEncounter.instanceId,'string');
+        assert.deepEqual(migrated.data.combatEncounter.loot,[{id:'esencia_sombria',count:1,bound:true}]);
+        await client.query(sql);
+        const {rows:[again]}=await client.query('select data from public.characters where id=$1',[ca]);
+        assert.deepEqual(again.data,migrated.data,'A second application does not generate another body or reward');
+        const {rows:[looted]}=await client.query('select data from public.characters where id=$1',[cb]);
+        assert.deepEqual(looted.data.combatEncounter.loot,[null]);
+        assert.equal(looted.data.shadowQuest,'completed');
+        const {rows:[active]}=await client.query('select data from public.characters where id=$1',[ca2]);
+        assert.equal(active.data.shadowQuest,'active');
+        assert.deepEqual((await client.query("select key,value from public.server_config where key in ('welcome_enabled','combat_enabled','debug_actions') order by key")).rows,flags.rows);
+      } finally {
+        await client.query('rollback to savepoint corpse_migration');
+        await client.query('release savepoint corpse_migration');
+      }
+    });
+    await t.test('equipment transfers preserve bound items, reject stale requests and invalidate accepted trade offers', async () => {
+      await client.query('savepoint equipment_transfers');
+      try {
+        await client.query('reset role');
+        const sword={id:'espada_inicial',count:1,bound:true};
+        await client.query('update public.characters set data=$1 where id=$2',[{
+          name:'Alric',race:'humano',cls:'guerrero',health:-1,level:1,
+          equipment:{weapon:sword},inventory:[],
+        },ca]);
+        await client.query("insert into public.player_trades(a,b,sa,sb,status,accepted_a,accepted_b) values($1,$2,$3,$4,'open',true,true)",[ca,cb,sa,sb]);
+        await user(b);
+        await rejected(()=>rpc('change_equipment',[ca,'weapon',null,sword]),/CHARACTER_NOT_FOUND/);
+        await user(a);
+        const removed=await rpc('change_equipment',[ca,'weapon',null,sword]);
+        assert.equal(removed.equipment.weapon,null);
+        assert.deepEqual(removed.inventory[0],sword);
+        await rejected(()=>rpc('change_equipment',[ca,'weapon',null,sword]),/EQUIPMENT_CHANGED/);
+        await rejected(()=>rpc('change_equipment',[ca,'weapon',0,{...sword,bound:false}]),/EQUIPMENT_CHANGED/);
+        await rejected(()=>rpc('change_equipment',[ca,'head',0,sword]),/EQUIPMENT_INVALID/);
+        const equipped=await rpc('change_equipment',[ca,'weapon',0,sword]);
+        assert.deepEqual(equipped.equipment.weapon,sword);
+        assert.equal(equipped.inventory[0],null);
+        await client.query('reset role');
+        const {rows:[trade]}=await client.query("select accepted_a,accepted_b,revision,offer_a from public.player_trades where a=$1 and status='open'",[ca]);
+        assert.equal(trade.accepted_a,false);assert.equal(trade.accepted_b,false);assert.equal(trade.revision,2);
+        assert.deepEqual(trade.offer_a,{items:[],pelines:0});
+        await client.query("update public.characters set data=jsonb_set(data,'{inventory}',$1) where id=$2",[JSON.stringify(Array.from({length:25},()=>({id:'antorcha',count:1}))),ca]);
+        await user(a);
+        await rejected(()=>rpc('change_equipment',[ca,'weapon',null,sword]),/INVENTORY_FULL/);
+        assert.deepEqual((await rpc('character_enter',[ca])).equipment.weapon,sword,'A full bag never destroys equipment');
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{inventory,0}',$1) where id=$2",[JSON.stringify({...sword,bound:false}),ca]);
+        await user(a);
+        const swapped=await rpc('change_equipment',[ca,'weapon',0,{...sword,bound:false}]);
+        assert.deepEqual(swapped.inventory[0],sword,'Equipping swaps the previous piece back into the source bag slot');
+        assert.equal(swapped.equipment.weapon.bound,false);
+      } finally {
+        await client.query('rollback to savepoint equipment_transfers');
+        await client.query('release savepoint equipment_transfers');
+      }
+    });
+    await t.test('defeated creatures persist loot, require proximity and grant the essence exactly once without full-bag losses', async () => {
+      await client.query('savepoint corpse_loot');
+      try {
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key='combat_enabled'");
+        await client.query('update public.characters set data=$1 where id=$2',[{
+          name:'Alric',race:'humano',cls:'guerrero',health:100,resource:80,level:1,
+          location:'brumaluz',welcome:{origin:0,stage:'completed'},
+          position:{x:2,z:-62.35,yaw:0},equipment:weaponFor('guerrero'),inventory:[],
+        },ca]);
+        await user(a);await rpc('world_join',[ca,sa]);
+        const started=await rpc('combat_start',[ca]);
+        assert.equal(started.quest,'active');
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(jsonb_set(data,'{equipment}','{}'),'{combatEncounter,health}','1') #- '{combatEncounter,instanceId}' where id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('combat_action',[ca,'attack']),/COMBAT_WEAPON_REQUIRED/);
+        await rejected(()=>rpc('combat_action',[ca,'heavy_strike']),/COMBAT_WEAPON_REQUIRED/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{equipment}',$1) where id=$2",[JSON.stringify(weaponFor('guerrero')),ca]);
+        await user(a);
+        const defeated=await rpc('combat_action',[ca,'attack']);
+        assert.equal(defeated.encounter.status,'defeated');
+        assert.equal(defeated.quest,'defeated');
+        const instance=defeated.encounter.instanceId;
+        assert.equal(typeof instance,'string','Encounters started by an older client receive a loot identity at defeat');
+        const essence={id:'esencia_sombria',count:1,bound:true};
+        assert.deepEqual(defeated.encounter.loot,[essence]);
+        await rejected(()=>rpc('combat_start',[ca]),/LOOT_PENDING/);
+        await rejected(()=>rpc('loot_corpse',[ca,'stale-instance',0]),/LOOT_INVALID/);
+        await user(b);
+        await rejected(()=>rpc('loot_corpse',[ca,instance,0]),/CHARACTER_NOT_FOUND/);
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":0,\"z\":-62.35,\"yaw\":0}' where character_id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('loot_corpse',[ca,instance,0]),/LOOT_TOO_FAR/);
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":2,\"z\":-62.35,\"yaw\":0}' where character_id=$1",[ca]);
+        await client.query("update public.characters set data=jsonb_set(data,'{inventory}',$1) where id=$2",[JSON.stringify(Array.from({length:25},()=>({id:'antorcha',count:1}))),ca]);
+        await user(a);
+        await rejected(()=>rpc('loot_corpse',[ca,instance,null]),/INVENTORY_FULL/);
+        const reentered=await rpc('character_enter',[ca]);
+        assert.deepEqual(reentered.combatEncounter.loot,[essence],'Failed looting and re-entry preserve the body');
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{inventory}','[]') where id=$1",[ca]);
+        await user(a);await rpc('world_join',[ca,sa]);
+        await rejected(()=>rpc('loot_corpse',[ca,instance,1]),/LOOT_INVALID/);
+        const looted=await rpc('loot_corpse',[ca,instance,0]);
+        assert.deepEqual(looted.inventory[0],essence);
+        assert.equal(looted.combatEncounter.looted,true);
+        assert.deepEqual(looted.combatEncounter.loot,[null]);
+        assert.equal(looted.shadowQuest,'completed');
+        await rejected(()=>rpc('loot_corpse',[ca,instance,null]),/LOOT_EMPTY/);
+        await rejected(()=>rpc('combat_start',[ca]),/SHADOW_QUEST_COMPLETED/);
+        const persisted=await rpc('character_enter',[ca]);
+        assert.equal(persisted.inventory.filter(item=>item?.id==='esencia_sombria').length,1);
+        assert.equal(persisted.combatEncounter.looted,true);
+      } finally {
+        await client.query('rollback to savepoint corpse_loot');
+        await client.query('release savepoint corpse_loot');
+      }
+    });
     await t.test('combat RPCs own encounter state, validate range/cooldowns and apply enemy damage server-side', async () => {
       await client.query('savepoint authoritative_combat');
       try {
@@ -316,7 +451,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         await client.query("update public.server_config set value='true' where key='combat_enabled'");
         await client.query('update public.characters set data=$1 where id=$2', [{
           name:'Alric',race:'humano',cls:'guerrero',level:1,health:100,resource:80,
-          attributePoints:{fuerza:2},location:'brumaluz',
+          attributePoints:{fuerza:2},location:'brumaluz',equipment:weaponFor('guerrero'),
           position:{x:0,z:-62.35,yaw:0},
         },ca]);
         await user(a);
@@ -392,7 +527,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         ]) {
           await client.query('reset role');
           await client.query('update public.characters set data=$1 where id=$2',[{
-            name:'Alric',race:'humano',cls,level:1,health:60,resource:50,location:'brumaluz',
+            name:'Alric',race:'humano',cls,level:1,health:60,resource:50,location:'brumaluz',equipment:cls==='clerigo'?{}:weaponFor(cls),
             attributePoints:{fuerza:2},position:{x:2,z:-62.35,yaw:0},
             ...(cls==='clerigo'?{}:{welcome:{origin:0,stage:'completed'}}),
           },ca]);
@@ -425,7 +560,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         ]){
           await client.query('reset role');
           await client.query('update public.characters set data=$1 where id=$2',[{
-            name:'Alric',race:'humano',cls,level:1,health:1,resource:80,location:'brumaluz',
+            name:'Alric',race:'humano',cls,level:1,health:1,resource:80,location:'brumaluz',equipment:weaponFor(cls),
             position:{x:2,z:-62.35,yaw:0},welcome:{origin:0,stage:'completed'},
           },ca]);
           await user(b);

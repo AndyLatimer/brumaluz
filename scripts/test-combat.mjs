@@ -15,6 +15,38 @@ const code = (await compile('../src/data/combat.ts')).replace("'./inventory'",JS
 const { COMBAT_KITS, starterEquipment, resolveCombat, regenerateCombat, skillRank, skillPointsAllowed,
   unspentSkillPoints, upgradeSkill, basicAttackDamage, skillPower } = await import(moduleUrl(code));
 const state = () => ({health:60,maxHealth:100,resource:50,enemyHealth:100,nextAttack:0,nextSkill:0});
+const equipmentCode = (await compile('../src/data/equipment.ts')).replace("'./inventory'",JSON.stringify(inventory));
+const {hasCombatWeapon,transferEquipment} = await import(moduleUrl(equipmentCode));
+
+test('local equipment transfers preserve all starter pieces, reject stale/class/full-bag changes and allow legacy unequip',()=>{
+  for(const [cls,kit] of Object.entries(COMBAT_KITS)){
+    const data={cls,health:-1,equipment:starterEquipment(cls),inventory:Array(25).fill(null)};
+    assert.equal(hasCombatWeapon(data),true);
+    for(const slot of ['weapon','offhand']){
+      const item=data.equipment[slot];if(!item)continue;
+      const snapshot=structuredClone(item);
+      transferEquipment(data,slot,null,snapshot);
+      assert.equal(data.equipment[slot],null);
+      assert.deepEqual(data.inventory[0],snapshot);
+      if(slot==='weapon')assert.equal(hasCombatWeapon(data),false);
+      assert.throws(()=>transferEquipment(data,slot,null,snapshot),/ha cambiado/);
+      transferEquipment(data,slot,0,snapshot);
+      assert.deepEqual(data.equipment[slot],snapshot);
+      assert.equal(data.inventory[0],null);
+    }
+    assert.equal(data.equipment.weapon.id,kit.weapon);
+    data.inventory.fill({id:'antorcha',count:1});
+    const before=structuredClone(data);
+    assert.throws(()=>transferEquipment(data,'weapon',null,data.equipment.weapon),/llena/);
+    assert.deepEqual(data,before);
+    data.inventory[0]={id:cls==='mago'?'espada_inicial':'baston_inicial',count:1,bound:true};
+    assert.throws(()=>transferEquipment(data,'weapon',0,data.inventory[0]),/clase/);
+  }
+  const legacy={cls:'mago',health:-1,equipment:starterEquipment('guerrero'),inventory:Array(25).fill(null)};
+  transferEquipment(legacy,'weapon',null,legacy.equipment.weapon);
+  assert.equal(legacy.inventory[0].id,'espada_inicial');
+  assert.throws(()=>transferEquipment(legacy,'weapon',0,legacy.inventory[0]),/clase/);
+});
 
 test('all five classes get distinct bound equipment in equipment slots, with fresh objects',()=>{
   const weapons=new Set();
