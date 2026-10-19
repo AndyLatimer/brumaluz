@@ -5,8 +5,9 @@ import {
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
-  startCombat, combatAction, changeEquipment, lootCorpse, shadowAction,
+  startCombat, combatAction, changeEquipment, lootCorpse, shadowAction, collectCoinBag,
 } from './services/account';
+import { createCoinBags } from './world/coinBags';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
 import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
@@ -509,7 +510,7 @@ function nearestInteractable(): Interactable | null {
   const corpses: Interactable[] = combatTargetRoot && combatEncounter?.status === 'defeated'
     ? [{ id: 'corpse:shadowling', position: combatTargetRoot.position, radius: 3, label: 'Registrar cuerpo' }] : [];
   if (corpses[0] && !combatEncounter?.looted && holder.position.distanceTo(corpses[0].position) <= 3) return corpses[0];
-  for (const item of [...corpses, ...city.interactables, ...welcomeWorld.interactions()]) {
+  for (const item of [...corpses, ...city.interactables, ...welcomeWorld.interactions(), ...coinBags.interactions()]) {
     if (item.id === 'npc:isberto' && !isbertoUnlocked()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -553,6 +554,7 @@ function interact() {
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
   if (item?.id === 'corpse:shadowling') { setWindow('loot'); return; }
+  if (item?.id.startsWith('coinbag:')) { void pickUpCoinBag(item.id.slice('coinbag:'.length)); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   if (npcId) { talkTo(npcId); return; }
   const lines = item && INTERACTIONS[item.id]?.();
@@ -1081,6 +1083,25 @@ async function receiveMoney() {
   floatText(`+100 ${t('Pelines')}`, 'xp');
   chatSystem(t('Has recibido {n} pelines.', { n: 100 }));
   sparkBurst(10, 'xp', '●');
+}
+
+/** Recoge una bolsa de pelines del mundo: el servidor sortea la cantidad y la marca como recogida. */
+async function pickUpCoinBag(bagId: string) {
+  keys.clear();
+  moveTarget = null;
+  marker.visible = false;
+  const before = state.wallet.pelines;
+  const collected = await runOnServer(id => collectCoinBag(id, bagId), () => {
+    if (state.coinBags.includes(bagId)) throw new Error(t('Ya has recogido esta bolsa de pelines.'));
+    state.coinBags = [...state.coinBags, bagId];
+    state.wallet.pelines += 10 + Math.floor(Math.random() * 21);
+  });
+  if (!collected) return;
+  const amount = state.wallet.pelines - before;
+  floatText(`+${amount} ${t('Pelines')}`, 'xp');
+  chatSystem(t('Has encontrado {amount} pelines.', { amount }));
+  sparkBurst(10, 'xp', '●');
+  if (openWindow === 'inventory') setWindow('inventory', false);
 }
 
 // ---------------- Comercio ----------------
@@ -2708,6 +2729,7 @@ try {
 }
 scene.add(city.root);
 const welcomeWorld = createWelcomeWorld(scene, city);
+const coinBags = createCoinBags(scene, city);
 const questTracker = createQuestTracker(() => setWindow('quests'));
 const welcomePlate = document.createElement('div');
 welcomePlate.className = 'nameplate npc welcome-nameplate';
@@ -2788,7 +2810,7 @@ function updateWelcome(dt: number, time: number) {
     questMarker.style.transform = `translate(${x}px, ${y}px) translate(-50%,-50%)`;
   }
 }
-if (import.meta.hot) import.meta.hot.dispose(() => welcomeWorld.dispose());
+if (import.meta.hot) import.meta.hot.dispose(() => { welcomeWorld.dispose(); coinBags.dispose(); });
 try {
   setMinimapImage(captureTopDown(renderer, scene, city.root, graphics.compatible ? 1024 : lowEnd ? 1536 : 2560));
 } catch (e) {
@@ -3262,6 +3284,7 @@ renderer.setAnimationLoop(() => {
   updateCamera(dt);
   if (openWindow === 'loot') positionLootWindow();
   updateWelcome(dt, t);
+  coinBags.update(state.coinBags, mode === 'play', t);
   applyCameraShake();
   updateNameplate();
   if (mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);

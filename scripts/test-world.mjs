@@ -128,6 +128,15 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       if(player)player.encounter=character.data.combatEncounter;
       return fulfill(character.data);
     }
+    if(fn==='collect_coin_bag'){
+      const taken=character.data.coinBags??[];
+      if(args.p_bag_id!=='plaza_pozo')return fulfill({message:'COIN_BAG_INVALID'},400);
+      if(taken.includes(args.p_bag_id))return fulfill({message:'COIN_BAG_TAKEN'},400);
+      if(world.fail.has('coinbag'))return fulfill({message:'COIN_BAG_TOO_FAR'},400);
+      character.data.wallet={...(character.data.wallet??{}),pelines:(character.data.wallet?.pelines??0)+17};
+      character.data.coinBags=[...taken,args.p_bag_id];
+      return fulfill(character.data);
+    }
     if(fn==='shadow_action'){
       if(world.fail.has('shadow'))return fulfill({message:'Temporary quest failure'},503);
       const q=character.data.shadowQuest;
@@ -1899,6 +1908,42 @@ test('online compact corpse loot retries after a full-bag rejection and removes 
     await player.page.locator('[data-item-id="esencia_sombria"]').waitFor();
     await player.page.locator('[data-item-id="esencia_sombria"]').hover();
     await player.page.locator('#game-tooltip').filter({hasText:'No sabes qué es ni para qué sirve.'}).waitFor();
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('a pelín pouch near the well is collected once, keeps state on failure and stays gone after re-entry', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('Buscador','humano',5);
+  Object.assign(account.character.data,{position:{x:5,z:-4.4,yaw:0},wallet:{pelines:3}});
+  const player=await openPlayer(world,account);
+  const bag=()=>player.page.evaluate(()=>{
+    const root=window.brumaluz.city().root.parent.getObjectByName('coin-bag:plaza_pozo');
+    return root ? {visible:root.visible,model:!!root.getObjectByName('coin-bag-sack')} : null;
+  });
+  try{
+    await player.enter();
+    await player.page.waitForFunction(()=>!!window.brumaluz.city().root.parent.getObjectByName('coin-bag-sack'));
+    assert.deepEqual(await bag(),{visible:true,model:true});
+    await player.page.locator('#interact-label').filter({hasText:'Recoger bolsa de pelines'}).waitFor();
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR){
+      await player.page.evaluate(()=>window.brumaluz.view(Math.PI*.8,.35,5));await player.page.waitForTimeout(300);
+      await player.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'coin-bag.png')});
+    }
+    world.fail.add('coinbag');
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('#toast').filter({hasText:'Acércate a la bolsa para recogerla.'}).waitFor();
+    assert.equal(account.character.data.wallet.pelines,3,'A rejected pickup gives nothing');
+    assert.equal((await bag()).visible,true,'A rejected pickup leaves the pouch in place');
+    world.fail.delete('coinbag');
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('.chat-log').getByText('Has encontrado 17 pelines.',{exact:true}).waitFor({state:'attached'});
+    assert.equal(account.character.data.wallet.pelines,20);
+    await player.page.waitForFunction(()=>!window.brumaluz.city().root.parent.getObjectByName('coin-bag:plaza_pozo').visible);
+    assert.notEqual(await player.page.locator('#interact-label').textContent(),'Recoger bolsa de pelines');
+    await leave(player.page);await player.page.reload();await player.page.waitForFunction(()=>!!window.brumaluz);await player.enter();
+    await player.page.waitForTimeout(300);
+    assert.equal((await bag()).visible,false,'Collected pouches stay gone for this character');
+    assert.deepEqual(account.character.data.coinBags,['plaza_pozo']);
     assert.deepEqual(player.errors,[]);
   }finally{await player.context.close();}
 });

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller de objetos · Brumaluz</title>
+  </head>
+  <body>
+    <main>
+      <h1>Taller de objetos</h1>
+      <p>Vista de desarrollo de los objetos del mundo. No modifica personajes ni inventarios.</p>
+      <label>Objeto
+        <select id="prop">
+          <option value="coin-bag">Bolsa de pelines</option>
+        </select>
+      </label>
+      <label><span><input id="mannequin" type="checkbox" checked> Maniquí humano para comparar tamaño</span></label>
+      <label>Giro <input id="turn" type="range" min="-180" max="180" value="20"></label>
+      <label>Elevación <input id="elevation" type="range" min="-10" max="80" value="22"></label>
+      <label>Zoom <input id="zoom" type="range" min="0" max="100" value="70"></label>
+      <p id="status" role="status">Cargando recursos…</p>
+      <a href="./src/assets/models/props/coin-bag.glb" download>Descargar GLB para Blender</a>
+    </main>
+    <canvas aria-label="Vista previa 3D del objeto"></canvas>
+    <script type="module" src="/src/dev/propsPreview.ts"></script>
+  </body>
+</html>

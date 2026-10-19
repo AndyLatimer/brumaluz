@@ -97,6 +97,7 @@ interface Database {
       combat_stop: { Args: { p_character_id: string }; Returns: Json };
       change_equipment: { Args: { p_character_id: string; p_slot: string; p_bag: number | null; p_expected: Json }; Returns: Json };
       loot_corpse: { Args: { p_character_id: string; p_instance_id: string; p_slot?: number | null }; Returns: Json };
+      collect_coin_bag: { Args: { p_character_id: string; p_bag_id: string }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
       party_invite: { Args: { p_username: string }; Returns: undefined };
@@ -248,6 +249,11 @@ const SERVER_ERRORS: Record<string, string> = {
   LOOT_INVALID: 'Ese cuerpo ya no está disponible.',
   LOOT_EMPTY: 'Ya has recogido el botín de este cuerpo.',
   LOOT_TOO_FAR: 'Acércate al cuerpo para recoger el botín.',
+  COIN_BAG_INVALID: 'Esa bolsa de pelines ya no está aquí.',
+  COIN_BAG_TAKEN: 'Ya has recogido esta bolsa de pelines.',
+  COIN_BAG_TOO_FAR: 'Acércate a la bolsa para recogerla.',
+  COIN_BAG_DEAD: 'Debes volver a la vida para recoger la bolsa.',
+  COIN_BAG_NOT_PLAYING: 'Entra en Brumaluz para recoger la bolsa.',
   SHADOW_QUEST_COMPLETED: 'Ya has completado el encargo de Isberto.',
   SHADOW_ALREADY_DEFEATED: 'La criatura ya ha sido derrotada. Continúa la misión.',
   SHADOW_INVALID_STATE: 'No puedes continuar este paso de la misión todavía.',
@@ -361,6 +367,13 @@ export async function changeEquipment(id: string, slot: EquipmentSlot, bag: numb
 export async function lootCorpse(id: string, instanceId: string, slot: number | null) {
   return asRecord(await serverCall(requireClient().rpc('loot_corpse', {
     p_character_id: id, p_instance_id: instanceId, p_slot: slot,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+
+/** Recoge una bolsa de pelines del mundo; el servidor valida distancia y que no se haya recogido, y sortea la cantidad. */
+export async function collectCoinBag(id: string, bagId: string) {
+  return asRecord(await serverCall(requireClient().rpc('collect_coin_bag', {
+    p_character_id: id, p_bag_id: bagId,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 
