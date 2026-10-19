@@ -12,7 +12,8 @@ const compile = async path => ts.transpileModule(await readFile(new URL(path,imp
 const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
 const inventory = moduleUrl(await compile('../src/data/inventory.ts'));
 const code = (await compile('../src/data/combat.ts')).replace("'./inventory'",JSON.stringify(inventory));
-const { COMBAT_KITS, starterEquipment, resolveCombat, regenerateCombat } = await import(moduleUrl(code));
+const { COMBAT_KITS, starterEquipment, resolveCombat, regenerateCombat, skillRank, skillPointsAllowed,
+  unspentSkillPoints, upgradeSkill, basicAttackDamage, skillPower } = await import(moduleUrl(code));
 const state = () => ({health:60,maxHealth:100,resource:50,enemyHealth:100,nextAttack:0,nextSkill:0});
 
 test('all five classes get distinct bound equipment in equipment slots, with fresh objects',()=>{
@@ -82,6 +83,52 @@ test('cleric healing is self-targeted, caps at maximum health and does not damag
   assert.equal(result.healing,5);assert.equal(result.state.health,100);
   assert.equal(result.state.resource,38);assert.deepEqual(result.damage,[]);
   assert.throws(()=>resolveCombat('clerigo',{...state(),health:100},'skill',10,0),/vida completa/);
+});
+
+test('skill points accrue at every even level, with five free-starting ranks and guarded permanent upgrades',()=>{
+  for(const [level,points] of [[1,0],[2,1],[3,1],[4,2],[8,4],[50,25]])assert.equal(skillPointsAllowed(level),points);
+  for(const [cls,kit] of Object.entries(COMBAT_KITS)){
+    const data={cls,level:1,skillRanks:{}};
+    assert.equal(skillRank(data),1);assert.equal(unspentSkillPoints(data),0);
+    assert.throws(()=>upgradeSkill(data,kit.skill.id,1),/nivel/);
+    data.level=8;
+    assert.equal(unspentSkillPoints(data),4,'Existing levels grant points without a migration');
+    assert.throws(()=>upgradeSkill(data,cls==='clerigo'?'heavy_strike':'healing',1),/clase/);
+    for(let rank=1;rank<5;rank++){
+      upgradeSkill(data,kit.skill.id,rank);
+      assert.equal(skillRank(data),rank+1);assert.equal(unspentSkillPoints(data),4-rank);
+      assert.throws(()=>upgradeSkill(data,kit.skill.id,rank),/cambiado/,'A repeated or concurrent request cannot spend twice');
+    }
+    assert.throws(()=>upgradeSkill(data,kit.skill.id,5),/máximo/);
+    assert.equal(unspentSkillPoints({...data,level:50}),21,'Unused points remain available for future skills');
+    assert.equal(skillRank({...data,level:2}),2,'Invalid over-budget ranks cannot leak into combat');
+  }
+});
+
+test('each class skill uses rank power independently of level-scaled basic attacks',()=>{
+  for(const [cls,expected] of [
+    ['guerrero',[18,20,22,24,26]],['mago',[18,20,22,24,26]],
+    ['picaro',[8,9,10,11,12]],['clerigo',[32,36,40,44,48]],['explorador',[19,21,23,25,27]],
+  ]){
+    const kit=COMBAT_KITS[cls];
+    for(let rank=1;rank<=5;rank++){
+      assert.equal(skillPower(cls,rank),expected[rank-1]);
+      const result=resolveCombat(cls,{...state(),health:1},'skill',10,0,8,rank);
+      if(cls==='clerigo')assert.equal(result.healing,expected[rank-1]);
+      else assert.deepEqual(result.damage,Array(kit.skill.hits).fill(expected[rank-1]));
+      assert.equal(result.state.resource,50-kit.skill.cost);
+      assert.equal(result.state.nextSkill,10+kit.skill.cooldown);
+    }
+    for(const level of [1,2,4,8,20,50]){
+      const expectedDamage=Math.round(kit.damage*(1+.05*(level-1)));
+      assert.equal(basicAttackDamage(cls,level),expectedDamage);
+      const result=resolveCombat(cls,{...state(),enemyHealth:1000},'attack',10,0,level,1);
+      assert.deepEqual(result.damage,[expectedDamage]);
+      assert.equal(result.state.resource,50);
+      assert.equal(result.state.nextAttack,10+kit.interval);
+    }
+    assert.throws(()=>resolveCombat(cls,state(),'skill',10,0,1,5),/no válido/);
+  }
 });
 
 test('dead actors, invalid inputs and invalid commands cannot resolve actions',()=>{

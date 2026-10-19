@@ -5,6 +5,8 @@ import { itemDef, itemIcon } from '../data/items';
 import { t } from './i18n';
 import { setItemTooltip } from './itemTooltip';
 import { DRAG_SKILL_TYPE } from './skillsWindow';
+import type { ClassId } from '../data/data';
+import { setSkillTooltip } from './skillTooltip';
 
 export const ACTION_BAR_SIZE = 10;
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -18,7 +20,7 @@ export interface ActionBarHooks {
   bound: (item: string) => boolean;
   /** Se pidió usar el objeto del hueco. */
   use: (item: string) => void;
-  skill: () => { id: string; icon: string; tooltip: string; cooldown: number; available: boolean };
+  skill: () => { id: string; cls: ClassId; rank: number; icon: string; cooldown: number; available: boolean };
   useSkill: () => void;
 }
 
@@ -79,7 +81,7 @@ export function toggleActionBarPage() {
 export function renderActionBar(force = false) {
   load();
   const skill = hooks.skill();
-  const next = `${page}|${skill.id}:${Math.ceil(skill.cooldown)}:${skill.available}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
+  const next = `${page}|${skill.id}:${skill.rank}:${Math.ceil(skill.cooldown)}:${skill.available}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
   if (!force && next === signature) return;
   signature = next;
   const switcher = document.createElement('button');
@@ -113,15 +115,14 @@ function slotElement(id: string | null, index: number) {
     slot.classList.toggle('empty', isSkill ? !skill.available || id !== skill.id : count === 0);
     slot.classList.toggle('on-cooldown', isSkill && skill.cooldown > 0);
     if (isSkill) {
-      slot.dataset.skillId = id.slice(6);
-      slot.title = skill.tooltip;
+      setSkillTooltip(slot, skill.cls, skill.rank);
     } else {
       slot.dataset.itemId = id;
       setItemTooltip(slot, id, hooks.bound(id));
     }
     slot.tabIndex = 0;
     slot.setAttribute('role', 'button');
-    slot.setAttribute('aria-label', isSkill ? skill.tooltip.split('|')[0] : slot.title.split('|')[0]);
+    if (!isSkill) slot.setAttribute('aria-label', slot.title.split('|')[0]);
     slot.insertAdjacentHTML('afterbegin', isSkill ? skill.icon : itemIcon(id));
     const amount = document.createElement('i');
     amount.textContent = isSkill ? skill.cooldown > 0 ? String(Math.ceil(skill.cooldown)) : '' : String(count);

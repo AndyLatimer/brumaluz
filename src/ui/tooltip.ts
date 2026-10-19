@@ -4,6 +4,9 @@
 // para que no salga el tooltip nativo, y se restaura al salir (así i18n sigue funcionando).
 // Para tooltips con título y texto usa "Título|Descripción".
 import { renderItemTooltip } from './itemTooltip';
+import { renderSkillTooltip } from './skillTooltip';
+import { COMBAT_KITS } from '../data/combat';
+import type { ClassId } from '../data/data';
 
 let tip: HTMLDivElement | null = null;
 let current: HTMLElement | null = null;
@@ -41,7 +44,7 @@ function place(target: HTMLElement) {
   let x = r.left + r.width / 2 - w / 2;
   let y = r.bottom + gap;
   let below = true;
-  if (target.dataset.itemId && (r.right + gap + w <= window.innerWidth - 6 || r.left - gap - w >= 6)) {
+  if ((target.dataset.itemId || target.dataset.skillClass) && (r.right + gap + w <= window.innerWidth - 6 || r.left - gap - w >= 6)) {
     x = r.right + gap + w <= window.innerWidth - 6 ? r.right + gap : r.left - gap - w;
     y = r.top;
   } else if (y + h > window.innerHeight - 6) { y = r.top - h - gap; below = false; }
@@ -56,11 +59,15 @@ function place(target: HTMLElement) {
 function show(target: HTMLElement) {
   const text = target.dataset.tip;
   const item = target.dataset.itemId;
-  if ((!text && !item) || !target.isConnected || !target.getClientRects().length) { hide(); return; }
+  const cls = target.dataset.skillClass;
+  const skillClass = cls && Object.prototype.hasOwnProperty.call(COMBAT_KITS, cls) ? cls as ClassId : null;
+  if ((!text && !item && !skillClass) || !target.isConnected || !target.getClientRects().length) { hide(); return; }
   const box = ensureTip();
   box.replaceChildren();
-  box.classList.toggle('item-tooltip', !!item);
-  if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true');
+  box.classList.toggle('item-tooltip', !!item || !!skillClass);
+  box.classList.toggle('skill-tooltip', !!skillClass);
+  if (skillClass) renderSkillTooltip(box, skillClass, Number(target.dataset.skillRank));
+  else if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true');
   else {
     const [head, body] = text!.includes('|') ? text!.split('|', 2) : [text!, ''];
     const strong = document.createElement('strong');
@@ -102,13 +109,13 @@ function enter(el: HTMLElement | null) {
   if (!el || el === current) return;
   hide();
   stash(el);
-  if (!el.dataset.tip && !el.dataset.itemId) return;
+  if (!el.dataset.tip && !el.dataset.itemId && !el.dataset.skillClass) return;
   current = el;
   showTimer = window.setTimeout(() => show(el), 280);
 }
 
 export function initTooltips() {
-  const find = (e: Event) => (e.target instanceof Element ? e.target.closest<HTMLElement>('[data-item-id], [title], [data-tip]') : null);
+  const find = (e: Event) => (e.target instanceof Element ? e.target.closest<HTMLElement>('[data-item-id], [data-skill-class], [title], [data-tip]') : null);
   document.addEventListener('pointerover', (e) => { if (e.pointerType !== 'touch') enter(find(e)); });
   document.addEventListener('pointerout', (e) => {
     const el = find(e);

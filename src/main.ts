@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   accountConfigError, currentSession, getAccountClient, getProfileUsername, listCharacters, onAuthChange,
-  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, setCharacterTitle, getMyTitles,
+  requestPasswordReset, createCharacter, enterCharacter, characterActions, spendAttributePoints, upgradeCharacterSkill, setCharacterTitle, getMyTitles,
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
@@ -41,7 +41,8 @@ import { openDialog, openConversation, closeDialog, advanceDialog, chooseDialog,
 import { renderInventory, renderSheet } from './ui/playerWindows';
 import { renderVendor } from './ui/vendorWindow';
 import { initActionBar, renderActionBar, autoAssignToActionBar, assignSkillToActionBar, useActionBarSlot, actionBarSlotForKey, toggleActionBarPage } from './ui/actionBar';
-import { renderSkills, skillAction, skillTooltip } from './ui/skillsWindow';
+import { renderSkills, skillAction } from './ui/skillsWindow';
+import { skillIcon } from './ui/skillIcons';
 import { classIcon } from './ui/classIcons';
 import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
@@ -53,7 +54,7 @@ import type { FoodBuff } from './data/food';
 import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, welcomeObjective, type WelcomeAction } from './data/quests';
 import { createWelcomeWorld } from './world/welcome';
 import { createQuestTracker, renderQuestJournal, welcomeConversation } from './ui/questWindow';
-import { COMBAT_KITS, resolveCombat, type CombatState } from './data/combat';
+import { COMBAT_KITS, MAX_SKILL_RANK, resolveCombat, skillRank, unspentSkillPoints, upgradeSkill, type CombatState } from './data/combat';
 
 
 // ---------------- Estado ----------------
@@ -1053,7 +1054,7 @@ initActionBar({
     if (slot < 0) toast('No te quedan', '', true); else void useInventoryItem(slot);
   },
   skill: () => ({
-    id: skillAction(state.cls), icon: classIcon(state.cls, 'quick-skill'), tooltip: skillTooltip(state.cls),
+    id: skillAction(state.cls), cls: state.cls, rank: skillRank(state), icon: skillIcon(COMBAT_KITS[state.cls].skill.id),
     cooldown: Math.max(0, (skillReadyAt - performance.now()) / 1000),
     available: !dead && vitalsOf(state).resource >= COMBAT_KITS[state.cls].skill.cost,
   }),
@@ -1105,7 +1106,9 @@ function updateHud() {
   const hudTips: [string, string][] = [['hud-health', 'Vida'], ['hud-resource', v.resourceKind === 'mana' ? 'Maná' : 'Estamina'], ['hud-xp', 'Experiencia']];
   for (const [id, label] of hudTips) $(`#${id}-fill`).parentElement!.title = `${t(label)}|${$(`#${id}-text`).textContent}`;
   $('#hud-class-icon').title = `${classText(state)}|${t('Nivel')} ${state.level}`;
-  $('#player-menu-toggle').classList.toggle('has-points', unspentAttributePoints(state) > 0);
+  const canImproveSkill = skillRank(state) < MAX_SKILL_RANK && unspentSkillPoints(state) > 0;
+  $('#player-menu-toggle').classList.toggle('has-points', unspentAttributePoints(state) > 0 || canImproveSkill);
+  document.querySelector('#player-menu-panel [data-window="skills"]')!.classList.toggle('has-points', canImproveSkill);
   document.querySelector<HTMLButtonElement>('[data-window="quests"]')!.hidden = !state.welcome;
   document.querySelector('#player-menu-panel [data-window="sheet"]')!.classList.toggle('has-points', unspentAttributePoints(state) > 0);
   refreshNameplateText();
@@ -1475,20 +1478,30 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   refreshOverlayHud();
   document.body.classList.toggle('window-open', !!win);
   document.body.classList.toggle('window-full', !!win);
+  document.body.classList.toggle('skills-open', win === 'skills');
   $('#window-backdrop').hidden = !win;
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
   $('#window-backdrop .game-window').classList.toggle('quest-window-frame', win === 'quests');
   $('#window-backdrop .game-window').classList.toggle('inventory-window-frame', win === 'inventory');
+  $('#window-backdrop .game-window').classList.toggle('skills-window-frame', win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
   $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) { vendor = null; return; }
   if (closeMenu) setPlayerMenuOpen(false, false);
   $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
-  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social');
+  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social' || win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
   if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to));
-  else if (win === 'skills') renderSkills(body, state, assignSkillToActionBar);
+  else if (win === 'skills') renderSkills(body, state, assignSkillToActionBar, async (id, rank) => {
+    const previousView = body.firstElementChild;
+    const success = await runOnServer(character => upgradeCharacterSkill(character, id, rank), () => upgradeSkill(state, id, rank));
+    if (success) {
+      updateHud();
+      if (openWindow === 'skills' && body.firstElementChild !== previousView) setWindow('skills', false);
+    }
+    return success;
+  });
   else if (win === 'quests') renderQuestJournal(body, state);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
@@ -2844,7 +2857,7 @@ async function performWorldCombatAction(action:'attack'|'skill') {
     };
     const distance=combatTargetRoot ? Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z) : 0;
     try{
-      const result=resolveCombat(state.cls,localCombatState,action,performance.now()/1000,distance);
+      const result=resolveCombat(state.cls,localCombatState,action,performance.now()/1000,distance,state.level,skillRank(state));
       localCombatState=result.state;
       if (action === 'skill') skillReadyAt = performance.now() + COMBAT_KITS[state.cls].skill.cooldown * 1000;
       applyCombatResult({

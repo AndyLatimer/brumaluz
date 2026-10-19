@@ -13,6 +13,11 @@ Brumaluz con autorización expresa. El mismo día se autorizó activar
 Las banderas se habilitan explícitamente en la configuración desplegada;
 reaplicar el SQL conserva su valor. No se migran personajes antiguos.
 
+La ampliación del libro con iconos propios, tooltips detallados y progresión
+por rangos se publica con autorización del 19 de octubre de 2026, aplicando el
+SQL actualizado antes del cliente. Las pruebas en la base configurada se
+ejecutan con rollback y son independientes de la aplicación persistente del SQL.
+
 `src/data/combat.ts` conserva el balance y el resolver puro del banco local.
 El SQL añade RPC de inicio/ataque/retirada y estado personal del rival,
 validando presencia, posición, alcance, recargas y recursos en servidor.
@@ -32,8 +37,15 @@ resultado calculado por el prototipo como daño o progreso autoritativos.
 ## Habilidades y objetivo fijado
 
 - El menú de personaje incluye **Habilidades** (`K`), con la habilidad inicial
-  aprendida de cada clase, su efecto, coste, alcance y recarga. No hay habilidades
+  aprendida de cada clase, su efecto, coste, alcance y recarga. El catálogo lateral
+  selecciona el detalle, con puntos disponibles y comparación del siguiente rango.
+  La ventana reserva espacio para la barra rápida y permite desplazamiento en
+  pantallas pequeñas. No hay habilidades
   futuras ficticias ni puntos de aprendizaje provisionales.
+- Cada habilidad tiene un icono SVG original, compartido por el libro, la barra
+  y su tooltip. El tooltip detallado reutiliza el aspecto y el posicionamiento
+  de los objetos, funciona con ratón y foco, y muestra el rango, efecto real,
+  coste, recarga, alcance, objetivo y requisitos de la siguiente mejora.
 - La barra rápida acepta objetos y habilidades; estas usan identificadores
   `skill:<id>` sin alterar el formato guardado de los objetos. La inicial entra
   en el primer hueco libre de las dos páginas, sin sustituir consumibles. Si se
@@ -58,6 +70,41 @@ resultado calculado por el prototipo como daño o progreso autoritativos.
   antiguo `skill` sigue aceptándose para clientes abiertos antes del despliegue.
   La recarga se guarda en servidor y se recupera al reconectar.
 
+## Puntos y rangos
+
+- Se gana **1 punto de habilidad en los niveles 2, 4, 6… 50**. El saldo se
+  deriva del nivel y los rangos comprados, no de un contador que envíe el cliente.
+  Los personajes existentes reconocen sus niveles ganados sin modificar misiones.
+  No hay puntos de habilidad al crear un personaje de nivel 1.
+- La habilidad inicial se aprende gratis en rango 1. Tiene cinco rangos:
+  mejorar a 2/3/4/5 requiere nivel 2/4/6/8 y cuesta un punto por mejora.
+  Los puntos sobrantes se conservan para futuras habilidades.
+- El libro muestra el efecto actual y el siguiente antes de confirmar un gasto
+  permanente. Cancelar no gasta nada. Un fallo del servidor se notifica y permite
+  reintentar sin aparentar que se ha guardado.
+- `upgrade_skill` bloquea el personaje y valida propiedad, habilidad de clase,
+  rango esperado, nivel y saldo. Una petición repetida con el rango anterior
+  falla, incluso si llega desde otra pestaña. El rango se guarda en
+  `data.skillRanks`; los datos antiguos sin rangos equivalen a rango 1.
+- `create_character` ignora puntos y rangos enviados por el cliente. El combate
+  conectado calcula el efecto desde el rango guardado; nunca acepta daño ni
+  rango como argumentos del ataque.
+
+| Habilidad | Rango 1 | Rango 2 | Rango 3 | Rango 4 | Rango 5 |
+| --- | --- | --- | --- | --- | --- |
+| Golpe contundente | 18 | 20 | 22 | 24 | 26 |
+| Descarga arcana | 18 | 20 | 22 | 24 | 26 |
+| Corte doble | 2 × 8 | 2 × 9 | 2 × 10 | 2 × 11 | 2 × 12 |
+| Curación | 32 | 36 | 40 | 44 | 48 |
+| Disparo preciso | 19 | 21 | 23 | 25 | 27 |
+
+Los rangos no cambian coste, alcance ni recarga. El ataque normal no tiene
+rangos ni consume puntos: su daño es
+`round(daño_base × (1 + 0.05 × (nivel - 1)))`. Conserva el daño inicial a
+nivel 1 y aumenta gradualmente según el daño base de cada clase, sin cambiar
+su cadencia ni alcance. Las habilidades no heredan este escalado del ataque
+normal: usan exclusivamente la potencia de su rango.
+
 ## Kits y balance provisional
 
 | Clase | Equipo | Alcance | Intervalo | Daño | Habilidad |
@@ -75,8 +122,8 @@ refuerza el ataque básico y la frecuencia de Corte doble del pícaro y,
 especialmente, el ataque básico del clérigo. La
 curación del clérigo ahora recupera hasta 32 de vida, cuesta menos y vuelve
 antes, para que su habilidad sea útil con el daño entrante de esta prueba.
-Estas cifras no son canon ni balance definitivo; no incluyen todavía escalado
-por atributos, defensa ni probabilidades de impacto.
+Estas cifras son la base de nivel 1 y rango 1, no canon ni balance definitivo;
+no incluyen todavía escalado por atributos, defensa ni probabilidades de impacto.
 Curación no requiere enemigo ni alcance y no sobrecura. Una acción rechazada
 no consume recurso ni altera el estado. Las ramas futuras quedan fuera.
 
@@ -135,7 +182,8 @@ aplicados a Brumaluz; el encuentro sigue protegido por `combat_enabled`.
 
 `npm run test:combat` comprueba los cinco kits, vinculación, impactos,
 curación, recursos, alcance, recargas, muerte, regeneración fraccional,
-entradas inválidas e inmutabilidad. Incluye navegador con desplazamiento del
+entradas inválidas, rangos, puntos por nivel, escalado del ataque e inmutabilidad.
+Incluye navegador con desplazamiento del
 actor 3D, aproximación, acciones por clase y movimiento manual.
 Las pruebas SQL adicionales en `test-world-db.mjs` requieren una base de pruebas
 o permiso explícito para usar la configurada con rollback.

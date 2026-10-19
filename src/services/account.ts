@@ -81,6 +81,7 @@ interface Database {
       use_item: { Args: { p_character_id: string; p_slot: number }; Returns: Json };
       move_inventory_item: { Args: { p_character_id: string; p_from: number; p_to: number; p_expected_from: Json; p_expected_to: Json }; Returns: Json };
       spend_attribute_points: { Args: { p_character_id: string; p_points: Json }; Returns: Json };
+      upgrade_skill: { Args: { p_character_id: string; p_skill_id: string; p_expected_rank: number }; Returns: Json };
       set_character_title: { Args: { p_character_id: string; p_title: string }; Returns: Json };
       my_titles: { Args: Record<string, never>; Returns: Json };
       chat_send: { Args: { p_character_id: string; p_body: string; p_channel?: string; p_to?: string | null }; Returns: Json };
@@ -235,6 +236,11 @@ const SERVER_ERRORS: Record<string, string> = {
   COMBAT_COOLDOWN: 'La acción todavía se está recuperando.',
   COMBAT_NOT_ENOUGH_RESOURCE: 'No tienes suficiente recurso.',
   COMBAT_HEALTH_FULL: 'Ya tienes la vida completa.',
+  SKILL_INVALID: 'Esa habilidad no pertenece a tu clase.',
+  SKILL_CHANGED: 'El rango ha cambiado. Revisa la habilidad antes de mejorarla.',
+  SKILL_MAX_RANK: 'La habilidad ya tiene el rango máximo.',
+  SKILL_LEVEL_REQUIRED: 'Necesitas más nivel para mejorar esta habilidad.',
+  SKILL_NO_POINTS: 'No tienes puntos de habilidad suficientes.',
   NOT_ENOUGH_MONEY: 'No tienes suficientes pelines.',
   INVENTORY_FULL: 'Tu mochila está llena.',
   INVENTORY_CHANGED: 'Tu mochila ha cambiado. Vuelve a mover el objeto.',
@@ -324,6 +330,12 @@ export async function combatAction(id: string, action: 'attack' | SkillId) {
 }
 export async function stopCombat(id: string) {
   return asRecord(await serverCall(requireClient().rpc('combat_stop',{p_character_id:id})));
+}
+
+export async function upgradeCharacterSkill(id: string, skill: SkillId, expectedRank: number) {
+  return asRecord(await serverCall(requireClient().rpc('upgrade_skill', {
+    p_character_id: id, p_skill_id: skill, p_expected_rank: expectedRank,
+  }).abortSignal(AbortSignal.timeout(10000))));
 }
 
 /** Compra una unidad a un vendedor; el servidor valida mercancía, saldo y hueco, y cobra el precio. */

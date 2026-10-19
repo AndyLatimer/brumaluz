@@ -16,7 +16,7 @@ if (process.argv.includes('--configured')) {
 }
 const url = process.env.SUPABASE_TEST_DB_URL || (process.argv.includes('--configured') ? process.env.SUPABASE_DB_URL : null);
 
-test('world RPCs validate multiplayer state without persisting test data', { timeout: 60000 }, async (t) => {
+test('world RPCs validate multiplayer state without persisting test data', { timeout: 120000 }, async (t) => {
   assert.ok(url, 'Set SUPABASE_TEST_DB_URL, or explicitly authorize the configured database with --configured');
   const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
   await client.connect();
@@ -74,12 +74,15 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
           const id=await rpc('create_character',[{
             ...appearance,name,race:'humano',cls,attributePoints:{},
             equipment:{weapon:{id:'forged_weapon',count:99,bound:false}},
+            skillRanks:{heavy_strike:5},skillPoints:999,
           }]);
           const data=await rpc('character_enter',[id]);
           assert.deepEqual(data.equipment.weapon,{id:weapon,count:1,bound:true});
           if(offhand)assert.deepEqual(data.equipment.offhand,{id:offhand,count:1,bound:true});
           else assert.equal(data.equipment.offhand,undefined);
           assert.ok(!JSON.stringify(data).includes('forged_weapon'));
+          assert.deepEqual(data.skillRanks,{},'Character creation cannot forge ranks');
+          assert.equal(data.skillPoints,undefined);
           await client.query('reset role');
           const publicData=(await client.query('select public.game_public_character($1) result',[{
             ...data,inventory:['private'],wallet:{pelines:9999},welcome:{origin:0,stage:'found'},
@@ -410,6 +413,57 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         await client.query('release savepoint named_skills');
       }
     });
+    await t.test('skill upgrades grant even-level points, validate ownership and expected rank, and scale real combat', async () => {
+      await client.query('savepoint skill_ranks');
+      try{
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key='combat_enabled'");
+        await client.query("update public.server_config set value='true' where key='debug_actions'");
+        for(const [cls,id,power,base,hits] of [
+          ['guerrero','heavy_strike',26,10,1],['mago','arcane_discharge',26,10,1],
+          ['picaro','double_slash',12,8,2],['clerigo','healing',48,11,1],['explorador','precise_shot',27,10,1],
+        ]){
+          await client.query('reset role');
+          await client.query('update public.characters set data=$1 where id=$2',[{
+            name:'Alric',race:'humano',cls,level:1,health:1,resource:80,location:'brumaluz',
+            position:{x:2,z:-62.35,yaw:0},welcome:{origin:0,stage:'completed'},
+          },ca]);
+          await user(b);
+          await rejected(()=>rpc('upgrade_skill',[ca,id,1]),/CHARACTER_NOT_FOUND/);
+          await user(a);
+          await rejected(()=>rpc('upgrade_skill',[ca,id,1]),/SKILL_LEVEL_REQUIRED/);
+          await rejected(()=>rpc('upgrade_skill',[ca,id,null]),/SKILL_CHANGED/);
+          await rejected(()=>rpc('upgrade_skill',[ca,cls==='clerigo'?'heavy_strike':'healing',1]),/SKILL_INVALID/);
+          if(cls==='guerrero'){
+            const leveled=await rpc('debug_xp',[ca]);
+            assert.equal(leveled.level,2,'Actual XP leveling unlocks the first earned skill point');
+            assert.equal(leveled.skillRanks,undefined,'A free starter rank needs no retroactive mutation');
+          }
+          for(let rank=1;rank<5;rank++){
+            await client.query('reset role');
+            await client.query("update public.characters set data=jsonb_set(data,'{level}',to_jsonb($1::int)) where id=$2",[rank*2,ca]);
+            await user(a);
+            const result=await rpc('upgrade_skill',[ca,id,rank]);
+            assert.equal(result.skillRanks[id],rank+1);
+            await rejected(()=>rpc('upgrade_skill',[ca,id,rank]),/SKILL_CHANGED/);
+            if(rank<4)await rejected(()=>rpc('upgrade_skill',[ca,id,rank+1]),/SKILL_LEVEL_REQUIRED/);
+          }
+          await rejected(()=>rpc('upgrade_skill',[ca,id,5]),/SKILL_MAX_RANK/);
+          const entered=await rpc('character_enter',[ca]);
+          assert.equal(entered.skillRanks[id],5);
+          await rpc('world_join',[ca,sa]);
+          await rpc('combat_start',[ca]);
+          const attack=await rpc('combat_action',[ca,'attack']);
+          assert.equal(attack.damage,Math.round(base*1.35),'Normal damage scales with level, independently of ranks');
+          const skill=await rpc('combat_action',[ca,id]);
+          if(cls==='clerigo')assert.equal(skill.healing,power);
+          else assert.equal(skill.damage,power*hits);
+        }
+      }finally{
+        await client.query('rollback to savepoint skill_ranks');
+        await client.query('release savepoint skill_ranks');
+      }
+    });
     await t.test('resource potions trade, restore the correct resource and reject without consuming', async () => {
       await client.query('savepoint resource_potions');
       try {
@@ -506,8 +560,11 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await rejected(() => rpc('game_world_snapshot', [b]), /permission denied/);
       await rejected(() => rpc('game_public_character', [{}]), /permission denied/);
       await rejected(() => rpc('game_public_vitals', [{}]), /permission denied/);
+      await rejected(() => rpc('game_skill_rank', [{}]), /permission denied/);
+      await rejected(() => rpc('game_skill_id', ['guerrero']), /permission denied/);
       await client.query('set local role anon');
       await rejected(() => rpc('world_join', [ca, sa]), /permission denied/);
+      await rejected(() => rpc('upgrade_skill', [ca, 'heavy_strike', 1]), /permission denied/);
     });
     await t.test('two players receive authoritative public appearance but no private progression', async () => {
       await user(a);
@@ -520,7 +577,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       const target = joined.players[0];
       assert.equal(typeof target.username, 'string');
       assert.deepEqual(target.vitals, { health: 100, maxHealth: 100, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' });
-      for (const key of ['wallet', 'inventory', 'attributePoints', 'health']) assert.equal(key in joined.players[0].data, false);
+      for (const key of ['wallet', 'inventory', 'attributePoints', 'health', 'skillRanks']) assert.equal(key in joined.players[0].data, false);
       await user(a);
       assert.equal((await rpc('world_sync', [ca, sa, motion(1)])).players[0].id, cb);
     });

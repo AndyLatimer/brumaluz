@@ -200,6 +200,20 @@ as $$
   select coalesce((d ->> 'creationPoints')::int, least(public.game_points_spent(d), 2)) + public.game_level(d) / 3
 $$;
 
+create or replace function public.game_skill_id(cls text)
+returns text language sql immutable set search_path = '' as $$
+  select case cls when 'guerrero' then 'heavy_strike' when 'mago' then 'arcane_discharge'
+    when 'picaro' then 'double_slash' when 'clerigo' then 'healing' when 'explorador' then 'precise_shot' end
+$$;
+
+create or replace function public.game_skill_rank(d jsonb)
+returns int language sql immutable set search_path = '' as $$
+  select greatest(1,least(5,public.game_level(d)/2+1,
+    coalesce((d->'skillRanks'->>public.game_skill_id(d->>'cls'))::int,1)))
+$$;
+
+revoke all on function public.game_skill_id(text),public.game_skill_rank(jsonb) from public,anon,authenticated;
+
 create or replace function public.game_lock_character(p_id uuid)
 returns public.characters
 language plpgsql
@@ -270,6 +284,24 @@ $$;
 
 -- ---------- Acciones que puede pedir el cliente ----------
 
+create or replace function public.upgrade_skill(p_character_id uuid,p_skill_id text,p_expected_rank int)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  c public.characters := public.game_lock_character(p_character_id);
+  current_rank int := public.game_skill_rank(c.data);
+begin
+  if p_skill_id is distinct from public.game_skill_id(c.data->>'cls') then raise exception 'SKILL_INVALID'; end if;
+  if p_expected_rank is distinct from current_rank then raise exception 'SKILL_CHANGED'; end if;
+  if current_rank>=5 then raise exception 'SKILL_MAX_RANK'; end if;
+  if public.game_level(c.data)<current_rank*2 then raise exception 'SKILL_LEVEL_REQUIRED'; end if;
+  if public.game_level(c.data)/2-(current_rank-1)<1 then raise exception 'SKILL_NO_POINTS'; end if;
+  return public.game_store(c.id,c.data||jsonb_build_object('skillRanks',
+    coalesce(c.data->'skillRanks','{}'::jsonb)||jsonb_build_object(p_skill_id,current_rank+1)));
+end;
+$$;
+revoke all on function public.upgrade_skill(uuid,text,int) from public,anon;
+grant execute on function public.upgrade_skill(uuid,text,int) to authenticated;
+
 create or replace function public.create_character(p_data jsonb)
 returns uuid
 language plpgsql
@@ -312,7 +344,7 @@ begin
   d := jsonb_build_object(
     'name', cname, 'title', 'recien_llegado', 'level', 1, 'experience', 0, 'health', -1, 'resource', -1,
     'location', 'brumaluz', 'race', p_data ->> 'race', 'cls', p_data ->> 'cls',
-    'creationPoints', 2, 'attributePoints', ap, 'position_at', extract(epoch from now())
+    'creationPoints', 2, 'attributePoints', ap, 'skillRanks', '{}'::jsonb, 'position_at', extract(epoch from now())
   );
   if exists(select 1 from public.server_config where key='welcome_enabled' and value='true') then
     d:=d||jsonb_build_object('welcome',jsonb_build_object('origin',null,'stage','available'));
@@ -1082,13 +1114,14 @@ declare
   each_hit int;
   total_damage int := 0;
   healed int := 0;
+  skill_rank int;
 begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   c:=public.game_lock_character(p_character_id);
   encounter:=c.data->'combatEncounter';
   cls:=c.data->>'cls';
-  skill_id:=case cls when 'guerrero' then 'heavy_strike' when 'mago' then 'arcane_discharge'
-    when 'picaro' then 'double_slash' when 'clerigo' then 'healing' when 'explorador' then 'precise_shot' end;
+  skill_id:=public.game_skill_id(cls);
+  skill_rank:=public.game_skill_rank(c.data);
   skill:=p_action='skill' or p_action=skill_id;
   healing:=cls='clerigo' and skill;
   if p_action is null or (p_action not in ('attack','skill') and p_action is distinct from skill_id) then raise exception 'COMBAT_INVALID_ACTION'; end if;
@@ -1110,6 +1143,7 @@ begin
     when 'clerigo' then 1.8 when 'explorador' then 1.7 else 0 end;
   damage:=case cls when 'guerrero' then 10 when 'mago' then 10 when 'picaro' then 8
     when 'clerigo' then 11 when 'explorador' then 10 else 0 end;
+  damage:=round(damage*(1+0.05*(public.game_level(c.data)-1)))::int;
   enemy_hp:=(encounter->>'health')::int;
   hp:=public.game_health(c.data);
   if healing then
@@ -1141,13 +1175,14 @@ begin
   c.data:=c.data||jsonb_build_object('resource',resource,'combat_at',stamp);
 
   if healing then
-    healed:=least(32,public.game_max_health(c.data)-hp);
+    healed:=least(32+4*(skill_rank-1),public.game_max_health(c.data)-hp);
     c.data:=c.data||jsonb_build_object('health',hp+healed);
   else
     hits:=case when skill and cls='picaro' then 2 else 1 end;
     each_hit:=case when not skill then damage
       when cls='guerrero' then 18 when cls='mago' then 18
       when cls='picaro' then 8 when cls='explorador' then 19 else damage end;
+    if skill then each_hit:=each_hit+(skill_rank-1)*case when cls='picaro' then 1 else 2 end; end if;
     if skill then c.data:=c.data||jsonb_build_object('combat_at',stamp); end if;
     for i in 1..hits loop
       exit when enemy_hp<=0;
