@@ -1123,7 +1123,7 @@ body.window-open .minimap { z-index: 61; }
 .quest-window-frame > h2,.quest-window-frame > .options-actions,.inventory-window-frame > h2,.inventory-window-frame > .options-actions { flex: none; }
 .collection-window-frame > h2,.collection-window-frame > .options-actions { flex: none; }
 .quest-window-frame #window-body,.inventory-window-frame #window-body { min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
-.collection-window-frame #window-body { min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
+.collection-window-frame #window-body { min-height: 0; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
 .collections-window { display: grid; gap: 18px; min-width: 0; }
 .collections-hero { position: relative; display: grid; grid-template-columns: 54px minmax(0,1fr) auto; align-items: center; gap: 12px; overflow: hidden; padding: 14px 16px; border: 1px solid #a17a3d99; border-radius: 8px 20px; color: var(--wood-2); background: radial-gradient(ellipse at 0 0,#fff9e8,#e9d8b5 76%); box-shadow: inset 0 1px #fff8e5,0 3px 10px #53391416; }
 .collections-hero::after { content: ''; position: absolute; inset: 4px; border: 1px solid #b5935b44; border-radius: 5px 16px; pointer-events: none; }
@@ -1133,12 +1133,29 @@ body.window-open .minimap { z-index: 61; }
 .collections-hero-copy small { color: #8b6738; font: 700 9px 'Cinzel',serif; letter-spacing: .14em; }
 .collections-hero-copy strong { color: #4b351e; font: 700 20px 'Cinzel Decorative','Cinzel',serif; }
 .collections-hero-copy span { color: #715a3a; font: 13px 'Alegreya',serif; }
-.collections-hero-progress { position: relative; z-index: 1; display: grid; place-items: center; align-content: center; min-width: 64px; min-height: 64px; padding: 7px; border: 2px solid #98713c; border-radius: 50%; color: #654720; background: radial-gradient(circle,#fff3ce,#dec18a); box-shadow: inset 0 0 0 3px #f4e6c5,0 2px 4px #53391422; }
-.collections-hero-progress strong { font: 700 16px 'Cinzel',serif; }
-.collections-hero-progress small { font: 700 7px 'Cinzel',serif; letter-spacing: .06em; }
-.collections-hero-progress.bronze { border-color: #98713c; color: #654720; background: radial-gradient(circle,#fff3ce,#dec18a); }
-.collections-hero-progress.silver { border-color: #77828b; color: #46515b; background: radial-gradient(circle,#fff,#c7ced4); }
-.collections-hero-progress.gold { border-color: #b38a2d; color: #73530b; background: radial-gradient(circle,#fff5bd,#e7c44f); }
+.collections-hero-progress { position: relative; isolation: isolate; z-index: 1; display: grid; grid-template-rows: 1fr auto; align-items: center; width: 88px; height: 70px; border: 1px solid #8d632c; border-radius: 5px 15px 5px 15px; color: #63431f; background: linear-gradient(135deg,#f7ddb0 0%,#d9ad69 48%,#b77c39 100%); box-shadow: inset 0 1px #fff4d7,inset 0 -1px #80532088,0 3px 7px #53391438; overflow: hidden; }
+.collections-hero-progress::before { content: ''; position: absolute; z-index: -1; inset: 4px; border: 1px solid #fff0c3aa; border-radius: 2px 11px 2px 11px; box-shadow: inset 0 0 0 1px #85582555; }
+.collections-hero-progress::after { content: '✦'; position: absolute; z-index: 2; top: 4px; right: 6px; color: #fff9df; font: 13px/1 Georgia,serif; text-shadow: 0 1px 2px #6f471d99; animation: collections-badge-sparkle 3.6s ease-in-out infinite; }
+.collections-hero-progress strong { position: relative; z-index: 1; display: block; align-self: end; padding: 8px 10px 4px; color: inherit; font: 700 24px/1 'Cinzel',serif; text-align: center; white-space: nowrap; text-shadow: 0 1px #fff9e0,0 2px 2px #6b461d33; }
+.collections-hero-progress small { position: relative; z-index: 1; display: block; margin: 0 8px 7px; padding: 4px 2px 3px; border-top: 1px solid #80552566; color: inherit; background: #fff1cd66; font: 700 6.5px/1 'Cinzel',serif; letter-spacing: .055em; text-align: center; white-space: nowrap; }
+.collections-hero-progress.bronze { color: #63431f; }
+.collections-hero-progress.silver { border-color: #687682; color: #40505a; background: linear-gradient(135deg,#f5f8f9 0%,#cbd3d7 48%,#93a0a8 100%); box-shadow: inset 0 1px #fff,inset 0 -1px #59687488,0 3px 7px #34414b38; }
+.collections-hero-progress.silver::before { border-color: #ffffffbb; box-shadow: inset 0 0 0 1px #65737d55; }
+.collections-hero-progress.silver small { border-color: #58687355; background: #ffffff66; }
+.collections-hero-progress.gold { border-color: #a77512; color: #6c4a05; background: linear-gradient(135deg,#fff4af 0%,#e7be46 48%,#bd8416 100%); box-shadow: inset 0 1px #fff9cf,inset 0 -1px #8b5c0888,0 3px 10px #a8792455; }
+.collections-hero-progress.gold::before { border-color: #fff7c4cc; box-shadow: inset 0 0 0 1px #97670d66; }
+.collections-hero-progress.gold small { border-color: #93620b66; background: #fff9cf77; }
+.collections-hero-progress.legendary { grid-template-rows: 16px 1fr auto; width: 96px; height: 82px; border-color: #a66b08; color: #6a4300; background: linear-gradient(135deg,#fff7c0 0%,#f4cc4f 42%,#c7870c 100%); box-shadow: inset 0 1px #fffce0,inset 0 -1px #87540099,0 0 0 2px #f8de76,0 5px 14px #a8792475; animation: collections-complete-glow 2.4s ease-in-out infinite; }
+.collections-hero-progress.legendary::before { border-color: #fff8c9; background: radial-gradient(ellipse at 38% 20%,#fffde8 0,#fbe58b 45%,#dda01c 100%); box-shadow: inset 0 0 0 1px #9a6308aa,inset 0 0 0 4px #fff7ca99; }
+.collections-hero-progress.legendary::after { top: 3px; right: 7px; color: #fffef2; font-size: 16px; animation-duration: 1.8s; }
+.collections-completion-celebration { position: relative; z-index: 2; display: grid; place-items: end center; height: 16px; color: #8b5800; filter: drop-shadow(0 1px #fff5b7); animation: collections-crown-celebrate 2.4s ease-in-out infinite; }
+.collections-completion-celebration svg { display: block; width: 39px; height: 17px; position: relative; top: 10px; }
+.collections-hero-progress.legendary strong { position: relative; top: 4px; align-self: center; padding: 1px 10px 2px; font-size: 27px; }
+.collections-hero-progress.legendary small { margin: 0 9px 7px; border-color: #96600b77; color: #6a4300; background: #fff9d4bb; font-size: 6.5px; letter-spacing: .08em; }
+@keyframes collections-badge-sparkle { 0%,100% { opacity: .45; transform: scale(.72) rotate(0); } 45% { opacity: 1; transform: scale(1.18) rotate(18deg); } 65% { opacity: .55; transform: scale(.82) rotate(30deg); } }
+@keyframes collections-complete-glow { 0%,100% { box-shadow: inset 0 1px #fffce0,inset 0 -1px #87540099,0 0 0 2px #f8de76,0 5px 12px #a8792455; } 50% { box-shadow: inset 0 1px #fffce0,inset 0 -1px #87540099,0 0 0 3px #fff0a2,0 5px 19px #e5b635bb; } }
+@keyframes collections-crown-celebrate { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@media (prefers-reduced-motion: reduce) { .collections-hero-progress::after, .collections-hero-progress.legendary, .collections-completion-celebration { animation: none; } }
 .collections-realm-select { display: grid; gap: 11px; }
 .collections-section-heading { display: flex; align-items: baseline; gap: 9px; padding-bottom: 6px; border-bottom: 1px solid #a17a3d55; color: var(--wood-2); }
 .collections-section-heading h3,.collections-realm-heading h3 { margin: 0; font: 700 15px 'Cinzel',serif; }
@@ -1155,6 +1172,7 @@ body.window-open .minimap { z-index: 61; }
 .collections-tile-progress.bronze { color: #8a5e30; }
 .collections-tile-progress.silver { color: #66717b; }
 .collections-tile-progress.gold { color: #9a741e; }
+.collections-tile-progress.legendary { color: #a77308; }
 .collections-realm-page { display: grid; gap: 13px; }
 .collections-back { justify-self: start; padding: 4px 0; border: 0; color: #765329; background: transparent; font: 700 12px 'Cinzel',serif; cursor: pointer; }
 .collections-back:hover { color: #392514; text-decoration: underline; }
@@ -1169,17 +1187,26 @@ body.window-open .minimap { z-index: 61; }
 .collection-subzone-summary:focus-visible { outline: 2px solid #8c713d; outline-offset: -2px; }
 .collection-subzone-summary strong { font: 700 14px 'Cinzel',serif; }
 .collection-category { display: flex; align-items: center; gap: 7px; min-width: 0; margin: 0 0 8px 8px; padding: 6px 8px; border: 1px solid #a17a3d33; border-left: 2px solid #bd9958; border-radius: 3px 7px 7px 3px; color: var(--wood-2); background: linear-gradient(90deg,#e7dfcc77,#fffdf544); }
+.collection-category.complete { border-color: #5f8b5d66; border-left-color: #51864d; color: #365f38; background: linear-gradient(90deg,#dcefd8cc,#f8fff566); box-shadow: inset 0 1px #ffffff99; }
 .collection-category-icon { display: grid; place-items: center; flex: none; width: 26px; height: 26px; }
 .collection-category-icon svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 1px #53391455); }
 .collection-category strong { min-width: 0; overflow: hidden; font: 700 12px 'Cinzel',serif; text-overflow: ellipsis; }
 .collection-category-count { flex: none; margin-left: auto; color: #684a22; font: 700 12px 'Cinzel',serif; white-space: nowrap; }
+.collection-category.complete .collection-category-count { color: #3c743c; }
 @media(max-width:520px) {
   .collections-hero { grid-template-columns: 44px minmax(0,1fr) auto; gap: 8px; padding: 12px 10px; }
   .collections-hero-emblem { width: 40px; height: 40px; }
   .collections-hero-emblem svg { width: 28px; height: 28px; }
   .collections-hero-copy strong { font-size: 17px; }
   .collections-hero-copy span { font-size: 12px; }
-  .collections-hero-progress { min-width: 55px; min-height: 55px; }
+  .collections-hero-progress { width: 76px; height: 62px; }
+  .collections-hero-progress strong { padding: 7px 8px 3px; font-size: 20px; }
+  .collections-hero-progress small { margin: 0 7px 6px; font-size: 5.5px; }
+  .collections-hero-progress.legendary { width: 82px; height: 70px; grid-template-rows: 13px 1fr auto; }
+  .collections-hero-progress.legendary strong { padding: 1px 8px; font-size: 23px; }
+  .collections-hero-progress.legendary small { margin: 0 7px 6px; font-size: 5.5px; }
+  .collections-completion-celebration { height: 13px; }
+  .collections-completion-celebration svg { width: 32px; height: 14px; }
   .collections-realm-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 }
 .quest-journal .social-tabs button[aria-pressed="true"] { background: #e4c38c; color: var(--wood-3); box-shadow: inset 0 -3px #977044; }

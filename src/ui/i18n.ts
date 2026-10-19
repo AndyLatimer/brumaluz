@@ -69,7 +69,6 @@ const translations: Record<string, string> = {
   'Paso {current} de {total}': 'Step {current} of {total}',
   'Tu senda de aprendizaje': 'Your learning path',
   'Puntos disponibles': 'Available points',
-  '1 punto cada 2 niveles · desde el nivel 2': '1 point every 2 levels · starting at level 2',
   'Próximo punto: nivel {n}': 'Next point: level {n}',
   'Habilidades aprendidas': 'Learned abilities',
   'Habilidad activa': 'Active ability',
@@ -743,7 +742,7 @@ const translations: Record<string, string> = {
   'Abrir / cerrar el menú': 'Open / close the menu', 'Clic': 'Click', 'Arrastrar': 'Drag', 'Rueda': 'Wheel',
   'Ir al punto': 'Go to the spot', 'Mover la cámara': 'Move the camera', 'Acercar / alejar': 'Zoom in / out', 'Girar personaje': 'Rotate character', 'Arrastra para girar a tu personaje.': 'Drag to rotate your character.',
   'ATLAS DE HALLAZGOS': 'DISCOVERY ATLAS', 'Tu progreso por las regiones del mundo': 'Your progress across the world’s regions',
-  'Progreso de la región': 'Region progress', 'ENCONTRADOS': 'FOUND', 'COMPLETADO': 'COMPLETE', 'completado': 'complete', 'Zonas': 'Regions', 'Elige una región': 'Choose a region',
+  'Progreso de la región': 'Region progress', 'ENCONTRADOS': 'FOUND', 'COMPLETADO': 'COMPLETE', '¡AL 100%!': '100% COMPLETE!', 'completado': 'complete', 'Zonas': 'Regions', 'Elige una región': 'Choose a region',
   'Elige una subzona para ver su progreso': 'Choose a subzone to see your progress', 'bolsas': 'bags',
   '{realm}, {found} de {total} encontrados': '{realm}, {found} of {total} found', '{realm}, próximamente': '{realm}, coming soon',
 };

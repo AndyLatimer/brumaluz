@@ -31,7 +31,6 @@ export function renderSkills(
   wallet.append(element('strong', '', String(points)), element('span', '', t('Puntos disponibles')));
   header.append(emblem, identity, wallet);
   const progress = element('div', 'skills-progress');
-  progress.append(element('span', '', t('1 punto cada 2 niveles · desde el nivel 2')));
   progress.append(element('span', '', data.level < 50
     ? t('Próximo punto: nivel {n}', { n: Math.floor(data.level / 2) * 2 + 2 }) : t('Nivel máximo')));
   const layout = element('div', 'skills-layout');

@@ -35,7 +35,7 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
   };
   const foundIn = (bags: readonly (typeof COIN_BAGS)[number][]) => bags.filter(bag => collected.has(bag.id)).length;
   const percentIn = (bags: readonly (typeof COIN_BAGS)[number][]) => bags.length ? Math.round(foundIn(bags) / bags.length * 100) : 0;
-  const completionTone = (percent: number) => percent >= 100 ? 'gold' : percent >= 50 ? 'silver' : 'bronze';
+  const completionTone = (percent: number) => percent >= 100 ? 'legendary' : percent >= 50 ? 'silver' : 'bronze';
 
   function renderHeader() {
     const percent = percentIn(COIN_BAGS);
@@ -48,7 +48,13 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
     header.append(emblem, copy);
     if (!activeRealm) {
       const progress = el('span', `collections-hero-progress ${completionTone(percent)}`);
-      progress.append(el('strong', undefined, `${percent}%`), el('small', undefined, t('COMPLETADO')));
+      if (percent === 100) {
+        const celebration = el('span', 'collections-completion-celebration');
+        celebration.setAttribute('aria-hidden', 'true');
+        celebration.innerHTML = '<svg viewBox="0 0 46 20"><path d="M8 15 5 5l8 5 5-8 5 8 8-5-3 10Z" fill="currentColor"/><path d="m3 3 1 2 2 1-2 1-1 2-1-2-2-1 2-1Zm38 0 1 2 2 1-2 1-1 2-1-2-2-1 2-1Zm-6 5 .8 1.6 1.7.4-1.3 1.2.3 1.8-1.5-.9-1.6.9.4-1.8-1.4-1.2 1.8-.4Z" fill="currentColor"/></svg>';
+        progress.append(celebration);
+      }
+      progress.append(el('strong', undefined, `${percent}%`), el('small', undefined, t(percent === 100 ? '¡AL 100%!' : 'COMPLETADO')));
       header.append(progress);
     }
     return header;
@@ -63,7 +69,7 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
       const details = el('details', 'collection-subzone');
       const summary = el('summary', 'collection-subzone-summary');
       summary.append(el('strong', undefined, t(area)));
-      const category = el('div', 'collection-category');
+      const category = el('div', `collection-category${bags.length > 0 && found === bags.length ? ' complete' : ''}`);
       category.append(bagIcon(), el('strong', undefined, t('Bolsas de pelines')),
         el('span', 'collection-category-count', `${found}/${bags.length}`));
       details.append(summary, category);
