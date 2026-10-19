@@ -46,7 +46,7 @@ const translations: Record<string, string> = {
   'El cuerpo está vacío.': 'The body is empty.',
   'Esencia sombría': 'Shadow essence',
   'Objeto desconocido': 'Unknown item',
-  'Un resto oscuro de la criatura. No sabes qué es ni para qué sirve.': 'A dark remnant of the creature. You do not know what it is or what it is for.',
+  'Un resto oscuro dejado por una extraña criatura. No sabes qué es ni para qué sirve.': 'A dark remnant of the creature. You do not know what it is or what it is for.',
   'Una sombra entre el ganado': 'A shadow among the livestock',
   'Has recogido una esencia desconocida.': 'You collected an unknown essence.',
   'Abre el cuerpo de la criatura y recoge sus restos.': 'Open the creature’s body and collect its remains.',
@@ -144,8 +144,8 @@ const translations: Record<string, string> = {
   'Ayudante del Gremio': 'Helpers’ Guild assistant',
   '¡Hola! Soy Gnomi, del Gremio de Ayudantes. Ahora mismo no tengo ningún encargo para ti, pero seguro que nos cruzamos pronto.':
     "Hello! I'm Gnomi from the Helpers' Guild. I don't have a task for you right now, but I'm sure we'll meet again soon.",
-  '¡Ahora sí, bien sujeto! Gracias de corazón. Este distintivo significa que puedo ser útil… y hoy tú me has ayudado a serlo.\n\nOye, antes me contabas que buscas tu camino por Brumaluz. Si quieres encontrar un oficio, puedo orientarte. ¡Para eso soy ayudante de bienvenida! Primero acompáñame a ver a Isberto, un granjero de las afueras. Me ha pedido ayuda con algo extraño que ronda su ganado.':
-    "There, it's secure at last! Thank you. This badge means I can be useful—and today, you helped me do just that.\n\nYou said you're looking for your path in Brumaluz. I can help you find a trade; that's what a welcome helper does! First, come with me to see Isberto, a farmer on the outskirts. He's asked me for help with something strange near his livestock.",
+  '¡Ahora sí, bien sujeto! Gracias de corazón. Este distintivo significa que puedo ser útil… y hoy tú me has ayudado a serlo.\r\n\r\nOye, antes me contabas que buscas tu camino por Brumaluz. Si quieres encontrar un oficio, puedo orientarte. ¡Para eso soy ayudante de bienvenida! Primero acompáñame a ver a Isberto, un granjero de las afueras. Me ha pedido ayuda con algo extraño que ronda su ganado.':
+    "There, it's secure at last! Thank you. This badge means I can be useful—and today, you helped me do just that.\r\n\r\nYou said you're looking for your path in Brumaluz. I can help you find a trade; that's what a welcome helper does! First, come with me to see Isberto, a farmer on the outskirts. He's asked me for help with something strange near his livestock.",
   '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Cuando quieras, acompáñame a ver a Isberto, el granjero de las afueras; después te ayudaré a encontrar tu camino por Brumaluz.':
     "My search companion! The badge is still there. I checked. Twice. Whenever you're ready, come with me to see Isberto, the farmer on the outskirts; after that, I'll help you find your path in Brumaluz.",
   'Granjero · explorador retirado': 'Farmer · retired explorer',
@@ -243,11 +243,11 @@ const translations: Record<string, string> = {
   '¡Pues me alegro de haberte encontrado! Una cara amiga siempre viene bien al empezar.': "Well, I'm glad we met! A friendly face always helps when you're starting out.",
   'Un rumbo nuevo, ¿eh? Si necesitas orientación, estás en buenas manos. Pequeñas, pero buenas.': "A new direction, eh? If you need guidance, you're in good hands. Small ones, but good ones.",
   'Entonces habrá que buscarte un buen comienzo. Y, si no te importa, empezar por echarme una mano a mí.': "Then let's find you a good beginning. And, if you don't mind, start by lending me a hand.",
-  'Trabajo en el Gremio de Ayudantes. Los gnomos nos dedicamos a echar una mano… y yo he vuelto a perder mi distintivo del gremio. ¡Otra vez! Debió de soltarse junto al mercado. Si se entera David, el jefe, esta vez se va a enfadar de verdad…\n\n¿Me ayudas a encontrarlo? Te acompaño. Soy mejor ayudando que sujetando distintivos, te lo prometo.': "I work for the Helpers' Guild. We gnomes make ourselves useful… and I've gone and lost my guild badge. Again! It must have come loose by the market. If David, the boss, finds out, this time he'll be really cross…\n\nWill you help me find it? I'll come along. I'm better at helping than keeping hold of badges, I promise.",
+  'Trabajo en el Gremio de Ayudantes. Los gnomos nos dedicamos a echar una mano… y yo he vuelto a perder mi distintivo del gremio. ¡Otra vez! Debió de soltarse junto al mercado. Si se entera David, el jefe, esta vez se va a enfadar de verdad…\r\n\r\n¿Me ayudas a encontrarlo? Te acompaño. Soy mejor ayudando que sujetando distintivos, te lo prometo.': "I work for the Helpers' Guild. We gnomes make ourselves useful… and I've gone and lost my guild badge. Again! It must have come loose by the market. If David, the boss, finds out, this time he'll be really cross…\r\n\r\nWill you help me find it? I'll come along. I'm better at helping than keeping hold of badges, I promise.",
   'Estuve junto al mercado. Seguro que sigue allí. Voy contigo… cuatro ojos ven más que dos, aunque dos estén bajo un gorro.': "I was by the market. It must still be there. I'll come with you… four eyes are better than two, even if two are under a hat.",
   '¡Mi distintivo del gremio! Menos mal… ¿Me lo devuelves? Esta vez lo voy a sujetar bien. Y, si nos cruzamos con David, tú y yo solo hemos dado un paseo. ¿De acuerdo?': "My guild badge! What a relief… Could I have it back? I'll fasten it properly this time. And if we run into David, you and I just went for a stroll. All right?",
   'Gracias. Quizá sea poca cosa para otros, pero para mí significa que puedo ser útil. Y hoy tú me has ayudado a serlo.': "Thank you. It may seem like nothing to others, but to me it means I can be useful. And today you helped me be just that.",
-  '¡Ahora sí, bien sujeto! Gracias de corazón. Este distintivo significa que puedo ser útil… y hoy tú me has ayudado a serlo.\n\nOye, antes me contabas que buscas tu camino por Brumaluz. Si quieres encontrar un oficio, puedo orientarte. ¡Para eso soy ayudante de bienvenida!': "There, nice and secure! Thank you, truly. This badge means I can be useful… and today you helped me be just that.\n\nYou said you were finding your way in Brumaluz. If you're looking for a trade, I can help you get your bearings. That's what a welcome helper is for!",
+  '¡Ahora sí, bien sujeto! Gracias de corazón. Este distintivo significa que puedo ser útil… y hoy tú me has ayudado a serlo.\r\n\r\nOye, antes me contabas que buscas tu camino por Brumaluz. Si quieres encontrar un oficio, puedo orientarte. ¡Para eso soy ayudante de bienvenida!': "There, nice and secure! Thank you, truly. This badge means I can be useful… and today you helped me be just that.\r\n\r\nYou said you were finding your way in Brumaluz. If you're looking for a trade, I can help you get your bearings. That's what a welcome helper is for!",
   '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces.': 'My search companion! The badge is still in place. I checked. Twice.',
   '¡Buen camino! Si alguien necesita una mano por aquí, procuraré que encuentre dos.': "Safe travels! If anyone needs a hand around here, I'll try to make sure they find two.",
   'Por aquí estuve mirando los puestos. ¡A ver si mi distintivo también se quedó mirando!': "I was looking at the stalls around here. Maybe my badge stayed behind to look too!",
@@ -714,6 +714,12 @@ const translations: Record<string, string> = {
   'Un día más depurando el universo.': 'Another day debugging the universe.', 'Abrir menú de personaje': 'Open character menu', 'Personaje': 'Character',
   'Inventario': 'Inventory', 'Ficha de personaje': 'Character sheet', 'Habilidades': 'Skills', 'Profesiones': 'Professions',
   'Enciclopedia': 'Encyclopedia', 'Social': 'Social', 'Ayuda': 'Help', 'Próximamente': 'Coming soon',
+  'Mundo': 'World', 'Abrir menú Mundo': 'Open World menu', 'Cerrar menú Mundo': 'Close World menu', 'Colecciones': 'Collections', 'Coleccionables': 'Collectibles',
+  'La arboleda': 'The Grove', 'Isla de Luna Argéntea': 'Silver Moon Isle', 'Cumbres de cobre': 'Copper Peaks',
+  'Alrededores de Brumaluz': 'Brumaluz outskirts', 'Bolsas de pelines': 'Peline pouches', 'Bolsa de pelines de la plaza': 'Peline pouch by the plaza',
+  'Junto al pozo de la plaza.': 'By the plaza well.', 'Bolsa de pelines junto a Testículos': 'Peline pouch by Testículos',
+  'Cerca de Testículos, the Debugger.': 'Near Testículos, the Debugger.', 'Encuentra los objetos especiales repartidos por el mundo.': 'Find the special objects scattered throughout the world.',
+  '{found} de {total} encontrados': '{found} of {total} found', 'Encontrado': 'Found', 'Por encontrar': 'Not found yet',
   'Pelines': 'Pelines', 'Pelín': 'Pelín', 'Lágrimas de fénix': 'Phoenix Tears', 'Lágrima de fénix': 'Phoenix Tear',
   'La moneda corriente de Brumaluz. Sirve para comerciar y pagar servicios.': 'The everyday currency of Brumaluz. Used for trade and services.',
   'Una lágrima de fénix cristalizada, tan rara como valiosa. Con ella se consiguen tesoros y privilegios únicos.': 'A crystallized phoenix tear, as rare as it is valuable. It buys unique treasures and privileges.',
@@ -736,6 +742,10 @@ const translations: Record<string, string> = {
   'Mayús': 'Shift', 'Alternar correr / caminar': 'Toggle run / walk', 'Espacio': 'Space', 'Saltar': 'Jump',
   'Abrir / cerrar el menú': 'Open / close the menu', 'Clic': 'Click', 'Arrastrar': 'Drag', 'Rueda': 'Wheel',
   'Ir al punto': 'Go to the spot', 'Mover la cámara': 'Move the camera', 'Acercar / alejar': 'Zoom in / out', 'Girar personaje': 'Rotate character', 'Arrastra para girar a tu personaje.': 'Drag to rotate your character.',
+  'ATLAS DE HALLAZGOS': 'DISCOVERY ATLAS', 'Tu progreso por las regiones del mundo': 'Your progress across the world’s regions',
+  'Progreso de la región': 'Region progress', 'ENCONTRADOS': 'FOUND', 'COMPLETADO': 'COMPLETE', 'completado': 'complete', 'Zonas': 'Regions', 'Elige una región': 'Choose a region',
+  'Elige una subzona para ver su progreso': 'Choose a subzone to see your progress', 'bolsas': 'bags',
+  '{realm}, {found} de {total} encontrados': '{realm}, {found} of {total} found', '{realm}, próximamente': '{realm}, coming soon',
 };
 
 const reverseTranslations = new Map(Object.entries(translations).map(([source, translated]) => [translated, source]));

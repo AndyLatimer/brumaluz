@@ -2202,7 +2202,8 @@ grant execute on function public.welcome_action(uuid,text,int) to authenticated;
 create or replace function public.game_coin_bag(p_id text)
 returns jsonb language sql immutable set search_path='' as $$
   select jsonb_build_object('x',b.x,'z',b.z,'min',b.lo,'max',b.hi) from (values
-    ('plaza_pozo',3.6::numeric,-3.2::numeric,10,30)
+    ('plaza_pozo',3.6::numeric,-3.2::numeric,10,30),
+    ('testiculos_debugger',-9.2::numeric,5.028203230275508::numeric,20,40)
   ) as b(id,x,z,lo,hi) where b.id=p_id
 $$;
 revoke all on function public.game_coin_bag(text) from public,anon,authenticated;

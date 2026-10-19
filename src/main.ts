@@ -43,6 +43,7 @@ import { renderInventory, renderSheet } from './ui/playerWindows';
 import { renderVendor } from './ui/vendorWindow';
 import { initActionBar, renderActionBar, autoAssignToActionBar, assignSkillToActionBar, useActionBarSlot, actionBarSlotForKey, toggleActionBarPage } from './ui/actionBar';
 import { renderSkills, skillAction } from './ui/skillsWindow';
+import { renderCollections } from './ui/collectionsWindow';
 import { skillIcon } from './ui/skillIcons';
 import { classIcon } from './ui/classIcons';
 import { initTooltips } from './ui/tooltip';
@@ -450,12 +451,13 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (e.repeat) return;
     if (openWindow) setWindow(null);
+    else if (worldMenuOpen) setWorldMenuOpen(false);
     else if (playerMenuOpen) setPlayerMenuOpen(false);
     else if (lockedEnemy) releaseCombatTarget();
     else setGameMenuOpen(!gameMenuOpen);
     return;
   }
-  if (e.code === 'Enter' && !gameMenuOpen && !playerMenuOpen && !openWindow) {
+  if (e.code === 'Enter' && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !openWindow) {
     e.preventDefault();
     if (!e.repeat) focusChat();
     return;
@@ -465,7 +467,7 @@ window.addEventListener('keydown', (e) => {
     if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
     if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
   }
-  if (gameMenuOpen || playerMenuOpen || (openWindow && openWindow !== 'loot') || (e.target as HTMLElement).tagName === 'INPUT') return;
+  if (gameMenuOpen || playerMenuOpen || worldMenuOpen || (openWindow && openWindow !== 'loot') || (e.target as HTMLElement).tagName === 'INPUT') return;
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
     e.preventDefault();
     if (!e.repeat) running = !running;
@@ -540,7 +542,7 @@ function talkTo(npcId: string) {
   if (actor) beginConversation(actor.character.root, { ...conv, subtitle: NPCS[npcId].title });
 }
 function interact() {
-  if (mode !== 'play' || dead || isbertoArrival || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
+  if (mode !== 'play' || dead || isbertoArrival || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || worldMenuOpen || optionsOpen) return;
   const { item, player } = nearestInteraction();
   if (player) {
     pendingTalk = null;
@@ -609,7 +611,7 @@ function updateInteractPrompt() {
     const target = remotePlayers.list().find((player) => player.id === playerInteractions.targetId);
     if (mode !== 'play' || dead || !target || Math.hypot(target.root.position.x - holder.position.x, target.root.position.z - holder.position.z) > TALK_RANGE) playerInteractions.close();
   }
-  const interaction = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
+  const interaction = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
   prompt.hidden = !interaction?.item && !interaction?.player;
   if (interaction?.item || interaction?.player) {
     const label = interaction.player ? t('Interactuar') : t(interaction.item!.label);
@@ -974,6 +976,7 @@ function die() {
   closeDialog();
   setGameMenuOpen(false, false);
   setPlayerMenuOpen(false, false);
+  setWorldMenuOpen(false, false);
   setWindow(null, false);
   keys.clear();
   moveTarget = null;
@@ -1102,6 +1105,7 @@ async function pickUpCoinBag(bagId: string) {
   chatSystem(t('Has encontrado {amount} pelines.', { amount }));
   sparkBurst(10, 'xp', '●');
   if (openWindow === 'inventory') setWindow('inventory', false);
+  else if (openWindow === 'collections') setWindow('collections', false);
 }
 
 // ---------------- Comercio ----------------
@@ -1393,6 +1397,7 @@ function exitPlay() {
   void ambientSoundscape.setEnabled(false);
   setGameMenuOpen(false, false);
   setPlayerMenuOpen(false, false);
+  setWorldMenuOpen(false, false);
   setWindow(null, false);
   keys.clear();
   moveTarget = null;
@@ -1544,7 +1549,7 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
   if (open) playerInteractions.close();
   gameMenuOpen = open;
   refreshOverlayHud();
-  if (open) { setPlayerMenuOpen(false, false); setWindow(null, false); }
+  if (open) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); setWindow(null, false); }
   const toggle = $<HTMLButtonElement>('#game-menu-toggle');
   const panel = $('#game-menu-panel');
   panel.hidden = !open;
@@ -1559,12 +1564,13 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
-type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills' | 'loot';
+let worldMenuOpen = false;
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills' | 'collections' | 'loot';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
 function refreshOverlayHud() {
-  document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || (!!openWindow && openWindow !== 'loot') || optionsOpen);
+  document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || worldMenuOpen || (!!openWindow && openWindow !== 'loot') || optionsOpen);
   document.body.classList.toggle('inventory-open', openWindow === 'inventory' || openWindow === 'skills');
 }
 
@@ -1572,13 +1578,27 @@ function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
   if (open) playerInteractions.close();
   playerMenuOpen = open;
   refreshOverlayHud();
-  if (open) { setGameMenuOpen(false, false); setWindow(null, false); }
+  if (open) { setGameMenuOpen(false, false); setWorldMenuOpen(false, false); setWindow(null, false); }
   const toggle = $<HTMLButtonElement>('#player-menu-toggle');
   $('#player-menu-panel').hidden = !open;
   toggle.setAttribute('aria-expanded', String(open));
   keys.clear();
   if (open) $<HTMLButtonElement>('#player-menu-panel [data-window]').focus();
   else if (restoreFocus) toggle.blur();
+}
+
+function setWorldMenuOpen(open: boolean, restoreFocus = true) {
+  if (open) playerInteractions.close();
+  worldMenuOpen = open;
+  refreshOverlayHud();
+  if (open) { setGameMenuOpen(false, false); setPlayerMenuOpen(false, false); setWindow(null, false); }
+  const toggle = $<HTMLButtonElement>('#world-menu-toggle');
+  $('#world-menu-panel').hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  toggle.setAttribute('aria-label', t(open ? 'Cerrar menú Mundo' : 'Abrir menú Mundo'));
+  keys.clear();
+  if (open) $<HTMLButtonElement>('#world-menu-panel button')?.focus();
+  else if (restoreFocus) toggle.focus();
 }
 
 /** Reparto de puntos sin confirmar en la ficha: solo cuenta al pulsar «Confirmar». */
@@ -1610,14 +1630,15 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
   $('#window-backdrop .game-window').classList.toggle('quest-window-frame', win === 'quests');
   $('#window-backdrop .game-window').classList.toggle('inventory-window-frame', win === 'inventory');
+  $('#window-backdrop .game-window').classList.toggle('collection-window-frame', win === 'collections');
   $('#window-backdrop .game-window').classList.toggle('skills-window-frame', win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
   $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) { vendor = null; return; }
-  if (closeMenu) setPlayerMenuOpen(false, false);
-  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
-  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social' || win === 'skills');
+  if (closeMenu) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); }
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : win === 'collections' ? 'Colecciones' : 'Ficha de personaje');
+  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social' || win === 'skills' || win === 'collections');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
   if (win === 'loot') {
     moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
@@ -1636,6 +1657,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
     return success;
   });
   else if (win === 'quests') renderQuestJournal(body, state);
+  else if (win === 'collections') renderCollections(body, state.coinBags);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
     setWindow(null);
@@ -1689,6 +1711,8 @@ $('#window-confirm').onclick = async () => {
 };
 
 $('#player-menu-toggle').onclick = () => setPlayerMenuOpen(!playerMenuOpen);
+$('#world-menu-toggle').onclick = () => setWorldMenuOpen(!worldMenuOpen);
+$('#world-menu-collections').onclick = () => setWindow('collections');
 for (const b of document.querySelectorAll<HTMLButtonElement>('#player-menu-panel [data-window]')) {
   b.onclick = () => setWindow(b.dataset.window as PlayerWindow);
 }
@@ -1696,6 +1720,7 @@ $('#window-close').onclick = () => setWindow(null);
 $('#window-backdrop').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget) setWindow(null); });
 document.addEventListener('click', (event) => {
   if (playerMenuOpen && event.target instanceof Node && !$('#player-menu').contains(event.target)) setPlayerMenuOpen(false, false);
+  if (worldMenuOpen && event.target instanceof Node && !$('#world-menu').contains(event.target)) setWorldMenuOpen(false, false);
 });
 
 let ambientChange = 0;
@@ -1744,6 +1769,7 @@ function setOptionsOpen(open: boolean) {
   keys.clear();
   if (open) {
     setGameMenuOpen(false, false);
+    setWorldMenuOpen(false, false);
     $('#options-message').textContent = '';
     refreshAmbientControls();
     renderControls($('#controls-view'));
@@ -2757,7 +2783,7 @@ function shadowQuestTarget(): { x: number; z: number } {
 }
 function updateWelcome(dt: number, time: number) {
   welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isbertoArrival || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root, state.shadowQuest === 'returned');
-  const visible = mode === 'play' && !dead && !isbertoArrival && !openWindow && !gameMenuOpen && !playerMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
+  const visible = mode === 'play' && !dead && !isbertoArrival && !openWindow && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   questTracker.update(state, visible);
   welcomePlate.hidden = true;
   questMarker.hidden = true;
@@ -2905,6 +2931,7 @@ function beginIsbertoArrival(character: Character) {
   setWindow(null, false);
   setGameMenuOpen(false, false);
   setPlayerMenuOpen(false, false);
+  setWorldMenuOpen(false, false);
   setOptionsOpen(false);
   keys.clear(); moveTarget = null; pendingTalk = null; marker.visible = false;
   playerVel.set(0, 0, 0);
@@ -3216,7 +3243,7 @@ window.setInterval(() => {
 }, 4000);
 const targetFrame = createTargetFrame(canvas, camera, city.root);
 function updateTargetFrame() {
-  const enabled = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
+  const enabled = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
   if (!enabled) { targetFrame.update([], false, holder.position); return; }
   const targets: TargetDetails[] = remotePlayers.list().map((player) => ({
     ...player, identity: { kind: 'player', username: player.username, cls: player.cls, title: player.title },

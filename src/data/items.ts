@@ -72,7 +72,7 @@ const NOVICE_SHIELD_ICON = `<g transform="scale(.375)" stroke-linejoin="round" s
 export const ITEMS: Record<string, ItemDef> = {
   esencia_sombria: {
     id: 'esencia_sombria', label: 'Esencia sombría', category: 'Objeto desconocido',
-    description: 'Un resto oscuro de la criatura. No sabes qué es ni para qué sirve.',
+    description: 'Un resto oscuro dejado por una extraña criatura. No sabes qué es ni para qué sirve.',
     value: 0, bound: true, sellable: false,
     icon: '<path d="M12 2c5 5 8 9 7 14-1 5-12 7-14 0C3 11 9 8 12 2Z" fill="#443258" stroke="#bb9cd5" stroke-width="1.2"/><path d="M12 7c3 4 4 7 2 10-3 3-6 0-5-3" fill="#9170b2"/><path d="m12 10 2 3-2 5-2-4Z" fill="#dac4ee"/><path d="m4 5 1 2m14-1 1-2M3 18l2-1" stroke="#c7a8e0"/>',
   },

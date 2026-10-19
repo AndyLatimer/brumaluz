@@ -4,13 +4,17 @@
 
 export interface CoinBagSpot {
   id: string;
+  realm: 'Brumaluz';
+  area: 'Brumaluz' | 'Alrededores de Brumaluz';
   x: number;
   z: number;
   yaw: number; // giro de la bolsa en el suelo, solo decorativo
 }
 
 export const COIN_BAGS: readonly CoinBagSpot[] = [
-  { id: 'plaza_pozo', x: 3.6, z: -3.2, yaw: .6 },
+  { id: 'plaza_pozo', realm: 'Brumaluz', area: 'Brumaluz', x: 3.6, z: -3.2, yaw: .6 },
+  // Junto a Testículos, delante de la casa más cercana al punto de aparición.
+  { id: 'testiculos_debugger', realm: 'Brumaluz', area: 'Brumaluz', x: -9.2, z: 5.028203230275508, yaw: 1.2 },
 ];
 
 /** Distancia (m) a la que aparece «Recoger»; el servidor admite hasta 3 m por el retardo de la posición. */
