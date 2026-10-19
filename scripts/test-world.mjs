@@ -695,7 +695,29 @@ test('welcome systems save origins directly, present quest cards, await server a
     await talk(first.page);
     assert.equal(await first.page.locator('.dialog-quest-card').getAttribute('aria-label'),'Entrega de misión');
     await first.page.getByRole('button',{name:'Completar misión'}).click();
+    await first.page.locator('#story-arrival').waitFor({state:'visible'});
+    assert.equal(await first.page.locator('#dialog').isVisible(),false,'The offer does not start before Isberto arrives');
+    const arrivalStart=await first.page.evaluate(()=>{
+      const root=window.brumaluz.city().root.parent.getObjectByName('npc:isberto');
+      return {position:root.position.toArray(),player:window.brumaluz.char().root.parent.position.toArray(),time:performance.now()};
+    });
+    await first.page.keyboard.down('KeyW');
+    await first.page.keyboard.press('KeyI');
+    await first.page.waitForTimeout(700);
+    await first.page.keyboard.up('KeyW');
+    const arrivalMiddle=await first.page.evaluate(()=>{
+      const root=window.brumaluz.city().root.parent.getObjectByName('npc:isberto'),camera=window.brumaluz.camera();
+      const screen=root.position.clone().add({x:0,y:1,z:0}).project(camera);
+      return {position:root.position.toArray(),player:window.brumaluz.char().root.parent.position.toArray(),gait:root.userData.gait,screen:screen.toArray()};
+    });
+    assert.equal(arrivalMiddle.gait,'walk');
+    assert.deepEqual(arrivalMiddle.player,arrivalStart.player,'Movement input stays blocked during the short cutscene');
+    assert.ok(Math.hypot(arrivalMiddle.position[0]-arrivalStart.position[0],arrivalMiddle.position[2]-arrivalStart.position[2])>.5,'Isberto walks through the world rather than appearing at the player');
+    assert.ok(Math.abs(arrivalMiddle.screen[0])<1&&Math.abs(arrivalMiddle.screen[1])<1&&Math.abs(arrivalMiddle.screen[2])<1,'The walking NPC is visible in the cinematic framing');
+    assert.equal(await first.page.locator('#window-backdrop').isVisible(),false,'Inventory cannot interrupt the arrival');
     await first.page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await first.page.locator('#story-arrival').waitFor({state:'hidden'});
+    assert.ok(await first.page.evaluate(start=>performance.now()-start>=2000,arrivalStart.time),'The arrival is shown before starting the offer');
     await first.page.locator('.dialog-quest-card').filter({hasText:'Una sombra entre el ganado'}).waitFor();
     assert.equal(a.character.data.shadowQuest,undefined,'Opening the automatic offer never accepts it');
     const introPosition=await first.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').position.toArray());
@@ -732,6 +754,11 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.match(await first.page.locator('.quest-entry footer').textContent(),/Rewards received/);
     assert.deepEqual(await first.page.locator('.quest-reward strong').allTextContents(),['Experience','Pelines']);
     await first.page.keyboard.press('Escape');
+    await leave(first.page);
+    await first.page.reload();await first.page.waitForFunction(()=>!!window.brumaluz);await first.enter();
+    assert.equal(await first.page.locator('#story-arrival').isVisible(),false,'Reconnecting never replays the already seen arrival');
+    assert.equal(await first.page.locator('#dialog').isVisible(),false,'Reconnecting does not reopen or accept the offer');
+    assert.equal(a.character.data.shadowQuest,undefined);
     await approach(second.page,-6.4,-8.5);
     await talk(second.page);
     await second.page.getByRole('button',{name:'Vengo de la Arboleda para aprender.'}).click();
@@ -1877,9 +1904,9 @@ test('online compact corpse loot retries after a full-bag rejection and removes 
 });
 
 test('online story epilogue retries failed reporting, resumes the return and leaves Gnomi at the well after reconnecting', {timeout:60000}, async()=>{
-  const world=backend(),account=fixture('DeVuelta','humano',-3);
+  const world=backend(),account=fixture('DeVuelta','humano',-1.7);
   Object.assign(account.character.data,{
-    position:{x:-3,z:-62.35,yaw:0},welcome:{origin:0,stage:'completed'},shadowQuest:'defeated',
+    position:{x:-1.7,z:-62.35,yaw:0},welcome:{origin:0,stage:'completed'},shadowQuest:'defeated',
     combatEncounter:{id:'shadowling',instanceId:randomUUID(),status:'defeated',health:0,maxHealth:100,
       x:3.5,z:-62.35,enemyAttackAt:0,loot:[null],looted:true},
   });
@@ -1889,8 +1916,35 @@ test('online story epilogue retries failed reporting, resumes the return and lea
     await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await page.keyboard.press('KeyE');
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await page.waitForFunction(()=>{
+      const actor=window.brumaluz.city().root.parent.getObjectByName('npc:isberto'),player=window.brumaluz.char().root.parent;
+      const angle=Math.atan2(actor.position.x-player.position.x,actor.position.z-player.position.z);
+      return Math.abs(Math.atan2(Math.sin(angle-player.rotation.y),Math.cos(angle-player.rotation.y)))<.05;
+    });
+    const beforeSpeakerChange=await page.evaluate(()=>({
+      position:window.brumaluz.char().root.parent.position.toArray(),
+      facing:window.brumaluz.char().root.parent.rotation.y,
+    }));
     await page.keyboard.press('KeyE');
     await page.locator('.dialog-speaker').filter({hasText:'Gnomi'}).waitFor();
+    await page.waitForFunction(()=>{
+      const actor=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal'),player=window.brumaluz.char().root.parent;
+      const angle=Math.atan2(actor.position.x-player.position.x,actor.position.z-player.position.z);
+      return Math.abs(Math.atan2(Math.sin(angle-player.rotation.y),Math.cos(angle-player.rotation.y)))<.05;
+    });
+    const afterSpeakerChange=await page.evaluate(()=>({
+      position:window.brumaluz.char().root.parent.position.toArray(),
+      facing:window.brumaluz.char().root.parent.rotation.y,
+    }));
+    assert.deepEqual(afterSpeakerChange.position,beforeSpeakerChange.position,'Changing speaker rotates the player without moving them');
+    assert.ok(Math.abs(Math.atan2(Math.sin(afterSpeakerChange.facing-beforeSpeakerChange.facing),Math.cos(afterSpeakerChange.facing-beforeSpeakerChange.facing)))>.2,'The player turns toward Gnomi instead of staring at Isberto');
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await page.waitForFunction(()=>{
+      const actor=window.brumaluz.city().root.parent.getObjectByName('npc:isberto'),player=window.brumaluz.char().root.parent;
+      const angle=Math.atan2(actor.position.x-player.position.x,actor.position.z-player.position.z);
+      return Math.abs(Math.atan2(Math.sin(angle-player.rotation.y),Math.cos(angle-player.rotation.y)))<.05;
+    });
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'isberto-gnomi-epilogue.png')});
     await page.keyboard.press('Escape');
     assert.equal(account.character.data.shadowQuest,'defeated','Exiting partway through the scene never advances the story');

@@ -179,13 +179,19 @@ const camPos = new THREE.Vector3();
 const playerVel = new THREE.Vector3();
 let zoomTarget = 12;
 let conversationActor: THREE.Object3D | null = null;
-let conversationFacing = 0;
+const conversationFacings = new Map<THREE.Object3D, number>();
 let conversationSide = 1;
 let conversationOffset = 0;
 let returningFromConversation = false;
 let conversationShot = '';
 let conversationOrbitYaw = 0, conversationOrbitPitch = 0;
 let pendingIsbertoIntroduction = false;
+let isbertoArrival: { character: Character; path: THREE.Vector3[] } | null = null;
+const arrivalOverlay = document.createElement('div');
+arrivalOverlay.id = 'story-arrival';
+arrivalOverlay.hidden = true;
+arrivalOverlay.setAttribute('role', 'status');
+document.body.append(arrivalOverlay);
 const conversationPosition = new THREE.Vector3();
 const conversationRay = new THREE.Raycaster();
 let conversationObstacles: THREE.Object3D[] = [];
@@ -194,7 +200,7 @@ function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
   conversationActor = actor;
   conversationShot = '';
   conversationOrbitYaw = 0; conversationOrbitPitch = 0;
-  conversationFacing = actor.rotation.y;
+  conversationFacings.set(actor, actor.rotation.y);
   const direction = actor.position.clone().sub(holder.position);
   const side = new THREE.Vector3(direction.z, 0, -direction.x);
   conversationSide = side.dot(camera.position.clone().sub(holder.position)) >= 0 ? 1 : -1;
@@ -204,14 +210,33 @@ function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
   }
   playerVel.set(0, 0, 0);
   openConversation(conversation, () => {
-    actor.rotation.y = conversationFacing;
+    for (const [participant, facing] of conversationFacings) participant.rotation.y = facing;
+    conversationFacings.clear();
     conversationActor = null;
     returningFromConversation = true;
   });
 }
+function focusConversationSpeaker(speaker: string) {
+  if (!conversationActor || isbertoArrival) return;
+  const actor = speaker === 'Gnomi' ? welcomeWorld.root
+    : npcActors.find(npc => NPCS[npc.id].name === speaker)?.character.root;
+  if (!actor || !actor.visible || actor === conversationActor) return;
+  if (!conversationFacings.has(actor)) conversationFacings.set(actor, actor.rotation.y);
+  conversationActor = actor;
+  conversationShot = '';
+}
+function updateConversationFacing(dt: number) {
+  if (!conversationActor || (!isDialogOpen() && !isbertoArrival)) return;
+  const direction = conversationActor.position.clone().sub(holder.position);
+  if (direction.lengthSq() < .01) return;
+  const angle = Math.atan2(direction.x, direction.z);
+  const blend = 1 - Math.exp(-dt * 10);
+  holder.rotation.y += Math.atan2(Math.sin(angle - holder.rotation.y), Math.cos(angle - holder.rotation.y)) * blend;
+  if (!isbertoArrival) conversationActor.rotation.y = angle + Math.PI;
+}
 function updateConversationCamera(dt: number) {
   const actor = conversationActor!;
-  const dialogTop = document.getElementById('dialog')!.getBoundingClientRect().top;
+  const dialogTop = isbertoArrival ? innerHeight - 70 : document.getElementById('dialog')!.getBoundingClientRect().top;
   const sceneTop = 24;
   const sceneBottom = Math.max(sceneTop + 60, dialogTop - 16);
   const visibleHeight = sceneBottom - sceneTop;
@@ -290,7 +315,7 @@ function updateConversationCamera(dt: number) {
   camera.setViewOffset(window.innerWidth, window.innerHeight, 0, conversationOffset, window.innerWidth, window.innerHeight);
 }
 function updatePlayCamera(dt: number) {
-  if (conversationActor && isDialogOpen()) { updateConversationCamera(dt); return; }
+  if (conversationActor && (isDialogOpen() || isbertoArrival)) { updateConversationCamera(dt); return; }
   // el objetivo se adelanta un poco en la dirección de marcha y la cámara lo sigue con holgura
   const target = tmp.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0)).addScaledVector(playerVel, 0.12);
   const k = 1 - Math.exp(-dt * 5);
@@ -333,7 +358,7 @@ function updateCamera(dt: number) {
 
 // Girar al personaje arrastrando
 let dragging = false, lastX = 0, lastY = 0, spinVel = 0, dragDist = 0;
-canvas.addEventListener('pointerdown', (e) => { if (isDialogOpen() && !conversationActor) return; dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
+canvas.addEventListener('pointerdown', (e) => { if (isbertoArrival || (isDialogOpen() && !conversationActor)) return; dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
 canvas.addEventListener('pointermove', (e) => {
   if (!dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
@@ -351,7 +376,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const endDrag = (e: PointerEvent) => {
-  if (dragging && mode === 'play' && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
+  if (dragging && mode === 'play' && !isbertoArrival && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
   dragging = false;
   canvas.classList.remove('drag');
 };
@@ -359,7 +384,7 @@ canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', () => { dragging = false; canvas.classList.remove('drag'); });
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  if (isDialogOpen()) return;
+  if (isDialogOpen() || isbertoArrival) return;
   if (mode === 'play') zoomTarget = THREE.MathUtils.clamp(zoomTarget * (1 + e.deltaY * 0.001), 3, 30);
   else zoom = THREE.MathUtils.clamp(zoom * (1 + e.deltaY * 0.001), 0.6, 1.4);
 }, { passive: false });
@@ -380,6 +405,7 @@ function startJump() {
 }
 window.addEventListener('keydown', (e) => {
   if (mode !== 'play') return;
+  if (isbertoArrival) { e.preventDefault(); return; }
   if (tradeWindow.isOpen) { tradeWindow.key(e); return; }
   if (dead) {
     e.preventDefault();
@@ -513,7 +539,7 @@ function talkTo(npcId: string) {
   if (actor) beginConversation(actor.character.root, { ...conv, subtitle: NPCS[npcId].title });
 }
 function interact() {
-  if (mode !== 'play' || dead || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
+  if (mode !== 'play' || dead || isbertoArrival || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
   const { item, player } = nearestInteraction();
   if (player) {
     pendingTalk = null;
@@ -581,7 +607,7 @@ function updateInteractPrompt() {
     const target = remotePlayers.list().find((player) => player.id === playerInteractions.targetId);
     if (mode !== 'play' || dead || !target || Math.hypot(target.root.position.x - holder.position.x, target.root.position.z - holder.position.z) > TALK_RANGE) playerInteractions.close();
   }
-  const interaction = mode === 'play' && !dead && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
+  const interaction = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
   prompt.hidden = !interaction?.item && !interaction?.player;
   if (interaction?.item || interaction?.player) {
     const label = interaction.player ? t('Interactuar') : t(interaction.item!.label);
@@ -616,6 +642,7 @@ function clickToMove(e: PointerEvent) {
   marker.visible = true;
 }
 function updatePlay(dt: number) {
+  if (isbertoArrival) { keys.clear(); playerVel.set(0, 0, 0); char.setGait('idle'); return; }
   if (dead) { keys.clear(); moveTarget = null; marker.visible = false; }
   if (pendingTalk === 'isberto' && !isbertoUnlocked()) pendingTalk = null;
   if (pendingTalk) {
@@ -1325,6 +1352,7 @@ function stopChat() {
 }
 function exitPlay() {
   pendingIsbertoIntroduction = false;
+  endIsbertoArrival();
   setFoodRunning(false);
   stopParty();
   stopFriendNotifications?.();
@@ -1454,7 +1482,7 @@ setChatSpeechListener((name, text, own, userId) => {
 });
 setDialogLogger((speaker, text) => {
   if (speaker === null) char.speak(speechSeconds(text));
-  else npcSay(speaker, t(text));
+  else { focusConversationSpeaker(speaker); npcSay(speaker, t(text)); }
 });
 
 function refreshLanguageDependentUI() {
@@ -2706,8 +2734,8 @@ function shadowQuestTarget(): { x: number; z: number } {
     ?? state.isbertoPosition ?? {x: -3, z: TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z};
 }
 function updateWelcome(dt: number, time: number) {
-  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root, state.shadowQuest === 'returned');
-  const visible = mode === 'play' && !dead && !openWindow && !gameMenuOpen && !playerMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
+  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isbertoArrival || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root, state.shadowQuest === 'returned');
+  const visible = mode === 'play' && !dead && !isbertoArrival && !openWindow && !gameMenuOpen && !playerMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   questTracker.update(state, visible);
   welcomePlate.hidden = true;
   questMarker.hidden = true;
@@ -2850,6 +2878,81 @@ const NPCS: Record<string, NpcDef> = {
 };
 const npcActors: { id: string; character: Character; plate: HTMLElement; anchor: THREE.Vector3 }[] = [];
 let isbertoPositionKey = '';
+function beginIsbertoArrival(character: Character) {
+  closeDialog();
+  setWindow(null, false);
+  setGameMenuOpen(false, false);
+  setPlayerMenuOpen(false, false);
+  setOptionsOpen(false);
+  keys.clear(); moveTarget = null; pendingTalk = null; marker.visible = false;
+  playerVel.set(0, 0, 0);
+  dragging = false; canvas.classList.remove('drag');
+  const destination = character.root.position.clone();
+  let bestPath = [destination];
+  // Build a short reversible route from the meeting point, never across blocked terrain.
+  for (const angle of [yaw + Math.PI / 2, yaw - Math.PI / 2, yaw, yaw + Math.PI, yaw + Math.PI / 4, yaw - Math.PI / 4]) {
+    const path = [destination.clone()];
+    for (let step = 0; step < 24; step++) {
+      const from = path[path.length - 1];
+      const next = from.clone().add(new THREE.Vector3(Math.sin(angle) * .25, 0, Math.cos(angle) * .25));
+      next.y = city.groundY(next.x, next.z);
+      const corrected = city.collide(from, next.clone());
+      if (Math.hypot(corrected.x - next.x, corrected.z - next.z) > .05
+        || Math.hypot(next.x - holder.position.x, next.z - holder.position.z) < 1) break;
+      path.push(next);
+    }
+    if (path.length > bestPath.length) bestPath = path;
+    if (path.length === 25) break;
+  }
+  if (bestPath.length < 2) {
+    toast('Isberto', 'No hay espacio para que Isberto se acerque andando.', true);
+    talkTo('isberto');
+    return;
+  }
+  const path = bestPath.reverse();
+  character.root.position.copy(path.shift()!);
+  character.root.visible = true;
+  character.root.rotation.y = Math.atan2(path[0].x - character.root.position.x, path[0].z - character.root.position.z);
+  isbertoArrival = { character, path };
+  character.setGait('walk');
+  character.root.userData.gait = 'walk';
+  conversationActor = character.root;
+  conversationShot = '';
+  conversationOrbitYaw = 0; conversationOrbitPitch = 0;
+  conversationSide = 1;
+  arrivalOverlay.textContent = t('Isberto se acerca…');
+  arrivalOverlay.hidden = false;
+  document.body.classList.add('conversation-open');
+}
+function endIsbertoArrival() {
+  if (!isbertoArrival) return;
+  const destination = isbertoArrival.path[isbertoArrival.path.length - 1];
+  if (destination) isbertoArrival.character.root.position.copy(destination);
+  isbertoArrival.character.setGait('idle');
+  isbertoArrival.character.root.userData.gait = 'idle';
+  isbertoArrival = null;
+  conversationActor = null;
+  returningFromConversation = true;
+  arrivalOverlay.hidden = true;
+  document.body.classList.remove('conversation-open');
+}
+function updateIsbertoArrival(dt: number) {
+  if (!isbertoArrival) return;
+  if (mode !== 'play' || dead) { endIsbertoArrival(); return; }
+  const { character, path } = isbertoArrival;
+  const target = path[0], position = character.root.position;
+  const distance = Math.hypot(target.x - position.x, target.z - position.z);
+  const step = Math.min(distance, dt * 2);
+  if (distance > .001) {
+    const angle = Math.atan2(target.x - position.x, target.z - position.z);
+    character.root.rotation.y += Math.atan2(Math.sin(angle - character.root.rotation.y), Math.cos(angle - character.root.rotation.y)) * Math.min(1, dt * 12);
+    position.x += (target.x - position.x) * step / distance;
+    position.z += (target.z - position.z) * step / distance;
+    position.y = city.groundY(position.x, position.z);
+  }
+  if (distance <= step + .001) path.shift();
+  if (!path.length) { endIsbertoArrival(); talkTo('isberto'); }
+}
 for (const site of city.npcSites) {
   const def = NPCS[site.id];
   if (!def) continue;
@@ -3091,7 +3194,7 @@ window.setInterval(() => {
 }, 4000);
 const targetFrame = createTargetFrame(canvas, camera, city.root);
 function updateTargetFrame() {
-  const enabled = mode === 'play' && !dead && !tradeWindow.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
+  const enabled = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
   if (!enabled) { targetFrame.update([], false, holder.position); return; }
   const targets: TargetDetails[] = remotePlayers.list().map((player) => ({
     ...player, identity: { kind: 'player', username: player.username, cls: player.cls, title: player.title },
@@ -3145,10 +3248,11 @@ renderer.setAnimationLoop(() => {
     }
     if (pendingIsbertoIntroduction && mode === 'play' && !dead && !actionBusy) {
       pendingIsbertoIntroduction = false;
-      isberto.character.root.visible = true;
-      talkTo('isberto');
+      beginIsbertoArrival(isberto.character);
     }
   }
+  updateIsbertoArrival(dt);
+  updateConversationFacing(dt);
   for (const npc of npcActors) {
     if (npc.id === 'isberto') npc.character.root.visible = isbertoUnlocked();
     npc.character.update(t);

@@ -3,6 +3,8 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Isberto se acerca…': 'Isberto is approaching…',
+  'No hay espacio para que Isberto se acerque andando.': 'There is no room for Isberto to walk over.',
   'Habla con Isberto sobre la criatura derrotada.': 'Talk to Isberto about the defeated creature.',
   'Vuelve con Gnomi a la plaza del pozo y habla con él allí.': 'Return to the well square with Gnomi and talk to him there.',
   'Has vuelto con Gnomi a la plaza del pozo. El misterio sigue sin resolver.': 'You returned to the well square with Gnomi. The mystery remains unsolved.',

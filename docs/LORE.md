@@ -131,8 +131,9 @@ contenido del juego relacionado.
   falta concretar su posición y el recorrido sobre el mapa.
 - La recompensa de esta primera misión será de **40 puntos de experiencia
   y 5 pelines**.
-- Justo después de completar la misión de Gnomi aparece **Isberto** junto al
-  jugador y le habla automáticamente para ofrecerle
+- Justo después de completar la misión de Gnomi se ve a **Isberto** acercarse
+  andando en una breve escena; solo cuando llega junto al jugador le habla
+  automáticamente para ofrecerle
   investigar a la criatura junto al ganado. Derrotarla deja un cadáver
   saqueable con una **Esencia sombría** garantizada. Su significado y uso no
   se conocen todavía. Después de vencer hay que hablar con Isberto; Gnomi

@@ -109,6 +109,10 @@ quedan bloqueados.
   Se puede arrastrar sobre el mundo para orbitar horizontal y verticalmente
   durante la conversación; no avanza el diálogo ni cambia el giro o zoom
   guardados para explorar. El plano inicial sigue buscando una vista despejada.
+  Si cambia el interlocutor en un nodo (por ejemplo, Gnomi interviene mientras
+  se habla con Isberto), el jugador gira suavemente hacia quien habla y la
+  cámara reencuadra a esa pareja. No cambia su posición ni el giro o zoom
+  de exploración. Al cerrar se restauran las orientaciones de los participantes.
 - El plano busca líneas de visión despejadas para los cuerpos de ambos
   interlocutores, incluyendo edificios, faroles y otros personajes como
   obstáculos (no hierba, flores ni partículas). Al completar la bienvenida,
@@ -136,9 +140,15 @@ quedan bloqueados.
 
 ## Después de Gnomi: Isberto
 
-Justo después de devolver el distintivo aparece Isberto junto al jugador y
-abre automáticamente su diálogo, sin tener que caminar hasta el granjero ni
-pulsar E. `welcome_action` guarda el punto del encuentro en `isbertoPosition`,
+Después de devolver el distintivo se ve llegar a Isberto andando en una breve
+escena: recorre hasta 6 m a paso normal, con animación de marcha, suelo y ruta
+comprobados contra las colisiones de la ciudad. La cámara sigue su llegada y
+el jugador mira hacia él. Se oculta el HUD y se bloquean desplazamiento,
+interacciones y menús durante el recorrido. Solo al llegar junto al jugador
+se abre automáticamente la oferta, sin pulsar E. El plano recupera los controles
+normales de conversación (incluida la órbita con ratón). Si no hay ni un tramo
+libre alrededor del punto, se avisa explícitamente y se abre la oferta sin
+atravesar obstáculos. `welcome_action` guarda el punto final en `isbertoPosition`,
 calculado desde la presencia autoritativa; ese punto se conserva al reconectar.
 Los personajes que ya completaron la bienvenida sin este campo mantienen la
 posición original de la granja. El rastreador, el minimapa y la flecha de borde
@@ -150,6 +160,9 @@ encuentro personal y valida proximidad al punto del granjero. La criatura
 sigue estando junto al ganado; no se traslada a la presentación.
 Abrir o cerrar la oferta automática no acepta la misión. No hay recompensas
 ficticias de XP ni pelines en la tarjeta.
+La llegada solo se dispara tras entregar el distintivo en esa sesión; no se
+reproduce de nuevo al reconectar. Salir del mundo o morir cancela la escena,
+limpia el bloqueo y devuelve al NPC a su punto final, sin aceptar la misión.
 
 La victoria cambia la fase a `defeated`; el objetivo pasa a **hablar con
 Isberto**, aunque todavía no se haya recogido el botín. La conversación alterna
