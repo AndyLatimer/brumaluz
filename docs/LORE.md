@@ -161,10 +161,10 @@ ficticia a una ciudad que ya conocen.
 
 ## Sistema de misiones aprobado
 
-La primera implementación está disponible para pruebas de desarrollo. La
-bienvenida permanece desactivada para jugadores reales hasta aprobar el guion
-y la presentación. Los textos y la ubicación concretos usados para probar
-los sistemas son provisionales, no amplían el canon.
+La activación pública de la bienvenida, el combate y las habilidades iniciales
+se autorizó el 19 de octubre de 2026. Los textos y la ubicación concretos usados
+para probar los sistemas siguen siendo una presentación inicial, sin ampliar
+automáticamente el canon pendiente.
 
 - Aceptación explícita desde el diálogo, mostrando la recompensa.
 - La bienvenida es obligatoria: no se puede abandonar ni saltar para avanzar

@@ -1,5 +1,6 @@
 import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
 import type { CharData } from '../data/data';
+import type { SkillId } from '../data/combat';
 
 export const MAX_CHARACTERS_PER_ACCOUNT = 5;
 
@@ -318,7 +319,7 @@ export const characterActions: Record<CharacterAction, (id: string) => Promise<R
 export async function startCombat(id: string) {
   return asRecord(await serverCall(requireClient().rpc('combat_start',{p_character_id:id})));
 }
-export async function combatAction(id: string, action: 'attack'|'skill') {
+export async function combatAction(id: string, action: 'attack' | SkillId) {
   return asRecord(await serverCall(requireClient().rpc('combat_action',{p_character_id:id,p_action:action})));
 }
 export async function stopCombat(id: string) {

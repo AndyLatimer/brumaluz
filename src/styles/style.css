@@ -718,6 +718,34 @@ body.playing .combat-controls { display:flex; position:fixed; z-index:14; left:5
 .combat-controls button:hover:not(:disabled) { background:#8b603a; }
 .combat-controls button:disabled { opacity:.5; cursor:not-allowed; }
 .combat-controls kbd { color:#ffe0a1; }
+.combat-controls button[aria-pressed="true"] { background:#526347; border-color:#e9c880; }
+#target-frame.locked { outline:2px solid var(--gold-hi); outline-offset:3px; }
+#target-frame.locked .target-name::before { content:'◆ '; color:var(--gold-hi); }
+.skills-book { display:grid; gap:22px; max-width:680px; margin:0 auto; padding:8px; color:var(--wood-2); }
+.skills-book > header { display:grid; grid-template-columns:64px 1fr; column-gap:16px; align-items:center; border-bottom:1px solid #ad844b66; padding-bottom:18px; }
+.skills-book > header > svg { width:64px; height:64px; grid-row:span 2; }
+.skills-book h3,.skills-book h4 { margin:0; font-family:'Cinzel',serif; }
+.skills-book h3 { font-size:20px; }
+.skills-book header p { margin:6px 0 0; }
+.skill-card { display:grid; grid-template-columns:72px 1fr; column-gap:18px; row-gap:6px; padding:20px; border:1px solid #ad844b; border-radius:14px; background:linear-gradient(135deg,#fff5d9,#e8d0a6); box-shadow:inset 0 0 0 3px #fff2cd88,0 4px 12px #50351a18; cursor:grab; }
+.skill-card:focus-visible { outline:2px solid #9d712e; outline-offset:3px; }
+.skill-art { grid-row:span 4; display:grid; place-items:center; align-self:start; width:72px; height:78px; border:1px solid #b79151; border-radius:12px; background:radial-gradient(ellipse at top,#5c5845,#2d241b); }
+.skill-art svg { width:58px; height:58px; }
+.skill-card h4 { font-size:17px; overflow-wrap:anywhere; }
+.skill-card small { color:#59734b; font-weight:700; }
+.skill-card p { margin:4px 0 8px; line-height:1.55; }
+.skill-card button { justify-self:start; white-space:normal; }
+.skill-status { margin:0; min-height:1.5em; font-size:14px; }
+.ab-slot.on-cooldown { background:#241c31; }
+.ab-slot.on-cooldown svg { opacity:.4; }
+.ab-slot[data-skill-id] i { font-size:14px; color:#ffe6aa; }
+@media(max-width:480px) {
+  .skill-card { grid-template-columns:48px 1fr; padding:12px; column-gap:12px; }
+  .skill-art { width:48px; height:56px; }
+  .skill-art svg { width:40px; height:40px; }
+  .skills-book > header { grid-template-columns:48px 1fr; }
+  .skills-book > header > svg { width:48px; height:48px; }
+}
 body.playing.dead .action-bar { display: none; }
 body.window-open .action-bar { z-index: 61; }
 body.playing.ui-menu-open:not(.inventory-open) .action-bar { display: none; }

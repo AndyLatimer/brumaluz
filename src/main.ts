@@ -40,7 +40,8 @@ import { TITLES, isReservedTitle, setGrantedTitles, PHOENIX_ICON } from './data/
 import { openDialog, openConversation, closeDialog, advanceDialog, chooseDialog, moveDialogChoice, isDialogOpen, exitDialog, refreshDialog, setDialogLogger, type DialogLine, type DialogChoice, type Conversation } from './ui/dialog';
 import { renderInventory, renderSheet } from './ui/playerWindows';
 import { renderVendor } from './ui/vendorWindow';
-import { initActionBar, renderActionBar, autoAssignToActionBar, useActionBarSlot, actionBarSlotForKey, toggleActionBarPage } from './ui/actionBar';
+import { initActionBar, renderActionBar, autoAssignToActionBar, assignSkillToActionBar, useActionBarSlot, actionBarSlotForKey, toggleActionBarPage } from './ui/actionBar';
+import { renderSkills, skillAction, skillTooltip } from './ui/skillsWindow';
 import { classIcon } from './ui/classIcons';
 import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
@@ -57,6 +58,9 @@ import { COMBAT_KITS, resolveCombat, type CombatState } from './data/combat';
 
 // ---------------- Estado ----------------
 let state: CharData = defaultChar();
+let skillReadyAt = 0;
+let lockedEnemy = false;
+let combatApproach = false;
 if (!state.name) state.name = randomName(state.race);
 function isbertoUnlocked() {
   return state.welcome?.stage === 'completed';
@@ -389,6 +393,7 @@ window.addEventListener('keydown', (e) => {
     if (e.repeat) return;
     if (openWindow) setWindow(null);
     else if (playerMenuOpen) setPlayerMenuOpen(false);
+    else if (lockedEnemy) releaseCombatTarget();
     else setGameMenuOpen(!gameMenuOpen);
     return;
   }
@@ -398,7 +403,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (!e.repeat && !gameMenuOpen && openWindow !== 'vendor' && (e.target as HTMLElement).tagName !== 'INPUT') {
-    const win = e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : null;
+    const win = e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : e.code === 'KeyK' ? 'skills' : null;
     if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
     if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
   }
@@ -408,11 +413,10 @@ window.addEventListener('keydown', (e) => {
     if (!e.repeat) running = !running;
     return;
   }
-  if(combatEncounter?.status==='active'&&(e.code==='KeyF'||e.code==='KeyR')){
+  if(e.code==='KeyF'){
     e.preventDefault();
     if(e.repeat)return;
-    if(e.code==='KeyF')$('#combat-auto').click();
-    else useWorldCombatSkill();
+    lockCombatTarget();
     return;
   }
   const barSlot = actionBarSlotForKey(e.code);
@@ -506,9 +510,7 @@ function clickNpc(e: PointerEvent) {
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   if(combatTargetRoot&&combatEncounter?.status==='active'&&ray.intersectObject(combatTargetRoot,true).length){
-    combatAuto=!combatAuto;pendingCombatSkill=false;nextCombatAttack=0;
-    $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
-    if(combatAuto)chatCombat(t('Objetivo seleccionado. Ataque automático activado.'));
+    lockCombatTarget(true);
     return true;
   }
   if (welcomeWorld.root.visible && ray.intersectObject(welcomeWorld.root, true).length) {
@@ -569,8 +571,7 @@ function clickToMove(e: PointerEvent) {
   }
   p.y = city.groundY(p.x, p.z);
   moveTarget = p;
-  combatAuto=false;pendingCombatSkill=false;
-  if(combatEncounter?.status==='active')$('#combat-auto').setAttribute('aria-pressed','false');
+  combatApproach=false;pendingCombatSkill=false;
   marker.position.set(p.x, city.groundY(p.x, p.z) + 0.03, p.z);
   marker.visible = true;
 }
@@ -591,8 +592,7 @@ function updatePlay(dt: number) {
   const dir = new THREE.Vector3();
   let clickMoving = false;
   if (input.lengthSq() > 0) {
-    combatAuto=false;pendingCombatSkill=false;
-    if(combatEncounter?.status==='active')$('#combat-auto').setAttribute('aria-pressed','false');
+    combatApproach=false;pendingCombatSkill=false;
     moveTarget = null;
     marker.visible = false;
     const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
@@ -600,12 +600,12 @@ function updatePlay(dt: number) {
   } else if (moveTarget) {
     dir.set(moveTarget.x - holder.position.x, 0, moveTarget.z - holder.position.z);
     if (dir.length() < 0.25) { moveTarget = null; marker.visible = false; dir.set(0, 0, 0); } else { dir.normalize(); clickMoving = true; }
-  } else if(combatAuto&&combatTargetRoot&&combatEncounter?.status==='active'){
+  } else if(combatAuto&&combatApproach&&combatTargetRoot&&combatEncounter?.status==='active'){
     const range=COMBAT_KITS[state.cls].range;
     const dx=combatTargetRoot.position.x-holder.position.x,dz=combatTargetRoot.position.z-holder.position.z;
     if(Math.hypot(dx,dz)>range-.1){dir.set(dx,0,dz).normalize();clickMoving=true;}
   }
-  if (!dragging && clickMoving) {
+  if (!dragging && clickMoving && !lockedEnemy) {
     // al ir con clic la cámara se recoloca poco a poco tras el personaje
     let back = Math.atan2(-dir.x, -dir.z) - yaw;
     back = Math.atan2(Math.sin(back), Math.cos(back));
@@ -646,18 +646,24 @@ function updatePlay(dt: number) {
 }
 
 function tickWorldCombat(time:number) {
+  renderActionBar();
   if(!combatTargetRoot||combatEncounter?.status!=='active')return;
+  const ring = combatTargetRoot.getObjectByName('combat-lock-ring');
+  if (ring) ring.visible = lockedEnemy;
+  if (lockedEnemy && combatTargetRoot.position.distanceTo(holder.position) > 35) releaseCombatTarget();
   combatTargetRoot.rotation.y=Math.sin(time*1.6)*.15;
   combatTargetRoot.scale.y=.97+Math.sin(time*4)*.035;
   const kit=COMBAT_KITS[state.cls];
   const distance=Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z);
-  if(pendingCombatSkill&&distance<=kit.range){
-    pendingCombatSkill=false;void performWorldCombatAction('skill');return;
+  if(pendingCombatSkill&&lockedEnemy&&distance<=kit.range){
+    pendingCombatSkill=false;moveTarget=null;playerVel.set(0,0,0);
+    void performWorldCombatAction('skill');return;
   }
   const wallTime=performance.now()/1000;
   if(TEST&&!activeCharacterId&&localCombatState&&localCombatState.health>0&&distance<=2&&wallTime>=nextLocalEnemyAttack){
     nextLocalEnemyAttack=wallTime+2;
-    localCombatState={...localCombatState,health:Math.max(0,localCombatState.health-8)};
+    const current = vitalsOf(state);
+    localCombatState={...localCombatState,health:Math.max(0,current.health-8),maxHealth:current.maxHealth,resource:current.resource};
     const vitals=vitalsOf(state);
     applyCombatResult({
       encounter:combatEncounter,
@@ -667,7 +673,7 @@ function tickWorldCombat(time:number) {
     });
     return;
   }
-  if(dead||!combatAuto||combatBusy)return;
+  if(dead||!lockedEnemy||!combatAuto||combatBusy)return;
   if(distance>kit.range)return;
   if(time<nextCombatAttack)return;
   nextCombatAttack=time+kit.interval;
@@ -693,7 +699,13 @@ async function fleeWorldCombat() {
   }catch(error){toast('No se pudo completar la acción',errorMessage(error),true);}
 }
 function useWorldCombatSkill() {
-  if(!combatEncounter||combatEncounter.status!=='active'||dead)return;
+  if (mode !== 'play' || dead || combatBusy) return;
+  if (performance.now() < skillReadyAt) { toast('Habilidad', 'La acción se está recuperando.', true); return; }
+  const kit = COMBAT_KITS[state.cls];
+  if (vitalsOf(state).resource < kit.skill.cost) { toast('Habilidad', 'No tienes recurso suficiente.', true); return; }
+  if (!kit.skill.healing && (!lockedEnemy || combatEncounter?.status !== 'active')) {
+    toast('Habilidad', 'Fija un enemigo visible con F.', true); return;
+  }
   if(state.cls!=='clerigo'&&combatTargetRoot){
     const range=COMBAT_KITS[state.cls].range;
     const distance=Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z);
@@ -705,6 +717,18 @@ function useWorldCombatSkill() {
   }
   pendingCombatSkill=false;
   void performWorldCombatAction('skill');
+}
+function releaseCombatTarget() {
+  lockedEnemy = false; combatAuto = false; combatApproach = false; pendingCombatSkill = false;
+  moveTarget = null; marker.visible = false;
+  $('#combat-auto').setAttribute('aria-pressed', 'false');
+}
+function lockCombatTarget(clicked = false) {
+  if (combatEncounter?.status !== 'active' || !combatTargetRoot || (!clicked && targetFrame.current()?.id !== 'enemy:shadowling')) {
+    toast('Combate', 'Mira a un enemigo visible para fijarlo con F.', true); return;
+  }
+  lockedEnemy = true; combatAuto = true; combatApproach = true; pendingCombatSkill = false; nextCombatAttack = 0;
+  $('#combat-auto').setAttribute('aria-pressed', 'true');
 }
 const restartClass = (el: HTMLElement, cls: string) => {
   el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
@@ -856,6 +880,7 @@ async function damagePlayer(source = 'Algo') {
 
 /** Muerte: cae al suelo, se apaga el color del mundo y aparece la pantalla de reaparición. */
 function die() {
+  releaseCombatTarget();
   playerInteractions.close();
   dead = true;
   closeDialog();
@@ -1027,6 +1052,12 @@ initActionBar({
     const slot = state.inventory.findIndex((s) => s?.id === item);
     if (slot < 0) toast('No te quedan', '', true); else void useInventoryItem(slot);
   },
+  skill: () => ({
+    id: skillAction(state.cls), icon: classIcon(state.cls, 'quick-skill'), tooltip: skillTooltip(state.cls),
+    cooldown: Math.max(0, (skillReadyAt - performance.now()) / 1000),
+    available: !dead && vitalsOf(state).resource >= COMBAT_KITS[state.cls].skill.cost,
+  }),
+  useSkill: useWorldCombatSkill,
 });
 /** Quita al instante los efectos de pantalla temporales (flotantes, destellos, viñetas, cartel de nivel). */
 function clearScreenEffects() {
@@ -1258,11 +1289,9 @@ function exitPlay() {
 // ---------------- Interfaz ----------------
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 $('#combat-auto').addEventListener('click',()=>{
-  if(combatEncounter?.status!=='active')return;
-  combatAuto=!combatAuto;pendingCombatSkill=false;nextCombatAttack=0;
-  $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
+  if (lockedEnemy && combatAuto) releaseCombatTarget();
+  else lockCombatTarget();
 });
-$('#combat-skill').addEventListener('click',useWorldCombatSkill);
 $('#combat-flee').addEventListener('click',()=>void fleeWorldCombat());
 $('#respawn').addEventListener('click', respawn);
 const RACE_ICONS: Record<Race, string> = { humano: '🛡️', elfo: '🌿', lagto: '🦎', pelso: '🐱' };
@@ -1364,7 +1393,7 @@ function refreshLanguageDependentUI() {
   renderBuffs(state, !foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests') setWindow(openWindow, false);
+  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests' || openWindow === 'skills') setWindow(openWindow, false);
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -1404,13 +1433,13 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
-type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests';
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
 function refreshOverlayHud() {
   document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || !!openWindow || optionsOpen);
-  document.body.classList.toggle('inventory-open', openWindow === 'inventory');
+  document.body.classList.toggle('inventory-open', openWindow === 'inventory' || openWindow === 'skills');
 }
 
 function setPlayerMenuOpen(open: boolean, restoreFocus = true) {
@@ -1455,10 +1484,11 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   keys.clear();
   if (!win) { vendor = null; return; }
   if (closeMenu) setPlayerMenuOpen(false, false);
-  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
   if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to));
+  else if (win === 'skills') renderSkills(body, state, assignSkillToActionBar);
   else if (win === 'quests') renderQuestJournal(body, state);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
@@ -2190,6 +2220,7 @@ async function loadWorldState() {
     if (!stillCurrent()) return false;
     setGrantedTitles(titles);
     await prepareMultiplayer();
+    skillReadyAt = performance.now() + Math.max(0, Number(data.combatNextSkill ?? 0) - Date.now() / 1000) * 1000;
     return stillCurrent();
   } catch (error) {
     if (!stillCurrent()) return false;
@@ -2261,6 +2292,9 @@ function stopMultiplayer() {
   worldConnection = null;
   const stopped = connection?.stop();
   remotePlayers.clear();
+  setCombatEncounter(null);
+  localCombatState = null;
+  skillReadyAt = 0;
   setMapPlayerCount(null);
   return stopped;
 }
@@ -2702,6 +2736,7 @@ let pendingCombatSkill=false;
 let localCombatState:CombatState|null=null;
 function buildShadowling(encounter:CombatEncounter) {
   const root=new THREE.Group();
+  root.name='combat-enemy';
   const body=new THREE.Mesh(
     new THREE.SphereGeometry(.72,20,16),
     new THREE.MeshStandardMaterial({color:'#302337',roughness:.8,emissive:'#21112d',emissiveIntensity:.5}),
@@ -2718,6 +2753,7 @@ function buildShadowling(encounter:CombatEncounter) {
     foot.scale.set(1,.45,1.2);foot.position.set(x,.18,.02);foot.castShadow=true;root.add(foot);
   }
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.82,.035,8,32),new THREE.MeshBasicMaterial({color:'#c694f6',transparent:true,opacity:.85}));
+  ring.name='combat-lock-ring';
   ring.rotation.x=-Math.PI/2;ring.position.y=.04;root.add(ring);
   root.position.set(encounter.x,city.groundY(encounter.x,encounter.z),encounter.z);
   castShadows(root);
@@ -2730,8 +2766,9 @@ function setCombatEncounter(value:unknown) {
     if(!combatTargetRoot)combatTargetRoot=buildShadowling(combatEncounter);
     combatTargetRoot.position.set(combatEncounter.x,city.groundY(combatEncounter.x,combatEncounter.z),combatEncounter.z);
     $('#combat-controls').hidden=false;
-    $('#combat-skill span').textContent=t(COMBAT_KITS[state.cls].skill.label);
     $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
+    const ring = combatTargetRoot.getObjectByName('combat-lock-ring');
+    if (ring) ring.visible = lockedEnemy;
   }else{
     if(combatTargetRoot){
       scene.remove(combatTargetRoot);
@@ -2741,20 +2778,21 @@ function setCombatEncounter(value:unknown) {
       });
       combatTargetRoot=null;
     }
-    combatAuto=false;pendingCombatSkill=false;
+    releaseCombatTarget();
     $('#combat-controls').hidden=true;
   }
 }
 function applyCombatResult(value:Record<string,unknown>) {
-  const before=state.health;
+  const before=vitalsOf(state).health;
   if(value.vitals) {
     const vitals=parsePublicVitals(value.vitals);
     state.health=vitals.health;state.resource=vitals.resource;state.overheal=vitals.overheal;
   }
   if(value.encounter!==undefined)setCombatEncounter(value.encounter);
+  if (typeof value.skillCooldown === 'number') skillReadyAt = performance.now() + Math.max(0, value.skillCooldown) * 1000;
   if(state.health===0&&combatEncounter?.status==='active')setCombatEncounter({...combatEncounter,status:'failed'});
   resetOverheal();updateHud();
-  if(state.health<before){char.hit();chatCombat(t('La criatura extraña te hiere.'));}
+  if(vitalsOf(state).health<before){char.hit();chatCombat(t('La criatura extraña te hiere.'));}
   if(state.health===0&&!dead)die();
   if(typeof value.damage==='number'&&value.damage>0){
     char.attack(value.damage>10);
@@ -2784,25 +2822,33 @@ async function beginIsbertoEncounter() {
       id:'shadowling',status:'active',health:100,maxHealth:100,
       x:LOCAL_COMBAT_SITE.x+3.5,z:LOCAL_COMBAT_SITE.z,enemyAttackAt:performance.now()/1000+2,
     });
-    combatAuto=true;nextCombatAttack=0;nextLocalEnemyAttack=performance.now()/1000+2;
+    releaseCombatTarget();nextCombatAttack=0;nextLocalEnemyAttack=performance.now()/1000+2;
     return true;
   }
   const stillCurrent=characterContext();
   const result=await startCombat(activeCharacterId);
   if(!stillCurrent())return false;
   applyCombatResult(result);
-  combatAuto=true;nextCombatAttack=0;
+  releaseCombatTarget();nextCombatAttack=0;
   return true;
 }
 async function performWorldCombatAction(action:'attack'|'skill') {
-  if(combatBusy||!combatEncounter||combatEncounter.status!=='active')return;
-  if(!activeCharacterId&&TEST&&localCombatState){
-    const distance=Math.hypot(combatTargetRoot!.position.x-holder.position.x,combatTargetRoot!.position.z-holder.position.z);
+  if(combatBusy)return;
+  const healing = action === 'skill' && state.cls === 'clerigo';
+  if (!healing && (!lockedEnemy || !combatEncounter || combatEncounter.status !== 'active')) return;
+  if(!activeCharacterId&&TEST){
+    const current = vitalsOf(state);
+    localCombatState = {
+      health:current.health,maxHealth:current.maxHealth,resource:current.resource,
+      enemyHealth:combatEncounter?.health ?? 0,nextAttack:localCombatState?.nextAttack ?? 0,nextSkill:localCombatState?.nextSkill ?? 0,
+    };
+    const distance=combatTargetRoot ? Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z) : 0;
     try{
       const result=resolveCombat(state.cls,localCombatState,action,performance.now()/1000,distance);
       localCombatState=result.state;
+      if (action === 'skill') skillReadyAt = performance.now() + COMBAT_KITS[state.cls].skill.cooldown * 1000;
       applyCombatResult({
-        encounter:{...combatEncounter,health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active'},
+        ...(combatEncounter ? {encounter:{...combatEncounter,health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active'}} : {}),
         vitals:{health:result.state.health,maxHealth:result.state.maxHealth,overheal:0,
           resource:result.state.resource,maxResource:vitalsOf(state).maxResource,resourceKind:vitalsOf(state).resourceKind},
         damage:result.damage.reduce((sum,hit)=>sum+hit,0),healing:result.healing,
@@ -2815,12 +2861,13 @@ async function performWorldCombatAction(action:'attack'|'skill') {
   combatBusy=true;
   const stillCurrent=characterContext();
   try{
-    const result=await combatAction(characterId,action);
+    const result=await combatAction(characterId,action === 'skill' ? COMBAT_KITS[state.cls].skill.id : 'attack');
     if(!stillCurrent())return;
     applyCombatResult(result);
+    if (action === 'skill') skillReadyAt = performance.now() + COMBAT_KITS[state.cls].skill.cooldown * 1000;
   }catch(error){
     const message=errorMessage(error);
-    if(!/recuperando|fuera de alcance/i.test(message))toast('No se pudo completar la acción',message,true);
+    if(action === 'skill' || !/recuperando|fuera de alcance/i.test(message))toast('No se pudo completar la acción',message,true);
   }finally{combatBusy=false;}
 }
 // Los NPC comentan algo de vez en cuando si estás cerca (canal NPC del chat).
@@ -2862,7 +2909,7 @@ function updateTargetFrame() {
     vitals: { health: 100, maxHealth: 100, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' },
     identity: { kind: 'npc', type: 'resident', title: 'Ayudante de bienvenida' },
   });
-  targetFrame.update(targets, true, holder.position);
+  targetFrame.update(targets, true, holder.position, lockedEnemy ? 'enemy:shadowling' : null);
 }
 holder.position.copy(city.spawn);
 holder.rotation.y = city.spawnYaw - 0.3;

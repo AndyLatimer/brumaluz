@@ -53,6 +53,7 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
   let nextCheck = 0;
   let signature = '';
   let selectedId: string | null = null;
+  let current: TargetDetails | null = null;
   window.addEventListener('pointermove', (event) => {
     overCanvas = event.target === canvas && event.pointerType !== 'touch';
     if (!overCanvas) return;
@@ -133,15 +134,19 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
     element.setAttribute('aria-valuetext', `${label} ${text}`);
   }
   return {
-    update(targets: TargetDetails[], enabled: boolean, origin: THREE.Vector3) {
-      if (!enabled) { panel.hidden = true; nextCheck = 0; selectedId = null; return; }
+    current: () => panel.hidden ? null : current,
+    update(targets: TargetDetails[], enabled: boolean, origin: THREE.Vector3, lockedId: string | null = null) {
+      if (!enabled) { panel.hidden = true; nextCheck = 0; selectedId = null; current = null; return; }
       const now = performance.now();
       if (now < nextCheck) return;
       nextCheck = now + 100;
       const candidates = targets.filter((target) => target.root.position.distanceToSquared(origin) <= TARGET_RANGE * TARGET_RANGE);
       camera.updateMatrixWorld();
-      const target = pick(candidates, origin);
+      const target = targets.find(candidate => candidate.id === lockedId) ?? pick(candidates, origin);
+      current = target;
       selectedId = target?.id ?? null;
+      panel.classList.toggle('locked', !!target && target.id === lockedId);
+      panel.setAttribute('data-locked', String(!!target && target.id === lockedId));
       panel.hidden = !target;
       if (!target) return;
       const key = JSON.stringify([target.id, target.name, target.level, target.identity, target.vitals, t('Nivel {n}')]);

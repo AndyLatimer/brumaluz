@@ -2,12 +2,14 @@
 
 El canon se mantiene en [LORE.md](./LORE.md). El guion, el aspecto de Gnomi y la
 posición del distintivo de esta versión son una presentación de desarrollo
-para probar los sistemas, no una bienvenida aprobada para publicación.
+para probar los sistemas. Su activación pública se autorizó el 19 de octubre
+de 2026 junto al combate y las habilidades iniciales.
 
 ## Activación y personajes anteriores
 
 - `server_config.welcome_enabled` se crea como `false`; reaplicar el SQL
-  conserva su valor existente.
+  conserva su valor existente. La activación pública autorizada pone esta
+  bandera y `combat_enabled` en `true`.
 - Mientras siga desactivado, crear personajes no les añade la bienvenida y
   el RPC `welcome_action` rechaza acciones. No hay un bypass de administrador
   que permita modificar el progreso de personajes reales.

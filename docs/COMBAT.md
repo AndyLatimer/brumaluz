@@ -8,9 +8,10 @@ Se han implementado el catálogo de kits iniciales, su entrega desde
 la ropa de novato. No se entrega a personajes antiguos al entrar.
 
 El SQL no se aplica automáticamente. El 19 de octubre de 2026 se aplicó a
-Brumaluz con autorización expresa, después de superar las 25 comprobaciones
-de servidor con rollback. La bienvenida y el combate siguen desactivados
-mediante sus banderas; no se migraron personajes antiguos.
+Brumaluz con autorización expresa. El mismo día se autorizó activar
+`welcome_enabled` y `combat_enabled` tras validar el sistema de habilidades.
+Las banderas se habilitan explícitamente en la configuración desplegada;
+reaplicar el SQL conserva su valor. No se migran personajes antiguos.
 
 `src/data/combat.ts` conserva el balance y el resolver puro del banco local.
 El SQL añade RPC de inicio/ataque/retirada y estado personal del rival,
@@ -18,14 +19,44 @@ validando presencia, posición, alcance, recargas y recursos en servidor.
 La conversación de Isberto inicia un encuentro personal en el mundo 3D, con
 objetivo seleccionable, aproximación, ataque automático, habilidad y retirada.
 Isberto permanece oculto e ininteractuable hasta completar la bienvenida de
-Gnomi. `combat_start` y `combat_action` comprueban ese estado en el servidor;
+Gnomi. `combat_start` y las acciones ofensivas comprueban ese estado en el servidor;
 la ausencia de progreso o una fase incompleta se rechaza con `WELCOME_REQUIRED`.
+Curación es personal y no requiere misión ni encuentro activo.
 El cliente de prueba simula el encuentro localmente; el mundo conectado usa
 los RPC autoritativos y los latidos para el daño del enemigo. Una derrota del
 jugador cierra el encuentro sin presentarla como victoria sobre el enemigo.
 La bandera `combat_enabled` permanece desactivada por defecto. No hay todavía
 botín, XP de combate ni avance de misión. Nunca se debe enviar al servidor el
 resultado calculado por el prototipo como daño o progreso autoritativos.
+
+## Habilidades y objetivo fijado
+
+- El menú de personaje incluye **Habilidades** (`K`), con la habilidad inicial
+  aprendida de cada clase, su efecto, coste, alcance y recarga. No hay habilidades
+  futuras ficticias ni puntos de aprendizaje provisionales.
+- La barra rápida acepta objetos y habilidades; estas usan identificadores
+  `skill:<id>` sin alterar el formato guardado de los objetos. La inicial entra
+  en el primer hueco libre de las dos páginas, sin sustituir consumibles. Si se
+  retira manualmente, no vuelve a añadirse en cada reconexión.
+- Se puede arrastrar desde Habilidades a un hueco concreto, reorganizar los
+  huecos, retirarlos con clic derecho o usar «Añadir a la barra rápida». La
+  disposición sigue siendo privada por personaje y se conserva en el navegador.
+- Las teclas `1–0` y el clic ejecutan habilidades desde la barra; `Z` cambia de
+  página. La barra muestra la cuenta atrás y el estado sin recurso suficiente.
+  `R` ya no tiene un atajo especial para la habilidad.
+- `F` fija el enemigo visible y activa ataque automático y aproximación. También
+  puede seleccionarse pulsando su modelo. El encuentro no ataca automáticamente
+  al terminar la conversación con Isberto.
+- El marco y el anillo identifican el objetivo fijado, que se conserva al girar
+  la cámara y moverse. El movimiento manual cancela la aproximación, no la
+  selección; los ataques continúan si el enemigo está al alcance. No se fuerza
+  la orientación de la cámara. `Esc` libera el objetivo sin terminar el encuentro;
+  el botón «Retirarse» sí termina la pelea. Muerte, salida, derrota o alejarse
+  más de 35 m limpian el bloqueo.
+- `combat_action` acepta identificadores de habilidades y valida que correspondan
+  a la clase, además de presencia, vida, recurso, recarga y alcance. El argumento
+  antiguo `skill` sigue aceptándose para clientes abiertos antes del despliegue.
+  La recarga se guarda en servidor y se recupera al reconectar.
 
 ## Kits y balance provisional
 
@@ -81,10 +112,9 @@ de ballesta usa provisionalmente `Interact`: el pack no incluye disparo.
 En el mundo, completa la bienvenida de Gnomi y acompáñale hasta Isberto para
 probar el encuentro de la sombra. La escena aislada
 `?test&welcome&graphics=compatible` permite recorrer esa secuencia sin cuenta
-ni persistencia. Los controles son `F` para activar o pausar el ataque automático,
-`R` para la habilidad de clase y `Esc` para retirarse. El modelo de la criatura
-es provisional. No habilitar `combat_enabled` ni aplicar el SQL al mundo
-configurado sin autorización expresa.
+ni persistencia. Los controles son `F` para fijar y atacar, `1–0` para las
+habilidades asignadas, `K` para Habilidades y `Esc` para soltar objetivo.
+El modelo de la criatura es provisional.
 
 ### Regeneración gradual del prototipo
 

@@ -279,16 +279,17 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         const joined=await rpc('world_join',[ca,sa]);
         assert.equal(joined.vitals.health,50);
         await client.query('reset role');
-        await client.query("update public.characters set data=data || jsonb_build_object('vitals_at',extract(epoch from clock_timestamp())-2.3) where id=$1",[ca]);
         await client.query("update public.world_players set saved_at=clock_timestamp()-interval '6 seconds' where character_id=$1",[ca]);
+        const rewind=(await client.query("update public.characters set data=data || jsonb_build_object('vitals_at',extract(epoch from clock_timestamp())-2.3) where id=$1 returning data->>'vitals_at' stamp",[ca])).rows[0].stamp;
         await user(a);
         const synced=await rpc('world_sync',[ca,sa,motion(0)]);
-        assert.equal(synced.vitals.health,52);
-        assert.equal(synced.vitals.resource,7);
+        assert.ok(synced.vitals.health>=52&&synced.vitals.health<55);
+        assert.ok(synced.vitals.resource>=7&&synced.vitals.resource<16);
         await client.query('reset role');
         const stored=(await client.query('select data from public.characters where id=$1',[ca])).rows[0].data;
         assert.ok(stored.health_regen>0&&stored.health_regen<1,'Fractional health is retained server-side');
         assert.ok(stored.resource_regen>0&&stored.resource_regen<1,'Fractional resource is retained server-side');
+        assert.ok(Math.abs((stored.health-50+stored.health_regen)-(Number(stored.vitals_at)-Number(rewind)))<0.01,'Health regenerates at exactly 1% per second including DB latency');
         assert.ok(Math.abs(
           (stored.health-50+stored.health_regen)*3.2-(stored.resource+stored.resource_regen)
         )<0.0001,'Health and stamina retain fractions at their exact server-side rates');
@@ -346,10 +347,12 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         assert.equal(attack.encounter.health,90);
         assert.equal(attack.vitals.resource,80);
         await rejected(()=>rpc('combat_action',[ca,'attack']),/COMBAT_COOLDOWN/);
-        const skill=await rpc('combat_action',[ca,'skill']);
+        await rejected(()=>rpc('combat_action',[ca,'healing']),/COMBAT_INVALID_ACTION/);
+        const skill=await rpc('combat_action',[ca,'heavy_strike']);
         assert.equal(skill.damage,18);
         assert.equal(skill.encounter.health,72);
         assert.equal(skill.vitals.resource,65);
+        assert.ok(skill.skillCooldown>0&&skill.skillCooldown<=6);
         await rejected(()=>rpc('combat_action',[ca,'kill']),/COMBAT_INVALID_ACTION/);
 
         await client.query('reset role');
@@ -372,6 +375,39 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       } finally {
         await client.query('rollback to savepoint authoritative_combat');
         await client.query('release savepoint authoritative_combat');
+      }
+    });
+    await t.test('named starter abilities validate class, resources, cooldown and self-healing without an enemy', async () => {
+      await client.query('savepoint named_skills');
+      try {
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key='combat_enabled'");
+        for (const [cls,skill,cost,damage,healing] of [
+          ['guerrero','heavy_strike',15,18,0],['mago','arcane_discharge',20,18,0],
+          ['picaro','double_slash',15,16,0],['clerigo','healing',12,0,32],
+          ['explorador','precise_shot',15,19,0],
+        ]) {
+          await client.query('reset role');
+          await client.query('update public.characters set data=$1 where id=$2',[{
+            name:'Alric',race:'humano',cls,level:1,health:60,resource:50,location:'brumaluz',
+            attributePoints:{fuerza:2},position:{x:2,z:-62.35,yaw:0},
+            ...(cls==='clerigo'?{}:{welcome:{origin:0,stage:'completed'}}),
+          },ca]);
+          await user(a);
+          await rpc('world_join',[ca,sa]);
+          if(cls!=='clerigo')await rpc('combat_start',[ca]);
+          await rejected(()=>rpc('combat_action',[ca,cls==='clerigo'?'heavy_strike':'healing']),/COMBAT_INVALID_ACTION/);
+          const result=await rpc('combat_action',[ca,skill]);
+          assert.equal(result.damage,damage);
+          assert.equal(result.healing,healing);
+          assert.equal(result.vitals.resource,50-cost);
+          assert.ok(result.skillCooldown>0);
+          if(cls==='clerigo')assert.equal(result.vitals.health,92);
+          await rejected(()=>rpc('combat_action',[ca,skill]),/COMBAT_COOLDOWN/);
+        }
+      } finally {
+        await client.query('rollback to savepoint named_skills');
+        await client.query('release savepoint named_skills');
       }
     });
     await t.test('resource potions trade, restore the correct resource and reject without consuming', async () => {

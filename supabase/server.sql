@@ -1065,6 +1065,7 @@ declare
   w public.world_players;
   encounter jsonb;
   cls text;
+  skill_id text;
   skill boolean;
   healing boolean;
   stamp numeric := extract(epoch from clock_timestamp());
@@ -1086,20 +1087,22 @@ begin
   c:=public.game_lock_character(p_character_id);
   encounter:=c.data->'combatEncounter';
   cls:=c.data->>'cls';
-  skill:=p_action='skill';
+  skill_id:=case cls when 'guerrero' then 'heavy_strike' when 'mago' then 'arcane_discharge'
+    when 'picaro' then 'double_slash' when 'clerigo' then 'healing' when 'explorador' then 'precise_shot' end;
+  skill:=p_action='skill' or p_action=skill_id;
   healing:=cls='clerigo' and skill;
-  if p_action is null or p_action not in ('attack','skill') then raise exception 'COMBAT_INVALID_ACTION'; end if;
+  if p_action is null or (p_action not in ('attack','skill') and p_action is distinct from skill_id) then raise exception 'COMBAT_INVALID_ACTION'; end if;
   if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false) then
     raise exception 'COMBAT_UNAVAILABLE';
   end if;
-  if c.data->'welcome'->>'stage' is distinct from 'completed' then
+  if not healing and c.data->'welcome'->>'stage' is distinct from 'completed' then
     raise exception 'WELCOME_REQUIRED';
   end if;
   select * into w from public.world_players where user_id=uid and character_id=c.id
     and seen_at>now()-interval '15 seconds' for update;
   if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
-  if encounter->>'status' is distinct from 'active' or encounter->>'id' is distinct from 'shadowling' then raise exception 'COMBAT_NO_TARGET'; end if;
+  if not healing and (encounter->>'status' is distinct from 'active' or encounter->>'id' is distinct from 'shadowling') then raise exception 'COMBAT_NO_TARGET'; end if;
 
   attack_range:=case cls when 'guerrero' then 1.8 when 'mago' then 6 when 'picaro' then 1.6
     when 'clerigo' then 6 when 'explorador' then 8 else 0 end;
@@ -1162,7 +1165,8 @@ begin
   end if;
   return jsonb_build_object(
     'encounter',c.data->'combatEncounter','vitals',public.game_public_vitals(c.data),
-    'damage',total_damage,'healing',healed
+    'damage',total_damage,'healing',healed,
+    'skillCooldown',greatest(0,coalesce((c.data->>'combatNextSkill')::numeric,0)-stamp)
   );
 end;
 $$;

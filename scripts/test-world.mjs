@@ -247,7 +247,7 @@ async function openPlayer(world, account, compatible = true, clockTime) {
         return fulfill({encounter:player.encounter??null,vitals:player.vitals});
       }
       if(player.encounter?.status!=='active')return fulfill({message:'COMBAT_NO_TARGET'},400);
-      const skill=args.p_action==='skill',damage=skill?18:10;
+      const skill=args.p_action==='skill'||args.p_action==='heavy_strike',damage=skill?18:10;
       if(skill){
         if(player.vitals.resource<15)return fulfill({message:'COMBAT_NOT_ENOUGH_RESOURCE'},400);
         player.vitals={...player.vitals,resource:player.vitals.resource-15};
@@ -1707,8 +1707,11 @@ test('Isberto starts the local real-time shadowling encounter with working comba
       const site=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
       if(!site)throw new Error('Isberto is missing from the city');
       window.brumaluz.move(site.position.x+5,site.position.z);
+      window.brumaluz.view(-Math.PI/2,.55,12);
     });
-    await page.locator('#combat-skill').click();
+    await page.waitForFunction(()=>document.querySelector('#target-frame')?.dataset.targetId==='enemy:shadowling');
+    await page.keyboard.press('KeyF');
+    await page.keyboard.press('Digit1');
     await page.locator('.chat-log').getByText('Golpeas a la criatura extraña por 18.',{exact:true}).waitFor();
     assert.equal(await page.locator('#combat-controls').isVisible(),true);
     await page.locator('#combat-flee').click();
@@ -1731,26 +1734,121 @@ test('online Isberto combat uses mocked RPC state for start, enemy damage, skill
     await player.page.locator('.dialog-choice').first().click();
     await player.page.waitForFunction(()=>!document.querySelector('#combat-controls').hidden);
     assert.equal(world.combatCalls.some(call=>call.fn==='combat_start'),true,'The encounter starts through the online RPC');
-    await player.page.locator('#combat-auto').click();
-    await player.page.waitForFunction(()=>document.querySelector('#combat-auto').getAttribute('aria-pressed')==='false');
+    assert.equal(await player.page.locator('#combat-auto').getAttribute('aria-pressed'),'false');
     await player.page.evaluate(()=>{
       const site=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
       if(!site)throw new Error('Isberto is missing from the city');
       window.brumaluz.move(site.position.x+5,site.position.z);
+      window.brumaluz.view(-Math.PI/2,.55,12);
     });
+
     await player.page.waitForFunction(()=>document.querySelector('#hud-health-text').textContent==='92 / 100',{timeout:15000});
     assert.equal(world.players.get(account.user.id).vitals.health,92,'The world sync snapshot applies the enemy hit to the local HUD');
-    await player.page.locator('#combat-skill').click();
+    await player.page.waitForFunction(()=>document.querySelector('#target-frame')?.dataset.targetId==='enemy:shadowling');
+    await player.page.keyboard.press('KeyF');
+    await player.page.keyboard.press('Digit1');
     await player.page.locator('.chat-log').getByText('Golpeas a la criatura extraña por 18.',{exact:true}).waitFor();
-    assert.equal(world.combatCalls.some(call=>call.fn==='combat_action'&&call.action==='skill'),true,'The class skill uses the online action RPC');
+    assert.equal(world.combatCalls.some(call=>call.fn==='combat_action'&&call.action==='heavy_strike'),true,'The named class skill uses the online action RPC');
     assert.equal(world.players.get(account.user.id).vitals.resource,65,'The server response updates the player resource');
     assert.equal(await player.page.locator('#hud-resource-text').textContent(),'65 / 80');
+    await player.page.waitForFunction(()=>document.querySelector('#target-frame')?.dataset.locked==='true');
+    await player.page.evaluate(()=>window.brumaluz.view(Math.PI/2,.55,12));
+    await player.page.waitForTimeout(400);
+    assert.equal(await player.page.locator('#target-frame').getAttribute('data-target-id'),'enemy:shadowling','Locked enemy remains selected when the camera turns away');
+    await player.page.keyboard.down('KeyW');
+    await player.page.waitForTimeout(150);
+    await player.page.keyboard.up('KeyW');
+    assert.equal(await player.page.locator('#target-frame').getAttribute('data-locked'),'true','Manual movement does not release the target lock');
+    assert.equal(await player.page.locator('#combat-auto').getAttribute('aria-pressed'),'true','Manual movement preserves automatic attacks while in range');
+    await player.page.keyboard.press('Escape');
+    await player.page.waitForFunction(()=>document.querySelector('#target-frame')?.dataset.locked==='false');
+    assert.equal(world.players.get(account.user.id).encounter.status,'active','Escape releases the target without pretending to retreat from the encounter');
+    assert.equal(await player.page.locator('#game-menu-panel').isVisible(),false);
     await player.page.locator('#combat-flee').click();
     await player.page.waitForFunction(()=>document.querySelector('#combat-controls').hidden);
     assert.equal(world.combatCalls.some(call=>call.fn==='combat_stop'),true,'Retreat uses the online RPC');
     assert.equal(world.players.get(account.user.id).encounter.status,'fled');
     assert.deepEqual(player.errors,[]);
   }finally{await player.context.close();}
+});
+
+test('skillbook lists each class starter skill, supports responsive quickbar drag, persistence and self-healing', {timeout:120000}, async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  try {
+    for(const [cls,id,label] of [
+      ['guerrero','heavy_strike','Golpe contundente'],['mago','arcane_discharge','Descarga arcana'],
+      ['picaro','double_slash','Corte doble'],['clerigo','healing','Curación'],
+      ['explorador','precise_shot','Disparo preciso'],
+    ]) {
+      await page.goto(`${url}/?test&graphics=compatible`);
+      await page.waitForFunction(()=>!!window.brumaluz);
+      await page.evaluate(cls=>{
+        localStorage.removeItem('brumaluz-actionbar:test');
+        window.brumaluz.set({cls,health:60,resource:50});
+        window.brumaluz.play();
+      },cls);
+      await page.keyboard.press('KeyK');
+      await page.locator('.skills-book').waitFor();
+      assert.equal(await page.locator('.skill-card').count(),1);
+      assert.equal(await page.locator('.skill-card h4').textContent(),label);
+      await page.locator('[data-language="en"]').first().dispatchEvent('click');
+      assert.match(await page.locator('.skill-card p').textContent(),/Cost:.*Cooldown:/);
+      await page.locator('[data-language="es"]').first().dispatchEvent('click');
+      for(const width of [320,390,1280]) {
+        await page.setViewportSize({width,height:844});
+        assert.ok(await page.locator('.skills-book').evaluate(el=>el.scrollWidth<=el.clientWidth),'Skillbook fits narrow viewports');
+      }
+      const card=page.locator('.skill-card');
+      await card.dragTo(page.locator('.ab-slot').nth(4));
+      assert.equal(await page.locator('.ab-slot').nth(4).getAttribute('data-skill-id'),id);
+      await page.keyboard.press('Escape');
+      if(cls==='clerigo') {
+        await page.keyboard.press('Digit5');
+        await page.waitForFunction(()=>document.querySelector('#hud-health-text').textContent==='92 / 100');
+        assert.ok(Number(await page.locator(`.ab-slot[data-skill-id="${id}"] i`).textContent())>0,'Skill cooldown is shown on quickbar');
+        await page.keyboard.press('Digit5');
+        assert.equal(await page.locator('#hud-health-text').textContent(),'92 / 100','Cooldown prevents repeated healing');
+      } else {
+        await page.keyboard.press('Digit5');
+        await page.locator('#toast').filter({hasText:'Fija un enemigo visible con F.'}).waitFor();
+      }
+      await page.locator(`.ab-slot[data-skill-id="${id}"]`).click({button:'right'});
+      await page.keyboard.press('KeyK');
+      await page.getByRole('button',{name:'Añadir a la barra rápida'}).click();
+      await page.locator('.skill-status').filter({hasText:'Habilidad disponible'}).waitFor();
+      const layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('brumaluz-actionbar:test')));
+      assert.equal(layout.flat().filter(value=>value===`skill:${id}`).length,1,'Known skill is assigned without duplicates');
+      await page.keyboard.press('Escape');
+    }
+    assert.deepEqual(errors,[]);
+  } finally {await context.close();}
+});
+
+test('starter skill fills a free slot without replacing items and respects manual removal after reconnect', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('Alric','humano',100);
+  account.character.data.inventory=[{id:'pan_duro',count:2}];
+  const player=await openPlayer(world,account);
+  try {
+    await player.page.evaluate(id=>{
+      localStorage.setItem(`brumaluz-actionbar:${id}`,JSON.stringify([['pan_duro',null]]));
+    },account.character.id);
+    await player.enter();
+    assert.equal(await player.page.locator('.ab-slot').nth(0).getAttribute('data-item-id'),'pan_duro');
+    assert.equal(await player.page.locator('.ab-slot').nth(1).getAttribute('data-skill-id'),'heavy_strike');
+    await player.page.locator('.ab-slot[data-skill-id]').click({button:'right'});
+    await leave(player.page);
+    await player.page.reload(); await player.page.waitForFunction(()=>!!window.brumaluz);
+    await player.enter();
+    assert.equal(await player.page.locator('.ab-slot[data-skill-id]').count(),0,'Removed skill stays removed on reconnect');
+    assert.equal(await player.page.locator('.ab-slot').nth(0).getAttribute('data-item-id'),'pan_duro');
+    await player.page.keyboard.press('KeyK');
+    await player.page.getByRole('button',{name:'Añadir a la barra rápida'}).click();
+    assert.equal(await player.page.locator('.ab-slot').nth(1).getAttribute('data-skill-id'),'heavy_strike');
+    await player.page.keyboard.press('Escape');
+    assert.deepEqual(player.errors,[]);
+  } finally {await player.context.close();}
 });
 
 test('friend requests notify outside Social, mark both menu levels and announce acceptance; Group offers invitations', { timeout: 120000 }, async () => {

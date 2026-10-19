@@ -1,36 +1,37 @@
 import type { ClassId } from './data';
 import { emptyEquipment, type Equipment } from './inventory';
 
+export type SkillId = 'heavy_strike' | 'arcane_discharge' | 'double_slash' | 'healing' | 'precise_shot';
 export interface CombatKit {
   weapon: string;
   offhand?: string;
   range: number;
   interval: number;
   damage: number;
-  skill: { label: string; cost: number; cooldown: number; hits: number; power: number; healing?: boolean };
+  skill: { id: SkillId; label: string; cost: number; cooldown: number; hits: number; power: number; healing?: boolean };
 }
 
 /** Initial balance for the isolated combat workbench; not a client damage authority. */
 export const COMBAT_KITS: Record<ClassId, CombatKit> = {
   guerrero: {
     weapon: 'espada_inicial', offhand: 'escudo_inicial', range: 1.8, interval: 1.5, damage: 10,
-    skill: { label: 'Golpe contundente', cost: 15, cooldown: 6, hits: 1, power: 1.8 },
+    skill: { id: 'heavy_strike', label: 'Golpe contundente', cost: 15, cooldown: 6, hits: 1, power: 1.8 },
   },
   mago: {
     weapon: 'baston_inicial', range: 6, interval: 1.8, damage: 10,
-    skill: { label: 'Descarga arcana', cost: 20, cooldown: 7, hits: 1, power: 1.8 },
+    skill: { id: 'arcane_discharge', label: 'Descarga arcana', cost: 20, cooldown: 7, hits: 1, power: 1.8 },
   },
   picaro: {
     weapon: 'daga_inicial', offhand: 'daga_secundaria_inicial', range: 1.6, interval: .9, damage: 8,
-    skill: { label: 'Corte doble', cost: 15, cooldown: 4.5, hits: 2, power: 1 },
+    skill: { id: 'double_slash', label: 'Corte doble', cost: 15, cooldown: 4.5, hits: 2, power: 1 },
   },
   clerigo: {
     weapon: 'varita_inicial', offhand: 'libro_inicial', range: 6, interval: 1.8, damage: 11,
-    skill: { label: 'Curación', cost: 12, cooldown: 6, hits: 1, power: 32/11, healing: true },
+    skill: { id: 'healing', label: 'Curación', cost: 12, cooldown: 6, hits: 1, power: 32/11, healing: true },
   },
   explorador: {
     weapon: 'ballesta_inicial', range: 8, interval: 1.7, damage: 10,
-    skill: { label: 'Disparo preciso', cost: 15, cooldown: 6, hits: 1, power: 1.9 },
+    skill: { id: 'precise_shot', label: 'Disparo preciso', cost: 15, cooldown: 6, hits: 1, power: 1.9 },
   },
 };
 
