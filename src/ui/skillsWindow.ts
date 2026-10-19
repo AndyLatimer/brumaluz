@@ -1,5 +1,5 @@
 import { classLabel, type CharData } from '../data/data';
-import { basicAttackDamage, COMBAT_KITS, MAX_SKILL_RANK, skillRank, skillRankLevel, unspentSkillPoints, type SkillId } from '../data/combat';
+import { COMBAT_KITS, MAX_SKILL_RANK, skillRank, skillRankLevel, unspentSkillPoints, type SkillId } from '../data/combat';
 import { classIcon } from './classIcons';
 import { skillIcon } from './skillIcons';
 import { setSkillTooltip, skillEffect, skillStats, SKILL_DESCRIPTIONS } from './skillTooltip';
@@ -65,8 +65,15 @@ export function renderSkills(
   art.draggable = true; art.tabIndex = 0; setSkillTooltip(art, data.cls, rank);
   art.addEventListener('dragstart', drag);
   const name = element('div', '');
+  const improve = element('button', 'skill-upgrade skill-upgrade-inline', '+');
+  improve.type = 'button';
+  improve.setAttribute('aria-label', t('Mejorar habilidad'));
+  improve.title = t('Mejorar habilidad');
+  improve.disabled = rank >= MAX_SKILL_RANK || points < 1 || data.level < skillRankLevel(rank + 1);
+  const rankMeta = element('div', 'skill-rank-meta');
+  rankMeta.append(element('span', 'skill-rank-label', t('Rango {rank} / {max}', { rank, max: MAX_SKILL_RANK })), improve);
   name.append(element('small', 'skills-eyebrow', t('Habilidad activa')), element('h4', '', t(skill.label)),
-    element('span', 'skill-rank-label', t('Rango {rank} / {max}', { rank, max: MAX_SKILL_RANK })));
+    rankMeta);
   hero.append(art, name);
   const ranks = element('div', 'skill-rank-track');
   ranks.setAttribute('aria-label', t('Rango {rank} / {max}', { rank, max: MAX_SKILL_RANK }));
@@ -88,9 +95,6 @@ export function renderSkills(
   const actions = element('div', 'skill-actions');
   const add = element('button', 'btn ghost', t('Añadir a la barra rápida'));
   add.type = 'button';
-  const improve = element('button', 'btn skill-upgrade', t('Mejorar habilidad'));
-  improve.type = 'button';
-  improve.disabled = rank >= MAX_SKILL_RANK || points < 1 || data.level < skillRankLevel(rank + 1);
   const reason = element('p', 'skill-upgrade-reason', rank >= MAX_SKILL_RANK ? t('Rango máximo alcanzado.')
     : points < 1 ? t('Sube de nivel para ganar puntos de habilidad.') : t('Cada mejora cuesta 1 punto. Los puntos no gastados se conservan.'));
   const status = element('p', 'skill-status');
@@ -122,14 +126,9 @@ export function renderSkills(
       status.textContent = t('No se ha guardado la mejora. Puedes volver a intentarlo.');
     }
   };
-  actions.append(add, improve);
-  detail.append(hero, ranks, element('p', 'skill-description', t(SKILL_DESCRIPTIONS[data.cls])), effect, stats, compare, actions, reason, confirmation, status);
+  actions.append(add);
+  detail.append(hero, ranks, confirmation, element('p', 'skill-description', t(SKILL_DESCRIPTIONS[data.cls])), effect, stats, compare, actions, reason, status);
   layout.append(catalog, detail);
-  const basic = element('footer', 'skills-basic');
-  basic.append(element('strong', '', t('Ataque normal')),
-    element('span', '', t('{damage} de daño · no consume puntos', { damage: basicAttackDamage(data.cls, data.level) })),
-    element('small', '', t('F fija un enemigo y activa el ataque automático. Su daño crece con tu nivel.')),
-    element('small', '', t('Arrastra a la barra rápida · Usa con 1–0')));
-  root.append(header, progress, layout, basic);
+  root.append(header, progress, layout);
   container.append(root);
 }
