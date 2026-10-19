@@ -125,7 +125,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
   function display(completed: boolean) {
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === Number(completed))));
     content.replaceChildren();
-    if (data.shadowQuest && (data.shadowQuest === 'completed') === completed) {
+    if (data.shadowQuest && (data.shadowQuest === 'returned') === completed) {
       const shadow = document.createElement('article'); shadow.className = 'quest-entry shadow-quest';
       const header = document.createElement('header');
       const title = document.createElement('h3'); title.textContent = t(SHADOW_TITLE);
@@ -178,7 +178,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
     const button = document.createElement('button'); button.type = 'button'; button.textContent = t(label);
     button.onclick = () => display(i === 1); tabs.append(button); buttons.push(button);
   });
-  root.append(tabs, content); container.append(root); display(data.shadowQuest ? data.shadowQuest === 'completed' : data.welcome?.stage === 'completed');
+  root.append(tabs, content); container.append(root); display(data.shadowQuest ? data.shadowQuest === 'returned' : data.welcome?.stage === 'completed');
 }
 
 export function createQuestTracker(open: () => void) {
@@ -214,7 +214,7 @@ export function createQuestTracker(open: () => void) {
   let signature = '';
   return {
     update(data: CharData, visible: boolean) {
-      const shadow = data.welcome?.stage === 'completed' && data.shadowQuest !== 'completed';
+      const shadow = data.welcome?.stage === 'completed' && data.shadowQuest !== 'returned';
       root.hidden = !visible || !data.welcome || (data.welcome.stage === 'completed' && !shadow);
       if (root.hidden || !data.welcome) return;
       const key = `${JSON.stringify(data.welcome)}:${data.shadowQuest}:${t('Diario')}`;
@@ -224,12 +224,13 @@ export function createQuestTracker(open: () => void) {
       heading.textContent = t('Misiones');
       journal.setAttribute('aria-label', t('Abrir diario'));
       refreshToggle();
-      label.textContent = shadow ? 'Isberto' : t('Bienvenida · Obligatoria');
+      label.textContent = shadow ? data.shadowQuest === 'returning' ? 'Gnomi' : 'Isberto' : t('Bienvenida · Obligatoria');
       title.textContent = t(shadow ? SHADOW_TITLE : WELCOME_TITLE);
       objective.textContent = t(shadow ? shadowObjective(data.shadowQuest) : welcomeObjective(data.welcome));
-      const step = shadow ? data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome.stage === 'found' ? 2 : data.welcome.stage === 'active' ? 1 : 0;
-      progress.textContent = t('Paso {current} de {total}', { current: step + 1, total: 3 });
-      progress.style.setProperty('--quest-progress', `${step / 2 * 100}%`);
+      const step = shadow ? data.shadowQuest === 'returning' ? 3 : data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome.stage === 'found' ? 2 : data.welcome.stage === 'active' ? 1 : 0;
+      const total = shadow ? 4 : 3;
+      progress.textContent = t('Paso {current} de {total}', { current: step + 1, total });
+      progress.style.setProperty('--quest-progress', `${step / (total - 1) * 100}%`);
       button.setAttribute('aria-label', `${t('Abrir diario')}: ${t(shadow ? SHADOW_TITLE : WELCOME_TITLE)}`);
     },
   };

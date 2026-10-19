@@ -1096,7 +1096,8 @@ begin
   if c.data->'combatEncounter'->>'status'='active' then raise exception 'COMBAT_ALREADY_ACTIVE'; end if;
   if c.data->'combatEncounter'->>'status'='defeated' and c.data->'combatEncounter'->>'looted' is distinct from 'true'
     then raise exception 'LOOT_PENDING'; end if;
-  if c.data->>'shadowQuest'='completed' then raise exception 'SHADOW_QUEST_COMPLETED'; end if;
+  if c.data->>'shadowQuest' in ('completed','returned') then raise exception 'SHADOW_QUEST_COMPLETED'; end if;
+  if c.data->>'shadowQuest' in ('defeated','returning') then raise exception 'SHADOW_ALREADY_DEFEATED'; end if;
   encounter:=jsonb_build_object(
     'id','shadowling','status','active','health',100,'maxHealth',100,
     'instanceId',gen_random_uuid()::text,'loot','[]'::jsonb,'looted',false,
@@ -2090,7 +2091,6 @@ begin
   end loop;
   encounter:=encounter||jsonb_build_object('loot',loot,'looted',not exists(select 1 from jsonb_array_elements(loot) x where jsonb_typeof(x)='object'));
   c.data:=c.data||jsonb_build_object('combatEncounter',encounter);
-  if encounter->>'looted'='true' then c.data:=c.data||jsonb_build_object('shadowQuest','completed'); end if;
   return public.game_store(c.id,c.data);
 end $$;
 revoke all on function public.loot_corpse(uuid,text,int) from public,anon;
@@ -2105,6 +2105,40 @@ update public.characters set data=data||jsonb_build_object(
     'loot',jsonb_build_array(jsonb_build_object('id','esencia_sombria','count',1,'bound',true))))
 where data->'combatEncounter'->>'status'='defeated' and not (data->'combatEncounter' ? 'loot')
   and data->>'shadowQuest' is distinct from 'completed';
+
+-- Older releases ended the story on looting. Keep the exhausted body and unlock the new closing scene.
+update public.characters set data=data||jsonb_build_object('shadowQuest','defeated')
+where data->>'shadowQuest'='completed';
+
+create or replace function public.shadow_action(p_character_id uuid,p_action text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  c public.characters:=public.game_lock_character(p_character_id);
+  pos jsonb; target jsonb; radius numeric;
+begin
+  if c.data->'welcome'->>'stage' is distinct from 'completed' then raise exception 'WELCOME_REQUIRED'; end if;
+  if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  if p_action is null or p_action not in ('report','return') then raise exception 'SHADOW_INVALID_ACTION'; end if;
+  if (p_action='report' and (c.data->>'shadowQuest' is distinct from 'defeated'
+      or c.data->'combatEncounter'->>'status' is distinct from 'defeated'))
+    or (p_action='return' and c.data->>'shadowQuest' is distinct from 'returning')
+    then raise exception 'SHADOW_INVALID_STATE'; end if;
+  select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
+    and seen_at>now()-interval '15 seconds' for update;
+  if pos is null or coalesce(c.data->>'location','brumaluz')<>'brumaluz' then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  if p_action='report' then
+    target:=coalesce(nullif(c.data->'isbertoPosition','null'::jsonb),(select value from public.server_config where key='combat_site'));
+    radius:=6;
+  else
+    target:='{"x":-3.5,"z":0}'::jsonb; radius:=4;
+  end if;
+  if target is null or target->>'x' is null or target->>'z' is null
+    or sqrt(power((pos->>'x')::numeric-(target->>'x')::numeric,2)
+      +power((pos->>'z')::numeric-(target->>'z')::numeric,2))>radius then raise exception 'SHADOW_TOO_FAR'; end if;
+  return public.game_store(c.id,c.data||jsonb_build_object('shadowQuest',case when p_action='report' then 'returning' else 'returned' end));
+end $$;
+revoke all on function public.shadow_action(uuid,text) from public,anon;
+grant execute on function public.shadow_action(uuid,text) to authenticated;
 
 -- Internal prerequisite for subsequent story content; legacy characters are exempt.
 create or replace function public.game_require_welcome_complete(d jsonb)

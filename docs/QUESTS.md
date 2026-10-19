@@ -126,6 +126,8 @@ quedan bloqueados.
 - Gnomi recorre una estela de posiciones del jugador con colisiones de la
   ciudad y animación sencilla. Sigue durante `active`, `found` y `completed` por toda
   Brumaluz, espera durante diálogos y se reincorpora al volver a entrar.
+  Tras cerrar el encargo de Isberto en la plaza del pozo deja de seguir y
+  permanece allí, también al reconectar.
   Si queda a más de 20 m, reaparece junto al jugador para evitar perderlo
   tras una corrección de posición. Tras el agradecimiento, guía al jugador
   hacia el encuentro con Isberto antes de la orientación sobre oficios.
@@ -149,12 +151,29 @@ sigue estando junto al ganado; no se traslada a la presentación.
 Abrir o cerrar la oferta automática no acepta la misión. No hay recompensas
 ficticias de XP ni pelines en la tarjeta.
 
-La victoria cambia la fase a `defeated`; el objetivo pasa al cadáver. Abrirlo
-no completa la misión: hay que recoger su **Esencia sombría**, un objeto real de
-mochila cuyo significado todavía no conocemos. `loot_corpse` cambia la fase a
-`completed` solo cuando no queda botín; la ventana se cierra y el cadáver
-desaparece. Su registro agotado se conserva en servidor para que no reaparezca
-ni pueda volver a saquearse al reconectar.
+La victoria cambia la fase a `defeated`; el objetivo pasa a **hablar con
+Isberto**, aunque todavía no se haya recogido el botín. La conversación alterna
+Isberto y Gnomi: ninguno reconoce a la criatura ni explica la esencia.
+Gnomi propone regresar juntos a la plaza del pozo. Confirmarlo llama a
+`shadow_action(report)` y guarda `returning`. Salir antes no avanza el paso.
+El minimapa, la flecha y el rastreador señalan ahora la plaza.
+
+Gnomi sigue acompañando al jugador durante el regreso. Al llegar hay que
+hablar con él y elegir **Quedarnos en la plaza**: `shadow_action(return)` guarda
+`returned`, completa la entrada del diario y deja a Gnomi en la plaza. Este es
+el final actual de la historia, sin nuevos encargos ni explicación del misterio.
+Ambas acciones validan propiedad, vida, orden de fases, presencia reciente y
+proximidad autoritativa a Isberto o a la plaza (`x=-3.5, z=0`, radio 4 m).
+No añaden XP, pelines ni objetos.
+
+El cadáver conserva una **Esencia sombría**, un objeto real de mochila cuyo
+significado todavía no conocemos. Recogerla es independiente del cierre
+narrativo: `loot_corpse` no cambia la fase de la misión. Al vaciar el cuerpo
+se cierra la ventana y desaparece el cadáver. Su registro agotado se conserva
+para que no reaparezca ni pueda volver a saquearse al reconectar.
+Las antiguas fases `completed` (que solo indicaban haber recogido la esencia)
+se migran una vez a `defeated`, sin reponer botín, para poder vivir el nuevo
+diálogo. Reaplicar SQL no modifica `returning` ni `returned`.
 No se puede reiniciar un encuentro completado ni sustituir un cadáver con
 botín pendiente. Si el jugador muere, Isberto permite volver a investigar.
 El diario conserva por separado la bienvenida y el encargo de Isberto;

@@ -123,9 +123,17 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       if(free<0)return fulfill({message:'INVENTORY_FULL'},400);
       inv[free]=corpse.loot[0];
       character.data.combatEncounter={...corpse,loot:[null],looted:true};
-      Object.assign(character.data,{inventory:inv,shadowQuest:'completed'});
+      Object.assign(character.data,{inventory:inv});
       const player=world.players.get(key);
       if(player)player.encounter=character.data.combatEncounter;
+      return fulfill(character.data);
+    }
+    if(fn==='shadow_action'){
+      if(world.fail.has('shadow'))return fulfill({message:'Temporary quest failure'},503);
+      const q=character.data.shadowQuest;
+      if(args.p_action==='report'&&q==='defeated')character.data.shadowQuest='returning';
+      else if(args.p_action==='return'&&q==='returning')character.data.shadowQuest='returned';
+      else return fulfill({message:'SHADOW_INVALID_STATE'},400);
       return fulfill(character.data);
     }
     if(fn==='upgrade_skill'){
@@ -1809,7 +1817,7 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     assert.match(await page.locator('.quest-tracker-progress').textContent(),/Step 2 of 3/);
     await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'completed'}}));
     await page.locator('.quest-tracker-objective').filter({hasText:'Isberto'}).waitFor();
-    await page.evaluate(()=>window.brumaluz.set({shadowQuest:'completed'}));
+    await page.evaluate(()=>window.brumaluz.set({shadowQuest:'returned'}));
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
     assert.equal(await marker.isVisible(),false);
     assert.deepEqual(errors,[]);
@@ -1855,6 +1863,7 @@ test('online compact corpse loot retries after a full-bag rejection and removes 
     await player.page.keyboard.press('KeyE');
     await player.page.locator('#window-backdrop').waitFor({state:'hidden'});
     assert.equal(await player.page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false);
+    assert.equal(account.character.data.shadowQuest,'defeated','Looting never skips the closing conversation');
     await leave(player.page);await player.page.reload();await player.page.waitForFunction(()=>!!window.brumaluz);await player.enter();
     await player.page.waitForTimeout(300);
     assert.equal(await player.page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false);
@@ -1863,6 +1872,67 @@ test('online compact corpse loot retries after a full-bag rejection and removes 
     await player.page.locator('[data-item-id="esencia_sombria"]').waitFor();
     await player.page.locator('[data-item-id="esencia_sombria"]').hover();
     await player.page.locator('#game-tooltip').filter({hasText:'No sabes qué es ni para qué sirve.'}).waitFor();
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('online story epilogue retries failed reporting, resumes the return and leaves Gnomi at the well after reconnecting', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('DeVuelta','humano',-3);
+  Object.assign(account.character.data,{
+    position:{x:-3,z:-62.35,yaw:0},welcome:{origin:0,stage:'completed'},shadowQuest:'defeated',
+    combatEncounter:{id:'shadowling',instanceId:randomUUID(),status:'defeated',health:0,maxHealth:100,
+      x:3.5,z:-62.35,enemyAttackAt:0,loot:[null],looted:true},
+  });
+  const player=await openPlayer(world,account),page=player.page;
+  try{
+    await player.enter();
+    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Gnomi'}).waitFor();
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'isberto-gnomi-epilogue.png')});
+    await page.keyboard.press('Escape');
+    assert.equal(account.character.data.shadowQuest,'defeated','Exiting partway through the scene never advances the story');
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    for(let i=0;i<3;i++)await page.keyboard.press('KeyE');
+    const report=page.getByRole('button',{name:'Volver con Gnomi a la plaza',exact:true});
+    await report.waitFor();
+    world.fail.add('shadow');
+    await report.click();
+    await report.waitFor({state:'visible'});
+    await page.waitForFunction(()=>document.querySelector('#dialog').getAttribute('aria-busy')==='false');
+    assert.equal(account.character.data.shadowQuest,'defeated','A failed RPC keeps the conversation retryable');
+    world.fail.delete('shadow');
+    await report.click();
+    await page.locator('#dialog').waitFor({state:'hidden'});
+    assert.equal(account.character.data.shadowQuest,'returning');
+    await leave(page);await page.reload();await page.waitForFunction(()=>!!window.brumaluz);await player.enter();
+    await page.locator('.quest-tracker-objective').filter({hasText:'plaza del pozo'}).waitFor();
+    Object.assign(world.players.get(account.user.id).position,{x:-3.5,z:0});
+    await page.evaluate(()=>window.brumaluz.move(-3.5,0));
+    await page.locator('#interact-label').filter({hasText:'Hablar con Gnomi'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.getByRole('button',{name:'Quedarnos en la plaza',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('#dialog').getAttribute('aria-busy')==='false');
+    assert.equal(account.character.data.shadowQuest,'returned',JSON.stringify(await page.evaluate(()=>({
+      text:document.querySelector('.dialog-text').textContent,
+      dialogHidden:document.querySelector('#dialog').hidden,
+      notifications:document.querySelector('#toasts')?.textContent,
+    }))));
+    await page.locator('.dialog-text').filter({hasText:'misterio'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('#quest-tracker').waitFor({state:'hidden'});
+    await leave(page);await page.reload();await page.waitForFunction(()=>!!window.brumaluz);await player.enter();
+    await page.waitForFunction(()=>{
+      const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      return gnomi.visible&&Math.hypot(gnomi.position.x+3.5,gnomi.position.z)<.1&&gnomi.userData.gait==='idle';
+    });
+    assert.equal(await page.locator('#quest-tracker').isVisible(),false);
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'gnomi-returned-square.png')});
+    assert.equal(await page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false,'The old body stays exhausted');
+    assert.equal(account.character.data.inventory?.filter(item=>item?.id==='esencia_sombria').length??0,0,'The epilogue invents no extra item rewards');
     assert.deepEqual(player.errors,[]);
   }finally{await player.context.close();}
 });
@@ -1992,7 +2062,46 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.getByRole('button',{name:'Recoger todo',exact:true}).click();
     await page.locator('#window-backdrop').waitFor({state:'hidden'});
     assert.equal(await page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false);
+    await page.locator('.quest-tracker-objective').filter({hasText:'Habla con Isberto'}).waitFor();
+    await page.evaluate(()=>{
+      const isberto=window.brumaluz.city().root.parent.getObjectByName('npc:isberto');
+      window.brumaluz.move(isberto.position.x,isberto.position.z);
+    });
+    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Gnomi'}).waitFor();
+    assert.match(await page.locator('.dialog-text').textContent(),/tampoco sé qué era/);
+    assert.equal(await page.locator('.dialog-subtitle').textContent(),'Ayudante del Gremio');
+    await page.keyboard.press('KeyE');
+    await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.getByRole('button',{name:'Volver con Gnomi a la plaza',exact:true}).click();
+    await page.locator('#dialog').waitFor({state:'hidden'});
+    await page.locator('.quest-tracker-objective').filter({hasText:'plaza del pozo'}).waitFor();
+    assert.ok(await page.evaluate(()=>{
+      const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      return gnomi.visible;
+    }));
+    await page.evaluate(()=>window.brumaluz.move(-3.5,0));
+    await page.waitForFunction(()=>{
+      const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      const player=window.brumaluz.char().root.parent;
+      return gnomi.position.distanceTo(player.position)<2.6;
+    });
+    await page.locator('#interact-label').filter({hasText:'Hablar con Gnomi'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.getByRole('button',{name:'Quedarnos en la plaza',exact:true}).click();
+    await page.locator('.dialog-text').filter({hasText:'misterio'}).waitFor();
+    await page.keyboard.press('KeyE');
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
+    await page.evaluate(()=>window.brumaluz.move(-3.5,8));
+    await page.waitForTimeout(400);
+    assert.ok(await page.evaluate(()=>{
+      const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      return Math.hypot(gnomi.position.x+3.5,gnomi.position.z)<.1&&gnomi.userData.gait==='idle';
+    }),'Gnomi stays in the plaza after this chapter rather than following forever');
     await page.keyboard.press('KeyI');
     await page.locator('.inv-bag [data-item-id="esencia_sombria"]').waitFor();
     assert.equal(await page.locator('.inv-bag [data-item-id="esencia_sombria"]').count(),1);

@@ -2,6 +2,7 @@ import { createClient, type Session, type SupabaseClient, type User } from '@sup
 import type { CharData } from '../data/data';
 import type { SkillId } from '../data/combat';
 import type { EquipmentSlot, ItemStack } from '../data/inventory';
+import type { ShadowAction } from '../data/quests';
 
 export const MAX_CHARACTERS_PER_ACCOUNT = 5;
 
@@ -71,6 +72,7 @@ interface Database {
     Functions: {
       create_character: { Args: { p_data: Json }; Returns: string };
       welcome_action: { Args: { p_character_id: string; p_action: string; p_origin?: number }; Returns: Json };
+      shadow_action: { Args: { p_character_id: string; p_action: ShadowAction }; Returns: Json };
       character_enter: { Args: { p_character_id: string }; Returns: Json };
       respawn_character: { Args: { p_character_id: string }; Returns: Json };
       debug_damage: { Args: { p_character_id: string }; Returns: Json };
@@ -247,6 +249,10 @@ const SERVER_ERRORS: Record<string, string> = {
   LOOT_EMPTY: 'Ya has recogido el botín de este cuerpo.',
   LOOT_TOO_FAR: 'Acércate al cuerpo para recoger el botín.',
   SHADOW_QUEST_COMPLETED: 'Ya has completado el encargo de Isberto.',
+  SHADOW_ALREADY_DEFEATED: 'La criatura ya ha sido derrotada. Continúa la misión.',
+  SHADOW_INVALID_STATE: 'No puedes continuar este paso de la misión todavía.',
+  SHADOW_INVALID_ACTION: 'Esa acción de misión no es válida.',
+  SHADOW_TOO_FAR: 'Acércate al objetivo para continuar la misión.',
   SKILL_INVALID: 'Esa habilidad no pertenece a tu clase.',
   SKILL_CHANGED: 'El rango ha cambiado. Revisa la habilidad antes de mejorarla.',
   SKILL_MAX_RANK: 'La habilidad ya tiene el rango máximo.',
@@ -290,6 +296,11 @@ const asRecord = (data: unknown) => data as Record<string, unknown>;
 export async function welcomeAction(character: string, action: string, origin?: number) {
   return asRecord(await serverCall(requireClient().rpc('welcome_action', {
     p_character_id: character, p_action: action, p_origin: origin,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+export async function shadowAction(character: string, action: ShadowAction) {
+  return asRecord(await serverCall(requireClient().rpc('shadow_action', {
+    p_character_id: character, p_action: action,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 

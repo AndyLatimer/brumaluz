@@ -3,6 +3,23 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Habla con Isberto sobre la criatura derrotada.': 'Talk to Isberto about the defeated creature.',
+  'Vuelve con Gnomi a la plaza del pozo y habla con él allí.': 'Return to the well square with Gnomi and talk to him there.',
+  'Has vuelto con Gnomi a la plaza del pozo. El misterio sigue sin resolver.': 'You returned to the well square with Gnomi. The mystery remains unsolved.',
+  'Derrota a la criatura, habla con Isberto y vuelve con Gnomi a la plaza del pozo.': 'Defeat the creature, talk to Isberto and return to the well square with Gnomi.',
+  'Gracias por ocuparte de esa criatura. El ganado ya está más tranquilo, pero yo no. He recorrido unos cuantos caminos y nunca había visto nada parecido.': 'Thank you for dealing with that creature. The livestock have calmed down, but I have not. I have travelled a fair few roads and never seen anything like it.',
+  'Yo tampoco sé qué era. Y mira que me cruzo con gente y bichos de todas clases… Esto no me suena de nada.': 'I do not know what it was either. And I meet all sorts of people and critters… This is completely unfamiliar.',
+  'Pues no vamos a ponerle nombre por inventar. Si has recogido algo de sus restos, guárdalo. Por ahora no sabemos qué significa.': 'Then let us not make up a name for it. If you collected anything from its remains, keep it. For now, we do not know what it means.',
+  'Dejemos a Isberto cuidar del ganado. Volvamos a la plaza del pozo; te acompaño.': 'Let us leave Isberto to look after the livestock. Back to the well square; I will come with you.',
+  'Volver con Gnomi a la plaza': 'Return to the square with Gnomi',
+  'Volvamos a la plaza del pozo. Te acompaño. Después de lo del ganado, me apetece un rincón conocido.': 'Let us return to the well square. I will come with you. After what happened with the livestock, I could use somewhere familiar.',
+  'Ya estamos de vuelta en la plaza del pozo. Menudo paseo… y menuda cosa tan rara hemos encontrado. Por ahora nos quedamos aquí, ¿te parece?': 'Here we are, back in the well square. Quite a walk… and quite a strange thing we found. Let us stay here for now, shall we?',
+  'Quedarnos en la plaza': 'Stay in the square',
+  'Aquí estamos bien por ahora. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.': 'We are fine here for now. That creature is still a mystery… There will be time to think about it later.',
+  'El ganado está tranquilo. Sobre aquella criatura, sigo sin saber nada más. Gracias por echarme una mano.': 'The livestock are calm. As for that creature, I still know nothing more. Thank you for lending a hand.',
+  'La criatura ya ha sido derrotada. Continúa la misión.': 'The creature has already been defeated. Continue the quest.',
+  'No puedes continuar este paso de la misión todavía.': 'You cannot continue this quest step yet.',
+  'Esa acción de misión no es válida.': 'That quest action is not valid.',
   'Ligado': 'Bound',
   '¡Ahora sí, bien sujeto! Gracias de corazón. Mira, ahí viene Isberto. Me ha pedido ayuda con algo extraño que ronda su ganado.': 'There, nice and secure! Thank you from the heart. Look, here comes Isberto. He asked me for help with something strange near his livestock.',
   '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.': 'My searching companion! The badge is still in place. I checked. Twice. Isberto wanted to talk to you; afterwards I will help you find your way in Brumaluz.',

@@ -341,7 +341,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         assert.deepEqual(again.data,migrated.data,'A second application does not generate another body or reward');
         const {rows:[looted]}=await client.query('select data from public.characters where id=$1',[cb]);
         assert.deepEqual(looted.data.combatEncounter.loot,[null]);
-        assert.equal(looted.data.shadowQuest,'completed');
+        assert.equal(looted.data.shadowQuest,'defeated','Old looted quests unlock the closing scene without refilling the corpse');
         const {rows:[active]}=await client.query('select data from public.characters where id=$1',[ca2]);
         assert.equal(active.data.shadowQuest,'active');
         assert.deepEqual((await client.query("select key,value from public.server_config where key in ('welcome_enabled','combat_enabled','debug_actions') order by key")).rows,flags.rows);
@@ -442,15 +442,77 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         assert.deepEqual(looted.inventory[0],essence);
         assert.equal(looted.combatEncounter.looted,true);
         assert.deepEqual(looted.combatEncounter.loot,[null]);
-        assert.equal(looted.shadowQuest,'completed');
+        assert.equal(looted.shadowQuest,'defeated','Loot alone does not finish the story');
         await rejected(()=>rpc('loot_corpse',[ca,instance,null]),/LOOT_EMPTY/);
-        await rejected(()=>rpc('combat_start',[ca]),/SHADOW_QUEST_COMPLETED/);
+        await rejected(()=>rpc('combat_start',[ca]),/SHADOW_ALREADY_DEFEATED/);
         const persisted=await rpc('character_enter',[ca]);
         assert.equal(persisted.inventory.filter(item=>item?.id==='esencia_sombria').length,1);
         assert.equal(persisted.combatEncounter.looted,true);
       } finally {
         await client.query('rollback to savepoint corpse_loot');
         await client.query('release savepoint corpse_loot');
+      }
+    });
+    await t.test('Isberto closing conversation and return to the well are ordered, authoritative and persistent independently of loot', async () => {
+      await client.query('savepoint shadow_epilogue');
+      try {
+        await client.query('reset role');
+        const essence={id:'esencia_sombria',count:1,bound:true};
+        const body={id:'shadowling',instanceId:'closing-scene',status:'defeated',health:0,maxHealth:100,x:3.5,z:-62.35,enemyAttackAt:0,loot:[essence],looted:false};
+        await client.query('update public.characters set data=$1 where id=$2',[{
+          name:'Alric',race:'humano',cls:'guerrero',health:100,level:1,location:'brumaluz',inventory:[],
+          welcome:{origin:0,stage:'completed'},shadowQuest:'defeated',isbertoPosition:{x:17.8,z:-5.7},
+          position:{x:17.8,z:-5.7,yaw:0},combatEncounter:body,
+        },ca]);
+        await user(b);
+        await rejected(()=>rpc('shadow_action',[ca,'report']),/CHARACTER_NOT_FOUND/);
+        await user(a);
+        await rejected(()=>rpc('shadow_action',[ca,'return']),/SHADOW_INVALID_STATE/);
+        await rejected(()=>rpc('shadow_action',[ca,'skip']),/SHADOW_INVALID_ACTION/);
+        await rejected(()=>rpc('shadow_action',[ca,null]),/SHADOW_INVALID_ACTION/);
+        await rpc('world_join',[ca,sa]);
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":3.5,\"z\":-62.35,\"yaw\":0}' where character_id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('shadow_action',[ca,'report']),/SHADOW_TOO_FAR/);
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":17.8,\"z\":-5.7,\"yaw\":0}' where character_id=$1",[ca]);
+        await client.query("update public.characters set data=jsonb_set(data,'{health}','0') where id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('shadow_action',[ca,'report']),/COMBAT_DEAD/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{health}','100') where id=$1",[ca]);
+        await user(a);
+        const reported=await rpc('shadow_action',[ca,'report']);
+        assert.equal(reported.shadowQuest,'returning');
+        assert.equal(reported.combatEncounter.looted,false,'Reporting neither requires nor consumes the essence');
+        await rejected(()=>rpc('shadow_action',[ca,'report']),/SHADOW_INVALID_STATE/);
+        await rejected(()=>rpc('shadow_action',[ca,'return']),/SHADOW_TOO_FAR/);
+        assert.equal((await rpc('character_enter',[ca])).shadowQuest,'returning');
+        await rpc('world_leave',[ca,sa]);
+        await rejected(()=>rpc('shadow_action',[ca,'return']),/COMBAT_NOT_PLAYING/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{position}','{\"x\":-3.5,\"z\":0,\"yaw\":0}') where id=$1",[ca]);
+        await user(a);await rpc('world_join',[ca,sa]);
+        const returned=await rpc('shadow_action',[ca,'return']);
+        assert.equal(returned.shadowQuest,'returned');
+        assert.deepEqual(returned.combatEncounter,body,'Story closure preserves the unlooted body');
+        await rejected(()=>rpc('shadow_action',[ca,'return']),/SHADOW_INVALID_STATE/);
+        assert.equal((await rpc('character_enter',[ca])).shadowQuest,'returned');
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":3.5,\"z\":-62.35,\"yaw\":0}' where character_id=$1",[ca]);
+        await user(a);
+        const looted=await rpc('loot_corpse',[ca,body.instanceId,null]);
+        assert.equal(looted.shadowQuest,'returned','Late looting never rewinds the epilogue');
+        assert.deepEqual(looted.inventory[0],essence);
+        await client.query('reset role');
+        await client.query(readFileSync(new URL('../supabase/server.sql',import.meta.url),'utf8'));
+        const {rows:[stored]}=await client.query('select data from public.characters where id=$1',[ca]);
+        assert.equal(stored.data.shadowQuest,'returned','Reapplying SQL never restarts the finished story');
+        assert.equal(stored.data.combatEncounter.looted,true);
+      } finally {
+        await client.query('rollback to savepoint shadow_epilogue');
+        await client.query('release savepoint shadow_epilogue');
       }
     });
     await t.test('combat RPCs own encounter state, validate range/cooldowns and apply enemy damage server-side', async () => {

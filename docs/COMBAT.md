@@ -33,7 +33,8 @@ los RPC autoritativos y los latidos para el daño del enemigo. Una derrota del
 jugador cierra el encuentro sin presentarla como victoria sobre el enemigo.
 La bandera `combat_enabled` permanece desactivada por defecto. No hay todavía
 XP de combate ni recompensas monetarias. La victoria deja un cadáver con botín
-y recoger su esencia completa el encargo de Isberto. Nunca se debe enviar al servidor el
+y el cierre requiere hablar con Isberto y Gnomi y regresar a la plaza del pozo.
+Recoger la esencia no avanza la historia. Nunca se debe enviar al servidor el
 resultado calculado por el prototipo como daño o progreso autoritativos.
 
 ## Habilidades y objetivo fijado
@@ -186,7 +187,9 @@ El encuentro guarda `instanceId`, `loot` y `looted` en el servidor. Cada derrota
 de esta criatura deja una **Esencia sombría**, vinculada, no vendible, apilable
 hasta 50 y no utilizable. Su descripción no revela su significado.
 `loot_corpse` comprueba propiedad, vida, presencia reciente, distancia e identidad
-del cuerpo, y guarda inventario, botín restante y misión en la misma transacción.
+del cuerpo, y guarda inventario y botín restante en la misma transacción,
+sin cambiar la misión. El cierre narrativo usa `shadow_action`; véase
+[QUESTS.md](./QUESTS.md#después-de-gnomi-isberto).
 Una mochila llena no consume el botín; una repetición no lo duplica.
 El formato admite varias entradas y recogida individual para futuras criaturas;
 no se han inventado enemigos ni tablas de recompensas adicionales.
@@ -245,7 +248,9 @@ o permiso explícito para usar la configurada con rollback.
 ## Trabajo pendiente
 
 El encuentro conectado no concede XP ni pelines; su recompensa material es la
-esencia y el encargo termina al recogerla. Falta el arte definitivo
+esencia; el encargo termina al regresar con Gnomi a la plaza del pozo tras
+hablar con Isberto. Ninguno reconoce la criatura y el misterio queda abierto.
+Falta el arte definitivo
 de la criatura. Las pruebas SQL ya pasaron en Brumaluz dentro de una transacción
 con rollback antes de aplicar el archivo. No habilitar la bienvenida ni el
 combate sin autorización, ni inventar recompensas o desbloqueos de historia.

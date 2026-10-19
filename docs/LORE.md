@@ -135,7 +135,11 @@ contenido del juego relacionado.
   jugador y le habla automáticamente para ofrecerle
   investigar a la criatura junto al ganado. Derrotarla deja un cadáver
   saqueable con una **Esencia sombría** garantizada. Su significado y uso no
-  se conocen todavía; recogerla completa ese encargo, sin añadir XP ni pelines.
+  se conocen todavía. Después de vencer hay que hablar con Isberto; Gnomi
+  interviene y ninguno sabe qué era la criatura. El misterio queda abierto
+  para más adelante. Gnomi acompaña al jugador de vuelta a la plaza del pozo;
+  allí se cierra este tramo y se quedan por ahora, sin nuevos encargos,
+  XP ni pelines adicionales. Recoger la esencia no sustituye esa conversación.
 - La bienvenida será **solo para personajes nuevos**. Los personajes que
   existían antes de incorporar el sistema no recibirán esta misión ni
   tendrán que repetir su comienzo.

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { City, Interactable } from './city';
-import { WELCOME_START, WELCOME_BADGE, type WelcomeProgress } from '../data/quests';
+import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN, type WelcomeProgress } from '../data/quests';
 import { Character } from '../character/character';
 import { defaultChar } from '../data/data';
 
@@ -58,7 +58,7 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
     root.position.copy(city.collide(player, destination));
     trail = []; sample.copy(player);
   }
-  function update(progress: WelcomeProgress | null, playing: boolean, player: THREE.Vector3, dt: number, time: number, talking = false) {
+  function update(progress: WelcomeProgress | null, playing: boolean, player: THREE.Vector3, dt: number, time: number, talking = false, returned = false) {
     root.visible = playing;
     lost.visible = root.visible && progress?.stage === 'active';
     if (!root.visible) { lastStage = ''; trail = []; return; }
@@ -73,13 +73,15 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
       trail = [];
       return;
     }
-    const following = progress.stage === 'active' || progress.stage === 'found' || progress.stage === 'completed';
+    const following = !returned && (progress.stage === 'active' || progress.stage === 'found' || progress.stage === 'completed');
     const wasFollowing = lastStage === 'active' || lastStage === 'found' || lastStage === 'completed';
     badge.visible = progress.stage === 'completed';
     if (progress.stage === 'completed' && lastStage !== 'completed' && !badge.userData.returned) {
       badge.userData.returned = true;
-      character.hop();
-      character.speak(6);
+      if (!returned) {
+        character.hop();
+        character.speak(6);
+      }
     }
     if (progress.stage !== 'completed') badge.userData.returned = false;
     if (lastStage !== progress.stage && !(talking && progress.stage === 'completed')) {
@@ -89,6 +91,10 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
         trail = []; sample.copy(player);
       }
       lastStage = progress.stage;
+    }
+    if (returned && !talking) {
+      root.position.set(SHADOW_RETURN.x, city.groundY(SHADOW_RETURN.x, SHADOW_RETURN.z), SHADOW_RETURN.z);
+      trail = [];
     }
     let moving = false;
     let speed = 0;

@@ -5,7 +5,7 @@ import {
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
-  startCombat, combatAction, changeEquipment, lootCorpse,
+  startCombat, combatAction, changeEquipment, lootCorpse, shadowAction,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
@@ -51,7 +51,7 @@ import { initMenuMusic } from './ui/menuMusic';
 import { initBuffLayout, renderBuffs } from './ui/buffs';
 import { beginTransition } from './ui/transitionLoading';
 import type { FoodBuff } from './data/food';
-import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, SHADOW_TITLE, shadowObjective, welcomeObjective, parseShadowQuest, type WelcomeAction } from './data/quests';
+import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, SHADOW_TITLE, SHADOW_RETURN, shadowObjective, welcomeObjective, parseShadowQuest, type WelcomeAction, type ShadowAction } from './data/quests';
 import { EQUIPPABLE, hasCombatWeapon, transferEquipment } from './data/equipment';
 import type { EquipmentSlot } from './data/inventory';
 import { renderLoot } from './ui/lootWindow';
@@ -806,6 +806,22 @@ async function runOnServer(call: (id: string) => Promise<Record<string, unknown>
 function talkGnomi() {
   if (actionBusy) return;
   keys.clear(); moveTarget = null; pendingTalk = null; marker.visible = false;
+  if (state.shadowQuest === 'returning' || state.shadowQuest === 'returned') {
+    const arrived = Math.hypot(holder.position.x - SHADOW_RETURN.x, holder.position.z - SHADOW_RETURN.z) <= 4;
+    beginConversation(welcomeWorld.root, {
+      speaker:'Gnomi', subtitle:'Ayudante del Gremio', start:'intro',
+      nodes:{
+        intro: state.shadowQuest === 'returned'
+          ? {text:'Aquí estamos bien por ahora. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.'}
+          : arrived
+            ? {text:'Ya estamos de vuelta en la plaza del pozo. Menudo paseo… y menuda cosa tan rara hemos encontrado. Por ahora nos quedamos aquí, ¿te parece?',
+              choices:[{text:'Quedarnos en la plaza',action:()=>performShadow('return'),next:'rest'}]}
+            : {text:'Volvamos a la plaza del pozo. Te acompaño. Después de lo del ganado, me apetece un rincón conocido.'},
+        rest:{text:'Aquí estamos bien por ahora. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.'},
+      },
+    });
+    return;
+  }
   if (!state.welcome) {
     beginConversation(welcomeWorld.root, {
       speaker:'Gnomi',subtitle:'Ayudante del Gremio',start:'intro',
@@ -815,6 +831,21 @@ function talkGnomi() {
   }
   if (state.welcome.origin === null) welcomeWorld.greet();
   beginConversation(welcomeWorld.root, welcomeConversation(state, performWelcome));
+}
+async function performShadow(action: ShadowAction) {
+  const target = action === 'return' ? SHADOW_RETURN : npcActors.find(npc => npc.id === 'isberto')?.character.root.position;
+  if (!target || Math.hypot(holder.position.x - target.x, holder.position.z - target.z) > (action === 'return' ? 4 : 6)) {
+    toast('No se pudo completar la acción', 'Acércate al objetivo para continuar la misión.', true);
+    return false;
+  }
+  const success = await runOnServer(id => shadowAction(id, action), () => {
+    if ((action === 'report' && state.shadowQuest !== 'defeated') || (action === 'return' && state.shadowQuest !== 'returning')) {
+      throw new Error(t('No puedes continuar este paso de la misión todavía.'));
+    }
+    state.shadowQuest = action === 'report' ? 'returning' : 'returned';
+  });
+  if (success) updateHud();
+  return success;
 }
 async function performWelcome(action: WelcomeAction, origin?: number) {
   const stillCurrent = characterContext();
@@ -1382,9 +1413,9 @@ initMinimap({
       id: 'welcome', name: t(welcomeObjective(state.welcome)), quest: true,
       ...(state.welcome.stage === 'active' ? WELCOME_BADGE : { x: welcomeWorld.root.position.x, z: welcomeWorld.root.position.z }),
     }] : []),
-    ...(isbertoUnlocked() && state.shadowQuest !== 'completed' ? [{
+    ...(isbertoUnlocked() && state.shadowQuest !== 'returned' ? [{
       id:'shadow-quest',name:t(shadowObjective(state.shadowQuest)),quest:true,
-      x:combatTargetRoot?.position.x ?? state.isbertoPosition?.x ?? -3,z:combatTargetRoot?.position.z ?? state.isbertoPosition?.z ?? (TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z),
+      ...shadowQuestTarget(),
     }] : []),
     ...getParty().members.filter(member=>member.userId!==partySelf() && member.location===state.location).map(member=>({
       id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
@@ -2668,8 +2699,14 @@ const questAnchor = new THREE.Vector3();
 const questView = new THREE.Vector3();
 let welcomeHintSaid = false;
 let welcomeTravelSaid = false;
+function shadowQuestTarget(): { x: number; z: number } {
+  if (state.shadowQuest === 'returning' || state.shadowQuest === 'returned') return SHADOW_RETURN;
+  if (state.shadowQuest === 'active' && combatTargetRoot) return combatTargetRoot.position;
+  return npcActors.find(npc => npc.id === 'isberto')?.character.root.position
+    ?? state.isbertoPosition ?? {x: -3, z: TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z};
+}
 function updateWelcome(dt: number, time: number) {
-  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root);
+  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root, state.shadowQuest === 'returned');
   const visible = mode === 'play' && !dead && !openWindow && !gameMenuOpen && !playerMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   questTracker.update(state, visible);
   welcomePlate.hidden = true;
@@ -2682,9 +2719,9 @@ function updateWelcome(dt: number, time: number) {
     welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
   }
   if (!state.welcome) return;
-  if (state.welcome.stage === 'completed' && state.shadowQuest === 'completed') return;
+  if (state.welcome.stage === 'completed' && state.shadowQuest === 'returned') return;
   const shadowTarget = state.welcome.stage === 'completed'
-    ? combatTargetRoot?.position ?? npcActors.find(npc => npc.id === 'isberto')?.character.root.position : null;
+    ? shadowQuestTarget() : null;
   const target = shadowTarget ?? (state.welcome.stage === 'active' ? welcomeWorld.lost.position : welcomeWorld.root.position);
   const distance = Math.hypot(target.x - holder.position.x, target.z - holder.position.z);
   if (state.welcome.stage === 'active' && !welcomeTravelSaid && Math.hypot(holder.position.x - WELCOME_START.x, holder.position.z - WELCOME_START.z) > 5 && distance > 8) {
@@ -2699,7 +2736,7 @@ function updateWelcome(dt: number, time: number) {
     welcomeWorld.speak(5);
   }
   if (state.welcome.stage !== 'active') { welcomeHintSaid = false; welcomeTravelSaid = false; }
-  questAnchor.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.3, 0)).project(camera);
+  questAnchor.set(target.x, city.groundY(target.x, target.z) + (state.welcome.stage === 'active' ? .55 : 1.3), target.z).project(camera);
   const screenX = (questAnchor.x * .5 + .5) * innerWidth, screenY = (-questAnchor.y * .5 + .5) * innerHeight;
   const marginX = Math.min(64, innerWidth / 4), marginY = Math.min(100, innerHeight / 4);
   const onScreen = questAnchor.z > -1 && questAnchor.z < 1 && screenX >= marginX && screenX <= innerWidth - marginX && screenY >= marginY && screenY <= innerHeight - marginY;
@@ -2710,7 +2747,7 @@ function updateWelcome(dt: number, time: number) {
   if (onScreen) {
     questMarker.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%,-100%)`;
   } else {
-    questView.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.3, 0)).applyMatrix4(camera.matrixWorldInverse);
+    questView.set(target.x, city.groundY(target.x, target.z) + (state.welcome.stage === 'active' ? .55 : 1.3), target.z).applyMatrix4(camera.matrixWorldInverse);
     let dx = questView.x * camera.projectionMatrix.elements[0], dy = -questView.y * camera.projectionMatrix.elements[5];
     // Targets behind the camera still point to their actual side, rather than mirroring after projection.
     if (questView.z >= 0) dy = Math.max(Math.abs(dy), .5);
@@ -2751,16 +2788,25 @@ const testChoices: DialogChoice[] = [
   { text: 'Comerciar', action: () => openVendor('testiculos') },
 ];
 function isbertoConversation(): Conversation {
-  const text = state.shadowQuest === 'completed'
-    ? 'Has encontrado algo entre sus restos. No sé qué es. Guárdalo por ahora.'
-    : state.shadowQuest === 'defeated' ? 'La criatura ha caído. Mira si ha quedado algo entre sus restos.'
+  if (state.shadowQuest === 'defeated') return {
+    speaker:'Isberto', subtitle:'Granjero · explorador retirado', start:'intro',
+    nodes:{
+      intro:{text:'Gracias por ocuparte de esa criatura. El ganado ya está más tranquilo, pero yo no. He recorrido unos cuantos caminos y nunca había visto nada parecido.',next:'gnomi'},
+      gnomi:{speaker:'Gnomi',subtitle:'Ayudante del Gremio',text:'Yo tampoco sé qué era. Y mira que me cruzo con gente y bichos de todas clases… Esto no me suena de nada.',next:'isberto'},
+      isberto:{text:'Pues no vamos a ponerle nombre por inventar. Si has recogido algo de sus restos, guárdalo. Por ahora no sabemos qué significa.',next:'return'},
+      return:{speaker:'Gnomi',subtitle:'Ayudante del Gremio',text:'Dejemos a Isberto cuidar del ganado. Volvamos a la plaza del pozo; te acompaño.',
+        choices:[{text:'Volver con Gnomi a la plaza',action:()=>performShadow('report')}]},
+    },
+  };
+  const text = state.shadowQuest === 'returned' || state.shadowQuest === 'returning'
+    ? 'El ganado está tranquilo. Sobre aquella criatura, sigo sin saber nada más. Gracias por echarme una mano.'
     : state.shadowQuest === 'active' ? 'La criatura sigue junto al ganado. Ten cuidado.'
     : 'Una cosa negra y rara se ha metido entre el ganado. No reconozco la criatura, y a estas alturas ya he tenido bastantes aventuras. Si te ves con ganas, échale un ojo. Yo me quedo vigilando el camino.';
   const offer = !state.shadowQuest;
   return {
     speaker:'Isberto', subtitle:'Granjero · explorador retirado', start:'intro',
     nodes:{intro:{text,
-      ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Investiga a la criatura, derrótala y examina sus restos.',experience:0,pelines:0}} : {}),
+      ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Derrota a la criatura, habla con Isberto y vuelve con Gnomi a la plaza del pozo.',experience:0,pelines:0}} : {}),
       ...(offer || (state.shadowQuest === 'active' && combatEncounter?.status !== 'active')
         ? {choices:[{text:offer ? 'Aceptar misión' : 'Volver a investigar',action:beginIsbertoEncounter}]} : {}),
     }},
@@ -2936,7 +2982,6 @@ async function collectCorpseLoot(slot: number | null) {
     } catch (error) { state.inventory = inventory; throw error; }
     const looted = remaining.every(item => !item);
     setCombatEncounter({ ...corpse, loot: remaining, looted });
-    if (looted) state.shadowQuest = 'completed';
   });
   if (!success || !stillCurrent()) return false;
   updateHud();
@@ -2965,7 +3010,7 @@ async function beginIsbertoEncounter() {
   if(!activeCharacterId){
     if(!TEST)throw new Error('Inicia sesión con un personaje para empezar el combate.');
     const vitals=vitalsOf(state);
-    if (state.shadowQuest === 'completed') throw new Error('Ya has completado el encargo de Isberto.');
+    if (state.shadowQuest && state.shadowQuest !== 'active') throw new Error(t('La criatura ya ha sido derrotada. Continúa la misión.'));
     if (combatEncounter?.status === 'defeated' && !combatEncounter.looted) throw new Error('Recoge primero los restos de la criatura caída.');
     state.shadowQuest = 'active';
     localCombatState={
