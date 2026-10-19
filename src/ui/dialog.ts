@@ -7,6 +7,7 @@ import { t } from './i18n';
 export interface DialogLine {
   /** Nombre mostrado en la burbuja (no se traduce: puede ser el del jugador o un NPC). */
   speaker: string;
+  subtitle?: string;
   /** Texto en español (se traduce con i18n). */
   text: string;
 }
@@ -25,7 +26,15 @@ export interface DialogChoice {
 export interface DialogNode {
   /** Quién habla; por defecto, el `speaker` de la conversación. */
   speaker?: string;
+  subtitle?: string;
   text: string;
+  quest?: {
+    title: string;
+    objective: string;
+    experience: number;
+    pelines: number;
+    turnIn?: boolean;
+  };
   /** Respuestas posibles. Sin ellas, E continúa a `next` o cierra. */
   choices?: DialogChoice[];
   next?: string;
@@ -35,6 +44,7 @@ export interface DialogNode {
 
 export interface Conversation {
   speaker: string;
+  subtitle?: string;
   start: string;
   nodes: Record<string, DialogNode>;
 }
@@ -82,6 +92,51 @@ function render() {
   error.hidden = !actionError;
   const list = el.querySelector<HTMLElement>('.dialog-choices')!;
   const next = el.querySelector<HTMLElement>('.dialog-next')!;
+  const subtitle = el.querySelector<HTMLElement>('.dialog-subtitle')!;
+  subtitle.textContent = t(node ? node.subtitle ?? (node.speaker && node.speaker !== conversation?.speaker ? '' : conversation?.subtitle ?? '') : lines[index]?.subtitle ?? '');
+  subtitle.hidden = !subtitle.textContent;
+  el.setAttribute('aria-labelledby', 'dialog-speaker');
+  document.body.classList.add('conversation-open');
+  el.classList.toggle('quest-dialog', !!node?.quest);
+  el.querySelector('.dialog-quest-card')?.remove();
+  if (node?.quest) {
+    const quest = node.quest;
+    const card = document.createElement('section');
+    card.className = 'dialog-quest-card';
+    card.setAttribute('aria-label', t(quest.turnIn ? 'Entrega de misión' : 'Nueva misión'));
+    const heading = document.createElement('header');
+    const seal = document.createElement('span');
+    seal.className = 'dialog-quest-seal';
+    seal.textContent = quest.turnIn ? '✓' : '!';
+    seal.setAttribute('aria-hidden', 'true');
+    const caption = document.createElement('div');
+    const eyebrow = document.createElement('small');
+    eyebrow.textContent = t(quest.turnIn ? 'Entrega de misión' : 'Nueva misión');
+    const title = document.createElement('h3');
+    title.textContent = t(quest.title);
+    caption.append(eyebrow, title);
+    heading.append(seal, caption);
+    const objective = document.createElement('div');
+    objective.className = 'dialog-quest-objective';
+    const label = document.createElement('strong');
+    label.textContent = t('Objetivo');
+    const description = document.createElement('p');
+    description.textContent = t(quest.objective);
+    objective.append(label, description);
+    const rewards = document.createElement('div');
+    rewards.className = 'dialog-quest-rewards';
+    const rewardsLabel = document.createElement('strong');
+    rewardsLabel.textContent = t('Recompensas');
+    const xp = document.createElement('span');
+    xp.className = 'dialog-quest-xp';
+    xp.textContent = t('{n} XP', { n: quest.experience });
+    const coins = document.createElement('span');
+    coins.className = 'dialog-quest-coins';
+    coins.textContent = t('{n} pelines', { n: quest.pelines });
+    rewards.append(rewardsLabel, xp, coins);
+    card.append(heading, objective, rewards);
+    list.before(card);
+  }
   if (node && conversation) {
     el.querySelector('.dialog-speaker')!.textContent = node.speaker ?? conversation.speaker;
     el.querySelector('.dialog-text')!.textContent = t(node.text);
@@ -90,12 +145,13 @@ function render() {
       b.type = 'button';
       b.className = 'dialog-choice' + (c.exit ? ' exit' : '') + (i === selected ? ' selected' : '');
       b.disabled = busy;
-      const label = t(c.text);
+      const label = t(c.exit && node?.quest ? 'Cerrar' : c.text);
       const marker = document.createElement('span');
       marker.className = 'dialog-choice-mark';
-      marker.textContent = c.exit ? '↩' : `${i + 1}.`;
+      marker.setAttribute('aria-hidden', 'true');
+      marker.textContent = c.exit ? '↩' : node?.quest ? node.quest.turnIn ? '✓' : '+' : `${i + 1}.`;
       const text = document.createElement('span');
-      text.textContent = c.exit ? `[${label}]` : label;
+      text.textContent = c.exit && !node?.quest ? `[${label}]` : label;
       b.append(marker, text);
       b.onmouseenter = () => { selected = i; markSelected(); };
       b.onclick = () => chooseDialog(i);
@@ -153,6 +209,9 @@ export function closeDialog() {
   if (!isDialogOpen()) return;
   revision++; busy = false; actionError = '';
   root().hidden = true;
+  document.body.classList.remove('conversation-open');
+  root().classList.remove('quest-dialog');
+  root().querySelector('.dialog-quest-card')?.remove();
   conversation = null;
   node = null;
   choices = [];
@@ -203,6 +262,7 @@ export function moveDialogChoice(delta: number) {
   if (!choices.length || busy) return;
   selected = (selected + delta + choices.length) % choices.length;
   markSelected();
+  root().querySelector('.dialog-choice.selected')?.scrollIntoView({ block: 'nearest' });
 }
 
 /** Tecla E: elige la respuesta marcada, avanza o cierra. */

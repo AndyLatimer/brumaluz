@@ -11,6 +11,7 @@ import { attributeTotal, vitalsOf } from '../data/stats';
 import { TITLES, TITLE_ORDER, isReservedTitle, isTitleAvailable, PHOENIX_ICON, type TitleId } from '../data/titles';
 import { t, getLanguage, raceText, classText } from './i18n';
 import { setItemTooltip } from './itemTooltip';
+import { createQuestItems } from './questWindow';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
   const node = document.createElement(tag);
@@ -185,6 +186,8 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   grid.append(lock);
   bag.append(head, grid);
   if (!used) bag.append(el('p', 'inv-empty', t('Tu mochila está vacía por ahora.')));
+  const questItems = createQuestItems(d);
+  if (questItems) bag.append(questItems);
 
   const purse = el('section', 'inv-purse');
   purse.append(inventoryHeading('purse', 'Monedero'), goldLine(d));

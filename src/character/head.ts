@@ -29,7 +29,7 @@ export interface HeadOptions {
   eyeColor: string;
   /** Aplanar las orejas humanas (elfos, Pelso, Lagto'). */
   flattenEars: boolean;
-  hat: 'none' | 'helmet' | 'wizard' | 'bear';
+  hat: 'none' | 'helmet' | 'wizard' | 'bear' | 'cap';
   /** Linaje: cambia nariz, pupilas y marcas de la cara. */
   race?: 'humano' | 'elfo' | 'lagto' | 'pelso';
   skin?: string;
@@ -529,7 +529,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   const extras: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
 
   // ---------- Pelo ----------
-  const hatShrink = o.hat === 'helmet' ? 0.9 : o.hat === 'bear' ? 0.92 : o.hat === 'wizard' ? 0.94 : 1;
+  const hatShrink = o.hat === 'helmet' ? 0.9 : o.hat === 'bear' ? 0.92 : o.hat === 'wizard' ? 0.94 : o.hat === 'cap' ? 0.96 : 1;
   const hairPieces: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
   const kitHair = (kit: HeadKit, closeFit = 1) => {
     const h = analyse(sources[kit]).hair;

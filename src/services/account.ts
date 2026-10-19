@@ -87,6 +87,9 @@ interface Database {
       world_join: { Args: { p_character_id: string; p_session_id: string }; Returns: Json };
       world_sync: { Args: { p_character_id: string; p_session_id: string; p_state: Json }; Returns: Json };
       world_leave: { Args: { p_character_id: string; p_session_id: string }; Returns: undefined };
+      combat_start: { Args: { p_character_id: string }; Returns: Json };
+      combat_action: { Args: { p_character_id: string; p_action: string }; Returns: Json };
+      combat_stop: { Args: { p_character_id: string }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
       party_invite: { Args: { p_username: string }; Returns: undefined };
@@ -220,12 +223,24 @@ const SERVER_ERRORS: Record<string, string> = {
   INVALID_POINTS: 'El reparto de puntos no es válido.',
   CHARACTER_NOT_FOUND: 'No se ha encontrado el personaje.',
   ACTION_DISABLED: 'Esta acción está desactivada en el servidor.',
+  COMBAT_UNAVAILABLE: 'El combate todavía no está disponible en el mundo.',
+  COMBAT_NOT_PLAYING: 'Debes estar conectado para combatir.',
+  COMBAT_TOO_FAR: 'Acércate a Isberto para empezar el combate.',
+  COMBAT_DEAD: 'Debes volver a la vida para combatir.',
+  COMBAT_ALREADY_ACTIVE: 'Ya tienes un combate activo.',
+  COMBAT_NO_TARGET: 'No tienes un objetivo de combate activo.',
+  COMBAT_INVALID_ACTION: 'Esa acción de combate no es válida.',
+  COMBAT_OUT_OF_RANGE: 'El objetivo está fuera de alcance.',
+  COMBAT_COOLDOWN: 'La acción todavía se está recuperando.',
+  COMBAT_NOT_ENOUGH_RESOURCE: 'No tienes suficiente recurso.',
+  COMBAT_HEALTH_FULL: 'Ya tienes la vida completa.',
   NOT_ENOUGH_MONEY: 'No tienes suficientes pelines.',
   INVENTORY_FULL: 'Tu mochila está llena.',
   INVENTORY_CHANGED: 'Tu mochila ha cambiado. Vuelve a mover el objeto.',
   ITEM_NOT_FOR_SALE: 'Ese vendedor no vende ese objeto.',
   INVALID_VENDOR: 'Ese personaje no comercia.',
   INVALID_ITEM: 'Ese objeto no existe.',
+  ITEM_NOT_SELLABLE: 'Ese objeto no se puede vender.',
   ITEM_NOT_USABLE: 'Ese objeto no se puede usar.',
   NOTHING_TO_HEAL: 'Ya tienes la vida completa.',
   WRONG_RESOURCE: 'Esta poción no corresponde al recurso de tu clase.',
@@ -299,6 +314,16 @@ export type CharacterAction = 'damage' | 'heal' | 'xp' | 'money' | 'respawn';
 export const characterActions: Record<CharacterAction, (id: string) => Promise<Record<string, unknown>>> = {
   damage: debugDamage, heal: debugHeal, xp: debugXp, money: debugMoney, respawn: respawnCharacter,
 };
+
+export async function startCombat(id: string) {
+  return asRecord(await serverCall(requireClient().rpc('combat_start',{p_character_id:id})));
+}
+export async function combatAction(id: string, action: 'attack'|'skill') {
+  return asRecord(await serverCall(requireClient().rpc('combat_action',{p_character_id:id,p_action:action})));
+}
+export async function stopCombat(id: string) {
+  return asRecord(await serverCall(requireClient().rpc('combat_stop',{p_character_id:id})));
+}
 
 /** Compra una unidad a un vendedor; el servidor valida mercancía, saldo y hueco, y cobra el precio. */
 export async function buyFromVendor(id: string, vendor: string, item: string) {

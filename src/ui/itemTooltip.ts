@@ -66,6 +66,7 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   description.className = 'item-tip-description';
   description.textContent = t(item.description);
   container.append(description);
+  if (item.sellable === false) return;
 
   const footer = document.createElement('div');
   footer.className = 'item-tip-footer';

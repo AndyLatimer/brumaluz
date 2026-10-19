@@ -1,0 +1,119 @@
+# Combate: primera base de desarrollo
+
+## Estado real
+
+Se han implementado el catálogo de kits iniciales, su entrega desde
+`create_character` y la representación del equipo en el personaje compartido
+`Character`. El equipo ocupa `weapon` y `offhand`, no la mochila, y no cambia
+la ropa de novato. No se entrega a personajes antiguos al entrar.
+
+El SQL no se aplica automáticamente. El 19 de octubre de 2026 se aplicó a
+Brumaluz con autorización expresa, después de superar las 25 comprobaciones
+de servidor con rollback. La bienvenida y el combate siguen desactivados
+mediante sus banderas; no se migraron personajes antiguos.
+
+`src/data/combat.ts` conserva el balance y el resolver puro del banco local.
+El SQL añade RPC de inicio/ataque/retirada y estado personal del rival,
+validando presencia, posición, alcance, recargas y recursos en servidor.
+La conversación de Isberto inicia un encuentro personal en el mundo 3D, con
+objetivo seleccionable, aproximación, ataque automático, habilidad y retirada.
+Isberto permanece oculto e ininteractuable hasta completar la bienvenida de
+Gnomi. `combat_start` y `combat_action` comprueban ese estado en el servidor;
+la ausencia de progreso o una fase incompleta se rechaza con `WELCOME_REQUIRED`.
+El cliente de prueba simula el encuentro localmente; el mundo conectado usa
+los RPC autoritativos y los latidos para el daño del enemigo. Una derrota del
+jugador cierra el encuentro sin presentarla como victoria sobre el enemigo.
+La bandera `combat_enabled` permanece desactivada por defecto. No hay todavía
+botín, XP de combate ni avance de misión. Nunca se debe enviar al servidor el
+resultado calculado por el prototipo como daño o progreso autoritativos.
+
+## Kits y balance provisional
+
+| Clase | Equipo | Alcance | Intervalo | Daño | Habilidad |
+| --- | --- | --- | --- | --- | --- |
+| Guerrero | Espada + escudo | 1,8 m | 1,5 s | 10 | Golpe contundente: 18 de daño |
+| Mago | Bastón | 6 m | 1,8 s | 10 | Descarga arcana: 18 de daño |
+| Pícaro | Dos dagas | 1,6 m | 0,9 s | 8 | Corte doble: dos impactos de 8 |
+| Clérigo | Varita + libro | 6 m | 1,8 s | 11 | Curación propia: hasta 32 de vida |
+| Explorador | Ballesta | 8 m | 1,7 s | 10 | Disparo preciso: 19 de daño |
+
+El coste de las habilidades es 15/20/15/12/15 y sus recargas provisionales
+6/7/4,5/6/6 segundos respectivamente. El ataque básico no consume recurso.
+El ajuste baja el daño y alcance del mago para moderar su ventaja a distancia;
+refuerza el ataque básico y la frecuencia de Corte doble del pícaro y,
+especialmente, el ataque básico del clérigo. La
+curación del clérigo ahora recupera hasta 32 de vida, cuesta menos y vuelve
+antes, para que su habilidad sea útil con el daño entrante de esta prueba.
+Estas cifras no son canon ni balance definitivo; no incluyen todavía escalado
+por atributos, defensa ni probabilidades de impacto.
+Curación no requiere enemigo ni alcance y no sobrecura. Una acción rechazada
+no consume recurso ni altera el estado. Las ramas futuras quedan fuera.
+
+## Equipo y visibilidad
+
+Los ocho objetos iniciales están en los catálogos TypeScript y SQL, con
+`bound: true`, una unidad por objeto y sin venta. Los comerciantes no los
+ofrecen. El servidor rechaza la venta incluso si se fuerza la petición.
+La vinculación del catálogo también impide ofertarlos en intercambios.
+
+`Character` lee los slots equipados en cualquier representación: mundo local,
+jugadores remotos, retratos y vista del inventario. La vista previa de clase
+del creador conserva su presentación anterior. El snapshot público incorpora
+equipo para que las armas también sean visibles a otros jugadores; no publica
+la mochila, monedas ni el progreso personal.
+
+## Banco de pruebas
+
+Con `npm run dev`, abrir `/combat.html`. Es una escena 3D en tiempo real solo
+de desarrollo, sin cuenta, RPC ni recompensas. Usa `Character` con el kit de
+clase, animaciones de ataque/cast, proyectiles y una sombra provisional propia.
+El aspecto de esta sombra no es un diseño artístico aprobado. El registro
+de impactos está plegado y solo sirve para depuración: no es combate por texto.
+Elegir clase reinicia la prueba. Seleccionar rival y pulsar 1 activa ataque
+automático y aproximación; 2 usa la habilidad. WASD, flechas o clic sobre el
+suelo mueven al personaje e interrumpen la aproximación. También se puede
+seleccionar al enemigo pulsando su modelo 3D. El enemigo persigue al jugador
+al entrar en combate. El rival puede causar daño; hay muerte y reaparición
+locales. El escenario es una arena limitada, no el mapa ni la pelea de la
+historia. No añade la habilidad a la barra real de consumibles. El ataque
+de ballesta usa provisionalmente `Interact`: el pack no incluye disparo.
+
+En el mundo, completa la bienvenida de Gnomi y acompáñale hasta Isberto para
+probar el encuentro de la sombra. La escena aislada
+`?test&welcome&graphics=compatible` permite recorrer esa secuencia sin cuenta
+ni persistencia. Los controles son `F` para activar o pausar el ataque automático,
+`R` para la habilidad de clase y `Esc` para retirarse. El modelo de la criatura
+es provisional. No habilitar `combat_enabled` ni aplicar el SQL al mundo
+configurado sin autorización expresa.
+
+### Regeneración gradual del prototipo
+
+- Vida: 1 % del máximo por segundo fuera de combate y, provisionalmente,
+  0,25 % en combate. Se considera fuera tras cinco segundos sin atacar,
+  usar habilidad o recibir daño.
+- Maná: 2 % del máximo por segundo. Estamina: 4 %, también en combate.
+- Conserva fracciones entre pasos, limita al máximo y nunca revive ni
+  genera sobrecuración. No acumula tiempo desconectado o con pestaña oculta.
+
+El prototipo local demuestra estas tasas sin autoridad de cliente. El
+servidor también las calcula desde la concesión de presencia, conserva las
+fracciones y devuelve las estadísticas propias en los latidos del mundo.
+Cuando se habilite el RPC, las acciones autorizadas marcan `combat_at` y
+activan la tasa lenta de vida durante los cinco segundos posteriores al último
+golpe, habilidad o daño recibido. Los cambios de `supabase/server.sql` están
+aplicados a Brumaluz; el encuentro sigue protegido por `combat_enabled`.
+
+`npm run test:combat` comprueba los cinco kits, vinculación, impactos,
+curación, recursos, alcance, recargas, muerte, regeneración fraccional,
+entradas inválidas e inmutabilidad. Incluye navegador con desplazamiento del
+actor 3D, aproximación, acciones por clase y movimiento manual.
+Las pruebas SQL adicionales en `test-world-db.mjs` requieren una base de pruebas
+o permiso explícito para usar la configurada con rollback.
+
+## Trabajo pendiente
+
+El encuentro conectado todavía no concede recompensas ni progresa la misión;
+también faltan la validación visual final del emplazamiento, el arte definitivo
+de la criatura. Las pruebas SQL ya pasaron en Brumaluz dentro de una transacción
+con rollback antes de aplicar el archivo. No habilitar la bienvenida ni el
+combate sin autorización, ni inventar recompensas o desbloqueos de historia.

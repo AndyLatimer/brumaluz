@@ -51,26 +51,65 @@ multiplica por estar en grupo.
 
 `game_require_welcome_complete` es el requisito interno para contenido
 posterior. La XP de depuración ya lo utiliza para personajes elegibles.
-Las futuras misiones o accesos que hagan avanzar la historia deben invocarlo
-también: no basta con ocultar sus botones. Pasear, hablar, abrir menús o usar
-los servicios existentes no quedan bloqueados.
+El encuentro con Isberto exige además que `welcome.stage` sea exactamente
+`completed` tanto al mostrar/interactuar con el NPC como al iniciar o ejecutar
+acciones de combate en el servidor. La ausencia de progreso no desbloquea este
+encuentro. Las futuras misiones o accesos que hagan avanzar la historia deben
+invocar el requisito correspondiente: no basta con ocultar sus botones.
+Pasear, hablar con otros NPC, abrir menús o usar los servicios existentes no
+quedan bloqueados.
 
 ## Interfaz y acompañamiento
 
 - Los diálogos admiten acciones asíncronas: desactivan las respuestas mientras
   esperan, no avanzan si la acción devuelve `false`, muestran errores y
   descartan continuaciones de una conversación cerrada o reemplazada.
-- El motivo tiene una confirmación explícita. El diario muestra el motivo,
-  objetivo, recompensa y, cuando procede, el distintivo pendiente de devolver.
+- Elegir la respuesta inicial guarda el motivo directamente, sin una segunda
+  confirmación; la conversación espera al servidor antes de ofrecer la misión.
+  El motivo permanece guardado, pero no se muestra como texto de relleno en
+  el diario. Este organiza la misión por contacto, pasos, objetivo actual y
+  recompensas visuales separadas de experiencia y pelines.
+- `questItems` deriva los objetos de misión del progreso autoritativo.
+  El distintivo aparece solo durante `found`, en una sección independiente
+  del inventario y en el diario. No se inserta en `inventory`, no cuenta para
+  la capacidad de mochila y no admite uso, arrastre, venta ni intercambio.
+  Se conserva al reconectar y desaparece al entregarlo. Ambas vistas comparten
+  ilustración, nombre, misión asociada y tooltip.
 - La misión obligatoria se sigue automáticamente; su marcador exacto se
   muestra en el minimapa y, cuando entra en cámara, sobre el objetivo.
+- Los nodos de diálogo pueden incluir una tarjeta `quest`: título, objetivo,
+  XP, pelines y modo de oferta o entrega. Se presenta en un panel propio,
+  separado de las palabras del NPC, con botones de aceptar/completar y salir.
+  Salir de la oferta no la acepta, no abandona el progreso y no modifica el
+  motivo guardado. Las conversaciones normales no muestran tarjeta de misión.
+- El encabezado del encuentro muestra nombre y subtítulo/oficio del NPC
+  (la misma identidad usada en el marco de objetivo). El encuentro oculta
+  temporalmente chat, minimapa y acceso rápido para dejar libre la escena.
+- Al hablar con un NPC, ambos se miran y la cámara encuadra a la pareja en
+  el espacio que deja libre el diálogo, también al cambiar de nodo o tamaño
+  de pantalla. No cambia el zoom ni el giro guardados de exploración.
+  Al cerrar se restaura la orientación del NPC y vuelve suavemente la cámara
+  de juego. Las interacciones sin interlocutor, como el pozo, no usan este plano.
+- El plano busca líneas de visión despejadas para los cuerpos de ambos
+  interlocutores, incluyendo edificios, faroles y otros personajes como
+  obstáculos (no hierba, flores ni partículas). Al completar la bienvenida,
+  Gnomi espera a terminar su agradecimiento antes de reanudar el seguimiento.
 - Gnomi y el distintivo son actores locales. No entran en `world_players`,
   no se transmiten a otros usuarios y no compiten entre jugadores.
+- El cuerpo de Gnomi reutiliza `Character` y el rig KayKit de 41 huesos:
+  cabeza modular dulce, barba clara y el vestuario independiente `helpers`
+  (peto azul, camisa clara, botas y gorro rojo nuevo sin ala). Las piezas
+  sustituyen las regiones cubiertas del traje inicial; no se superponen a él.
+  El proceso de creación se describe en [CHARACTER-ART.md](./CHARACTER-ART.md).
+  El escalado está en un contenedor externo para que las animaciones no lo
+  sobrescriban. Camina/corre, parpadea y mueve la boca con el mismo sistema
+  de personajes; el distintivo devuelto va unido al hueso del pecho.
 - Gnomi recorre una estela de posiciones del jugador con colisiones de la
-  ciudad y animación sencilla. Sigue durante `active` y `found` por toda
+  ciudad y animación sencilla. Sigue durante `active`, `found` y `completed` por toda
   Brumaluz, espera durante diálogos y se reincorpora al volver a entrar.
   Si queda a más de 20 m, reaparece junto al jugador para evitar perderlo
-  tras una corrección de posición. Al completar, vuelve a su puesto.
+  tras una corrección de posición. Tras el agradecimiento, guía al jugador
+  hacia el encuentro con Isberto antes de la orientación sobre oficios.
 - Hay un comentario contextual cerca del mercado. Los textos se traducen
   al español/inglés y se consideran provisionales hasta su aprobación.
 
@@ -86,9 +125,9 @@ No se debe activar la bandera en producción para hacer pruebas.
   de una transacción que acaba en rollback, incluida la activación temporal,
   creación de personajes, permisos, distancia, estados, persistencia y pago
   único. Requiere autorización para usar la base configurada.
-- `?test&welcome&graphics=compatible` permite ensayar la interfaz sin cuenta,
-  en la escena simple de desarrollo. No escribe datos ni activa la bienvenida
-  real; no conserva el progreso al recargar.
+- `?test&welcome&graphics=compatible` permite ensayar la secuencia de Gnomi e
+  Isberto sin cuenta, en la escena simple de desarrollo. No escribe datos ni
+  activa la bienvenida real; no conserva el progreso al recargar.
 
 Las coordenadas de `WELCOME_START` y `WELCOME_BADGE` en `src/data/quests.ts`
 deben coincidir con las comprobaciones de `welcome_action` en

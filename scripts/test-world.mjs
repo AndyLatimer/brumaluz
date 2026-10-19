@@ -8,12 +8,13 @@ import { after, before, test } from 'node:test';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 
-const url = 'http://127.0.0.1:4175';
+const port = Number(process.env.TEST_WORLD_PORT || 4175);
+const url = `http://127.0.0.1:${port}`;
 const project = readFileSync(new URL('../dist/index.html', import.meta.url), 'utf8').match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
 let server, browser;
 before(async () => {
   assert.ok(project, 'Build with the public Supabase configuration before running browser tests');
-  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4175', '--strictPort']);
+  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort']);
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Preview server did not start')), 15000);
     server.once('error', reject);
@@ -38,7 +39,7 @@ function fixture(name, race, x) {
   return { user, character: { id: characterId, user_id: userId, name, data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
 }
 function backend() {
-  return { players: new Map(), accounts: new Map(), friends: new Map(), parties:new Map(), partyInvites:new Map(), partyResponses:[], history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map() };
+  return { players: new Map(), accounts: new Map(), friends: new Map(), parties:new Map(), partyInvites:new Map(), partyResponses:[], history: [], chatSockets: new Map(), fail: new Set(), delay: new Map(), rpcDelay: new Map(), logoutFails: false, counts: new Map(), maximum: new Map(), active: new Map(), combatCalls:[],combatSimulationEnabled:false };
 }
 function partyOf(world,userId){return [...world.parties.values()].find(party=>party.members.includes(userId));}
 function cleanupParties(world){
@@ -230,6 +231,31 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       else world.friends.delete(pair);
       return route.fulfill({status:204});
     }
+    if (fn === 'combat_start' || fn === 'combat_action' || fn === 'combat_stop') {
+      const player=world.players.get(key);
+      if(!player||player.id!==args.p_character_id)return fulfill({message:'COMBAT_NOT_PLAYING'},400);
+      if(player.data.welcome?.stage!=='completed'&&fn!=='combat_stop')return fulfill({message:'WELCOME_REQUIRED'},400);
+      world.combatCalls.push({userId:key,fn,action:args.p_action??null});
+      if(fn==='combat_start'){
+        if(player.encounter?.status==='active')return fulfill({message:'COMBAT_ALREADY_ACTIVE'},400);
+        player.encounter={id:'shadowling',status:'active',health:100,maxHealth:100,x:3.5,z:-62.35,enemyAttackAt:(Date.now()+750)/1000};
+        player.nextEnemyAttack=Date.now()+750;
+        return fulfill({encounter:player.encounter,vitals:player.vitals,damage:0,healing:0});
+      }
+      if(fn==='combat_stop'){
+        if(player.encounter?.status==='active')player.encounter={...player.encounter,status:'fled'};
+        return fulfill({encounter:player.encounter??null,vitals:player.vitals});
+      }
+      if(player.encounter?.status!=='active')return fulfill({message:'COMBAT_NO_TARGET'},400);
+      const skill=args.p_action==='skill',damage=skill?18:10;
+      if(skill){
+        if(player.vitals.resource<15)return fulfill({message:'COMBAT_NOT_ENOUGH_RESOURCE'},400);
+        player.vitals={...player.vitals,resource:player.vitals.resource-15};
+      }
+      player.encounter={...player.encounter,health:Math.max(0,player.encounter.health-damage),
+        status:player.encounter.health<=damage?'defeated':'active'};
+      return fulfill({encounter:player.encounter,vitals:player.vitals,damage,healing:0});
+    }
     if (fn === 'world_leave') {
       if (world.players.get(key)?.session === args.p_session_id) world.players.delete(key);
       return route.fulfill({ status: 204 });
@@ -238,7 +264,10 @@ async function openPlayer(world, account, compatible = true, clockTime) {
     if (world.fail.has(key)) return fulfill({ message: 'Temporary connection failure' }, 503);
     let player = world.players.get(key);
     if (fn === 'world_join') {
-      player = { id: character.id, userId: key, session: args.p_session_id, data: character.data, position: { ...character.data.position }, facing: Math.PI, jump: 0, wave: 0, dead: false };
+      const resourceKind=['mago','clerigo'].includes(character.data.cls)?'mana':'stamina';
+      player = { id: character.id, userId: key, session: args.p_session_id, data: character.data, position: { ...character.data.position }, facing: Math.PI, jump: 0, wave: 0, dead: false,
+        vitals:world.combatSimulationEnabled?{health:100,maxHealth:100,overheal:0,resource:80,maxResource:80,resourceKind}:undefined,
+        encounter:world.combatSimulationEnabled?null:undefined,nextEnemyAttack:0 };
       world.players.set(key, player);
     } else if (!player || player.session !== args.p_session_id) return fulfill({ message: 'WORLD_SESSION_REPLACED' }, 400);
     world.counts.set(key, (world.counts.get(key) || 0) + 1);
@@ -249,8 +278,16 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       const motion = args.p_state;
       if (Math.hypot(motion.x - player.position.x, motion.z - player.position.z) > 20) status = 'corrected';
       else { player.position = { x: motion.x, z: motion.z, yaw: motion.yaw }; player.facing = motion.facing; player.jump = motion.jump; player.wave = motion.wave; }
+      if(world.combatSimulationEnabled&&player.encounter?.status==='active'&&Date.now()>=player.nextEnemyAttack
+        &&Math.hypot(player.position.x-player.encounter.x,player.position.z-player.encounter.z)<=2){
+        player.vitals={...player.vitals,health:Math.max(0,player.vitals.health-8)};
+        player.nextEnemyAttack=Date.now()+3000;
+        player.encounter={...player.encounter,enemyAttackAt:player.nextEnemyAttack/1000,
+          status:player.vitals.health===0?'failed':'active'};
+      }
     }
     const response = { status, position: { ...player.position },
+      ...(world.combatSimulationEnabled?{vitals:player.vitals,encounter:player.encounter??null}:{}),
       food: { buff: character.data.foodBuff ?? null, revision: character.data.foodRevision ?? 0, at: Date.now() / 1000 },
       players: [...world.players.values()].filter((p) => p.userId !== key).map((p) => ({
       ...p, position: { ...p.position }, username: world.accounts.get(p.userId).username || p.data.name,
@@ -311,65 +348,203 @@ async function revealChat(page) {
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
 }
 
-test('welcome systems confirm origins, await server actions, keep a private companion and persist the journal through rewards', {timeout:180000}, async()=>{
+test('starter equipment renders every class weapon without replacing novice clothes or granting legacy kits', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('Equipado','humano',-6.4);
+  const player=await openPlayer(world,account);
+  const kits=[
+    ['guerrero','espada_inicial','escudo_inicial',['1H_Sword','Badge_Shield']],
+    ['mago','baston_inicial',null,['2H_Staff']],
+    ['picaro','daga_inicial','daga_secundaria_inicial',['Knife','Knife_Offhand']],
+    ['clerigo','varita_inicial','libro_inicial',['1H_Wand','Spellbook']],
+    ['explorador','ballesta_inicial',null,['1H_Crossbow']],
+  ];
+  try{
+    await player.enter();
+    assert.equal(await player.page.evaluate(()=>!!window.brumaluz.char().root.getObjectByName('1H_Sword')),false,'Legacy characters remain unarmed');
+    for(const [cls,weapon,offhand,models] of kits){
+      await player.page.evaluate(({cls,weapon,offhand})=>window.brumaluz.set({
+        cls,equipment:{
+          weapon:{id:weapon,count:1,bound:true},
+          offhand:offhand?{id:offhand,count:1,bound:true}:null,
+        },
+      }),{cls,weapon,offhand});
+      const rendered=await player.page.evaluate(models=>{
+        const root=window.brumaluz.char().root;
+        return {weapons:models.every(name=>!!root.getObjectByName(name)),novice:!!root.getObjectByName('Rogue_Body')};
+      },models);
+      assert.equal(rendered.weapons,true,`${cls} equipped meshes`);
+      assert.equal(rendered.novice,true,`${cls} keeps novice clothes`);
+      await player.page.keyboard.press('KeyI');
+      assert.ok(await player.page.locator(`#window-body [data-item-id="${weapon}"]`).count()>0,`${cls} equipment tooltip in inventory`);
+      await player.page.keyboard.press('Escape');
+    }
+  }finally{await player.context.close();}
+});
+
+test('welcome systems save origins directly, present quest cards, await server actions and persist the journal through rewards', {timeout:180000}, async()=>{
   const world=backend(),a=fixture('Alric','humano',-6.4),b=fixture('Elara','elfo',-5.4);
   a.character.data.welcome={origin:null,stage:'available'};
+  a.character.data.inventory=Array.from({length:25},()=>({id:'pan_duro',count:50}));
   b.character.data.welcome={origin:null,stage:'available'};
   const first=await openPlayer(world,a),second=await openPlayer(world,b);
   const approach=async(page,x,z)=>{
     await page.evaluate(({x,z})=>window.brumaluz.move(x,z),{x,z});
     await page.waitForTimeout(800);
   };
-  const talk=async page=>{
+  const talk=async(page,english=false)=>{
     await page.evaluate(()=>{
       const p=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').position;
-      window.brumaluz.move(p.x,p.z+.3);
+      window.brumaluz.move(p.x,p.z+1.7);
     });
-    await page.waitForFunction(()=>document.querySelector('#interact-prompt').textContent.includes('Hablar con Gnomi'));
+    await page.waitForFunction(label=>document.querySelector('#interact-prompt').textContent.includes(label),english?'Talk to Gnomi':'Hablar con Gnomi');
     await page.keyboard.press('KeyE');
     await page.locator('#dialog').waitFor({state:'visible'});
     assert.equal(await page.locator('.dialog-speaker').textContent(),'Gnomi');
   };
   try {
     await first.enter();await second.enter();
+    const gnomiModel=await first.page.evaluate(()=>{
+      const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      let skins=0,bones=0;
+      g.traverse(object=>{if(object.isSkinnedMesh)skins++;if(object.isBone)bones++;});
+      return {
+        skins,bones,scale:g.getObjectByName('gnomi-rig').scale.y,
+        hat:!!g.getObjectByName('helpers-soft-cap'),
+        hatAnchor:g.getObjectByName('helpers-soft-cap')?.parent.name,
+        bindings:(()=>{
+          let compatible=true;
+          g.traverse(object=>{
+            if(object.isSkinnedMesh)compatible&&=object.skeleton.bones.every(bone=>g.getObjectByName(bone.name)===bone);
+          });
+          return compatible;
+        })(),
+        oldHat:!!g.getObjectByName('Mage_Hat'),
+        oldBody:!!g.getObjectByName('Rogue_Body'),
+        overalls:!!g.getObjectByName('helpers-overalls'),
+      };
+    });
+    assert.ok(gnomiModel.skins>=10,'Gnomi uses independent skinned garments and exposed anatomy');
+    assert.equal(gnomiModel.bones,41);
+    assert.equal(gnomiModel.scale,.48,'Gnomi keeps his small size outside animation transforms');
+    assert.equal(gnomiModel.hat,true);
+    assert.equal(gnomiModel.hatAnchor,'head');
+    assert.equal(gnomiModel.bindings,true,'Every garment follows the character skeleton rather than an unanimated copy');
+    assert.equal(gnomiModel.oldHat,false,'The deformed wizard hat is no longer used');
+    assert.equal(gnomiModel.oldBody,false,'The uniform replaces rather than overlaps the starting clothes');
+    assert.equal(gnomiModel.overalls,true);
+    const relativeHeight=await first.page.evaluate(()=>{
+      const height=root=>{
+        root.updateWorldMatrix(true,true);
+        let bounds=null;
+        root.traverse(object=>{
+          if(!object.isMesh||!object.visible||object.material.transparent)return;
+          if(object.isSkinnedMesh){object.skeleton.update();object.computeBoundingBox();}
+          else object.geometry.computeBoundingBox();
+          const box=(object.isSkinnedMesh?object.boundingBox:object.geometry.boundingBox).clone().applyMatrix4(object.matrixWorld);
+          if(bounds)bounds.union(box);else bounds=box;
+        });
+        return bounds.max.y-bounds.min.y;
+      };
+      return height(window.brumaluz.city().root.parent.getObjectByName('gnomi-personal'))/height(window.brumaluz.char().root);
+    });
+    assert.ok(relativeHeight>.35&&relativeHeight<.6,`Gnomi including his hat reaches roughly mid-thigh: ${relativeHeight}`);
     await approach(first.page,-6.4,-8.5);
     await talk(first.page);
-    await first.page.getByRole('button',{name:'Soy de Brumaluz y busco mi primer oficio.'}).click();
-    assert.equal(a.character.data.welcome.origin,null,'Selecting a motive does not persist it before confirmation');
-    await first.page.getByRole('button',{name:'Elegir otro motivo'}).click();
-    await first.page.getByRole('button',{name:'He venido a probar suerte.'}).click();
+    assert.match(await first.page.locator('.dialog-text').textContent(),/ayudante de bienvenida/);
+    assert.equal(await first.page.locator('.dialog-subtitle').textContent(),'Ayudante de bienvenida');
+    assert.equal(await first.page.locator('.dialog-quest-card').count(),0,'Ordinary conversation has no quest panel');
     world.rpcDelay.set('welcome_action',600);
-    await first.page.getByRole('button',{name:'Confirmar mi motivo'}).click();
+    await first.page.getByRole('button',{name:'He venido a probar suerte.'}).click();
     assert.equal(await first.page.locator('#dialog').getAttribute('aria-busy'),'true');
-    assert.equal(await first.page.getByRole('button',{name:'Confirmar mi motivo'}).isDisabled(),true);
+    assert.equal(await first.page.getByRole('button',{name:'He venido a probar suerte.'}).isDisabled(),true);
     await first.page.keyboard.press('KeyE');
-    await first.page.getByRole('button',{name:'Ayudar a Gnomi'}).waitFor();
-    assert.equal(a.character.data.welcome.origin,1);
+    await first.page.getByRole('button',{name:'Aceptar misión'}).waitFor();
+    assert.equal(a.character.data.welcome.origin,1,'Selecting the response saves it directly with no confirmation step');
+    assert.equal(await first.page.getByRole('button',{name:'Confirmar mi motivo'}).count(),0);
+    assert.equal(a.character.data.welcome.stage,'available','Origin selection does not accept the quest');
+    assert.equal(await first.page.locator('.dialog-quest-card h3').textContent(),'Algo pequeño, algo importante');
+    assert.equal(await first.page.locator('.dialog-quest-card').getAttribute('aria-label'),'Nueva misión');
+    assert.deepEqual(await first.page.locator('.dialog-quest-rewards > span').allTextContents(),['40 XP','5 pelines']);
+    assert.doesNotMatch(await first.page.locator('.dialog-text').textContent(),/Recompensa|40 XP/,'Rewards are structured UI, not dialogue prose');
+    assert.match(await first.page.locator('.dialog-text').textContent(),/Gremio de Ayudantes.*¡Otra vez!.*David/s);
+    for(const [width,height] of [[320,844],[390,844],[1280,844],[844,390],[320,568]]){
+      await first.page.setViewportSize({width,height});
+      const fits=await first.page.locator('#dialog').evaluate(el=>{
+        const box=el.getBoundingClientRect();
+        return box.top>=0&&box.bottom<=innerHeight&&box.left>=0&&box.right<=innerWidth&&el.scrollWidth<=el.clientWidth;
+      });
+      assert.ok(fits,`Quest offer fits ${width}px`);
+      await first.page.waitForTimeout(1100);
+      const framing=await first.page.evaluate(()=>{
+        const camera=window.brumaluz.camera(),player=window.brumaluz.char().root.parent;
+        const npc=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+        const top=document.querySelector('#dialog').getBoundingClientRect().top;
+        return [player,npc].flatMap((actor,i)=>[.08,i===0?2.2:.95].map(height=>{
+          const p=actor.position.clone();p.y+=height;p.project(camera);
+          return {x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2,z:p.z,top};
+        }));
+      });
+      assert.ok(framing.every(p=>p.x>8&&p.x<width-8&&p.y>0&&p.y<p.top-8&&p.z>-1&&p.z<1),`Both characters remain above the dialogue at ${width}px: ${JSON.stringify(framing)}`);
+      await first.page.getByRole('button',{name:'Aceptar misión'}).scrollIntoViewIfNeeded();
+      assert.ok(await first.page.getByRole('button',{name:'Aceptar misión'}).evaluate(el=>{
+        const box=el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2));
+      }),`Quest acceptance is not covered by chat or minimap at ${width}px`);
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`welcome-offer-${width}.png`)});
+    }
+    await first.page.setViewportSize({width:1280,height:800});
+    await first.page.locator('#scene').dispatchEvent('wheel',{deltaY:600});
+    await first.page.keyboard.press('Escape');
+    await first.page.waitForFunction(()=>!window.brumaluz.camera().view?.enabled);
+    const restoredCamera=await first.page.evaluate(()=>{
+      const position=window.brumaluz.camera().position.clone().sub(window.brumaluz.char().root.parent.position);
+      return {yaw:Math.atan2(position.x,position.z),distance:Math.hypot(position.x,position.z)};
+    });
+    assert.ok(Math.abs(restoredCamera.yaw)<.02,'Conversation keeps the exploration camera yaw');
+    assert.ok(Math.abs(restoredCamera.distance-Math.cos(.55)*12)<.05,'Wheel input during conversation does not change the exploration zoom');
+    assert.equal(await first.page.locator('body').evaluate(el=>el.classList.contains('conversation-open')),false);
+    assert.equal(a.character.data.welcome.stage,'available','Closing the offer does not accept or abandon it');
+    await talk(first.page);
+    await first.page.locator('.dialog-quest-card').waitFor();
+    assert.equal(await first.page.getByRole('button',{name:'He venido a probar suerte.'}).count(),0,'Returning to Gnomi does not ask for the saved origin again');
     assert.equal(await first.page.locator('#dialog').getAttribute('aria-busy'),'false');
     world.rpcDelay.delete('welcome_action');
     world.fail.add('welcome');
-    await first.page.getByRole('button',{name:'Ayudar a Gnomi'}).click();
+    await first.page.getByRole('button',{name:'Aceptar misión'}).click();
     await first.page.waitForFunction(()=>document.querySelector('#dialog').getAttribute('aria-busy')==='false');
     assert.equal(a.character.data.welcome.stage,'available');
     assert.equal(await first.page.locator('#dialog').isVisible(),true,'Server failure leaves the conversation ready to retry');
     await first.page.locator('#toast').filter({hasText:'Temporary quest failure'}).waitFor();
     world.fail.delete('welcome');
-    await first.page.getByRole('button',{name:'Ayudar a Gnomi'}).click();
+    await first.page.getByRole('button',{name:'Aceptar misión'}).click();
     await first.page.locator('#dialog').waitFor({state:'hidden'});
     await first.page.locator('#quest-tracker').waitFor();
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'welcome-companion.png')});
     await first.page.keyboard.press('KeyJ');
     await first.page.locator('.quest-entry').waitFor();
-    assert.match(await first.page.locator('.quest-entry').textContent(),/Obligatoria/);
+    assert.equal(await first.page.locator('.quest-origin,.quest-journal-intro').count(),0);
+    assert.deepEqual(await first.page.locator('.quest-reward b').allTextContents(),['+40','+5']);
+    assert.equal(await first.page.locator('.quest-reward.pelines .currency-icon-pelines').count(),1);
+    assert.equal(await first.page.locator('.quest-steps li.current').textContent(),'2Encontrar el distintivo');
+    assert.equal(await first.page.locator('.quest-items').count(),0,'Uncollected quest items are not owned');
+    assert.equal(await first.page.locator('.quest-entry header > small,.quest-rewards-heading > small').count(),0);
     assert.equal(await first.page.getByRole('button',{name:/Abandonar/}).count(),0);
     for(const width of [320,390,1280]){
       await first.page.setViewportSize({width,height:844});
       assert.ok(await first.page.locator('.quest-journal').evaluate(el=>el.scrollWidth<=el.clientWidth&&el.getBoundingClientRect().right<=innerWidth),'Journal fits the viewport');
       const close=await first.page.locator('#window-close').boundingBox();
       assert.ok(close.y>=0&&close.y+close.height<844-44,'Journal keeps the close button above the chat handle');
+      await first.page.locator('.quest-rewards').scrollIntoViewIfNeeded();
+      assert.ok(await first.page.locator('.quest-reward-list').evaluate(el=>el.scrollWidth<=el.clientWidth),'Reward cards fit narrow screens');
       if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`welcome-journal-${width}.png`)});
     }
     await first.page.keyboard.press('Escape');
+    await first.page.keyboard.press('KeyI');
+    await first.page.locator('.inv-grid').waitFor();
+    assert.equal(await first.page.locator('.inv .quest-items').count(),0);
+    const bagCapacity=await first.page.locator('.inv-capacity').textContent();
+    await first.page.keyboard.press('Escape');
+    const inventoryBeforeQuestItem=JSON.stringify(a.character.data.inventory);
     await first.page.setViewportSize({width:1280,height:800});
     for(const [x,z] of [[-6.4,-3],[3,-3],[10,-3],[15.8,-5.7]])await approach(first.page,x,z);
     await first.page.waitForFunction(()=>{
@@ -387,18 +562,60 @@ test('welcome systems confirm origins, await server actions, keep a private comp
     await first.enter();
     await first.page.keyboard.press('KeyJ');
     await first.page.locator('.quest-key-item').waitFor();
-    assert.match(await first.page.locator('.quest-origin').textContent(),/He venido a probar suerte/);
+    assert.equal(await first.page.locator('.quest-origin').count(),0);
+    assert.equal(a.character.data.welcome.origin,1,'Origin stays saved without being repeated in the journal');
+    assert.match(await first.page.locator('.quest-key-item').textContent(),/Distintivo del Gremio de Ayudantes/);
     await first.page.keyboard.press('Escape');
+    await first.page.keyboard.press('KeyI');
+    await first.page.locator('.inv .quest-key-item').waitFor();
+    assert.equal(await first.page.locator('.inv-capacity').textContent(),bagCapacity);
+    assert.equal(JSON.stringify(a.character.data.inventory),inventoryBeforeQuestItem,'Quest items never occupy real bag slots');
+    const questItem=first.page.locator('.inv .quest-key-item');
+    assert.equal(await questItem.getAttribute('draggable'),null);
+    assert.equal(await questItem.locator('button').count(),0);
+    assert.equal(await questItem.getAttribute('data-item-id'),null,'Quest items are not transferable bag objects');
+    await questItem.scrollIntoViewIfNeeded();
+    await first.page.waitForTimeout(100);
+    await questItem.focus();
+    await first.page.locator('#game-tooltip').filter({hasText:'No se puede vender, intercambiar ni descartar.'}).waitFor();
+    for(const width of [320,390,1280]){
+      await first.page.setViewportSize({width,height:844});
+      await questItem.scrollIntoViewIfNeeded();
+      assert.ok(await questItem.evaluate(el=>el.scrollWidth<=el.clientWidth&&el.getBoundingClientRect().right<=innerWidth),'Quest item card fits the inventory');
+      assert.ok(await questItem.evaluate(el=>{
+        const box=el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2));
+      }),'Quest item stays accessible above the action bar');
+      const close=await first.page.locator('#window-close').boundingBox();
+      assert.ok(close.y>=0&&close.y+close.height<800,'Inventory close button stays onscreen');
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`welcome-inventory-${width}.png`)});
+    }
+    await first.page.keyboard.press('Escape');
+    await first.page.setViewportSize({width:1280,height:800});
     await talk(first.page);
-    await first.page.getByRole('button',{name:'Devolver el distintivo'}).click();
+    assert.equal(await first.page.locator('.dialog-quest-card').getAttribute('aria-label'),'Entrega de misión');
+    await first.page.getByRole('button',{name:'Completar misión'}).click();
     await first.page.waitForFunction(()=>document.querySelector('.dialog-text').textContent.includes('puedo ser útil'));
+    assert.match(await first.page.locator('.dialog-text').textContent(),/oficio, puedo orientarte/);
+    assert.equal(await first.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-worn-badge').visible),true);
+    assert.ok(await first.page.evaluate(()=>{
+      const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      return g.position.distanceTo(window.brumaluz.char().root.parent.position)<4;
+    }),'Gnomi stays beside the player through the thank-you conversation');
+    assert.equal(await first.page.locator('.dialog-quest-card').count(),0,'Thank-you dialogue clears the quest card');
+    assert.equal(await first.page.locator('#dialog').evaluate(el=>el.classList.contains('quest-dialog')),false);
     assert.equal(a.character.data.experience,40);
     assert.equal(a.character.data.wallet.pelines,5);
     await first.page.keyboard.press('KeyE');
     await first.page.keyboard.press('KeyJ');
     assert.equal(await first.page.locator('.quest-key-item').count(),0);
     assert.equal(await first.page.getByRole('button',{name:'Completadas',exact:true}).getAttribute('aria-pressed'),'true');
-    assert.match(await first.page.locator('.quest-entry footer').textContent(),/Recompensa recibida/);
+    assert.match(await first.page.locator('.quest-entry footer').textContent(),/Recompensas recibidas/);
+    assert.equal(await first.page.locator('.quest-steps li.done').count(),3);
+    await first.page.keyboard.press('Escape');
+    await first.page.keyboard.press('KeyI');
+    await first.page.locator('.inv-grid').waitFor();
+    assert.equal(await first.page.locator('.inv .quest-items').count(),0,'Delivered quest items disappear from inventory');
     await first.page.keyboard.press('Escape');
     await first.page.locator('#game-menu-toggle').click();
     await first.page.locator('#game-menu-options').click();
@@ -406,7 +623,25 @@ test('welcome systems confirm origins, await server actions, keep a private comp
     await first.page.keyboard.press('Escape');
     await first.page.keyboard.press('KeyJ');
     assert.equal(await first.page.locator('#window-title').textContent(),'Quest journal');
-    assert.match(await first.page.locator('.quest-entry footer').textContent(),/Reward received/);
+    assert.match(await first.page.locator('.quest-entry footer').textContent(),/Rewards received/);
+    assert.deepEqual(await first.page.locator('.quest-reward strong').allTextContents(),['Experience','Pelines']);
+    await first.page.keyboard.press('Escape');
+    await approach(second.page,-6.4,-8.5);
+    await talk(second.page);
+    await second.page.getByRole('button',{name:'Vengo de la Arboleda para aprender.'}).click();
+    await second.page.getByRole('button',{name:'Aceptar misión'}).waitFor();
+    await second.page.keyboard.press('Escape');
+    await second.page.locator('#game-menu-toggle').click();
+    await second.page.locator('#game-menu-options').click();
+    await second.page.locator('#options-backdrop [data-language="en"]').click();
+    await second.page.keyboard.press('Escape');
+    await talk(second.page,true);
+    assert.equal(await second.page.locator('.dialog-quest-card').getAttribute('aria-label'),'New quest');
+    assert.match(await second.page.locator('.dialog-quest-card').textContent(),/Objective.*Accompany Gnomi.*Rewards/s);
+    assert.match(await second.page.locator('.dialog-text').textContent(),/Helpers' Guild.*David/s);
+    assert.equal(await second.page.locator('.dialog-subtitle').textContent(),'Welcome helper');
+    assert.equal(await second.page.getByRole('button',{name:'Accept quest',exact:true}).isVisible(),true);
+    assert.equal(await second.page.getByRole('button',{name:'Close',exact:true}).isVisible(),true);
     assert.deepEqual([...first.errors,...second.errors],[]);
   } finally {await first.context.close();await second.context.close();}
 });
@@ -435,6 +670,19 @@ test('welcome systems offer three distinct origins per race in the isolated deve
       assert.deepEqual(await page.locator('.dialog-choice:not(.exit) > span:last-child').allTextContents(),labels);
       await page.keyboard.press('Escape');
     }
+    await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'found'}}));
+    await page.locator('#game-menu-toggle').click();
+    await page.locator('#game-menu-options').click();
+    await page.locator('#options-backdrop [data-language="en"]').click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('KeyI');
+    await page.locator('.inv .quest-key-item').waitFor();
+    assert.match(await page.locator('.inv .quest-items').textContent(),/Quest items.*Helpers' Guild badge.*Return it to Gnomi/s);
+    assert.equal(await page.locator('.inv .quest-items > small').count(),0);
+    await page.locator('.inv .quest-key-item').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
+    await page.locator('.inv .quest-key-item').focus();
+    await page.locator('#game-tooltip').filter({hasText:'Cannot be sold, traded or discarded.'}).waitFor();
     assert.deepEqual(errors,[]);
   } finally {await context.close();}
 });
@@ -841,7 +1089,7 @@ test('queen title uses the same reserved phoenix styling in the picker and remot
 
 async function hoverActor(page, plate) {
   const bounds = await plate.boundingBox();
-  assert.ok(bounds, 'Target nameplate is visible');
+  assert.ok(bounds, `Target nameplate is visible: ${JSON.stringify(await plate.evaluate(el=>({hidden:el.hidden,style:getComputedStyle(el).display,transform:el.style.transform,text:el.textContent})))}`);
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height + 55);
 }
 
@@ -908,7 +1156,7 @@ test('target frame shows hovered players and NPC types, live vitals, camera aim 
       return {x:p.x,z:p.z};
     });
     await first.page.waitForTimeout(2000);
-    await hoverActor(first.page,first.page.locator('.nameplate.npc').first());
+    await hoverActor(first.page,first.page.locator('.nameplate.npc:not(.welcome-nameplate)').first());
     await first.page.waitForFunction(()=>!document.querySelector('#target-frame').hidden && document.querySelector('#target-frame').dataset.targetId==='npc:testiculos');
     assert.equal(await frame.locator('.target-kind').textContent(),'Depuración');
     assert.equal(await frame.locator('.target-name').textContent(),'Testículos, the Debugger');
@@ -1048,7 +1296,8 @@ test('target details enforce the 10 metre player-distance limit for camera and c
           const p=window.brumaluz.players()[0].root.position, me=window.brumaluz.char().root.parent.position;
           return p.distanceTo(me);
         });
-        assert.equal(await frame.isVisible(),distance<10,`${method}: actual distance ${actual.toFixed(3)}m must respect the 10m boundary`);
+        const showingPlayer=await frame.isVisible()&&await frame.locator('.target-name').textContent()==='Elara';
+        assert.equal(showingPlayer,distance<10,`${method}: actual distance ${actual.toFixed(3)}m must respect the 10m boundary`);
       }
     }
     assert.deepEqual([...first.errors,...second.errors],[]);
@@ -1368,17 +1617,143 @@ test('NPC interaction still opens its conversation with E', { timeout: 120000 },
     });
     await player.page.reload();
     await player.enter();
-    assert.equal(await player.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').visible),false,'Legacy characters never get the welcome actor');
+    assert.equal(await player.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').visible),true,'Gnomi remains present when no welcome progress exists');
     assert.equal(await player.page.locator('[data-window="quests"]').isVisible(),false);
+    await player.page.evaluate(()=>window.brumaluz.move(-6.4,-8.5));
     await player.page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await player.page.keyboard.press('KeyE');
     await player.page.locator('#dialog').waitFor({state:'visible'});
+    assert.equal(await player.page.locator('.dialog-subtitle').textContent(),'Ayudante del Gremio');
+    assert.match(await player.page.locator('.dialog-text').textContent(),/Soy Gnomi/);
+    assert.equal(await player.page.locator('.dialog-quest-card').count(),0,'Meeting Gnomi does not activate the welcome quest');
+    await player.page.keyboard.press('Escape');
+    await player.page.evaluate(()=>{
+      const npc=window.brumaluz.city().npcSites[0];
+      window.brumaluz.move(npc.position.x+1,npc.position.z);
+    });
+    await player.page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('#dialog').waitFor({state:'visible'});
+    assert.equal(await player.page.locator('.dialog-subtitle').textContent(),'Depuración');
+    assert.equal(await player.page.locator('.dialog-quest-card').count(),0);
+    await player.page.setViewportSize({width:320,height:568});
+    await player.page.locator('.dialog-choice').first().hover();
+    await player.page.mouse.move(0,0);
+    await player.page.keyboard.press('ArrowUp');
+    assert.equal(await player.page.locator('.dialog-choice.selected').evaluate(el=>el.classList.contains('exit')),true);
+    assert.ok(await player.page.locator('.dialog-choice.selected').evaluate(el=>{
+      const box=el.getBoundingClientRect();
+      return el.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2));
+    }),'Keyboard navigation reveals offscreen conversation choices');
+    await player.page.keyboard.press('Escape');
+    await player.page.waitForFunction(()=>!window.brumaluz.camera().view?.enabled);
+    assert.equal(await player.page.locator('body').evaluate(el=>el.classList.contains('conversation-open')),false);
     assert.equal(await player.page.locator('#player-interactions').isVisible(),false);
     assert.deepEqual(player.errors,[]);
   } finally {await player.context.close();}
 });
 
-test('friend requests notify outside Social, mark both menu levels and announce acceptance; Group offers invitations', {timeout:120000}, async () => {
+test('Isberto starts the local real-time shadowling encounter with working combat controls', {timeout:120000}, async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  try{
+    await page.goto(`${url}/?test&welcome&graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz);
+    await page.evaluate(()=>window.brumaluz.play());
+    await page.waitForFunction(()=>document.body.classList.contains('playing'));
+    await page.evaluate(()=>{
+      const isberto=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
+      if(!isberto)throw new Error('Isberto is missing from the city');
+      window.brumaluz.move(isberto.position.x,isberto.position.z);
+    });
+    await page.waitForTimeout(150);
+    assert.equal(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible),false,'Isberto stays hidden until Gnomi’s welcome is complete');
+    assert.equal(await page.locator('#interact-label').filter({hasText:'Hablar'}).count(),0,'Locked Isberto cannot be interacted with');
+    await page.evaluate(()=>window.brumaluz.move(-6.4,-8.5));
+    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('#dialog').waitFor({state:'visible'});
+    await page.getByRole('button',{name:'He venido a probar suerte.'}).click();
+    await page.getByRole('button',{name:'Aceptar misión'}).waitFor();
+    await page.getByRole('button',{name:'Aceptar misión'}).click();
+    await page.locator('#dialog').waitFor({state:'hidden'});
+    await page.evaluate(()=>window.brumaluz.move(15.8,-5.7));
+    await page.locator('#interact-label').filter({hasText:'Recoger distintivo'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.waitForFunction(()=>document.querySelector('#quest-tracker').textContent.includes('devuélvele'));
+    await page.evaluate(()=>{
+      const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      window.brumaluz.move(gnomi.position.x,gnomi.position.z);
+    });
+    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.getByRole('button',{name:'Completar misión'}).click();
+    await page.locator('.dialog-text').filter({hasText:'Primero acompáñame a ver a Isberto'}).waitFor();
+    assert.equal(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible),true,'Isberto appears after returning Gnomi’s badge');
+    await page.keyboard.press('Escape');
+    await page.locator('#dialog').waitFor({state:'hidden'});
+    await page.evaluate(()=>{
+      const site=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
+      if(!site)throw new Error('Isberto is missing from the city');
+      window.brumaluz.move(site.position.x,site.position.z);
+    });
+    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await page.keyboard.press('KeyE');
+    await page.locator('#dialog').waitFor({state:'visible'});
+    await page.locator('.dialog-choice').first().click();
+    await page.waitForFunction(()=>!document.querySelector('#combat-controls').hidden);
+    await page.evaluate(()=>{
+      const site=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
+      if(!site)throw new Error('Isberto is missing from the city');
+      window.brumaluz.move(site.position.x+5,site.position.z);
+    });
+    await page.locator('#combat-skill').click();
+    await page.locator('.chat-log').getByText('Golpeas a la criatura extraña por 18.',{exact:true}).waitFor();
+    assert.equal(await page.locator('#combat-controls').isVisible(),true);
+    await page.locator('#combat-flee').click();
+    await page.waitForFunction(()=>document.querySelector('#combat-controls').hidden);
+    assert.deepEqual(errors,[]);
+  }finally{await context.close();}
+});
+
+test('online Isberto combat uses mocked RPC state for start, enemy damage, skill and retreat', {timeout:120000}, async()=>{
+  const world=backend(),account=fixture('Alric','humano',-3);
+  world.combatSimulationEnabled=true;
+  account.character.data.welcome={origin:0,stage:'completed'};
+  account.character.data.position={x:-3,z:-62.35,yaw:0};
+  const player=await openPlayer(world,account);
+  try{
+    await player.enter();
+    await player.page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('#dialog').waitFor({state:'visible'});
+    await player.page.locator('.dialog-choice').first().click();
+    await player.page.waitForFunction(()=>!document.querySelector('#combat-controls').hidden);
+    assert.equal(world.combatCalls.some(call=>call.fn==='combat_start'),true,'The encounter starts through the online RPC');
+    await player.page.locator('#combat-auto').click();
+    await player.page.waitForFunction(()=>document.querySelector('#combat-auto').getAttribute('aria-pressed')==='false');
+    await player.page.evaluate(()=>{
+      const site=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
+      if(!site)throw new Error('Isberto is missing from the city');
+      window.brumaluz.move(site.position.x+5,site.position.z);
+    });
+    await player.page.waitForFunction(()=>document.querySelector('#hud-health-text').textContent==='92 / 100',{timeout:15000});
+    assert.equal(world.players.get(account.user.id).vitals.health,92,'The world sync snapshot applies the enemy hit to the local HUD');
+    await player.page.locator('#combat-skill').click();
+    await player.page.locator('.chat-log').getByText('Golpeas a la criatura extraña por 18.',{exact:true}).waitFor();
+    assert.equal(world.combatCalls.some(call=>call.fn==='combat_action'&&call.action==='skill'),true,'The class skill uses the online action RPC');
+    assert.equal(world.players.get(account.user.id).vitals.resource,65,'The server response updates the player resource');
+    assert.equal(await player.page.locator('#hud-resource-text').textContent(),'65 / 80');
+    await player.page.locator('#combat-flee').click();
+    await player.page.waitForFunction(()=>document.querySelector('#combat-controls').hidden);
+    assert.equal(world.combatCalls.some(call=>call.fn==='combat_stop'),true,'Retreat uses the online RPC');
+    assert.equal(world.players.get(account.user.id).encounter.status,'fled');
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('friend requests notify outside Social, mark both menu levels and announce acceptance; Group offers invitations', { timeout: 120000 }, async () => {
   const world = backend(), a = fixture('Alric','humano',100), b = fixture('Elara','elfo',101);
   const first = await openPlayer(world,a), second = await openPlayer(world,b);
   try {

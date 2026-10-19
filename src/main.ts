@@ -5,6 +5,7 @@ import {
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
+  startCombat, combatAction, stopCombat,
 } from './services/account';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
@@ -26,8 +27,8 @@ import { createTradeWindow } from './ui/tradeWindow';
 import { createTargetFrame, type NpcType, type TargetDetails } from './ui/targetFrame';
 import { getParty, observeParty, startParty, stopParty, partySelf, isPartyLeader } from './services/party';
 import { initPartyHud } from './ui/partyPanel';
-import { WorldConnection, type WorldSnapshot } from './services/multiplayer';
-import { buildCity, City, type Interactable } from './world/city';
+import { WorldConnection, parseCombatEncounter, parsePublicVitals, type CombatEncounter, type WorldSnapshot } from './services/multiplayer';
+import { buildCity, City, COMBAT_SITE, type Interactable } from './world/city';
 import { AmbientSoundscape } from './world/audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './character/head';
 import {
@@ -51,11 +52,15 @@ import type { FoodBuff } from './data/food';
 import { WELCOME_START, WELCOME_BADGE, WELCOME_TITLE, welcomeObjective, type WelcomeAction } from './data/quests';
 import { createWelcomeWorld } from './world/welcome';
 import { createQuestTracker, renderQuestJournal, welcomeConversation } from './ui/questWindow';
+import { COMBAT_KITS, resolveCombat, type CombatState } from './data/combat';
 
 
 // ---------------- Estado ----------------
 let state: CharData = defaultChar();
 if (!state.name) state.name = randomName(state.race);
+function isbertoUnlocked() {
+  return state.welcome?.stage === 'completed';
+}
 
 let activeCharacterId: string | null = null;
 let currentUser: User | null = null;
@@ -165,7 +170,103 @@ let yaw = 0, pitch = 0.55, followDist = 12;
 const camPos = new THREE.Vector3();
 const playerVel = new THREE.Vector3();
 let zoomTarget = 12;
+let conversationActor: THREE.Object3D | null = null;
+let conversationFacing = 0;
+let conversationSide = 1;
+let conversationOffset = 0;
+let returningFromConversation = false;
+let conversationShot = '';
+const conversationPosition = new THREE.Vector3();
+const conversationRay = new THREE.Raycaster();
+function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
+  closeDialog();
+  conversationActor = actor;
+  conversationShot = '';
+  conversationFacing = actor.rotation.y;
+  const direction = actor.position.clone().sub(holder.position);
+  const side = new THREE.Vector3(direction.z, 0, -direction.x);
+  conversationSide = side.dot(camera.position.clone().sub(holder.position)) >= 0 ? 1 : -1;
+  if (direction.lengthSq() > .01) {
+    holder.rotation.y = Math.atan2(direction.x, direction.z);
+    actor.rotation.y = holder.rotation.y + Math.PI;
+  }
+  playerVel.set(0, 0, 0);
+  openConversation(conversation, () => {
+    actor.rotation.y = conversationFacing;
+    conversationActor = null;
+    returningFromConversation = true;
+  });
+}
+function updateConversationCamera(dt: number) {
+  const actor = conversationActor!;
+  const dialogTop = document.getElementById('dialog')!.getBoundingClientRect().top;
+  const sceneTop = 24;
+  const sceneBottom = Math.max(sceneTop + 60, dialogTop - 16);
+  const visibleHeight = sceneBottom - sceneTop;
+  const target = holder.position.clone().add(actor.position).multiplyScalar(.5);
+  target.y = Math.max(holder.position.y, actor.position.y) + 1;
+  const direction = actor.position.clone().sub(holder.position).setY(0);
+  if (direction.lengthSq() < .01) direction.set(0, 0, 1);
+  direction.normalize();
+  const side = new THREE.Vector3(direction.z, 0, -direction.x).multiplyScalar(conversationSide);
+  side.addScaledVector(direction, .25).normalize();
+  const halfFov = THREE.MathUtils.degToRad(camera.fov * .5);
+  const distance = Math.max(
+    1.35 / Math.tan(halfFov) * window.innerHeight / visibleHeight,
+    (holder.position.distanceTo(actor.position) * .5 + .8) / (Math.tan(halfFov) * camera.aspect),
+  );
+  const position = target.clone().addScaledVector(side, distance);
+  position.y += distance * .18;
+  position.y = Math.max(position.y, city.groundY(position.x, position.z) + .6);
+  const shot = `${target.x}:${target.z}:${distance.toFixed(2)}`;
+  if (shot !== conversationShot) {
+    conversationShot = shot;
+    city.root.updateWorldMatrix(true, true);
+    const obstacles = [
+      ...env.cameraObstacles,
+      ...city.root.children.filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_')),
+      ...npcActors.filter(npc => npc.character.root !== actor).map(npc => npc.character.root),
+      ...remotePlayers.list().map(player => player.root),
+    ];
+    for (const obstacle of obstacles) obstacle.updateWorldMatrix(true, true);
+    let bestClearance = -1;
+    findShot: for (const elevation of [.18, .65, 1]) {
+      for (const angle of [0, Math.PI, Math.PI / 3, -Math.PI / 3, 2 * Math.PI / 3, -2 * Math.PI / 3, Math.PI / 2, -Math.PI / 2]) {
+        const offset = side.clone().applyAxisAngle(THREE.Object3D.DEFAULT_UP, angle).multiplyScalar(distance);
+        offset.y = distance * elevation;
+        const candidate = target.clone().add(offset);
+        candidate.y = Math.max(candidate.y, city.groundY(candidate.x, candidate.z) + .6);
+        let clearance = 1;
+        for (const subject of [holder, actor]) {
+          const shoulder = new THREE.Vector3(-offset.z, 0, offset.x).normalize();
+          for (const [height, width] of [[.2, 0], [subject === welcomeWorld.root ? .4 : .8, -.3], [subject === welcomeWorld.root ? .4 : .8, .3], [subject === welcomeWorld.root ? .95 : 2.1, 0]]) {
+            const origin = subject.position.clone().addScaledVector(shoulder, width);
+            origin.y += height;
+            const path = candidate.clone().sub(origin);
+            conversationRay.set(origin, path.clone().normalize());
+            conversationRay.far = path.length();
+            const hit = conversationRay.intersectObjects(obstacles, true)[0];
+            if (hit) clearance = Math.min(clearance, hit.distance / path.length());
+          }
+        }
+        if (clearance > bestClearance) {
+          bestClearance = clearance;
+          conversationPosition.copy(candidate);
+        }
+        if (clearance === 1) break findShot;
+      }
+    }
+  }
+  position.copy(conversationPosition);
+  const k = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 1 - Math.exp(-dt * 8);
+  camTarget.lerp(target, k);
+  camera.position.lerp(position, k);
+  camera.lookAt(camTarget);
+  conversationOffset += ((window.innerHeight - sceneTop - sceneBottom) * .5 - conversationOffset) * k;
+  camera.setViewOffset(window.innerWidth, window.innerHeight, 0, conversationOffset, window.innerWidth, window.innerHeight);
+}
 function updatePlayCamera(dt: number) {
+  if (conversationActor && isDialogOpen()) { updateConversationCamera(dt); return; }
   // el objetivo se adelanta un poco en la dirección de marcha y la cámara lo sigue con holgura
   const target = tmp.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0)).addScaledVector(playerVel, 0.12);
   const k = 1 - Math.exp(-dt * 5);
@@ -174,7 +275,17 @@ function updatePlayCamera(dt: number) {
   const off = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(followDist);
   camPos.copy(camTarget).add(off);
   camPos.y = Math.max(camPos.y, city.groundY(camPos.x, camPos.z) + 0.6);
-  camera.position.copy(camPos);
+  if (returningFromConversation) {
+    const blend = 1 - Math.exp(-dt * 8);
+    camera.position.lerp(camPos, blend);
+    conversationOffset *= 1 - blend;
+    camera.setViewOffset(window.innerWidth, window.innerHeight, 0, conversationOffset, window.innerWidth, window.innerHeight);
+    if (camera.position.distanceTo(camPos) < .02 && Math.abs(conversationOffset) < .1) {
+      returningFromConversation = false;
+      conversationOffset = 0;
+      camera.clearViewOffset();
+    }
+  } else camera.position.copy(camPos);
   camera.lookAt(camTarget);
 }
 
@@ -198,9 +309,9 @@ function updateCamera(dt: number) {
 
 // Girar al personaje arrastrando
 let dragging = false, lastX = 0, lastY = 0, spinVel = 0, dragDist = 0;
-canvas.addEventListener('pointerdown', (e) => { dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
+canvas.addEventListener('pointerdown', (e) => { if (isDialogOpen()) return; dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
 canvas.addEventListener('pointermove', (e) => {
-  if (!dragging) return;
+  if (!dragging || isDialogOpen()) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
   lastX = e.clientX; lastY = e.clientY;
   dragDist += Math.abs(dx) + Math.abs(dy);
@@ -221,6 +332,7 @@ canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', () => { dragging = false; canvas.classList.remove('drag'); });
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
+  if (isDialogOpen()) return;
   if (mode === 'play') zoomTarget = THREE.MathUtils.clamp(zoomTarget * (1 + e.deltaY * 0.001), 3, 30);
   else zoom = THREE.MathUtils.clamp(zoom * (1 + e.deltaY * 0.001), 0.6, 1.4);
 }, { passive: false });
@@ -296,6 +408,13 @@ window.addEventListener('keydown', (e) => {
     if (!e.repeat) running = !running;
     return;
   }
+  if(combatEncounter?.status==='active'&&(e.code==='KeyF'||e.code==='KeyR')){
+    e.preventDefault();
+    if(e.repeat)return;
+    if(e.code==='KeyF')$('#combat-auto').click();
+    else useWorldCombatSkill();
+    return;
+  }
   const barSlot = actionBarSlotForKey(e.code);
   if (e.code === 'KeyZ') {
     if (!e.repeat) toggleActionBarPage();
@@ -327,6 +446,7 @@ const INTERACTIONS: Record<string, () => DialogLine[]> = {
 function nearestInteractable(): Interactable | null {
   let best: Interactable | null = null, bestDistance = Infinity;
   for (const item of [...city.interactables, ...welcomeWorld.interactions()]) {
+    if (item.id === 'npc:isberto' && !isbertoUnlocked()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
   }
@@ -345,12 +465,14 @@ function nearestInteraction() {
 function talkTo(npcId: string) {
   pendingTalk = null;
   if (npcId === 'gnomi') { talkGnomi(); return; }
+  if (npcId === 'isberto' && !isbertoUnlocked()) return;
   const conv = NPCS[npcId]?.conversation;
   if (!conv) return;
   keys.clear();
   moveTarget = null;
   marker.visible = false;
-  openConversation(conv);
+  const actor = npcActors.find(npc => npc.id === npcId);
+  if (actor) beginConversation(actor.character.root, { ...conv, subtitle: NPCS[npcId].title });
 }
 function interact() {
   if (mode !== 'play' || dead || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || optionsOpen) return;
@@ -367,13 +489,13 @@ function interact() {
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
-  const lines = npcId ? null : item && INTERACTIONS[item.id]?.();
-  const conv = npcId && NPCS[npcId] ? NPCS[npcId].conversation : null;
-  if (!lines && !conv) return;
+  if (npcId) { talkTo(npcId); return; }
+  const lines = item && INTERACTIONS[item.id]?.();
+  if (!lines) return;
   keys.clear();
   moveTarget = null;
   marker.visible = false;
-  if (conv) openConversation(conv); else openDialog(lines!);
+  openDialog(lines);
 }
 document.getElementById('interact-prompt')!.addEventListener('click', () => interact());
 // Clic en un NPC: si está cerca habla con él; si no, camina hasta él y habla al llegar.
@@ -383,6 +505,12 @@ function clickNpc(e: PointerEvent) {
   if (dead || isDialogOpen() || !npcActors.length) return false;
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  if(combatTargetRoot&&combatEncounter?.status==='active'&&ray.intersectObject(combatTargetRoot,true).length){
+    combatAuto=!combatAuto;pendingCombatSkill=false;nextCombatAttack=0;
+    $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
+    if(combatAuto)chatCombat(t('Objetivo seleccionado. Ataque automático activado.'));
+    return true;
+  }
   if (welcomeWorld.root.visible && ray.intersectObject(welcomeWorld.root, true).length) {
     if (holder.position.distanceTo(welcomeWorld.root.position) <= TALK_RANGE) talkGnomi();
     else {
@@ -391,7 +519,7 @@ function clickNpc(e: PointerEvent) {
     }
     return true;
   }
-  for (const hit of ray.intersectObjects(npcActors.map((n) => n.character.root), true)) {
+  for (const hit of ray.intersectObjects(npcActors.filter(npc => npc.id !== 'isberto' || isbertoUnlocked()).map((n) => n.character.root), true)) {
     const npc = npcActors.find((n) => { let o: THREE.Object3D | null = hit.object; while (o) { if (o === n.character.root) return true; o = o.parent; } return false; });
     if (!npc || !NPCS[npc.id]) continue;
     const p = npc.character.root.position;
@@ -441,11 +569,14 @@ function clickToMove(e: PointerEvent) {
   }
   p.y = city.groundY(p.x, p.z);
   moveTarget = p;
+  combatAuto=false;pendingCombatSkill=false;
+  if(combatEncounter?.status==='active')$('#combat-auto').setAttribute('aria-pressed','false');
   marker.position.set(p.x, city.groundY(p.x, p.z) + 0.03, p.z);
   marker.visible = true;
 }
 function updatePlay(dt: number) {
   if (dead) { keys.clear(); moveTarget = null; marker.visible = false; }
+  if (pendingTalk === 'isberto' && !isbertoUnlocked()) pendingTalk = null;
   if (pendingTalk) {
     const npc = npcActors.find((n) => n.id === pendingTalk);
     const position = pendingTalk === 'gnomi' && welcomeWorld.root.visible ? welcomeWorld.root.position : npc?.character.root.position;
@@ -460,6 +591,8 @@ function updatePlay(dt: number) {
   const dir = new THREE.Vector3();
   let clickMoving = false;
   if (input.lengthSq() > 0) {
+    combatAuto=false;pendingCombatSkill=false;
+    if(combatEncounter?.status==='active')$('#combat-auto').setAttribute('aria-pressed','false');
     moveTarget = null;
     marker.visible = false;
     const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
@@ -467,6 +600,10 @@ function updatePlay(dt: number) {
   } else if (moveTarget) {
     dir.set(moveTarget.x - holder.position.x, 0, moveTarget.z - holder.position.z);
     if (dir.length() < 0.25) { moveTarget = null; marker.visible = false; dir.set(0, 0, 0); } else { dir.normalize(); clickMoving = true; }
+  } else if(combatAuto&&combatTargetRoot&&combatEncounter?.status==='active'){
+    const range=COMBAT_KITS[state.cls].range;
+    const dx=combatTargetRoot.position.x-holder.position.x,dz=combatTargetRoot.position.z-holder.position.z;
+    if(Math.hypot(dx,dz)>range-.1){dir.set(dx,0,dz).normalize();clickMoving=true;}
   }
   if (!dragging && clickMoving) {
     // al ir con clic la cámara se recoloca poco a poco tras el personaje
@@ -474,6 +611,7 @@ function updatePlay(dt: number) {
     back = Math.atan2(Math.sin(back), Math.cos(back));
     yaw += back * (1 - Math.exp(-dt * 1.5));
   }
+
   // aceleración y frenada suaves
   const maxSpeed = dir.lengthSq() ? (running ? 6.2 : 2.4) : 0;
   const wantVel = dir.clone().multiplyScalar(maxSpeed);
@@ -507,6 +645,67 @@ function updatePlay(dt: number) {
   if (marker.visible) marker.scale.setScalar(1 + Math.sin(clock.getElapsedTime() * 6) * 0.1);
 }
 
+function tickWorldCombat(time:number) {
+  if(!combatTargetRoot||combatEncounter?.status!=='active')return;
+  combatTargetRoot.rotation.y=Math.sin(time*1.6)*.15;
+  combatTargetRoot.scale.y=.97+Math.sin(time*4)*.035;
+  const kit=COMBAT_KITS[state.cls];
+  const distance=Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z);
+  if(pendingCombatSkill&&distance<=kit.range){
+    pendingCombatSkill=false;void performWorldCombatAction('skill');return;
+  }
+  const wallTime=performance.now()/1000;
+  if(TEST&&!activeCharacterId&&localCombatState&&localCombatState.health>0&&distance<=2&&wallTime>=nextLocalEnemyAttack){
+    nextLocalEnemyAttack=wallTime+2;
+    localCombatState={...localCombatState,health:Math.max(0,localCombatState.health-8)};
+    const vitals=vitalsOf(state);
+    applyCombatResult({
+      encounter:combatEncounter,
+      vitals:{health:localCombatState.health,maxHealth:localCombatState.maxHealth,overheal:0,
+        resource:localCombatState.resource,maxResource:vitals.maxResource,resourceKind:vitals.resourceKind},
+      damage:0,healing:0,
+    });
+    return;
+  }
+  if(dead||!combatAuto||combatBusy)return;
+  if(distance>kit.range)return;
+  if(time<nextCombatAttack)return;
+  nextCombatAttack=time+kit.interval;
+  void performWorldCombatAction('attack');
+}
+async function fleeWorldCombat() {
+  combatAuto=false;pendingCombatSkill=false;
+  if(!combatEncounter||combatEncounter.status!=='active')return;
+  if(!activeCharacterId&&TEST){
+    setCombatEncounter({...combatEncounter,status:'fled'});
+    localCombatState=null;
+    chatCombat(t('Te has retirado del combate.'));
+    return;
+  }
+  const characterId=activeCharacterId;
+  if(!characterId)return;
+  const stillCurrent=characterContext();
+  try{
+    const result=await stopCombat(characterId);
+    if(!stillCurrent())return;
+    applyCombatResult(result);
+    chatCombat(t('Te has retirado del combate.'));
+  }catch(error){toast('No se pudo completar la acción',errorMessage(error),true);}
+}
+function useWorldCombatSkill() {
+  if(!combatEncounter||combatEncounter.status!=='active'||dead)return;
+  if(state.cls!=='clerigo'&&combatTargetRoot){
+    const range=COMBAT_KITS[state.cls].range;
+    const distance=Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z);
+    if(distance>range){
+      pendingCombatSkill=true;combatAuto=false;
+      moveTarget=combatTargetRoot.position.clone();marker.visible=false;
+      return;
+    }
+  }
+  pendingCombatSkill=false;
+  void performWorldCombatAction('skill');
+}
 const restartClass = (el: HTMLElement, cls: string) => {
   el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
   el.addEventListener('animationend', (e) => { if (e.target === el) el.classList.remove(cls); }, { once: true });
@@ -557,9 +756,17 @@ async function runOnServer(call: (id: string) => Promise<Record<string, unknown>
 }
 
 function talkGnomi() {
-  if (!state.welcome || actionBusy) return;
+  if (actionBusy) return;
   keys.clear(); moveTarget = null; pendingTalk = null; marker.visible = false;
-  openConversation(welcomeConversation(state, performWelcome));
+  if (!state.welcome) {
+    beginConversation(welcomeWorld.root, {
+      speaker:'Gnomi',subtitle:'Ayudante del Gremio',start:'intro',
+      nodes:{intro:{text:'¡Hola! Soy Gnomi, del Gremio de Ayudantes. Ahora mismo no tengo ningún encargo para ti, pero seguro que nos cruzamos pronto.'}},
+    });
+    return;
+  }
+  if (state.welcome.origin === null) welcomeWorld.greet();
+  beginConversation(welcomeWorld.root, welcomeConversation(state, performWelcome));
 }
 async function performWelcome(action: WelcomeAction, origin?: number) {
   const stillCurrent = characterContext();
@@ -908,6 +1115,7 @@ function playerSay(name: string, text: string) {
   speech.el.classList.add('pop');
 }
 function npcSay(name: string, text: string) {
+  if (name === 'Gnomi') { welcomeWorld.speak(speechSeconds(text)); return; }
   const npc = npcActors.find((n) => NPCS[n.id]?.name === name);
   npc?.character.speak(speechSeconds(text));
 }
@@ -920,7 +1128,8 @@ function updateNameplate() {
     if (show) {
       camera.updateMatrixWorld();
       nameplateAnchor.set(holder.position.x, holder.position.y + 1.95 + (state.height - 0.5) * 0.3, holder.position.z).project(camera);
-      const inView = nameplateAnchor.z < 1 && Math.abs(nameplateAnchor.x) < 1.2 && Math.abs(nameplateAnchor.y) < 1.2;
+      const inView = nameplateAnchor.z > -1 && nameplateAnchor.z < 1
+        && Math.abs(nameplateAnchor.x) < 1.2 && Math.abs(nameplateAnchor.y) < 1.2;
       if (inView) {
         const x = (nameplateAnchor.x * 0.5 + 0.5) * window.innerWidth;
         const y = (-nameplateAnchor.y * 0.5 + 0.5) * window.innerHeight - (settings.nameplates ? nameplate.el.offsetHeight + 8 : 6);
@@ -932,7 +1141,8 @@ function updateNameplate() {
   if (visible) {
     camera.updateMatrixWorld();
     nameplateAnchor.set(holder.position.x, holder.position.y + 1.95 + (state.height - 0.5) * 0.3, holder.position.z).project(camera);
-    const inView = nameplateAnchor.z < 1 && Math.abs(nameplateAnchor.x) < 1.2 && Math.abs(nameplateAnchor.y) < 1.2;
+    const inView = nameplateAnchor.z > -1 && nameplateAnchor.z < 1
+      && Math.abs(nameplateAnchor.x) < 1.2 && Math.abs(nameplateAnchor.y) < 1.2;
     if (inView) {
       const x = (nameplateAnchor.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-nameplateAnchor.y * 0.5 + 0.5) * window.innerHeight;
@@ -941,8 +1151,10 @@ function updateNameplate() {
     nameplate.el.hidden = !inView;
   } else if (!nameplate.el.hidden) nameplate.el.hidden = true;
   for (const npc of npcActors) {
+    if (npc.id === 'isberto' && !npc.character.root.visible) { npc.plate.hidden = true; continue; }
     npc.anchor.set(npc.character.root.position.x, npc.character.root.position.y + 1.95, npc.character.root.position.z).project(camera);
-    const inView = visible && npc.anchor.z < 1 && Math.abs(npc.anchor.x) < 1.2 && Math.abs(npc.anchor.y) < 1.2;
+    const inView = visible && npc.anchor.z > -1 && npc.anchor.z < 1
+      && Math.abs(npc.anchor.x) < 1.2 && Math.abs(npc.anchor.y) < 1.2;
     if (inView) {
       const x = (npc.anchor.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-npc.anchor.y * 0.5 + 0.5) * window.innerHeight;
@@ -1045,6 +1257,13 @@ function exitPlay() {
 
 // ---------------- Interfaz ----------------
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
+$('#combat-auto').addEventListener('click',()=>{
+  if(combatEncounter?.status!=='active')return;
+  combatAuto=!combatAuto;pendingCombatSkill=false;nextCombatAttack=0;
+  $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
+});
+$('#combat-skill').addEventListener('click',useWorldCombatSkill);
+$('#combat-flee').addEventListener('click',()=>void fleeWorldCombat());
 $('#respawn').addEventListener('click', respawn);
 const RACE_ICONS: Record<Race, string> = { humano: '🛡️', elfo: '🌿', lagto: '🦎', pelso: '🐱' };
 const CLASS_ICONS: Record<ClassId, string> = { guerrero: classIcon('guerrero'), mago: classIcon('mago'), picaro: classIcon('picaro'), clerigo: classIcon('clerigo'), explorador: classIcon('explorador') };
@@ -1086,7 +1305,8 @@ initChat({
 initMinimap({
   player: () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
   markers: () => [
-    ...npcActors.map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
+    ...npcActors.filter(npc => npc.id !== 'isberto' || isbertoUnlocked())
+      .map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
     ...(state.welcome && state.welcome.stage !== 'completed' ? [{
       id: 'welcome', name: t(welcomeObjective(state.welcome)), quest: true,
       ...(state.welcome.stage === 'active' ? WELCOME_BADGE : { x: welcomeWorld.root.position.x, z: welcomeWorld.root.position.z }),
@@ -1229,6 +1449,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop').hidden = !win;
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
   $('#window-backdrop .game-window').classList.toggle('quest-window-frame', win === 'quests');
+  $('#window-backdrop .game-window').classList.toggle('inventory-window-frame', win === 'inventory');
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
   $('#window-confirm').hidden = true;
   keys.clear();
@@ -1987,6 +2208,17 @@ function refreshWorldStatus() {
 }
 function receiveWorld(value: WorldSnapshot) {
   if (value.food) receiveFood(value.food);
+  if (value.selfVitals) {
+    const changed = state.health !== value.selfVitals.health || state.resource !== value.selfVitals.resource;
+    const tookDamage=value.selfVitals.health<state.health;
+    state.health = value.selfVitals.health;
+    state.resource = value.selfVitals.resource;
+    state.overheal=value.selfVitals.overheal;
+    if(tookDamage)char.hit();
+    if (state.health === 0 && !dead) die();
+    if (changed) updateHud();
+  }
+  if(value.encounter!==undefined)setCombatEncounter(value.encounter);
   state.position = value.position;
   if (value.status === 'corrected') {
     holder.position.set(value.position.x, city.groundY(value.position.x, value.position.z), value.position.z);
@@ -2021,9 +2253,7 @@ async function prepareMultiplayer() {
   worldConnection = connection;
   const initial = await connection.join();
   if (worldConnection !== connection || !initial) throw new Error(t('La entrada al mundo se ha cancelado.'));
-  state.position = initial.position;
-  if (initial.food) receiveFood(initial.food);
-  remotePlayers.receive(initial.players);
+  receiveWorld(initial);
 }
 function stopMultiplayer() {
   setFoodRunning(false);
@@ -2298,12 +2528,16 @@ async function initializeAccountAccess() {
 // ---------------- Bucle ----------------
 /** ?test: sin ciudad ni posproceso, para revisar personajes rápido (capturas automáticas). */
 const TEST = new URLSearchParams(location.search).has('test');
+const LOCAL_COMBAT_SITE = TEST ? { x: 0, z: -6 } : COMBAT_SITE;
 function testCity(): City {
   const root = new THREE.Group();
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(6, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#c9b48a' }));
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(32, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#c9b48a' }));
   ground.receiveShadow = true;
   root.add(ground);
-  return { root, locationId: 'brumaluz', npcSites: [{ id: 'testiculos', position: new THREE.Vector3(2, 0, -1), yaw: Math.PI / 2 }], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  return { root, locationId: 'brumaluz', npcSites: [
+    { id: 'testiculos', position: new THREE.Vector3(2, 0, -1), yaw: Math.PI / 2 },
+    { id: 'isberto', position: new THREE.Vector3(LOCAL_COMBAT_SITE.x - 3, 0, LOCAL_COMBAT_SITE.z), yaw: Math.PI / 2 },
+  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 const clock = new THREE.Clock();
 try {
@@ -2327,28 +2561,37 @@ questMarker.hidden = true;
 document.body.append(questMarker);
 const questAnchor = new THREE.Vector3();
 let welcomeHintSaid = false;
+let welcomeTravelSaid = false;
 function updateWelcome(dt: number, time: number) {
-  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isDialogOpen() || !!openWindow ? 0 : dt, time);
+  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root);
   const visible = mode === 'play' && !dead && !openWindow && !gameMenuOpen && !playerMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   questTracker.update(state, visible);
   welcomePlate.hidden = true;
   questMarker.hidden = true;
-  if (!welcomeWorld.root.visible || !visible || !state.welcome) return;
+  if (!welcomeWorld.root.visible || !visible) return;
   camera.updateMatrixWorld();
-  questAnchor.copy(welcomeWorld.root.position).add(new THREE.Vector3(0, 1.6, 0)).project(camera);
-  if (questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
+  questAnchor.copy(welcomeWorld.root.position).add(new THREE.Vector3(0, 1.1, 0)).project(camera);
+  if (questAnchor.z > -1 && questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
     welcomePlate.hidden = false;
     welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
   }
+  if (!state.welcome) return;
   if (state.welcome.stage === 'completed') return;
   const target = state.welcome.stage === 'active' ? welcomeWorld.lost.position : welcomeWorld.root.position;
   const distance = Math.hypot(target.x - holder.position.x, target.z - holder.position.z);
+  if (state.welcome.stage === 'active' && !welcomeTravelSaid && Math.hypot(holder.position.x - WELCOME_START.x, holder.position.z - WELCOME_START.z) > 5 && distance > 8) {
+    welcomeTravelSaid = true;
+    const line = t('El mercado queda por aquí. Yo venía mirando los puestos… Tendría que haber mirado también el distintivo.');
+    chatNpc('Gnomi', line);
+    welcomeWorld.speak(speechSeconds(line));
+  }
   if (state.welcome.stage === 'active' && distance < 8 && !welcomeHintSaid) {
     welcomeHintSaid = true;
     chatNpc('Gnomi', t('Por aquí estuve mirando los puestos. ¡A ver si mi distintivo también se quedó mirando!'));
+    welcomeWorld.speak(5);
   }
-  if (state.welcome.stage !== 'active') welcomeHintSaid = false;
-  questAnchor.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.9, 0)).project(camera);
+  if (state.welcome.stage !== 'active') { welcomeHintSaid = false; welcomeTravelSaid = false; }
+  questAnchor.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.3, 0)).project(camera);
   if (questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
     questMarker.hidden = false;
     questMarker.textContent = `${state.welcome.stage === 'available' ? '!' : '◆'} ${Math.round(distance)} m`;
@@ -2383,6 +2626,23 @@ const testChoices: DialogChoice[] = [
   { text: 'Comerciar', action: () => openVendor('testiculos') },
 ];
 const NPCS: Record<string, NpcDef> = {
+  isberto: {
+    name:'Isberto',
+    type:'resident',
+    title:'Granjero · explorador retirado',
+    level:1,
+    vitals:{health:100,maxHealth:100,overheal:0,resource:50,maxResource:50,resourceKind:'stamina'},
+    look:{race:'humano',sex:0,hair:3,hairColor:5,beard:2,clothA:3,clothB:6,height:.45,build:.62},
+    conversation:{
+      speaker:'Isberto',subtitle:'Granjero · explorador retirado',start:'intro',
+      nodes:{
+        intro:{
+          text:'Una cosa negra y rara se ha metido entre el ganado. No reconozco la criatura, y a estas alturas ya he tenido bastantes aventuras. Si te ves con ganas, échale un ojo. Yo me quedo vigilando el camino.',
+          choices:[{text:'Voy a echar un vistazo.',action:beginIsbertoEncounter}],
+        },
+      },
+    },
+  },
   testiculos: {
     name: 'Testículos, the Debugger',
     type: 'debug',
@@ -2415,8 +2675,10 @@ for (const site of city.npcSites) {
   if (!def) continue;
   const npcData = sanitize({ ...defaultChar(), ...def.look, name: def.name } as unknown as Record<string, unknown>);
   const character = new Character(npcData, { outfit: false });
+  character.root.name = `npc:${site.id}`;
   character.root.position.copy(site.position);
   character.root.rotation.y = site.yaw;
+  character.root.visible = site.id !== 'isberto' || isbertoUnlocked();
   castShadows(character.root);
   scene.add(character.root);
   // Placa verde: NPC no hostil
@@ -2430,12 +2692,144 @@ for (const site of city.npcSites) {
   npcActors.push({ id: site.id, character, plate, anchor: new THREE.Vector3() });
   city.interactables.push({ id: `npc:${site.id}`, position: site.position, radius: 2.6, label: 'Hablar' });
 }
+let combatEncounter: CombatEncounter|null=null;
+let combatTargetRoot: THREE.Group|null=null;
+let combatAuto=false;
+let combatBusy=false;
+let nextCombatAttack=0;
+let nextLocalEnemyAttack=0;
+let pendingCombatSkill=false;
+let localCombatState:CombatState|null=null;
+function buildShadowling(encounter:CombatEncounter) {
+  const root=new THREE.Group();
+  const body=new THREE.Mesh(
+    new THREE.SphereGeometry(.72,20,16),
+    new THREE.MeshStandardMaterial({color:'#302337',roughness:.8,emissive:'#21112d',emissiveIntensity:.5}),
+  );
+  body.scale.set(.9,1.15,.82);body.position.y=.85;body.castShadow=true;root.add(body);
+  for(const x of [-.23,.23]){
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(.105,12,10),new THREE.MeshStandardMaterial({
+      color:'#d4a4ff',emissive:'#a83dff',emissiveIntensity:2.1,roughness:.25,
+    }));
+    eye.position.set(x,1.02,.58);root.add(eye);
+  }
+  for(const x of [-.35,.35]){
+    const foot=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),new THREE.MeshStandardMaterial({color:'#23192b',roughness:1}));
+    foot.scale.set(1,.45,1.2);foot.position.set(x,.18,.02);foot.castShadow=true;root.add(foot);
+  }
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.82,.035,8,32),new THREE.MeshBasicMaterial({color:'#c694f6',transparent:true,opacity:.85}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=.04;root.add(ring);
+  root.position.set(encounter.x,city.groundY(encounter.x,encounter.z),encounter.z);
+  castShadows(root);
+  scene.add(root);
+  return root;
+}
+function setCombatEncounter(value:unknown) {
+  combatEncounter=parseCombatEncounter(value);
+  if(combatEncounter?.status==='active'){
+    if(!combatTargetRoot)combatTargetRoot=buildShadowling(combatEncounter);
+    combatTargetRoot.position.set(combatEncounter.x,city.groundY(combatEncounter.x,combatEncounter.z),combatEncounter.z);
+    $('#combat-controls').hidden=false;
+    $('#combat-skill span').textContent=t(COMBAT_KITS[state.cls].skill.label);
+    $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
+  }else{
+    if(combatTargetRoot){
+      scene.remove(combatTargetRoot);
+      combatTargetRoot.traverse(part=>{
+        const mesh=part as THREE.Mesh;
+        if(mesh.isMesh){mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}
+      });
+      combatTargetRoot=null;
+    }
+    combatAuto=false;pendingCombatSkill=false;
+    $('#combat-controls').hidden=true;
+  }
+}
+function applyCombatResult(value:Record<string,unknown>) {
+  const before=state.health;
+  if(value.vitals) {
+    const vitals=parsePublicVitals(value.vitals);
+    state.health=vitals.health;state.resource=vitals.resource;state.overheal=vitals.overheal;
+  }
+  if(value.encounter!==undefined)setCombatEncounter(value.encounter);
+  if(state.health===0&&combatEncounter?.status==='active')setCombatEncounter({...combatEncounter,status:'failed'});
+  resetOverheal();updateHud();
+  if(state.health<before){char.hit();chatCombat(t('La criatura extraña te hiere.'));}
+  if(state.health===0&&!dead)die();
+  if(typeof value.damage==='number'&&value.damage>0){
+    char.attack(value.damage>10);
+    chatCombat(t('Golpeas a la criatura extraña por {n}.',{n:value.damage}));
+  }
+  if(typeof value.healing==='number'&&value.healing>0){
+    char.heal();chatCombat(t('Recuperas {n} puntos de vida.',{n:value.healing}),'heal');
+  }
+  if(combatEncounter?.status==='defeated'){
+    combatAuto=false;
+    chatCombat(t('La criatura extraña ha caído.'));
+  }
+}
+async function beginIsbertoEncounter() {
+  if (!isbertoUnlocked()) {
+    toast('No se pudo iniciar el combate', t('Primero debes completar la bienvenida con Gnomi.'), true);
+    return false;
+  }
+  if(!activeCharacterId){
+    if(!TEST)throw new Error('Inicia sesión con un personaje para empezar el combate.');
+    const vitals=vitalsOf(state);
+    localCombatState={
+      health:vitals.health,maxHealth:vitals.maxHealth,resource:vitals.resource,
+      enemyHealth:100,nextAttack:0,nextSkill:0,
+    };
+    setCombatEncounter({
+      id:'shadowling',status:'active',health:100,maxHealth:100,
+      x:LOCAL_COMBAT_SITE.x+3.5,z:LOCAL_COMBAT_SITE.z,enemyAttackAt:performance.now()/1000+2,
+    });
+    combatAuto=true;nextCombatAttack=0;nextLocalEnemyAttack=performance.now()/1000+2;
+    return true;
+  }
+  const stillCurrent=characterContext();
+  const result=await startCombat(activeCharacterId);
+  if(!stillCurrent())return false;
+  applyCombatResult(result);
+  combatAuto=true;nextCombatAttack=0;
+  return true;
+}
+async function performWorldCombatAction(action:'attack'|'skill') {
+  if(combatBusy||!combatEncounter||combatEncounter.status!=='active')return;
+  if(!activeCharacterId&&TEST&&localCombatState){
+    const distance=Math.hypot(combatTargetRoot!.position.x-holder.position.x,combatTargetRoot!.position.z-holder.position.z);
+    try{
+      const result=resolveCombat(state.cls,localCombatState,action,performance.now()/1000,distance);
+      localCombatState=result.state;
+      applyCombatResult({
+        encounter:{...combatEncounter,health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active'},
+        vitals:{health:result.state.health,maxHealth:result.state.maxHealth,overheal:0,
+          resource:result.state.resource,maxResource:vitalsOf(state).maxResource,resourceKind:vitalsOf(state).resourceKind},
+        damage:result.damage.reduce((sum,hit)=>sum+hit,0),healing:result.healing,
+      });
+    }catch(error){toast('No se pudo completar la acción',errorMessage(error),true);}
+    return;
+  }
+  const characterId=activeCharacterId;
+  if(!characterId)return;
+  combatBusy=true;
+  const stillCurrent=characterContext();
+  try{
+    const result=await combatAction(characterId,action);
+    if(!stillCurrent())return;
+    applyCombatResult(result);
+  }catch(error){
+    const message=errorMessage(error);
+    if(!/recuperando|fuera de alcance/i.test(message))toast('No se pudo completar la acción',message,true);
+  }finally{combatBusy=false;}
+}
 // Los NPC comentan algo de vez en cuando si estás cerca (canal NPC del chat).
 const barkCooldown = new Map<string, number>();
 window.setInterval(() => {
   if (mode !== 'play' || dead) return;
   const now = Date.now();
   for (const npc of npcActors) {
+    if (npc.id === 'isberto' && !isbertoUnlocked()) continue;
     const barks = NPCS[npc.id]?.barks;
     if (!barks?.length || now < (barkCooldown.get(npc.id) ?? 0)) continue;
     if (Math.hypot(npc.character.root.position.x - holder.position.x, npc.character.root.position.z - holder.position.z) > 8) continue;
@@ -2453,14 +2847,20 @@ function updateTargetFrame() {
     ...player, identity: { kind: 'player', username: player.username, cls: player.cls, title: player.title },
   }));
   for (const npc of npcActors) {
+    if (npc.id === 'isberto' && !isbertoUnlocked()) continue;
     const def = NPCS[npc.id];
     targets.push({ id: `npc:${npc.id}`, root: npc.character.root, name: def.name, level: def.level, height: npc.character.d.height,
       vitals: def.vitals, identity: { kind: 'npc', type: def.type, title: def.title } });
   }
+  if(combatTargetRoot&&combatEncounter?.status==='active')targets.push({
+    id:'enemy:shadowling',root:combatTargetRoot,name:'Sombra extraña',level:1,height:0,
+    vitals:{health:combatEncounter.health,maxHealth:combatEncounter.maxHealth,overheal:0,resource:0,maxResource:1,resourceKind:'stamina'},
+    identity:{kind:'npc',type:'hostile',title:'Criatura extraña'},
+  });
   if (welcomeWorld.root.visible) targets.push({
     id: 'npc:gnomi', root: welcomeWorld.root, name: 'Gnomi', level: 1, height: 0,
     vitals: { health: 100, maxHealth: 100, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' },
-    identity: { kind: 'npc', type: 'resident', title: 'Ayudante de acogida' },
+    identity: { kind: 'npc', type: 'resident', title: 'Ayudante de bienvenida' },
   });
   targetFrame.update(targets, true, holder.position);
 }
@@ -2477,13 +2877,16 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(t - last, 0.05);
   last = t;
   world.uTime.value = t;
-  if (mode === 'play') { updatePlay(dt); tickOverheal(); tickFood(); }
+  if (mode === 'play') { updatePlay(dt); tickWorldCombat(t); tickOverheal(); tickFood(); }
   else if (!dragging) {
     holder.rotation.y += spinVel;
     spinVel *= 0.92;
   }
   char.update(t);
-  for (const npc of npcActors) npc.character.update(t);
+  for (const npc of npcActors) {
+    if (npc.id === 'isberto') npc.character.root.visible = isbertoUnlocked();
+    npc.character.update(t);
+  }
   city.update(t, mode === 'play' ? holder.position : undefined);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
@@ -2523,6 +2926,7 @@ if (TEST) {
   move(x: number, z: number) { holder.position.set(x, 0, z); },
   view(y: number, p: number, d: number) { yaw = y; pitch = p; followDist = d; zoomTarget = d; },
   char: () => char,
+  camera: () => camera,
   city: () => city,
   players: () => remotePlayers.list(),
   time() { const t0 = performance.now(); rebuildNow(); return performance.now() - t0; },

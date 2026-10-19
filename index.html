@@ -279,12 +279,17 @@
   <div id="nameplate" class="nameplate" aria-hidden="true" hidden><strong id="nameplate-name"></strong><span id="nameplate-title"></span></div>
   <div id="interact-prompt" class="interact-prompt" hidden><kbd>E</kbd><span id="interact-label"></span></div>
   <div id="dialog" class="dialog" role="dialog" aria-live="polite" hidden>
-    <div class="dialog-speaker"></div>
+    <header class="dialog-identity"><span class="dialog-emblem" aria-hidden="true">❧</span><div><div id="dialog-speaker" class="dialog-speaker"></div><div class="dialog-subtitle" hidden></div></div></header>
     <p class="dialog-text"></p>
     <div class="dialog-choices" hidden></div>
     <div class="dialog-hint"><kbd>E</kbd><span class="dialog-next"></span></div>
   </div>
 
+  <div id="combat-controls" class="combat-controls" role="group" aria-label="Combate" hidden>
+    <button id="combat-auto" type="button" aria-pressed="false"><kbd>F</kbd><span>Atacar</span></button>
+    <button id="combat-skill" type="button"><kbd>R</kbd><span>Habilidad</span></button>
+    <button id="combat-flee" type="button"><kbd>Esc</kbd><span>Retirarse</span></button>
+  </div>
   <div id="action-bar" class="action-bar" role="toolbar" aria-label="Barra de acceso rápido"></div>
   <div id="active-buffs" class="active-buffs" role="group" aria-label="Efectos activos" hidden></div>
   <section id="chat" class="chat" aria-label="Chat">

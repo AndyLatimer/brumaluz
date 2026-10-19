@@ -26,15 +26,100 @@ contenido del juego relacionado.
   lo menosprecian por torpe, juguetón y guasón. Tiene un gran corazón, es algo
   miedoso y también pícaro. Su oficio, aspecto detallado y relación concreta
   con la ciudad se concretan a continuación.
-- Gnomi es **ayudante de acogida**: hace tareas pequeñas y le dejan pocas
+- Gnomi es **ayudante de bienvenida**: hace tareas pequeñas y le dejan pocas
   responsabilidades. Al principio se sugiere que otros gnomos lo menosprecian;
   su situación se conocerá poco a poco, conforme se gana confianza.
+- Trabaja en el **Gremio de Ayudantes**, dedicado a ayudar a los demás:
+  es el oficio habitual de los gnomos. Su jefe es **David**, también gnomo.
+  Gnomi ha perdido su distintivo del gremio más de una vez y teme que David
+  se enfade de verdad si se entera de esta nueva pérdida. Su torpeza se
+  presenta con cariño: no resta valor a su generosidad ni a sus ganas de ayudar.
+- David es solo un guiño mencionado en el diálogo, no un personaje que vaya
+  a aparecer ni una futura visita al jefe del gremio.
+- Gnomi llega aproximadamente a medio muslo de un jugador humano, contando
+  el gorro. Su cara es mofletuda y dulce, con nariz de botón y barbita corta
+  clara. Reutiliza el esqueleto y animaciones de KayKit, con vestuario propio,
+  no con el muñeco geométrico provisional.
+- La base actual de cuerpo, proporciones y rig queda aprobada como referencia
+  para el resto de gnomos. La combinación actual de cara y colores queda
+  aprobada como la identidad visual de **Gnomi**; reutilizar la base no implica
+  copiar su apariencia a los demás gnomos.
+- La base del uniforme del **Gremio de Ayudantes** es un peto azul de trabajo
+  sobre camisa clara y botitas marrones. Gnomi lleva un gorro rojo de tela,
+  puntiagudo y con la punta ligeramente caída, sin ala de mago. El distintivo
+  se mantiene como pieza separada que recupera durante la bienvenida.
+- El encuentro ocurre cerca de la entrada y la búsqueda junto a un puesto
+  del mercado. Al entregar el distintivo, Gnomi se lo coloca, agradece la
+  ayuda y ofrece orientarnos para encontrar nuestro primer oficio. No se
+  introduce todavía una segunda misión ni un contacto nuevo.
+- Después del distintivo, la bienvenida continuará con una actividad común,
+  manteniendo como premisa la orientación hacia un oficio. Antes de esa
+  orientación habrá una introducción al combate. El incidente siembra un
+  hilo para ampliar la historia más adelante, sin definir todavía su origen
+  ni convertirlo en una amenaza general contra la ciudad.
+- Los oficios previstos inicialmente son **Leñador, Minero, Carpintero,
+  Cocinero, Cartero, Alquimista, Herrero, Costurero y Cazador**. El sistema
+  será extenso y se ampliará con más oficios. Conocer o probar uno durante
+  la bienvenida no supone elegirlo ni comprometerse con él. No se han
+  definido todavía sus reglas de progresión ni sus restricciones.
+- La introducción al combate será un **pequeño incidente con una criatura
+  fuera de la ciudad**. Gnomi acompañará y comentará, pero no combatirá.
+  Enseñará paso a paso a seleccionar objetivo, atacar, usar una habilidad
+  básica, moverse y gestionar vida y estamina.
+- Una **criatura extraña, que nadie reconoce, ha atacado el ganado de un
+  granjero**. El jugador la mata al derrotarla. Su origen y relación con
+  acontecimientos futuros no están definidos. El aspecto, nombre mostrado,
+  granjero y forma de descubrir el incidente quedan pendientes.
+- Este primer combate permite morir y utiliza el sistema normal de muerte
+  y reaparición, sin protección especial de tutorial.
+- Tras devolver el distintivo, Gnomi acompaña al jugador a ver a **Isberto**,
+  el granjero, antes de orientarlo hacia los oficios. Isberto pide ayuda con
+  la criatura que ronda su ganado. Isberto es un explorador retirado, harto de
+  todo. Su aspecto toma como
+  referencia el personaje existente de ese nombre indicado por el creador;
+  no se copia ni modifica su personaje de jugador. Su pasado como personaje
+  de pruebas es un guiño, no una explicación literal dentro del mundo.
+- La criatura tendrá un diseño original de sombra/vacío, de aire demoníaco
+  y malévolo pero adorable, sin resultar terrorífica. Se proponen ojos morados,
+  todavía sin fijar ese detalle. La referencia de tono facilitada es la de
+  enemigos pequeños y oscuros de fantasía; no se reproducirá un diseño ajeno.
+- El combate será de selección de objetivo, ataque automático al estar
+  en alcance y habilidades desde la barra rápida. El arma, ataque y primera
+  habilidad dependen de la clase elegida; no se sustituirán por un kit común
+  ni por equipo de práctica prestado. Las habilidades concretas y la forma
+  de obtener el equipo inicial siguen pendientes.
+- Al ordenar un ataque fuera de alcance, el personaje se acercará
+  automáticamente. Moverlo manualmente interrumpe esa aproximación.
+- El encuentro es personal: cada jugador tiene su propia criatura y
+  progreso, sin competir por ella con otros jugadores.
+- Los personajes nuevos empiezan con el equipo básico de su clase, equipado
+  y ligado al personaje: no se vende ni intercambia. Los personajes existentes
+  no lo reciben retroactivamente.
+- Kits iniciales aprobados:
+  - **Guerrero:** espada y escudo, ataque cuerpo a cuerpo y Golpe contundente
+    (daño extra por estamina). Tendrá una rama de espada a dos manos.
+  - **Mago:** bastón, ataque mágico a distancia y Descarga arcana (daño extra
+    por maná). Tendrá una rama de magia con las manos.
+  - **Pícaro:** dos dagas, ataques rápidos cuerpo a cuerpo y Corte doble
+    (dos impactos por estamina). Tendrá una rama de dos pistolas de pólvora.
+  - **Clérigo:** varita y libro, ataque mágico a distancia y curación propia
+    por maná. Tendrá una rama de combate con solo el libro.
+  - **Explorador:** ballesta, ataque a distancia y Disparo preciso (daño extra
+    por estamina). Tendrá una rama de arco.
+  Las ramas alternativas se desbloquearán más adelante; sus reglas,
+  habilidades y requisitos no están definidos ni se implementan todavía.
+- El combate es **en tiempo real con los personajes 3D**, no por turnos ni
+  basado en texto. Hay recuperación gradual de vida y recurso incluso en
+  combate, con recuperación de vida más lenta durante la pelea. Las tasas
+  iniciales aprobadas para probar son 1 % de vida máxima/s fuera de combate,
+  2 % de maná máximo/s y 4 % de estamina máxima/s. La tasa de vida en combate
+  se prueba provisionalmente al 0,25 %/s; no está fijada como balance definitivo.
 - Gnomi recuerda un poco a un gnomo de jardín: traje azul, gorro rojo y
   poca barba. Debe resultar mono, parecer joven para su especie y reflejar
   su cometido de ayudante en su aspecto. La edad exacta no está fijada:
   unos 150 años podrían seguir siendo juventud para un gnomo.
-- El primer favor consiste en **encontrar el distintivo de ayudante de
-  Gnomi**, explorando con él un rincón de la ciudad. El distintivo es sencillo
+- El primer favor consiste en **encontrar el distintivo del Gremio de
+  Ayudantes de Gnomi**, explorando con él un rincón de la ciudad. El distintivo es sencillo
   y tiene poco prestigio para otros, pero es muy importante para él.
   El lugar y desarrollo concreto todavía no están decididos.
 - Durante la búsqueda Gnomi camina con el jugador y comenta algunas pistas.
@@ -84,8 +169,11 @@ los sistemas son provisionales, no amplían el canon.
 - Aceptación explícita desde el diálogo, mostrando la recompensa.
 - La bienvenida es obligatoria: no se puede abandonar ni saltar para avanzar
   en contenido posterior. Se puede interrumpir la sesión y continuar después.
-- La elección del motivo se confirma antes de guardarse y queda fija para
-  ese personaje.
+- La respuesta inicial del jugador guarda el motivo directamente, sin una
+  segunda confirmación; queda fija para ese personaje.
+- Las ofertas y entregas de misión tienen una presentación propia dentro
+  del encuentro: título, objetivo, recompensas separadas del texto hablado
+  y acciones explícitas para aceptar o completar.
 - Diario con misiones activas y completadas.
 - Seguimiento discreto de una misión y marcador del objetivo.
 - Progreso persistente por personaje, también al desconectarse y volver.

@@ -94,6 +94,8 @@ export function simulateBuy(d: CharData, vendor: string, item: string) {
 
 export function simulateSell(d: CharData, slot: number) {
   if (d.health === 0) return;
+  const item = d.inventory[slot];
+  if (item && ITEMS[item.id]?.sellable === false) throw new Error('Ese objeto no se puede vender.');
   const id = removeItem(d, slot);
   addCurrency(d.wallet, 'pelines', sellPrice(id));
 }

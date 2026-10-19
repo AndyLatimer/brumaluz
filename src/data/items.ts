@@ -5,6 +5,7 @@ import type { FoodId } from './food';
 export interface ItemDef {
   id: string;
   bound?: boolean;
+  sellable?: boolean;
   label: string; // en español (se traduce con t())
   category: string;
   description: string;
@@ -23,6 +24,20 @@ export interface ItemDef {
 }
 
 export const ITEMS: Record<string, ItemDef> = {
+  ...Object.fromEntries([
+    ['espada_inicial', 'Espada de principiante', 'Espada', '<path d="m6 18 11-14 3-1-1 4L8 20ZM4 15l6 5M3 21l3-4" fill="#c0cad0" stroke="#725338"/>'],
+    ['escudo_inicial', 'Escudo de principiante', 'Escudo', '<path d="M5 4h14v9c0 4-7 8-7 8s-7-4-7-8Z" fill="#8b6746" stroke="#d5b778"/><path d="M12 5v14M6 11h12" stroke="#d5b778"/>'],
+    ['baston_inicial', 'Bastón de principiante', 'Bastón', '<path d="m7 21 9-17" stroke="#8c623e" stroke-width="3"/><circle cx="16" cy="5" r="3" fill="#9b8bd0"/>'],
+    ['daga_inicial', 'Daga de principiante', 'Daga', '<path d="m8 15 9-12 1 7-7 8Z" fill="#c0cad0" stroke="#725338"/><path d="m5 14 7 5M5 21l4-5" stroke="#8c623e" stroke-width="2"/>'],
+    ['daga_secundaria_inicial', 'Daga secundaria de principiante', 'Daga', '<path d="m8 15 9-12 1 7-7 8Z" fill="#c0cad0" stroke="#725338"/><path d="m5 14 7 5M5 21l4-5" stroke="#8c623e" stroke-width="2"/>'],
+    ['varita_inicial', 'Varita de principiante', 'Varita', '<path d="m5 21 11-15" stroke="#8c623e" stroke-width="3"/><path d="m17 2 1 3 3 1-3 2-1 3-2-3-3-2 3-1Z" fill="#ead191"/>'],
+    ['libro_inicial', 'Libro de principiante', 'Libro', '<path d="M5 3h13v18H5Z" fill="#7d729e" stroke="#c7ac73"/><path d="M8 3v18M11 8h5M11 11h5" stroke="#e7d8b2"/>'],
+    ['ballesta_inicial', 'Ballesta de principiante', 'Ballesta', '<path d="m7 21 8-16M4 7q9-6 16 7M4 7l16 7M11 11l-3 6" fill="none" stroke="#8c623e" stroke-width="2"/>'],
+  ].map(([id,label,category,icon]) => [id, {
+    id, label, category, icon, bound: true, sellable: false, stack: 1, value: 0,
+    description: 'Equipo básico de tu clase, ligado a tu personaje.',
+    effects: ['No se puede vender ni intercambiar.'],
+  }])),
   pan_duro: {
     id: 'pan_duro', label: 'Pan duro', category: 'Comida',
     description: 'Una hogaza humilde, de corteza firme y miga tenaz. No es un banquete, pero ayuda a seguir adelante.',

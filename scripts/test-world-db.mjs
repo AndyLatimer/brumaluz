@@ -56,6 +56,51 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       }
     }
     const motion = (x, extra = {}) => ({ x, z: 0, yaw: 0, facing: 1, jump: 0, wave: 0, ...extra });
+    await t.test('new characters receive only their class kit; legacy characters keep equipment and starter gear cannot be sold', async () => {
+      await client.query('savepoint starter_kits');
+      try {
+        const appearance=Object.fromEntries(['sex','height','build','skin','face','hair','hairColor','beard','eyeShape','eyeColor',
+          'brows','nose','mouth','detail','trait','primary','secondary','cape','clothA','clothB','hairAcc','hairAccColor','acc','makeup','makeupColor','accColor'].map(key=>[key,0]));
+        const kits = [
+          ['guerrero','Espadero','espada_inicial','escudo_inicial'],
+          ['mago','Hechicero','baston_inicial',null],
+          ['picaro','Sigiloso','daga_inicial','daga_secundaria_inicial'],
+          ['clerigo','Sanador','varita_inicial','libro_inicial'],
+          ['explorador','Ballestero','ballesta_inicial',null],
+        ];
+        await user(a);
+        assert.equal((await rpc('character_enter',[ca])).equipment,undefined,'No retroactive equipment on entry');
+        for(const [cls,name,weapon,offhand] of kits) {
+          const id=await rpc('create_character',[{
+            ...appearance,name,race:'humano',cls,attributePoints:{},
+            equipment:{weapon:{id:'forged_weapon',count:99,bound:false}},
+          }]);
+          const data=await rpc('character_enter',[id]);
+          assert.deepEqual(data.equipment.weapon,{id:weapon,count:1,bound:true});
+          if(offhand)assert.deepEqual(data.equipment.offhand,{id:offhand,count:1,bound:true});
+          else assert.equal(data.equipment.offhand,undefined);
+          assert.ok(!JSON.stringify(data).includes('forged_weapon'));
+          await client.query('reset role');
+          const publicData=(await client.query('select public.game_public_character($1) result',[{
+            ...data,inventory:['private'],wallet:{pelines:9999},welcome:{origin:0,stage:'found'},
+          }])).rows[0].result;
+          assert.deepEqual(publicData.equipment,data.equipment);
+          assert.equal(publicData.inventory,undefined);assert.equal(publicData.wallet,undefined);assert.equal(publicData.welcome,undefined);
+          await client.query('update public.characters set data=data||$1::jsonb where id=$2',[
+            {inventory:[{id:weapon,count:1,bound:false}]},id,
+          ]);
+          await user(a);
+          await rejected(()=>rpc('vendor_sell',[id,'testiculos',0]),/ITEM_NOT_SELLABLE/);
+          assert.deepEqual((await rpc('character_enter',[id])).equipment,data.equipment,'Entry preserves the kit');
+          await client.query('reset role');
+          await client.query('delete from public.characters where id=$1',[id]);
+          await user(a);
+        }
+      } finally {
+        await client.query('rollback to savepoint starter_kits');
+        await client.query('release savepoint starter_kits');
+      }
+    });
     await t.test('welcome is new-character opt-in, validates every transition and position, persists and rewards exactly once', async () => {
       await client.query('savepoint welcome_system');
       try {
@@ -151,7 +196,8 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         assert.equal(result.inventory[0], null);
         assert.equal(result.foodRevision, 1);
         await rejected(() => rpc('use_item', [cb, 0]), /CHARACTER_NOT_FOUND/);
-        await rejected(() => rpc('game_food_data', [ca, result]), /permission denied/);
+        await rejected(()=>rpc('game_food_data',[ca,result]),/permission denied/);
+        await rejected(()=>rpc('game_regen_data',[ca,result]),/permission denied/);
         await client.query('reset role');
         let v = await rpc('game_public_vitals', [result]);
         assert.equal(v.maxHealth, 105);
@@ -219,6 +265,113 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       } finally {
         await client.query('rollback to savepoint food_buff');
         await client.query('release savepoint food_buff');
+      }
+    });
+    await t.test('world heartbeats grant server-side fractional regeneration only during presence', async () => {
+      await client.query('savepoint online_regeneration');
+      try {
+        await client.query('reset role');
+        await client.query('update public.characters set data=$1 where id=$2', [{
+          name:'Alric',race:'humano',cls:'guerrero',level:1,health:50,resource:0,
+          attributePoints:{fuerza:2},location,
+        },ca]);
+        await user(a);
+        const joined=await rpc('world_join',[ca,sa]);
+        assert.equal(joined.vitals.health,50);
+        await client.query('reset role');
+        await client.query("update public.characters set data=data || jsonb_build_object('vitals_at',extract(epoch from clock_timestamp())-2.3) where id=$1",[ca]);
+        await client.query("update public.world_players set saved_at=clock_timestamp()-interval '6 seconds' where character_id=$1",[ca]);
+        await user(a);
+        const synced=await rpc('world_sync',[ca,sa,motion(0)]);
+        assert.equal(synced.vitals.health,52);
+        assert.equal(synced.vitals.resource,7);
+        await client.query('reset role');
+        const stored=(await client.query('select data from public.characters where id=$1',[ca])).rows[0].data;
+        assert.ok(stored.health_regen>0&&stored.health_regen<1,'Fractional health is retained server-side');
+        assert.ok(stored.resource_regen>0&&stored.resource_regen<1,'Fractional resource is retained server-side');
+        assert.ok(Math.abs(
+          (stored.health-50+stored.health_regen)*3.2-(stored.resource+stored.resource_regen)
+        )<0.0001,'Health and stamina retain fractions at their exact server-side rates');
+        await user(a);
+        await rpc('world_leave',[ca,sa]);
+        await client.query('reset role');
+        await client.query("update public.characters set data=data || jsonb_build_object('health',50,'resource',0,'vitals_at',extract(epoch from clock_timestamp())-100) where id=$1",[ca]);
+        await user(a);
+        const offline=await rpc('character_enter',[ca]);
+        assert.equal(offline.health,50,'Time without a live presence lease grants no health');
+        assert.equal(offline.resource,0,'Time without a live presence lease grants no resource');
+      } finally {
+        await client.query('rollback to savepoint online_regeneration');
+        await client.query('release savepoint online_regeneration');
+      }
+    });
+    await t.test('combat RPCs own encounter state, validate range/cooldowns and apply enemy damage server-side', async () => {
+      await client.query('savepoint authoritative_combat');
+      try {
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key='combat_enabled'");
+        await client.query('update public.characters set data=$1 where id=$2', [{
+          name:'Alric',race:'humano',cls:'guerrero',level:1,health:100,resource:80,
+          attributePoints:{fuerza:2},location:'brumaluz',
+          position:{x:0,z:-62.35,yaw:0},
+        },ca]);
+        await user(a);
+        await rpc('character_enter',[ca]);
+        await rpc('world_join',[ca,sa]);
+        await rejected(()=>rpc('combat_start',[ca]),/WELCOME_REQUIRED/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{welcome}','{\"origin\":0,\"stage\":\"active\"}'::jsonb) where id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('combat_start',[ca]),/WELCOME_REQUIRED/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{welcome,stage}','\"completed\"'::jsonb) where id=$1",[ca]);
+        await user(a);
+        const encounter=await rpc('combat_start',[ca]);
+        assert.equal(encounter.encounter.id,'shadowling');
+        assert.equal(encounter.encounter.health,100);
+        await rejected(()=>rpc('combat_start',[ca]),/COMBAT_ALREADY_ACTIVE/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{welcome,stage}','\"found\"'::jsonb) where id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('combat_action',[ca,'attack']),/WELCOME_REQUIRED/);
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{welcome,stage}','\"completed\"'::jsonb) where id=$1",[ca]);
+        await user(a);
+        await rejected(()=>rpc('combat_action',[ca,'attack']),/COMBAT_OUT_OF_RANGE/);
+        const approached=await rpc('world_sync',[ca,sa,motion(2,{z:-62.35})]);
+        assert.equal(approached.status,'ok');
+        assert.equal(approached.vitals.health,100);
+        const attack=await rpc('combat_action',[ca,'attack']);
+        assert.equal(attack.damage,10);
+        assert.equal(attack.encounter.health,90);
+        assert.equal(attack.vitals.resource,80);
+        await rejected(()=>rpc('combat_action',[ca,'attack']),/COMBAT_COOLDOWN/);
+        const skill=await rpc('combat_action',[ca,'skill']);
+        assert.equal(skill.damage,18);
+        assert.equal(skill.encounter.health,72);
+        assert.equal(skill.vitals.resource,65);
+        await rejected(()=>rpc('combat_action',[ca,'kill']),/COMBAT_INVALID_ACTION/);
+
+        await client.query('reset role');
+        await client.query("update public.characters set data=jsonb_set(data,'{combatEncounter,enemyAttackAt}',to_jsonb(extract(epoch from clock_timestamp())-1)) where id=$1",[ca]);
+        await user(a);
+        const hit=await rpc('world_sync',[ca,sa,motion(2,{z:-62.35})]);
+        assert.equal(hit.vitals.health,92,'The server applies the enemy hit during world heartbeat');
+        const fled=await rpc('combat_stop',[ca]);
+        assert.equal(fled.encounter.status,'fled');
+        await rpc('combat_start',[ca]);
+        await client.query('reset role');
+        await client.query(
+          "update public.characters set data=jsonb_set(jsonb_set(data,'{health}','1'::jsonb),'{combatEncounter,enemyAttackAt}',to_jsonb(extract(epoch from clock_timestamp())-1)) where id=$1",
+          [ca],
+        );
+        await user(a);
+        const defeated=await rpc('world_sync',[ca,sa,motion(2,{z:-62.35})]);
+        assert.equal(defeated.vitals.health,0);
+        assert.equal(defeated.encounter.status,'failed','A player death must not mark the enemy defeated');
+      } finally {
+        await client.query('rollback to savepoint authoritative_combat');
+        await client.query('release savepoint authoritative_combat');
       }
     });
     await t.test('resource potions trade, restore the correct resource and reject without consuming', async () => {

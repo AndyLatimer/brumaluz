@@ -117,7 +117,13 @@ export function initTooltips() {
   document.addEventListener('focusin', (e) => enter(find(e)));
   document.addEventListener('focusout', hide);
   document.addEventListener('pointerdown', hide);
-  window.addEventListener('scroll', hide, true);
+  window.addEventListener('scroll', () => {
+    const target = current;
+    hide();
+    if (target) requestAnimationFrame(() => {
+      if (!current && target.isConnected && target.matches(':hover, :focus')) enter(target);
+    });
+  }, true);
   window.addEventListener('blur', hide);
   window.addEventListener('resize', hide);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });

@@ -5,6 +5,15 @@ export interface WelcomeProgress { origin: number | null; stage: WelcomeStage }
 export type WelcomeAction = 'origin' | 'accept' | 'collect' | 'claim';
 export const WELCOME_TITLE = 'Algo pequeño, algo importante';
 export const WELCOME_REWARD = { experience: 40, pelines: 5 };
+export function questItems(progress: WelcomeProgress | null) {
+  return progress?.stage === 'found' ? [{
+    id: 'gnomi-guild-badge',
+    name: 'Distintivo del Gremio de Ayudantes',
+    description: 'El distintivo de Gnomi. Un poco torcido, pero todavía digno del gremio.',
+    quest: WELCOME_TITLE,
+    objective: 'Devuélveselo a Gnomi.',
+  }] : [];
+}
 // Keep these interaction points in sync with welcome_action in server.sql.
 export const WELCOME_START = { x: -6.4, z: -8.5 };
 export const WELCOME_BADGE = { x: 15.8, z: -5.7 };
@@ -15,9 +24,9 @@ export const ORIGINS: Record<Race, readonly [string, string, string]> = {
   pelso: ['He llegado desde Luna Argéntea para conocer la capital.', 'Busco oportunidades en tierra firme.', 'Vivo aquí y busco un nuevo rumbo.'],
 };
 export const ORIGIN_REPLIES = [
-  'Siempre viene bien alguien con ganas de aprender. Yo también sigo aprendiendo… aunque a veces se me note demasiado.',
+  '¡Pues me alegro de haberte encontrado! Una cara amiga siempre viene bien al empezar.',
   'Un rumbo nuevo, ¿eh? Si necesitas orientación, estás en buenas manos. Pequeñas, pero buenas.',
-  'Entonces empecemos por algo sencillo. Conocer a alguien que pueda echarte una mano.',
+  'Entonces habrá que buscarte un buen comienzo. Y, si no te importa, empezar por echarme una mano a mí.',
 ] as const;
 export function parseWelcome(value: unknown): WelcomeProgress | null {
   if (value === undefined || value === null) return null;

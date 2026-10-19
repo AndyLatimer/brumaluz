@@ -70,7 +70,7 @@ export function renderVendor(container: HTMLElement, d: CharData, vendorId: stri
   // Agrupa por objeto y vinculación; al vender se descuenta del último hueco del grupo.
   const groups = new Map<string, { id: string; bound: boolean; total: number; slot: number }>();
   d.inventory.forEach((item, slot) => {
-    if (!item || !ITEMS[item.id]) return;
+    if (!item || !ITEMS[item.id] || ITEMS[item.id].sellable === false) return;
     const bound = item.bound === true || ITEMS[item.id].bound === true;
     const key = `${item.id}:${bound}`;
     const g = groups.get(key);

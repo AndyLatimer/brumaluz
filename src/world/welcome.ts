@@ -1,13 +1,27 @@
 import * as THREE from 'three';
 import type { City, Interactable } from './city';
 import { WELCOME_START, WELCOME_BADGE, type WelcomeProgress } from '../data/quests';
+import { Character } from '../character/character';
+import { defaultChar } from '../data/data';
 
 /** Personal actors: never added to shared world presence or NPC spawn tables. */
 export function createWelcomeWorld(scene: THREE.Scene, city: City) {
   const root = new THREE.Group();
   root.name = 'gnomi-personal';
   root.visible = false;
+  root.position.set(WELCOME_START.x, city.groundY(WELCOME_START.x, WELCOME_START.z), WELCOME_START.z);
   scene.add(root);
+  const character = new Character({
+    ...defaultChar(), name: 'Gnomi', race: 'humano', sex: 0,
+    face: 0, hair: 0, hairColor: 6, beard: 1, eyeShape: 4, eyeColor: 2,
+    brows: 0, nose: 5, mouth: 0, detail: 1, height: .25, build: .7,
+    clothA: 1, clothB: 5,
+  }, { outfit: false, wardrobe: 'helpers', proportions: { width: 1.06, height: .92 } });
+  const body = new THREE.Group();
+  body.name = 'gnomi-rig';
+  body.scale.setScalar(.48);
+  body.add(character.root);
+  root.add(body);
   const materials = new Map<string, THREE.MeshStandardMaterial>();
   function part(geometry: THREE.BufferGeometry, color: string, x: number, y: number, z: number, parent = root) {
     let material = materials.get(color);
@@ -18,37 +32,12 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
     parent.add(mesh);
     return mesh;
   }
-  const ball = (r: number) => new THREE.SphereGeometry(r, 14, 10);
-  part(new THREE.CylinderGeometry(.19, .25, .4, 12), '#356caa', 0, .47, 0);
-  part(ball(.23), '#efbe98', 0, .84, 0);
-  part(ball(.075), '#e6a27e', 0, .82, .23);
-  for (const x of [-.085, .085]) {
-    part(ball(.035), '#fff5de', x, .89, .201);
-    part(ball(.018), '#302c26', x, .885, .23);
-  }
-  const hat = part(new THREE.ConeGeometry(.255, .5, 16), '#b53a39', .025, 1.22, 0);
-  hat.rotation.z = -.12;
-  part(new THREE.CylinderGeometry(.25, .25, .06, 16), '#96302e', 0, .99, 0);
-  const beard = part(new THREE.ConeGeometry(.14, .18, 12), '#eadbc5', 0, .68, .16);
-  beard.rotation.x = Math.PI;
-  part(new THREE.CylinderGeometry(.235, .24, .055, 12), '#704b32', 0, .36, 0);
-  part(new THREE.BoxGeometry(.09, .08, .025), '#d8b66b', 0, .36, .24);
-  const badge = part(new THREE.CircleGeometry(.055, 8), '#e4be68', -.1, .55, .212);
-  const legs = [-.12, .12].map(x => {
-    const leg = new THREE.Group(); leg.position.set(x, .28, 0); root.add(leg);
-    part(new THREE.CylinderGeometry(.07, .07, .18, 8), '#445e80', 0, -.07, 0, leg);
-    part(new THREE.BoxGeometry(.14, .09, .22), '#5a4030', 0, -.205, .035, leg);
-    return leg;
-  });
-  const arms = [-1, 1].map(side => {
-    const arm = new THREE.Group(); arm.position.set(side * .23, .62, 0); root.add(arm);
-    part(new THREE.CylinderGeometry(.065, .065, .24, 8), '#356caa', 0, -.1, 0, arm);
-    part(ball(.067), '#efbe98', 0, -.24, 0, arm);
-    arm.rotation.z = side * .13;
-    return arm;
-  });
-  // The little empty badge loop remains visible until the returned insignia is worn.
-  part(new THREE.TorusGeometry(.047, .011, 5, 10), '#cab080', -.1, .55, .216);
+  const badgeMount = new THREE.Group();
+  badgeMount.position.set(-.16, .06, .27);
+  character.attachToChest(badgeMount);
+  const badge = part(new THREE.CircleGeometry(.09, 24), '#e4be68', 0, 0, .015, badgeMount);
+  badge.name = 'gnomi-worn-badge';
+  part(new THREE.TorusGeometry(.055, .014, 8, 20), '#cab080', 0, .025, .01, badgeMount);
   const lost = new THREE.Group();
   lost.name = 'gnomi-lost-badge';
   part(new THREE.CylinderGeometry(.14, .14, .035, 8), '#d5a950', 0, .06, 0, lost);
@@ -67,14 +56,29 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
     root.position.copy(city.collide(player, destination));
     trail = []; sample.copy(player);
   }
-  function update(progress: WelcomeProgress | null, playing: boolean, player: THREE.Vector3, dt: number, time: number) {
-    root.visible = playing && progress !== null;
+  function update(progress: WelcomeProgress | null, playing: boolean, player: THREE.Vector3, dt: number, time: number, talking = false) {
+    root.visible = playing;
     lost.visible = root.visible && progress?.stage === 'active';
-    if (!root.visible || !progress) { lastStage = ''; trail = []; return; }
-    const following = progress.stage === 'active' || progress.stage === 'found';
-    const wasFollowing = lastStage === 'active' || lastStage === 'found';
+    if (!root.visible) { lastStage = ''; trail = []; return; }
+    if (!progress) {
+      root.position.set(WELCOME_START.x, city.groundY(WELCOME_START.x, WELCOME_START.z), WELCOME_START.z);
+      if (player.distanceTo(root.position) < 4) root.rotation.y = Math.atan2(player.x - root.position.x, player.z - root.position.z);
+      character.setGait('idle');
+      character.update(time);
+      lastStage = '';
+      trail = [];
+      return;
+    }
+    const following = progress.stage === 'active' || progress.stage === 'found' || progress.stage === 'completed';
+    const wasFollowing = lastStage === 'active' || lastStage === 'found' || lastStage === 'completed';
     badge.visible = progress.stage === 'completed';
-    if (lastStage !== progress.stage) {
+    if (progress.stage === 'completed' && lastStage !== 'completed' && !badge.userData.returned) {
+      badge.userData.returned = true;
+      character.hop();
+      character.speak(6);
+    }
+    if (progress.stage !== 'completed') badge.userData.returned = false;
+    if (lastStage !== progress.stage && !(talking && progress.stage === 'completed')) {
       if (!following) root.position.set(WELCOME_START.x, city.groundY(WELCOME_START.x, WELCOME_START.z), WELCOME_START.z);
       if (following && !wasFollowing) {
         if (lastStage === '' || root.position.distanceTo(player) < .8) rejoin(player);
@@ -99,23 +103,27 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
         else {
           destination.multiplyScalar(Math.min(distance, dt * 5) / distance).add(root.position);
           const corrected = city.collide(root.position, destination);
-          moving = corrected.distanceToSquared(root.position) > .00001;
-          root.rotation.y = Math.atan2(destination.x - root.position.x, destination.z - root.position.z);
+          moving = dt > 0 && corrected.distanceToSquared(root.position) > .00001;
+          if (moving) root.rotation.y = Math.atan2(destination.x - root.position.x, destination.z - root.position.z);
           root.position.copy(corrected);
         }
       }
     }
     root.position.y = city.groundY(root.position.x, root.position.z);
     if (!moving && player.distanceTo(root.position) < 4) root.rotation.y = Math.atan2(player.x - root.position.x, player.z - root.position.z);
-    legs.forEach((leg, i) => { leg.rotation.x = moving ? Math.sin(time * 11 + i * Math.PI) * .55 : 0; });
-    arms.forEach((arm, i) => { arm.rotation.x = moving ? -Math.sin(time * 11 + i * Math.PI) * .35 : 0; });
+    character.setGait(moving ? 'run' : 'idle');
+    character.update(time);
     lost.rotation.y = time * .4;
   }
   return {
     root, lost, update,
+    speak: (seconds: number) => character.speak(seconds),
+    greet: () => character.wave(),
     interactions: () => root.visible ? lost.visible ? [interaction, pickup] : [interaction] : [],
     dispose() {
       root.removeFromParent(); lost.removeFromParent();
+      badgeMount.traverse(object => { if (object instanceof THREE.Mesh) object.geometry.dispose(); });
+      character.dispose();
       for (const group of [root, lost]) group.traverse(object => { if (object instanceof THREE.Mesh) object.geometry.dispose(); });
       materials.forEach(material => material.dispose());
     },

@@ -1,0 +1,18 @@
+:root { font-family: system-ui, sans-serif; color: #374444; background: #e9ede4; }
+main { max-width: 900px; margin: auto; padding: 24px; }
+#combat-scene { display: block; width: 100%; height: clamp(320px, 55vh, 580px); border-radius: 16px; touch-action: none; }
+h1 { font-size: 1.6rem; }
+p { line-height: 1.5; }
+button, select { padding: 12px; font: inherit; border: 1px solid #a5b2a3; border-radius: 9px; color: inherit; background: #fffaf0; }
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+.arena { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+.arena article, #target { padding: 12px; background: #fffaf0; border-radius: 14px; }
+.arena label, #target { display: grid; gap: 12px; }
+meter { width: 100%; height: 24px; }
+#target[aria-pressed="true"] { outline: 3px solid #a38a50; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#status { min-height: 1.5em; font-weight: 600; }
+#log { background: #fffaf0; padding: 18px 40px; border-radius: 10px; max-height: 230px; overflow: auto; }
+#log li { padding: 4px; }
+@media (max-width: 550px) { .arena { grid-template-columns: 1fr; } main { padding: 12px; } }

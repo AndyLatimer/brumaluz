@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruebas de combate · Brumaluz</title>
+  </head>
+  <body>
+    <main>
+      <h1>Pruebas de combate</h1>
+      <p>Combate 3D en tiempo real · Prototipo local sin cuenta ni recompensas. La sombra es un modelo provisional, no el diseño final de la criatura.</p>
+      <label>Clase <select id="class">
+        <option value="guerrero">Guerrero</option><option value="mago">Mago</option>
+        <option value="picaro">Pícaro</option><option value="clerigo">Clérigo</option>
+        <option value="explorador">Explorador</option>
+      </select></label>
+      <p id="equipment"></p>
+      <canvas id="combat-scene" aria-label="Escena de combate 3D"></canvas>
+      <section class="arena">
+        <article><h2>Tu personaje</h2><label>Vida <meter id="health"></meter><output id="health-value"></output></label>
+          <label id="resource-label">Recurso <meter id="resource"></meter><output id="resource-value"></output></label>
+        </article>
+        <button id="target" type="button" aria-pressed="false"><strong>Rival de pruebas</strong>
+          <meter id="enemy" max="100" value="100"></meter><output id="enemy-value"></output>
+          <span>Pulsa para seleccionar</span>
+        </button>
+      </section>
+      <p id="distance"></p>
+      <p>Regeneración gradual: vida 1 %/s fuera de combate, 0,25 %/s en combate; maná 2 %/s y estamina 4 %/s. Cifras provisionales.</p>
+      <div class="actions">
+        <button id="attack" type="button">1 · Atacar</button>
+        <button id="skill" type="button"></button>
+        <button id="stop" type="button">Detener ataque</button>
+        <button id="move" type="button">Moverse / alejarse</button>
+        <button id="respawn" type="button" hidden>Reaparecer</button>
+        <button id="reset" type="button">Reiniciar prueba</button>
+      </div>
+      <p>Clic en la sombra para seleccionarla; 1 activa el ataque automático y 2 usa la habilidad. WASD / flechas o clic en el suelo para moverte. Moverse interrumpe la aproximación. El enemigo te persigue al entrar en combate.</p>
+      <p id="status" role="status"></p>
+      <details><summary>Registro de depuración</summary><ol id="log" aria-label="Registro de combate"></ol></details>
+    </main>
+    <script type="module" src="/src/dev/combatPreview.ts"></script>
+  </body>
+</html>

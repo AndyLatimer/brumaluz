@@ -9,6 +9,8 @@ import barbarianUrl from '../assets/models/Barbarian.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
 import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
 import { softDot } from '../world/paint';
+import { STARTER_MODELS } from '../data/starterItems';
+import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
 
 // ---------------------------------------------------------------------------
 // Personajes a partir del pack "KayKit Adventurers" (Kay Lousberg, CC0).
@@ -25,7 +27,10 @@ const kits = {} as Record<Kit, GLTF>;
 const heads = {} as Record<HeadKit, HeadSource>;
 
 export async function loadKits() {
-  await Promise.all((Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }));
+  await Promise.all([
+    ...(Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }),
+    loadWardrobe(),
+  ]);
   // sombreado suave en cuerpos, ropa y accesorios (las aristas marcadas se mantienen)
   for (const k of Object.keys(URLS) as Kit[]) kits[k].scene.traverse((o) => {
     const m = o as THREE.Mesh;
@@ -113,7 +118,11 @@ function recolor(src: THREE.Texture, kit: Kit, map: [number[], string][]): THREE
 // Personaje
 // ---------------------------------------------------------------------------
 
-export interface BuildOpts { outfit: boolean }
+export interface BuildOpts {
+  outfit: boolean;
+  wardrobe?: WardrobeId;
+  proportions?: { width: number; height: number };
+}
 
 const PI = Math.PI;
 /** KayKit mide ~2.4 unidades: lo llevamos a ~1.55 m, proporción de la escena. */
@@ -223,7 +232,7 @@ export class Character {
       if (!m) { m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); flatMats.set(c, m); this.owned.push(m); }
       return m;
     };
-    const hatKind = !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
+    const hatKind = this.opts.wardrobe ? WARDROBES[this.opts.wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
@@ -237,21 +246,25 @@ export class Character {
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
+    const replaced = this.opts.wardrobe ? wardrobeRegions(this.opts.wardrobe) : new Set<string>();
+    const covered = (part: string) => replaced.has(part === 'Body' ? 'torso' : part.startsWith('Arm') ? 'arms' : 'legs');
     if (this.opts.outfit) {
-      for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
+      for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) {
+        if (!covered(part)) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
+      }
       // Capas desactivadas temporalmente; restaurar esta línea para reactivarlas:
       // if (outfit.cape) { const cm = capeMat(outfit.kit); this.addRigid(outfit.kit, `${outfit.kit}_Cape`, cm); this.addMantle(outfit.kit, outfit.kit, cm); }
     } else {
       const kit = VILLAGER.kit;
-      this.addSkinned(kit, `${kit}_Body`, mat(kit, true));
+      if (!covered('Body')) this.addSkinned(kit, `${kit}_Body`, mat(kit, true));
       for (const side of ['Left', 'Right']) {
-        this.addSkinned(kit, `${kit}_Arm${side}`, mat(kit, true));
-        this.addSkinned(kit, `${kit}_Leg${side}`, mat(kit, true));
+        if (!covered(`Arm${side}`)) this.addSkinned(kit, `${kit}_Arm${side}`, mat(kit, true));
+        if (!covered(`Leg${side}`)) this.addSkinned(kit, `${kit}_Leg${side}`, mat(kit, true));
       }
       // Restaurar esta línea junto con el selector de capa para habilitar capas en ropa diaria:
       // if (d.cape > 0) { const cm = capeMat(kit); this.addRigid(kit, `${kit}_Cape`, cm); this.addMantle(kit, kit, cm); }
     }
-    if (outfit.hat) {
+    if (outfit.hat && !this.opts.wardrobe) {
       // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
       // doble cara: el interior del casco/sombrero no debe desaparecer según el ángulo
       const hatMat = mat(outfit.kit, true).clone();
@@ -260,7 +273,13 @@ export class Character {
       const hat = this.addRigid(outfit.kit, outfit.hat, hatMat);
       if (hat) hat.scale.multiplyScalar(1.06);
     }
-    for (const it of outfit.items) {
+    if (this.opts.wardrobe) mountWardrobe(this.opts.wardrobe, this.model, this.bones, skin, resource => this.owned.push(resource));
+    const heldItems = this.opts.outfit ? outfit.items : [d.equipment.weapon, d.equipment.offhand]
+      .flatMap(item => {
+        const model = item && STARTER_MODELS[item.id];
+        return model ? [{ kit: model.kit, name: model.node }] : [];
+      });
+    for (const it of heldItems) {
       const o = this.addRigid(it.kit, it.name, mat(it.kit, it.kit === outfit.kit));
       if (it.name === '2H_Staff' && o) this.addGlow(o);
       // el libro cuelga de la mano, agarrado por el canto
@@ -584,9 +603,19 @@ export class Character {
     this.playGait(from);
   }
   wave() { this.play('Cheer'); this.happyReq = true; }
+  attachToChest(object: THREE.Object3D) {
+    const chest = this.bones.get('chest');
+    if (!chest) throw new Error('El personaje no tiene hueso de pecho.');
+    chest.add(object);
+  }
   /** Mueve la boca como si hablara durante `seconds` segundos. */
   speak(seconds: number) { this.speakUntil = Math.max(this.lastT, 0) + seconds; }
   hit() { this.play('Hit_A'); }
+  attack(skill = false) {
+    const magic = this.d.cls === 'mago' || this.d.cls === 'clerigo';
+    this.play(magic ? skill ? 'Spellcast_Raise' : 'Spellcasting'
+      : this.d.cls === 'explorador' ? 'Interact' : '1H_Melee_Attack_Slice_Diagonal');
+  }
   private dead = false;
   /** Cae al suelo y se queda ahí hasta `revive()`. */
   die() {
@@ -695,6 +724,10 @@ export class Character {
       scale(`lowerleg.${side}`, 1 + build * 0.05, 1, 1 + build * 0.05);
     }
     this.model.position.y = 0;
+    if (this.opts.proportions) {
+      const { width, height } = this.opts.proportions;
+      this.model.scale.multiply(new THREE.Vector3(width, height, width));
+    }
   }
 
   dispose() {

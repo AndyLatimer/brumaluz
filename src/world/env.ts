@@ -6,11 +6,13 @@ import { softDot, world } from './paint';
 const PI = Math.PI;
 
 export interface Env {
+  cameraObstacles: THREE.Object3D[];
   update(t: number): void;
 }
 
 export function buildEnv(scene: THREE.Scene): Env {
   const flames: THREE.Sprite[] = [];
+  const cameraObstacles: THREE.Object3D[] = [];
   const songbirds: { mesh: THREE.LineSegments; radius: number; height: number; speed: number; phase: number }[] = [];
 
   // ---------------- Cielo pintado ----------------
@@ -58,6 +60,7 @@ export function buildEnv(scene: THREE.Scene): Env {
     cap.rotation.y = PI / 4;
     for (const m of [pole, cap]) { m.castShadow = true; }
     g.add(pole, lamp, cap);
+    cameraObstacles.push(pole, lamp, cap);
     const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     fl.position.y = 2.75;
     fl.scale.setScalar(1.3);
@@ -116,6 +119,7 @@ export function buildEnv(scene: THREE.Scene): Env {
   }
 
   return {
+    cameraObstacles,
     update(t: number) {
       flames.forEach((f, i) => f.scale.setScalar(1.25 + Math.sin(t * 9 + i * 2) * 0.08 + Math.sin(t * 23 + i) * 0.05));
       songbirds.forEach((bird, i) => {

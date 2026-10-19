@@ -23,7 +23,19 @@ export interface WorldSnapshot {
   status: 'ok' | 'corrected';
   position: WorldPosition;
   players: WorldPlayer[];
+  selfVitals?: PublicVitals;
+  encounter?: CombatEncounter | null;
   food?: { buff: FoodBuff | null; revision: number; at: number };
+}
+
+export interface CombatEncounter {
+  id: 'shadowling';
+  status: 'active' | 'defeated' | 'fled' | 'failed';
+  health: number;
+  maxHealth: number;
+  x: number;
+  z: number;
+  enemyAttackAt: number;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -37,6 +49,20 @@ function number(value: unknown) {
 function position(value: unknown): WorldPosition {
   const p = record(value);
   return { x: number(p.x), z: number(p.z), yaw: number(p.yaw) };
+}
+export function parseCombatEncounter(value: unknown): CombatEncounter | null {
+  if (value === null) return null;
+  const encounter=record(value);
+  const health=number(encounter.health),maxHealth=number(encounter.maxHealth);
+  const status=encounter.status;
+  if(encounter.id!=='shadowling'||(status!=='active'&&status!=='defeated'&&status!=='fled'&&status!=='failed')
+    ||maxHealth<=0||health<0||health>maxHealth||number(encounter.enemyAttackAt)<0) {
+    throw new Error('Respuesta de combate no válida.');
+  }
+  return {
+    id:'shadowling',status,health,maxHealth,
+    x:number(encounter.x),z:number(encounter.z),enemyAttackAt:number(encounter.enemyAttackAt),
+  };
 }
 export function parsePublicVitals(value: unknown): PublicVitals {
   const v = record(value);
@@ -58,9 +84,11 @@ function snapshot(value: unknown): WorldSnapshot {
     if ((value.buff !== null && !buff) || !Number.isSafeInteger(revision) || revision < 0 || at < 0) throw new Error('Respuesta multijugador no válida.');
     food = { buff, revision, at };
   }
+  const selfVitals = data.vitals === undefined ? undefined : parsePublicVitals(data.vitals);
+  const encounter = data.encounter === undefined ? undefined : parseCombatEncounter(data.encounter);
   return {
     status: data.status, position: position(data.position),
-    food,
+    food, selfVitals, encounter,
     players: data.players.map((value) => {
       const p = record(value);
       if (typeof p.id !== 'string' || typeof p.userId !== 'string' || typeof p.dead !== 'boolean'

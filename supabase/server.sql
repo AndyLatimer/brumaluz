@@ -17,6 +17,8 @@ insert into public.server_config (key, value) values
   ('spawn', '{"x": -6.4, "z": -11.085}'::jsonb), -- punto de inicio de Brumaluz (hexToWorld(0, -1.6))
   ('world_limit', '400'::jsonb),                -- |x| y |z| máximos permitidos
   ('max_speed', '9'::jsonb),                    -- m/s tolerados al guardar la posición (correr real: 6.2)
+  ('combat_enabled', 'false'::jsonb),           -- combate personal todavía no activado en el mundo público
+  ('combat_site', '{"x": 0, "z": -62.35}'::jsonb),
   ('staff_titles', '{"rey_de_pompelin": ["manuelperezardanuy@gmail.com"]}'::jsonb) -- títulos reservados: título -> emails autorizados
 on conflict (key) do nothing;
 
@@ -215,6 +217,7 @@ begin
     raise exception 'CHARACTER_NOT_FOUND';
   end if;
   c.data := public.game_food_data(c.id,public.game_party_data(c.id,c.data));
+  c.data := public.game_regen_data(c.id,c.data);
   return c;
 end;
 $$;
@@ -255,6 +258,7 @@ declare
   result jsonb;
 begin
   d := public.game_food_data(p_id,d);
+  d := public.game_regen_data(p_id,d);
   d := d || jsonb_build_object(
     'overheal', case when coalesce((d ->> 'health')::int, -1) = 0 then 0 else public.game_overheal_now(d) end,
     'overheal_at', extract(epoch from now())
@@ -313,6 +317,14 @@ begin
   if exists(select 1 from public.server_config where key='welcome_enabled' and value='true') then
     d:=d||jsonb_build_object('welcome',jsonb_build_object('origin',null,'stage','available'));
   end if;
+  d := d || jsonb_build_object('equipment',
+    case p_data->>'cls'
+      when 'guerrero' then '{"weapon":{"id":"espada_inicial","count":1,"bound":true},"offhand":{"id":"escudo_inicial","count":1,"bound":true}}'::jsonb
+      when 'mago' then '{"weapon":{"id":"baston_inicial","count":1,"bound":true}}'::jsonb
+      when 'picaro' then '{"weapon":{"id":"daga_inicial","count":1,"bound":true},"offhand":{"id":"daga_secundaria_inicial","count":1,"bound":true}}'::jsonb
+      when 'clerigo' then '{"weapon":{"id":"varita_inicial","count":1,"bound":true},"offhand":{"id":"libro_inicial","count":1,"bound":true}}'::jsonb
+      when 'explorador' then '{"weapon":{"id":"ballesta_inicial","count":1,"bound":true}}'::jsonb
+    end);
 
   -- Solo la apariencia viene del cliente.
   foreach k in array array['sex', 'height', 'build', 'skin', 'face', 'hair', 'hairColor', 'beard', 'eyeShape', 'eyeColor',
@@ -475,6 +487,14 @@ immutable
 set search_path = ''
 as $$
   select case p_item
+    when 'espada_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'escudo_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'baston_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'daga_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'daga_secundaria_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'varita_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'libro_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
+    when 'ballesta_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
     when 'pan_duro' then jsonb_build_object('value', 4, 'food_seconds', 900, 'bound', false)
     when 'pocion_vida_minuscula' then jsonb_build_object('value', 10, 'heal_pct', 5, 'bound', false)
     when 'pocion_mana_minuscula' then jsonb_build_object('value', 10, 'resource_pct', 5, 'resource_kind', 'mana', 'bound', false)
@@ -634,6 +654,10 @@ begin
   if p_slot is null or p_slot not between 0 and 24 then raise exception 'INVALID_ITEM'; end if;
   item := public.game_item(public.game_inventory(d) -> p_slot ->> 'id');
   if item is null then raise exception 'INVALID_ITEM'; end if;
+  if public.game_inventory(d) -> p_slot ->> 'id' = any(array[
+    'espada_inicial','escudo_inicial','baston_inicial','daga_inicial',
+    'daga_secundaria_inicial','varita_inicial','libro_inicial','ballesta_inicial'
+  ]) then raise exception 'ITEM_NOT_SELLABLE'; end if;
   price := greatest(1, floor((item ->> 'value')::int / 2.0)::int);
   d := public.game_remove_item(d, p_slot);
   return public.game_store(c.id, public.game_set_pelines(d, public.game_pelines(d) + price));
@@ -833,7 +857,8 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select coalesce(jsonb_object_agg(key, value), '{}'::jsonb)
+  select coalesce(jsonb_object_agg(key, value), '{}'::jsonb) ||
+    jsonb_build_object('equipment', coalesce(d->'equipment','{}'::jsonb))
   from jsonb_each(d)
   where key = any(array[
     'name', 'title', 'level', 'race', 'cls', 'sex', 'height', 'build', 'skin', 'face',
@@ -870,6 +895,301 @@ as $$
   ) from boosted
 $$;
 revoke all on function public.game_public_vitals(jsonb) from public, anon, authenticated;
+
+-- Regeneration only advances while the character has a live world-presence lease.
+-- Fractional points are retained server-side so heartbeat cadence cannot change the rate.
+create or replace function public.game_regen_data(p_id uuid, d jsonb)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  seen timestamptz;
+  stamp numeric := extract(epoch from clock_timestamp());
+  previous numeric := coalesce((d ->> 'vitals_at')::numeric, extract(epoch from clock_timestamp()));
+  active_until numeric;
+  elapsed numeric := 0;
+  max_health numeric := public.game_max_health(d);
+  max_resource numeric;
+  health_value numeric := public.game_health(d);
+  resource_value numeric;
+  health_remainder numeric := coalesce((d ->> 'health_regen')::numeric,0);
+  resource_remainder numeric := coalesce((d ->> 'resource_regen')::numeric,0);
+  health_rate numeric;
+  resource_rate numeric;
+  kind text := case when d ->> 'cls' in ('mago','clerigo') then 'mana' else 'stamina' end;
+  total numeric;
+begin
+  select seen_at into seen from public.world_players where character_id=p_id;
+  if seen is not null then
+    active_until := extract(epoch from least(clock_timestamp(),seen+interval '15 seconds'));
+    elapsed := greatest(0,active_until-previous);
+  end if;
+
+  max_resource := (public.game_level(d)-1)*6 + case when kind='mana'
+    then 30+public.game_attr_total(d,'intelecto')*7
+    else 50+public.game_attr_total(d,'agilidad')*3+public.game_attr_total(d,'corpulencia')*3
+  end;
+  max_resource := floor(max_resource*(1+least(greatest(coalesce((d->>'partyPeers')::int,0),0),3)*0.015));
+  if d->'foodBuff'->>'itemId'='pan_duro' and coalesce((d->'foodBuff'->>'remaining')::numeric,0)>0 then
+    max_resource := max_resource+3;
+  end if;
+
+  health_rate := case when coalesce((d->>'combat_at')::numeric,0)>=stamp-5 then 0.0025 else 0.01 end;
+  resource_rate := case when kind='mana' then 0.02 else 0.04 end;
+
+  if health_value=0 then
+    health_remainder := 0;
+    resource_remainder := 0;
+    resource_value := (public.game_public_vitals(d)->>'resource')::numeric;
+  else
+    total := least(max_health,health_value+health_remainder+max_health*health_rate*elapsed);
+    health_value := floor(total);
+    health_remainder := case when total>=max_health then 0 else total-health_value end;
+
+    resource_value := (public.game_public_vitals(d)->>'resource')::numeric;
+    total := least(max_resource,resource_value+resource_remainder+max_resource*resource_rate*elapsed);
+    resource_value := floor(total);
+    resource_remainder := case when total>=max_resource then 0 else total-resource_value end;
+  end if;
+
+  return d || jsonb_build_object(
+    'health',case when health_value>=max_health then -1 else health_value end,
+    'resource',case when resource_value>=max_resource then -1 else coalesce(resource_value,0) end,
+    'health_regen',health_remainder,'resource_regen',resource_remainder,'vitals_at',stamp
+  );
+end;
+$$;
+revoke all on function public.game_regen_data(uuid,jsonb) from public, anon, authenticated;
+
+create or replace function public.game_combat_tick(p_id uuid, d jsonb, p_x double precision, p_z double precision)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  encounter jsonb := d->'combatEncounter';
+  stamp numeric := extract(epoch from clock_timestamp());
+  enemy_x numeric;
+  enemy_z numeric;
+  absorbed int;
+  remaining int;
+  hp int;
+begin
+  if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false)
+    or encounter->>'status' is distinct from 'active'
+    or coalesce((d->>'health')::int,-1)=0
+    or stamp<coalesce((encounter->>'enemyAttackAt')::numeric,stamp) then
+    return d;
+  end if;
+  enemy_x := (encounter->>'x')::numeric;
+  enemy_z := (encounter->>'z')::numeric;
+  if sqrt(power(p_x-enemy_x,2)+power(p_z-enemy_z,2))>2 then return d; end if;
+
+  absorbed := least(public.game_overheal_now(d),8);
+  remaining := 8-absorbed;
+  hp := public.game_health(d);
+  if remaining>0 then hp:=greatest(0,hp-remaining); end if;
+  d := d || jsonb_build_object(
+    'health',hp,'overheal',public.game_overheal_now(d)-absorbed,
+    'overheal_at',stamp,'combat_at',stamp
+  );
+  encounter := encounter || jsonb_build_object(
+    'enemyAttackAt',stamp+2,
+    'status',case when hp=0 then 'failed' else 'active' end
+  );
+  return jsonb_set(d,'{combatEncounter}',encounter);
+end;
+$$;
+revoke all on function public.game_combat_tick(uuid,jsonb,double precision,double precision) from public, anon, authenticated;
+
+create or replace function public.combat_start(p_character_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  w public.world_players;
+  site jsonb := (select value from public.server_config where key='combat_site');
+  sx numeric := (site->>'x')::numeric;
+  sz numeric := (site->>'z')::numeric;
+  stamp numeric := extract(epoch from clock_timestamp());
+  encounter jsonb;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  c:=public.game_lock_character(p_character_id);
+  if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false) then
+    raise exception 'COMBAT_UNAVAILABLE';
+  end if;
+  if c.data->'welcome'->>'stage' is distinct from 'completed' then
+    raise exception 'WELCOME_REQUIRED';
+  end if;
+  select * into w from public.world_players where user_id=uid and character_id=c.id
+    and seen_at>now()-interval '15 seconds' for update;
+  if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  if coalesce(c.data->>'location','brumaluz')<>'brumaluz'
+    or sqrt(power((w.position->>'x')::numeric-sx,2)+power((w.position->>'z')::numeric-sz,2))>6 then
+    raise exception 'COMBAT_TOO_FAR';
+  end if;
+  if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  if c.data->'combatEncounter'->>'status'='active' then raise exception 'COMBAT_ALREADY_ACTIVE'; end if;
+  encounter:=jsonb_build_object(
+    'id','shadowling','status','active','health',100,'maxHealth',100,
+    'x',sx+3.5,'z',sz,'enemyAttackAt',stamp+2
+  );
+  c.data:=c.data||jsonb_build_object('combatEncounter',encounter,'combat_at',stamp);
+  c.data:=public.game_store(c.id,c.data);
+  return jsonb_build_object(
+    'encounter',encounter,'vitals',public.game_public_vitals(c.data),
+    'damage',0,'healing',0
+  );
+end;
+$$;
+
+create or replace function public.combat_action(p_character_id uuid,p_action text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  w public.world_players;
+  encounter jsonb;
+  cls text;
+  skill boolean;
+  healing boolean;
+  stamp numeric := extract(epoch from clock_timestamp());
+  distance numeric;
+  attack_range numeric;
+  cadence numeric;
+  damage int;
+  cost int := 0;
+  cooldown numeric := 0;
+  resource int;
+  hp int;
+  enemy_hp int;
+  hits int;
+  each_hit int;
+  total_damage int := 0;
+  healed int := 0;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  c:=public.game_lock_character(p_character_id);
+  encounter:=c.data->'combatEncounter';
+  cls:=c.data->>'cls';
+  skill:=p_action='skill';
+  healing:=cls='clerigo' and skill;
+  if p_action is null or p_action not in ('attack','skill') then raise exception 'COMBAT_INVALID_ACTION'; end if;
+  if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false) then
+    raise exception 'COMBAT_UNAVAILABLE';
+  end if;
+  if c.data->'welcome'->>'stage' is distinct from 'completed' then
+    raise exception 'WELCOME_REQUIRED';
+  end if;
+  select * into w from public.world_players where user_id=uid and character_id=c.id
+    and seen_at>now()-interval '15 seconds' for update;
+  if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  if encounter->>'status' is distinct from 'active' or encounter->>'id' is distinct from 'shadowling' then raise exception 'COMBAT_NO_TARGET'; end if;
+
+  attack_range:=case cls when 'guerrero' then 1.8 when 'mago' then 6 when 'picaro' then 1.6
+    when 'clerigo' then 6 when 'explorador' then 8 else 0 end;
+  cadence:=case cls when 'guerrero' then 1.5 when 'mago' then 1.8 when 'picaro' then 0.9
+    when 'clerigo' then 1.8 when 'explorador' then 1.7 else 0 end;
+  damage:=case cls when 'guerrero' then 10 when 'mago' then 10 when 'picaro' then 8
+    when 'clerigo' then 11 when 'explorador' then 10 else 0 end;
+  enemy_hp:=(encounter->>'health')::int;
+  hp:=public.game_health(c.data);
+  if healing then
+    cost:=12;cooldown:=6;
+    if hp=public.game_max_health(c.data) then raise exception 'COMBAT_HEALTH_FULL'; end if;
+  else
+    if enemy_hp<=0 then raise exception 'COMBAT_NO_TARGET'; end if;
+    distance:=sqrt(power((w.position->>'x')::numeric-(encounter->>'x')::numeric,2)
+      +power((w.position->>'z')::numeric-(encounter->>'z')::numeric,2));
+    if distance>attack_range then raise exception 'COMBAT_OUT_OF_RANGE'; end if;
+    if skill then
+      cost:=case cls when 'mago' then 20 else 15 end;
+      cooldown:=case cls when 'guerrero' then 6 when 'mago' then 7 when 'picaro' then 4.5
+        when 'explorador' then 6 else 0 end;
+    end if;
+  end if;
+  if skill then
+    if stamp<coalesce((c.data->>'combatNextSkill')::numeric,0) then raise exception 'COMBAT_COOLDOWN'; end if;
+  elsif stamp<coalesce((c.data->>'combatNextAttack')::numeric,0) then
+    raise exception 'COMBAT_COOLDOWN';
+  end if;
+
+  resource:=(public.game_public_vitals(c.data)->>'resource')::int;
+  if resource<cost then raise exception 'COMBAT_NOT_ENOUGH_RESOURCE'; end if;
+  resource:=resource-cost;
+  if skill then c.data:=c.data||jsonb_build_object('combatNextSkill',stamp+cooldown);
+  else c.data:=c.data||jsonb_build_object('combatNextAttack',stamp+cadence);
+  end if;
+  c.data:=c.data||jsonb_build_object('resource',resource,'combat_at',stamp);
+
+  if healing then
+    healed:=least(32,public.game_max_health(c.data)-hp);
+    c.data:=c.data||jsonb_build_object('health',hp+healed);
+  else
+    hits:=case when skill and cls='picaro' then 2 else 1 end;
+    each_hit:=case when not skill then damage
+      when cls='guerrero' then 18 when cls='mago' then 18
+      when cls='picaro' then 8 when cls='explorador' then 19 else damage end;
+    if skill then c.data:=c.data||jsonb_build_object('combat_at',stamp); end if;
+    for i in 1..hits loop
+      exit when enemy_hp<=0;
+      total_damage:=total_damage+least(each_hit,enemy_hp);
+      enemy_hp:=greatest(0,enemy_hp-each_hit);
+    end loop;
+    encounter:=encounter||jsonb_build_object(
+      'health',enemy_hp,'status',case when enemy_hp=0 then 'defeated' else 'active' end
+    );
+    c.data:=jsonb_set(c.data,'{combatEncounter}',encounter);
+  end if;
+  c.data:=public.game_store(c.id,c.data);
+  if public.game_health(c.data)=0 then
+    update public.world_players set dead=true where user_id=uid and character_id=c.id;
+  end if;
+  return jsonb_build_object(
+    'encounter',c.data->'combatEncounter','vitals',public.game_public_vitals(c.data),
+    'damage',total_damage,'healing',healed
+  );
+end;
+$$;
+
+create or replace function public.combat_stop(p_character_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  w public.world_players;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  c:=public.game_lock_character(p_character_id);
+  select * into w from public.world_players where user_id=uid and character_id=c.id
+    and seen_at>now()-interval '15 seconds' for update;
+  if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  if c.data->'combatEncounter'->>'status'='active' then
+    c.data:=jsonb_set(c.data,'{combatEncounter,status}','"fled"'::jsonb);
+    c.data:=public.game_store(c.id,c.data);
+  end if;
+  return jsonb_build_object('encounter',c.data->'combatEncounter','vitals',public.game_public_vitals(c.data));
+end;
+$$;
 
 create or replace function public.game_world_snapshot(p_user_id uuid)
 returns jsonb
@@ -954,6 +1274,8 @@ begin
   c.data := public.game_store(c.id,c.data);
   perform public.game_party_cleanup();
   return jsonb_build_object('position', pos, 'status', 'ok', 'players', public.game_world_snapshot(uid),
+    'encounter',c.data->'combatEncounter',
+    'vitals',public.game_public_vitals(c.data),
     'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'));
 end;
 $$;
@@ -981,6 +1303,7 @@ declare
   distance double precision;
   is_dead boolean;
   status text := 'ok';
+  combat_data jsonb;
 begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
@@ -1022,11 +1345,22 @@ begin
     jump = case when is_dead then 0 else v_jump end, wave = v_wave,
     dead = is_dead, movement_credit = least(3, credit), seen_at = now()
     where user_id = uid;
+  if c.data->'combatEncounter'->>'status'='active' then
+    combat_data:=public.game_combat_tick(c.id,c.data,(w.position->>'x')::double precision,(w.position->>'z')::double precision);
+    if combat_data is distinct from c.data then
+      c.data:=public.game_store(c.id,combat_data);
+      if public.game_health(c.data)=0 then
+        update public.world_players set dead=true where user_id=uid;
+      end if;
+    end if;
+  end if;
   if now() - w.saved_at >= interval '5 seconds' or now()-w.seen_at >= interval '15 seconds' then
     perform public.game_store(c.id, c.data || jsonb_build_object('position', w.position, 'position_at', extract(epoch from now())));
     update public.world_players set saved_at = now() where user_id = uid;
   end if;
   return jsonb_build_object('status', status, 'position', w.position, 'players', public.game_world_snapshot(uid),
+    'encounter',c.data->'combatEncounter',
+    'vitals',public.game_public_vitals(c.data),
     'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'));
 end;
 $$;
@@ -1381,6 +1715,7 @@ revoke all on function
   public.game_attr_total(jsonb, text), public.game_max_health(jsonb), public.game_health(jsonb),
   public.game_points_spent(jsonb), public.game_points_allowed(jsonb), public.game_lock_character(uuid),
   public.game_store(uuid, jsonb), public.game_require_debug(), public.game_overheal_cap(jsonb), public.game_overheal_now(jsonb),
+  public.game_regen_data(uuid,jsonb),public.game_combat_tick(uuid,jsonb,double precision,double precision),
   public.game_item(text), public.game_vendor_stock(text), public.game_pelines(jsonb), public.game_set_pelines(jsonb, int),
   public.game_inventory(jsonb), public.game_add_item(jsonb, text), public.game_remove_item(jsonb, int), public.game_title_granted(text)
   from public, anon, authenticated;
@@ -1393,14 +1728,16 @@ revoke all on function
   public.debug_damage(uuid), public.debug_heal(uuid), public.debug_xp(uuid), public.debug_money(uuid),
   public.vendor_buy(uuid, text, text), public.vendor_sell(uuid, text, int), public.use_item(uuid, int),
   public.spend_attribute_points(uuid, jsonb), public.set_character_title(uuid, text),
-  public.save_character_position(uuid, double precision, double precision, double precision), public.chat_send(uuid, text, text, text)
+  public.save_character_position(uuid, double precision, double precision, double precision), public.chat_send(uuid, text, text, text),
+  public.combat_start(uuid),public.combat_action(uuid,text),public.combat_stop(uuid)
   from public, anon;
 grant execute on function
   public.create_character(jsonb), public.character_enter(uuid), public.respawn_character(uuid),
   public.debug_damage(uuid), public.debug_heal(uuid), public.debug_xp(uuid), public.debug_money(uuid),
   public.vendor_buy(uuid, text, text), public.vendor_sell(uuid, text, int), public.use_item(uuid, int),
   public.spend_attribute_points(uuid, jsonb), public.set_character_title(uuid, text),
-  public.save_character_position(uuid, double precision, double precision, double precision), public.chat_send(uuid, text, text, text)
+  public.save_character_position(uuid, double precision, double precision, double precision), public.chat_send(uuid, text, text, text),
+  public.combat_start(uuid),public.combat_action(uuid,text),public.combat_stop(uuid)
   to authenticated;
 
 -- Trades are private RPC-only records. Session IDs prevent invitations surviving a replaced tab.

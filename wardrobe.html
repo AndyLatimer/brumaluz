@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller de vestuario · Brumaluz</title>
+  </head>
+  <body>
+    <main>
+      <h1>Taller de vestuario</h1>
+      <p>Vista de desarrollo. No modifica personajes ni inventarios.</p>
+      <label>Maniquí
+        <select id="mannequin">
+          <option value="gnomi">Gnomi</option>
+          <option value="human">Humano</option>
+          <option value="elf">Elfo</option>
+          <option value="pelso">Pelso</option>
+          <option value="lagto">Lagto'</option>
+        </select>
+      </label>
+      <label>Vestuario
+        <select id="wardrobe">
+          <option value="helpers">Gremio de Ayudantes</option>
+          <option value="villager">Ropa inicial (comparación)</option>
+        </select>
+      </label>
+      <label>Animación
+        <select id="animation">
+          <option value="idle">Reposo</option>
+          <option value="walk">Caminar</option>
+          <option value="run">Correr</option>
+        </select>
+      </label>
+      <button id="wave" type="button">Saludar</button>
+      <button id="interact" type="button">Interactuar</button>
+      <label>Giro <input id="turn" type="range" min="-180" max="180" value="0"></label>
+      <label>Elevación <input id="elevation" type="range" min="-75" max="65" value="5"></label>
+      <p id="status" role="status">Cargando recursos…</p>
+      <a href="./src/assets/models/wardrobe/helpers.glb" download>Descargar GLB para Blender</a>
+    </main>
+    <canvas aria-label="Vista previa 3D del vestuario"></canvas>
+    <script type="module" src="/src/dev/wardrobePreview.ts"></script>
+  </body>
+</html>

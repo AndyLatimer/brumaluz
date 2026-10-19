@@ -64,6 +64,8 @@ export interface CityVendorSpot {
   position: THREE.Vector3;
 }
 
+export const COMBAT_SITE = { x: 0, z: -62.35 };
+
 export interface Interactable {
   id: string;
   position: THREE.Vector3;
@@ -797,6 +799,13 @@ export async function buildCity(): Promise<City> {
     npcSites.push({ id: 'testiculos', position: new THREE.Vector3(nx, terrainHeightAtWorld(nx, nz), nz), yaw: Math.atan2(spawnPoint.x - nx, spawnPoint.y - nz) });
     colliders.push({ x: nx, z: nz, r: 0.5 });
   }
+  const farmerX=COMBAT_SITE.x-3, farmerZ=COMBAT_SITE.z;
+  npcSites.push({
+    id:'isberto',
+    position:new THREE.Vector3(farmerX,terrainHeightAtWorld(farmerX,farmerZ),farmerZ),
+    yaw:Math.atan2(COMBAT_SITE.x-farmerX,COMBAT_SITE.z-farmerZ),
+  });
+  colliders.push({x:farmerX,z:farmerZ,r:.5});
 
   return {
     root,
