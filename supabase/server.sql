@@ -1088,7 +1088,8 @@ begin
     and seen_at>now()-interval '15 seconds' for update;
   if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
   if coalesce(c.data->>'location','brumaluz')<>'brumaluz'
-    or sqrt(power((w.position->>'x')::numeric-sx,2)+power((w.position->>'z')::numeric-sz,2))>6 then
+    or sqrt(power((w.position->>'x')::numeric-coalesce((c.data->'isbertoPosition'->>'x')::numeric,sx),2)
+      +power((w.position->>'z')::numeric-coalesce((c.data->'isbertoPosition'->>'z')::numeric,sz),2))>6 then
     raise exception 'COMBAT_TOO_FAR';
   end if;
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
@@ -2146,6 +2147,7 @@ begin
   elsif p_action='claim' then
     if stage<>'found' then raise exception 'WELCOME_INVALID_STATE'; end if;
     q:=q||jsonb_build_object('stage','completed');
+    d:=d||jsonb_build_object('isbertoPosition',jsonb_build_object('x',(pos->>'x')::numeric+2,'z',(pos->>'z')::numeric));
     if lvl<50 then
       xp:=xp+40;
       while lvl<50 and xp>=public.game_xp_needed(lvl) loop

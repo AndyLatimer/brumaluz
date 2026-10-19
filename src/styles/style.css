@@ -798,15 +798,27 @@ body.skills-open #window-backdrop { padding-bottom:100px; }
 .ab-slot.skill-ready { animation:skill-ready .65s ease-out; }
 @keyframes skill-ready { from { box-shadow:0 0 0 3px #ffe2a0,0 0 22px #e9ca88; } to { box-shadow:0 0 0 0 transparent; } }
 @media(prefers-reduced-motion:reduce) { .ab-slot.skill-ready { animation:none; } }
-.loot-window { display:grid; gap:16px; padding:8px; color:var(--wood-2); }
+.dialog-backdrop.loot-overlay { display:block; padding:0; background:none; backdrop-filter:none; pointer-events:none; }
+.loot-window-frame.frame { position:absolute; left:clamp(12px,var(--loot-left,50%),max(12px,calc(100vw - 312px))); top:var(--loot-top,30%); width:min(300px,calc(100vw - 24px)); max-height:calc(100dvh - 170px); overflow-y:auto; padding:14px; border:1px solid #c6a66b; border-radius:5px 14px; background:radial-gradient(ellipse at top left,#6d543650,transparent 75%),linear-gradient(145deg,#322b24f2,#191e1bf2); box-shadow:0 8px 24px #0005,inset 0 0 0 3px #eac7820a; color:#eee0bd; pointer-events:auto; }
+.loot-window-frame.frame::before,.loot-window-frame.frame::after { display:none; }
+.loot-window-frame > h2 { margin:0 24px 12px 0; text-align:left; color:#efd49d; font:700 12px/1.5 'Cinzel',serif; letter-spacing:.06em; }
+.loot-window-frame .options-actions { position:absolute; top:6px; right:7px; min-height:0; margin:0; }
+.loot-window-frame #window-close { width:26px; height:26px; padding:0; border:0; background:none; box-shadow:none; font-size:0; }
+.loot-window-frame #window-close::after { content:'\00d7'; font:22px/1 'Alegreya',serif; color:#d7c39c; }
+.loot-window { display:grid; gap:10px; color:#eee0bd; }
 .loot-window p { margin:0; line-height:1.5; }
-.loot-list { display:grid; gap:8px; }
-.loot-item { display:grid; grid-template-columns:48px minmax(0,1fr) auto; gap:4px 12px; align-items:center; padding:14px; border:1px solid #af8a50; border-radius:5px 12px; background:linear-gradient(135deg,#fff3d8,#e5ccaa); color:var(--wood-2); text-align:left; cursor:pointer; }
-.loot-item:hover { border-color:#755537; background:#fff2d5; }
-.loot-item:focus-visible { outline:2px solid #97723a; outline-offset:3px; }
-.loot-item svg { width:44px; height:44px; grid-row:span 2; }
-.loot-item small { grid-column:2; color:#7d7352; }
-.loot-status { font-size:13px; color:#7e694e; }
+.loot-list { display:grid; gap:6px; }
+.loot-item { display:grid; grid-template-columns:38px minmax(0,1fr) auto; gap:4px 10px; align-items:center; padding:9px; border:1px solid #c3a77844; border-radius:4px 9px; background:linear-gradient(120deg,#c9b08016,#e1c47b05); color:#f3e3c0; text-align:left; cursor:pointer; }
+.loot-item:hover { border-color:#d9bc83; background:#e5c88420; }
+.loot-item:focus-visible { outline:2px solid #e9cb8c; outline-offset:2px; }
+.loot-item svg { width:38px; height:38px; grid-row:span 2; }
+.loot-item strong { font:700 14px/1.3 'Alegreya',serif; }
+.loot-item > span { font-size:12px; color:#d2bf96; }
+.loot-item small { display:flex; align-items:center; gap:6px; grid-column:2; color:#b8c9a6; font-size:11px; }
+.loot-item kbd { display:inline-grid; place-items:center; width:17px; height:17px; border:1px solid #c3b27b66; border-radius:3px; font:10px 'Cinzel',serif; color:#e5d4ac; }
+.loot-window .btn.gold { justify-self:end; border:1px solid #b99760; padding:7px 12px; border-radius:4px 8px; background:linear-gradient(#6d5838,#433c2b); box-shadow:inset 0 1px #f8e4a21a; color:#f1d8a3; font-size:10px; }
+.loot-status { font-size:12px; color:#e7bb92; }
+.loot-status:empty { display:none; }
 .loot-item:disabled { opacity:.5; cursor:wait; }
 .ab-slot[data-skill-id] i { font-size:14px; color:#ffe6aa; }
 .ab-slot .skill-icon { width:calc(100% - 4px); height:calc(100% - 4px); max-width:40px; max-height:40px; fill:none; stroke:none; }
@@ -1086,6 +1098,23 @@ body.window-open .minimap { z-index: 61; }
 .dialog-action-error { margin: 8px 0 0; color: #ffcfb7; font-size: 14px; }
 .dialog-choice:disabled { cursor: wait; opacity: .65; }
 .quest-journal { display: grid; gap: 18px; min-width: 0; }
+.quest-journal-content { display:grid; gap:12px; }
+.dialog-backdrop.quest-overlay { background:#0d111522; backdrop-filter:blur(1px); }
+.quest-window-frame.frame { background:linear-gradient(135deg,#f8ecd2dc,#e2cc9fce); box-shadow:0 0 0 3px #51391bb0,0 12px 30px #0003,inset 0 0 25px #8c5a281a; }
+.quest-window-frame .quest-entry { background:linear-gradient(135deg,#fff9e8a8,#f1dfb87a); }
+.quest-entry.quest-completed { display:block; padding:0; overflow:hidden; }
+.quest-completed summary { display:flex; align-items:center; gap:12px; padding:15px 18px; cursor:pointer; list-style:none; }
+.quest-completed summary::-webkit-details-marker { display:none; }
+.quest-completed summary::after { content:'\203a'; margin-left:auto; color:#755b32; font:24px/1 'Alegreya',serif; transition:transform .15s; }
+.quest-completed[open] summary::after { transform:rotate(90deg); }
+.quest-completed summary:focus-visible { outline:2px solid #8c713d; outline-offset:-3px; }
+.quest-completed summary header { padding:0; min-height:0; flex:1; }
+.quest-completed summary h3 { margin:0; font-size:14px; }
+.quest-completed summary .quest-giver { margin-top:3px; font-size:12px; }
+.quest-completed-mark { display:grid; place-items:center; flex:none; width:28px; height:32px; border:1px solid #8f9c6b77; border-radius:4px 9px; color:#4c653c; background:#b3c39533; }
+.quest-completed-status { font-size:11px; color:#596944; }
+.quest-completed-body { display:grid; gap:16px; padding:0 18px 18px; border-top:1px solid #b5935b33; padding-top:16px; }
+@media(max-width:420px) { .quest-completed-status { display:none; } .quest-completed summary { padding:12px; gap:8px; } }
 .quest-window-frame,.inventory-window-frame { display: flex; flex-direction: column; max-height: calc(100dvh - 96px); }
 .quest-window-frame > h2,.quest-window-frame > .options-actions,.inventory-window-frame > h2,.inventory-window-frame > .options-actions { flex: none; }
 .quest-window-frame #window-body,.inventory-window-frame #window-body { min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
@@ -1140,7 +1169,7 @@ body.window-open .minimap { z-index: 61; }
   .quest-reward strong,.quest-reward small { overflow-wrap: anywhere; }
 }
 .quest-empty { margin: 0; padding: 30px 18px; text-align: center; color: var(--ink-soft); font-style: italic; }
-#quest-tracker { position:fixed; top:90px; right:16px; z-index:15; width:min(280px,calc(100vw - 32px)); overflow:hidden; border:1px solid #c4a66b99; border-radius:5px 14px; background:radial-gradient(ellipse at top left,#57705844,transparent 75%),linear-gradient(140deg,#293a30f5,#1e2c26f5); box-shadow:inset 0 0 0 3px #ebd79c0a,0 4px 14px #0004; color:#f6e4bb; }
+#quest-tracker { position:fixed; top:90px; right:16px; z-index:15; width:min(280px,calc(100vw - 32px)); overflow:hidden; border:1px solid #c4a66b66; border-radius:5px 14px; background:radial-gradient(ellipse at top left,#57705822,transparent 75%),linear-gradient(140deg,#293a308c,#1e2c268c); box-shadow:inset 0 0 0 3px #ebd79c08,0 4px 14px #0002; color:#f6e4bb; text-shadow:0 1px 3px #000b; }
 #quest-tracker[hidden] { display:none; }
 #quest-tracker header { display:flex; align-items:stretch; border-bottom:1px solid #d3b47133; background:#e5c78209; }
 #quest-tracker.minimized header { border-bottom:0; }
@@ -1466,6 +1495,8 @@ body.playing #player-hud { display: flex; position: fixed; top: 14px; left: 14px
 .item-tip-icon svg { width: 46px; height: 46px; }
 .item-tooltip .item-tip-category { display: block; margin-bottom: 4px; color: #c4aa7c; font: 10px 'Cinzel', serif; letter-spacing: .13em; text-transform: uppercase; }
 .item-tooltip .item-tip-name { display: block; font-size: 15px; line-height: 1.3; letter-spacing: .01em; }
+.item-tooltip .item-tip-binding { display:flex; align-items:center; gap:4px; justify-self:end; order:-1; margin:-7px -6px -7px 0; color:#cfbd92; font:9px 'Cinzel',serif; letter-spacing:.04em; }
+.item-tip-binding svg { width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:1.4; }
 .item-tip-effects { padding: 11px 12px; border: 1px solid #a6bc7e33; border-left: 2px solid #a6bc7e; border-radius: 3px 8px 8px 3px; background: #a6bc7e0b; }
 .item-tip-effects > b { display: block; margin-bottom: 5px; color: #d3dfb2; font: 10px 'Cinzel', serif; letter-spacing: .1em; text-transform: uppercase; }
 .item-tip-effects ul { list-style: none; padding: 0; margin: 0; color: #dbe7bd; font: 15px/1.4 'Alegreya', serif; }

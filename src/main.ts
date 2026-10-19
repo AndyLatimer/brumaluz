@@ -184,12 +184,16 @@ let conversationSide = 1;
 let conversationOffset = 0;
 let returningFromConversation = false;
 let conversationShot = '';
+let conversationOrbitYaw = 0, conversationOrbitPitch = 0;
+let pendingIsbertoIntroduction = false;
 const conversationPosition = new THREE.Vector3();
 const conversationRay = new THREE.Raycaster();
+let conversationObstacles: THREE.Object3D[] = [];
 function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
   closeDialog();
   conversationActor = actor;
   conversationShot = '';
+  conversationOrbitYaw = 0; conversationOrbitPitch = 0;
   conversationFacing = actor.rotation.y;
   const direction = actor.position.clone().sub(holder.position);
   const side = new THREE.Vector3(direction.z, 0, -direction.x);
@@ -230,13 +234,13 @@ function updateConversationCamera(dt: number) {
   if (shot !== conversationShot) {
     conversationShot = shot;
     city.root.updateWorldMatrix(true, true);
-    const obstacles = [
+    conversationObstacles = [
       ...env.cameraObstacles,
       ...city.root.children.filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_')),
       ...npcActors.filter(npc => npc.character.root !== actor).map(npc => npc.character.root),
       ...remotePlayers.list().map(player => player.root),
     ];
-    for (const obstacle of obstacles) obstacle.updateWorldMatrix(true, true);
+    for (const obstacle of conversationObstacles) obstacle.updateWorldMatrix(true, true);
     let bestClearance = -1;
     findShot: for (const elevation of [.18, .65, 1]) {
       for (const angle of [0, Math.PI, Math.PI / 3, -Math.PI / 3, 2 * Math.PI / 3, -2 * Math.PI / 3, Math.PI / 2, -Math.PI / 2]) {
@@ -253,7 +257,7 @@ function updateConversationCamera(dt: number) {
             const path = candidate.clone().sub(origin);
             conversationRay.set(origin, path.clone().normalize());
             conversationRay.far = path.length();
-            const hit = conversationRay.intersectObjects(obstacles, true)[0];
+            const hit = conversationRay.intersectObjects(conversationObstacles, true)[0];
             if (hit) clearance = Math.min(clearance, hit.distance / path.length());
           }
         }
@@ -266,6 +270,18 @@ function updateConversationCamera(dt: number) {
     }
   }
   position.copy(conversationPosition);
+  if (conversationOrbitYaw || conversationOrbitPitch) {
+    const orbit = new THREE.Spherical().setFromVector3(position.clone().sub(target));
+    orbit.theta += conversationOrbitYaw;
+    orbit.phi = THREE.MathUtils.clamp(orbit.phi + conversationOrbitPitch, .18, Math.PI / 2 - .06);
+    const offset = new THREE.Vector3().setFromSpherical(orbit);
+    conversationRay.set(target, offset.clone().normalize());
+    conversationRay.far = offset.length();
+    const obstruction = conversationRay.intersectObjects(conversationObstacles, true)[0];
+    if (obstruction) offset.setLength(Math.max(.6, obstruction.distance - .3));
+    position.copy(target).add(offset);
+    position.y = Math.max(position.y, city.groundY(position.x, position.z) + .6);
+  }
   const k = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 1 - Math.exp(-dt * 8);
   camTarget.lerp(target, k);
   camera.position.lerp(position, k);
@@ -317,13 +333,16 @@ function updateCamera(dt: number) {
 
 // Girar al personaje arrastrando
 let dragging = false, lastX = 0, lastY = 0, spinVel = 0, dragDist = 0;
-canvas.addEventListener('pointerdown', (e) => { if (isDialogOpen()) return; dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
+canvas.addEventListener('pointerdown', (e) => { if (isDialogOpen() && !conversationActor) return; dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
 canvas.addEventListener('pointermove', (e) => {
-  if (!dragging || isDialogOpen()) return;
+  if (!dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
   lastX = e.clientX; lastY = e.clientY;
   dragDist += Math.abs(dx) + Math.abs(dy);
-  if (mode === 'play') {
+  if (conversationActor && isDialogOpen()) {
+    conversationOrbitYaw -= dx * .006;
+    conversationOrbitPitch = THREE.MathUtils.clamp(conversationOrbitPitch + dy * .005, -1.2, 1.2);
+  } else if (mode === 'play') {
     yaw -= dx * 0.006;
     pitch = THREE.MathUtils.clamp(pitch + dy * 0.005, 0.05, 1.4);
   } else {
@@ -332,7 +351,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const endDrag = (e: PointerEvent) => {
-  if (dragging && mode === 'play' && !tradeWindow.isOpen && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
+  if (dragging && mode === 'play' && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && dragDist < 6 && !clickNpc(e)) clickToMove(e);
   dragging = false;
   canvas.classList.remove('drag');
 };
@@ -385,6 +404,14 @@ window.addEventListener('keydown', (e) => {
     else if (e.code === 'Escape' || e.code === 'Tab') exitDialog();
     return;
   }
+  if (openWindow === 'loot' && e.code === 'KeyE') {
+    e.preventDefault();
+    const focused = document.activeElement;
+    const selected = focused instanceof HTMLButtonElement && focused.matches('.loot-item:not(:disabled)') ? focused
+      : $('#window-body').querySelector<HTMLButtonElement>('.loot-item:not(:disabled)');
+    if (!e.repeat) selected?.click();
+    return;
+  }
   if (e.code === 'Tab') {
     e.preventDefault();
     if (e.repeat) return;
@@ -411,7 +438,7 @@ window.addEventListener('keydown', (e) => {
     if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
     if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
   }
-  if (gameMenuOpen || playerMenuOpen || openWindow || (e.target as HTMLElement).tagName === 'INPUT') return;
+  if (gameMenuOpen || playerMenuOpen || (openWindow && openWindow !== 'loot') || (e.target as HTMLElement).tagName === 'INPUT') return;
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
     e.preventDefault();
     if (!e.repeat) running = !running;
@@ -805,6 +832,10 @@ async function performWelcome(action: WelcomeAction, origin?: number) {
     if (action !== 'origin') {
       const message = action === 'claim' ? 'Misión completada: 40 XP y 5 pelines.' : action === 'collect' ? 'Has encontrado el distintivo. Habla con Gnomi.' : 'Misión aceptada. Gnomi te acompaña.';
       toast(WELCOME_TITLE, message);
+    }
+    if (action === 'claim') {
+      if (TEST && !activeCharacterId) state.isbertoPosition = { x: holder.position.x + 2, z: holder.position.z };
+      pendingIsbertoIntroduction = true;
     }
     return true;
   } finally { finish(); }
@@ -1262,6 +1293,7 @@ function stopChat() {
   clearChat();
 }
 function exitPlay() {
+  pendingIsbertoIntroduction = false;
   setFoodRunning(false);
   stopParty();
   stopFriendNotifications?.();
@@ -1352,7 +1384,7 @@ initMinimap({
     }] : []),
     ...(isbertoUnlocked() && state.shadowQuest !== 'completed' ? [{
       id:'shadow-quest',name:t(shadowObjective(state.shadowQuest)),quest:true,
-      x:combatTargetRoot?.position.x ?? -3,z:combatTargetRoot?.position.z ?? (TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z),
+      x:combatTargetRoot?.position.x ?? state.isbertoPosition?.x ?? -3,z:combatTargetRoot?.position.z ?? state.isbertoPosition?.z ?? (TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z),
     }] : []),
     ...getParty().members.filter(member=>member.userId!==partySelf() && member.location===state.location).map(member=>({
       id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
@@ -1452,7 +1484,7 @@ let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 
 function refreshOverlayHud() {
-  document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || !!openWindow || optionsOpen);
+  document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || (!!openWindow && openWindow !== 'loot') || optionsOpen);
   document.body.classList.toggle('inventory-open', openWindow === 'inventory' || openWindow === 'skills');
 }
 
@@ -1487,8 +1519,12 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   if (win !== openWindow) pointDraft = {};
   openWindow = win;
   refreshOverlayHud();
-  document.body.classList.toggle('window-open', !!win);
-  document.body.classList.toggle('window-full', !!win);
+  document.body.classList.toggle('window-open', !!win && win !== 'loot');
+  document.body.classList.toggle('window-full', !!win && win !== 'loot');
+  $('#window-backdrop').classList.toggle('loot-overlay', win === 'loot');
+  $('#window-backdrop').classList.toggle('quest-overlay', win === 'quests');
+  $('#window-backdrop .game-window').classList.toggle('loot-window-frame', win === 'loot');
+  $('#window-backdrop .game-window').setAttribute('aria-modal', String(win !== 'loot'));
   document.body.classList.toggle('skills-open', win === 'skills');
   $('#window-backdrop').hidden = !win;
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
@@ -1506,7 +1542,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   if (win === 'loot') {
     moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
     $('#window-title').textContent = t('Botín de la criatura');
-    if (combatEncounter?.status === 'defeated') renderLoot(body, combatEncounter, collectCorpseLoot);
+    if (combatEncounter?.status === 'defeated' && !combatEncounter.looted) renderLoot(body, combatEncounter, collectCorpseLoot);
     else { setWindow(null); return; }
   }
   else if (win === 'inventory') renderInventory(body, state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to), equipInventoryItem, slot => void updateEquipment(slot, null));
@@ -1549,7 +1585,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
     ? body.querySelector<HTMLElement>(`[data-attribute="${CSS.escape(focusedAttribute.dataset.attribute)}"]`) : null;
   const restoredControl = restoredAttribute?.querySelectorAll('button')[focusedControl];
   const focusTarget = restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
-  (focusTarget ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet });
+  (focusTarget ?? (win === 'loot' ? body.querySelector<HTMLButtonElement>('.loot-item') : null) ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet });
   body.scrollTop = sheetScroll;
 }
 $('#window-confirm').onclick = async () => {
@@ -2767,6 +2803,7 @@ const NPCS: Record<string, NpcDef> = {
   },
 };
 const npcActors: { id: string; character: Character; plate: HTMLElement; anchor: THREE.Vector3 }[] = [];
+let isbertoPositionKey = '';
 for (const site of city.npcSites) {
   const def = NPCS[site.id];
   if (!def) continue;
@@ -2787,7 +2824,7 @@ for (const site of city.npcSites) {
   plate.querySelector('strong')!.textContent = def.name;
   document.body.appendChild(plate);
   npcActors.push({ id: site.id, character, plate, anchor: new THREE.Vector3() });
-  city.interactables.push({ id: `npc:${site.id}`, position: site.position, radius: 2.6, label: 'Hablar' });
+  city.interactables.push({ id: `npc:${site.id}`, position: character.root.position, radius: 2.6, label: 'Hablar' });
 }
 let combatEncounter: CombatEncounter|null=null;
 let combatTargetRoot: THREE.Group|null=null;
@@ -2826,7 +2863,7 @@ function buildShadowling(encounter:CombatEncounter) {
 function setCombatEncounter(value:unknown) {
   const previousStatus = combatEncounter?.status;
   combatEncounter=parseCombatEncounter(value);
-  if(combatEncounter?.status==='active'||combatEncounter?.status==='defeated'){
+  if(combatEncounter?.status==='active'||(combatEncounter?.status==='defeated' && !combatEncounter.looted)){
     if(!combatTargetRoot)combatTargetRoot=buildShadowling(combatEncounter);
     combatTargetRoot.position.set(combatEncounter.x,city.groundY(combatEncounter.x,combatEncounter.z),combatEncounter.z);
     const corpse = combatEncounter.status === 'defeated';
@@ -2842,6 +2879,7 @@ function setCombatEncounter(value:unknown) {
     combatTargetRoot.userData.looted = combatEncounter.looted;
     if (corpse && previousStatus !== 'defeated') chatCombat(t('La criatura extraña ha caído.'));
   }else{
+    if (openWindow === 'loot') setWindow(null, false);
     if(combatTargetRoot){
       scene.remove(combatTargetRoot);
       combatTargetRoot.traverse(part=>{
@@ -2902,8 +2940,22 @@ async function collectCorpseLoot(slot: number | null) {
   });
   if (!success || !stillCurrent()) return false;
   updateHud();
-  if (openWindow === 'loot') setWindow('loot', false);
+  if (openWindow === 'loot') setWindow(combatEncounter?.looted ? null : 'loot', false);
   return true;
+}
+const lootAnchor = new THREE.Vector3();
+function positionLootWindow() {
+  if (!combatTargetRoot || !combatEncounter || combatEncounter.looted || dead || holder.position.distanceTo(combatTargetRoot.position) > 3) {
+    setWindow(null, false); return;
+  }
+  const panel = $('#window-backdrop .game-window');
+  lootAnchor.copy(combatTargetRoot.position).add(new THREE.Vector3(0, .6, 0)).project(camera);
+  const x = (lootAnchor.x * .5 + .5) * innerWidth;
+  const y = (-lootAnchor.y * .5 + .5) * innerHeight;
+  const left = Math.max(12, Math.min(innerWidth - panel.offsetWidth - 12, x + 36));
+  const top = Math.max(80, Math.min(innerHeight - panel.offsetHeight - 90, y - panel.offsetHeight * .5));
+  panel.style.setProperty('--loot-left', `${left}px`);
+  panel.style.setProperty('--loot-top', `${top}px`);
 }
 async function beginIsbertoEncounter() {
   if (!isbertoUnlocked()) {
@@ -3036,6 +3088,22 @@ renderer.setAnimationLoop(() => {
     spinVel *= 0.92;
   }
   char.update(t);
+  const isberto = npcActors.find(npc => npc.id === 'isberto');
+  if (isberto) {
+    const site = state.isbertoPosition ?? city.npcSites.find(site => site.id === 'isberto')?.position;
+    const positionKey = site ? `${site.x}:${site.z}` : '';
+    if (site && positionKey !== isbertoPositionKey) {
+      isbertoPositionKey = positionKey;
+      const destination = new THREE.Vector3(site.x, city.groundY(site.x, site.z), site.z);
+      isberto.character.root.position.copy(city.collide(destination, destination.clone()));
+      isberto.character.root.position.y = city.groundY(isberto.character.root.position.x, isberto.character.root.position.z);
+    }
+    if (pendingIsbertoIntroduction && mode === 'play' && !dead && !actionBusy) {
+      pendingIsbertoIntroduction = false;
+      isberto.character.root.visible = true;
+      talkTo('isberto');
+    }
+  }
   for (const npc of npcActors) {
     if (npc.id === 'isberto') npc.character.root.visible = isbertoUnlocked();
     npc.character.update(t);
@@ -3043,6 +3111,7 @@ renderer.setAnimationLoop(() => {
   city.update(t, mode === 'play' ? holder.position : undefined);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
+  if (openWindow === 'loot') positionLootWindow();
   updateWelcome(dt, t);
   applyCameraShake();
   updateNameplate();

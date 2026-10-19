@@ -32,10 +32,14 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   identity.append(category, name);
   header.append(icon, identity);
   container.append(header);
-  const binding = document.createElement('p');
-  binding.className = 'item-tip-binding';
-  binding.textContent = t(bound || item.bound ? 'Ligado · No intercambiable' : 'Intercambiable');
-  container.append(binding);
+  if (bound || item.bound) {
+    const binding = document.createElement('span');
+    binding.className = 'item-tip-binding';
+    binding.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/><path d="M8 10v1"/></svg>';
+    binding.append(t('Ligado'));
+    binding.setAttribute('aria-label', t('Ligado · No intercambiable'));
+    container.append(binding);
+  }
 
   if (item.stats?.length) {
     const stats = document.createElement('dl');

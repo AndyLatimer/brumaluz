@@ -149,6 +149,8 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       else if(args.p_action==='claim'&&q.stage==='found'){
         q.stage='completed';character.data.experience=(character.data.experience||0)+40;
         character.data.wallet={...(character.data.wallet||{}),pelines:(character.data.wallet?.pelines||0)+5};
+        const pos=world.players.get(key)?.position??character.data.position;
+        character.data.isbertoPosition={x:pos.x+2,z:pos.z};
       }else return fulfill({message:'WELCOME_INVALID_STATE'},400);
       return fulfill(character.data);
     }
@@ -418,6 +420,20 @@ test('starter equipment renders every class weapon without replacing novice clot
       assert.equal(rendered.novice,true,`${cls} keeps novice clothes`);
       await player.page.keyboard.press('KeyI');
       assert.ok(await player.page.locator(`#window-body [data-item-id="${weapon}"]`).count()>0,`${cls} equipment tooltip in inventory`);
+      assert.equal(await player.page.locator('.inv-hint').filter({hasText:'Pulsa una pieza'}).count(),0);
+      if(cls==='guerrero'){
+        await player.page.locator('.equip[data-slot="weapon"]').hover();
+        await player.page.locator('#game-tooltip.item-tooltip').waitFor({state:'visible'});
+        assert.equal(await player.page.locator('.item-tip-binding').textContent(),'Ligado');
+        assert.equal(await player.page.locator('.item-tip-binding').getAttribute('aria-label'),'Ligado · No intercambiable');
+        assert.ok(await player.page.locator('#game-tooltip').evaluate(el=>{
+          const badge=el.querySelector('.item-tip-binding').getBoundingClientRect(),header=el.querySelector('.item-tip-header').getBoundingClientRect();
+          return badge.right<=el.getBoundingClientRect().right&&badge.bottom<=header.top+1;
+        }),'Binding is a small corner badge above the item identity');
+        assert.ok(await player.page.locator('.equip[data-slot="weapon"] svg path').count()>15);
+        assert.ok(await player.page.locator('.equip[data-slot="offhand"] svg path').count()>15);
+        if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await player.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'novice-equipment-art.png')});
+      }
       await player.page.locator('.equip[data-slot="weapon"]').click();
       await player.page.locator(`.inv-grid [data-item-id="${weapon}"]`).waitFor();
       assert.equal(await player.page.evaluate(name=>!!window.brumaluz.char().root.getObjectByName(name),models[0]),false,`${cls} unequipped model disappears`);
@@ -555,6 +571,19 @@ test('welcome systems save origins directly, present quest cards, await server a
       if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`welcome-offer-${width}.png`)});
     }
     await first.page.setViewportSize({width:1280,height:800});
+    await first.page.waitForTimeout(600);
+    const beforeOrbit=await first.page.evaluate(()=>({
+      camera:window.brumaluz.camera().position.toArray(),player:window.brumaluz.char().root.parent.position.toArray(),
+    }));
+    await first.page.mouse.move(630,150);await first.page.mouse.down();
+    await first.page.mouse.move(790,180,{steps:12});await first.page.mouse.up();
+    await first.page.waitForTimeout(600);
+    const afterOrbit=await first.page.evaluate(()=>({
+      camera:window.brumaluz.camera().position.toArray(),player:window.brumaluz.char().root.parent.position.toArray(),
+    }));
+    assert.ok(Math.hypot(...afterOrbit.camera.map((v,i)=>v-beforeOrbit.camera[i]))>1,'Dragging orbits the conversation camera');
+    assert.deepEqual(afterOrbit.player,beforeOrbit.player,'Orbiting never moves the player');
+    assert.equal(await first.page.locator('#dialog').isVisible(),true,'Dragging never advances or closes the conversation');
     await first.page.locator('#scene').dispatchEvent('wheel',{deltaY:600});
     await first.page.keyboard.press('Escape');
     await first.page.waitForFunction(()=>!window.brumaluz.camera().view?.enabled);
@@ -658,22 +687,26 @@ test('welcome systems save origins directly, present quest cards, await server a
     await talk(first.page);
     assert.equal(await first.page.locator('.dialog-quest-card').getAttribute('aria-label'),'Entrega de misión');
     await first.page.getByRole('button',{name:'Completar misión'}).click();
-    await first.page.waitForFunction(()=>document.querySelector('.dialog-text').textContent.includes('puedo ser útil'));
-    assert.match(await first.page.locator('.dialog-text').textContent(),/oficio, puedo orientarte/);
+    await first.page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
+    await first.page.locator('.dialog-quest-card').filter({hasText:'Una sombra entre el ganado'}).waitFor();
+    assert.equal(a.character.data.shadowQuest,undefined,'Opening the automatic offer never accepts it');
+    const introPosition=await first.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').position.toArray());
+    assert.ok(Math.hypot(introPosition[0]-a.character.data.isbertoPosition.x,introPosition[2]-a.character.data.isbertoPosition.z)<2);
     assert.equal(await first.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-worn-badge').visible),true);
     assert.ok(await first.page.evaluate(()=>{
       const g=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
       return g.position.distanceTo(window.brumaluz.char().root.parent.position)<4;
     }),'Gnomi stays beside the player through the thank-you conversation');
-    assert.equal(await first.page.locator('.dialog-quest-card').count(),0,'Thank-you dialogue clears the quest card');
-    assert.equal(await first.page.locator('#dialog').evaluate(el=>el.classList.contains('quest-dialog')),false);
-    assert.equal(await first.page.locator('.dialog-hint').isVisible(),true,'Ordinary dialogue restores its keyboard hint');
+    assert.equal(await first.page.locator('.dialog-quest-card').count(),1,'Isberto automatically offers the next quest');
+    assert.equal(await first.page.locator('.dialog-hint').isVisible(),false);
     assert.equal(a.character.data.experience,40);
     assert.equal(a.character.data.wallet.pelines,5);
-    await first.page.keyboard.press('KeyE');
+    await first.page.keyboard.press('Escape');
     await first.page.keyboard.press('KeyJ');
     assert.equal(await first.page.locator('.quest-key-item').count(),0);
     assert.equal(await first.page.getByRole('button',{name:'Completadas',exact:true}).getAttribute('aria-pressed'),'true');
+    assert.equal(await first.page.locator('.quest-completed').getAttribute('open'),null);
+    await first.page.locator('.quest-completed summary').click();
     assert.match(await first.page.locator('.quest-entry footer').textContent(),/Recompensas recibidas/);
     assert.equal(await first.page.locator('.quest-steps li.done').count(),3);
     await first.page.keyboard.press('Escape');
@@ -687,6 +720,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     await first.page.keyboard.press('Escape');
     await first.page.keyboard.press('KeyJ');
     assert.equal(await first.page.locator('#window-title').textContent(),'Quest journal');
+    await first.page.locator('.quest-completed summary').click();
     assert.match(await first.page.locator('.quest-entry footer').textContent(),/Rewards received/);
     assert.deepEqual(await first.page.locator('.quest-reward strong').allTextContents(),['Experience','Pelines']);
     await first.page.keyboard.press('Escape');
@@ -1782,7 +1816,7 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
   }finally{await context.close();}
 });
 
-test('online corpse looting retries after a full-bag rejection and persists an empty body after reconnect', {timeout:60000}, async()=>{
+test('online compact corpse loot retries after a full-bag rejection and removes the body permanently after collecting', {timeout:60000}, async()=>{
   const world=backend(),account=fixture('Saqueador','humano',4.5);
   world.combatSimulationEnabled=true;
   Object.assign(account.character.data,{
@@ -1796,16 +1830,34 @@ test('online corpse looting retries after a full-bag rejection and persists an e
     await player.page.locator('#interact-label').filter({hasText:'Registrar cuerpo'}).waitFor();
     await player.page.keyboard.press('KeyE');
     await player.page.locator('.loot-item').waitFor();
+    assert.equal(await player.page.locator('.loot-window-frame').getAttribute('aria-modal'),'false');
+    assert.equal(await player.page.locator('#action-bar').isVisible(),true,'Looting does not hide the game HUD');
+    assert.equal(await player.page.locator('.loot-overlay').evaluate(el=>getComputedStyle(el).backdropFilter),'none');
+    for(const width of [320,390,1280]){
+      await player.page.setViewportSize({width,height:844});await player.page.waitForTimeout(100);
+      const bounds=await player.page.locator('.loot-window-frame').evaluate(el=>{
+        const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,scroll:el.scrollWidth,client:el.clientWidth};
+      });
+      assert.ok(bounds.left>=0&&bounds.right<=bounds.width&&bounds.top>=0&&bounds.bottom<=bounds.height&&bounds.scroll<=bounds.client,`Compact loot fits the viewport: ${JSON.stringify(bounds)}`);
+      if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await player.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,`compact-loot-${width}.png`)});
+    }
+    await player.page.evaluate(()=>window.brumaluz.move(9,-62.35));
+    await player.page.locator('#window-backdrop').waitFor({state:'hidden'});
+    assert.equal(account.character.data.combatEncounter.looted,false,'Walking away closes the panel without collecting anything');
+    await player.page.evaluate(()=>window.brumaluz.move(4.5,-62.35));
+    await player.page.locator('#interact-label').filter({hasText:'Registrar cuerpo'}).waitFor();
+    await player.page.keyboard.press('KeyE');await player.page.locator('.loot-item').waitFor();
     world.fail.add('loot');
     await player.page.getByRole('button',{name:'Recoger todo',exact:true}).click();
     await player.page.locator('.loot-status').filter({hasText:'Vuelve a intentarlo'}).waitFor();
     assert.equal(account.character.data.combatEncounter.looted,false);
     world.fail.delete('loot');
-    await player.page.getByRole('button',{name:'Recoger todo',exact:true}).click();
-    await player.page.locator('.loot-empty').waitFor();
-    await player.page.keyboard.press('Escape');
+    await player.page.keyboard.press('KeyE');
+    await player.page.locator('#window-backdrop').waitFor({state:'hidden'});
+    assert.equal(await player.page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false);
     await leave(player.page);await player.page.reload();await player.page.waitForFunction(()=>!!window.brumaluz);await player.enter();
-    await player.page.waitForFunction(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')?.userData.looted);
+    await player.page.waitForTimeout(300);
+    assert.equal(await player.page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false);
     assert.equal(account.character.data.inventory.filter(item=>item?.id==='esencia_sombria').length,1);
     await player.page.keyboard.press('KeyI');
     await player.page.locator('[data-item-id="esencia_sombria"]').waitFor();
@@ -1899,19 +1951,13 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await page.keyboard.press('KeyE');
     await page.getByRole('button',{name:'Completar misión'}).click();
-    await page.locator('.dialog-text').filter({hasText:'Primero acompáñame a ver a Isberto'}).waitFor();
+    await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
     await page.waitForFunction(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible);
     assert.equal(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible),true,'Isberto appears after returning Gnomi’s badge');
-    await page.keyboard.press('Escape');
-    await page.locator('#dialog').waitFor({state:'hidden'});
-    await page.evaluate(()=>{
-      const site=window.brumaluz.city().npcSites.find(value=>value.id==='isberto');
-      if(!site)throw new Error('Isberto is missing from the city');
-      window.brumaluz.move(site.position.x,site.position.z);
-    });
-    await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
-    await page.keyboard.press('KeyE');
-    await page.locator('#dialog').waitFor({state:'visible'});
+    assert.ok(await page.evaluate(()=>{
+      const actor=window.brumaluz.city().root.parent.getObjectByName('npc:isberto');
+      return actor.position.distanceTo(window.brumaluz.char().root.parent.position)<4;
+    }),'Isberto appears beside the player instead of requiring a trip to the farm');
     await page.locator('.dialog-quest-card').filter({hasText:'Una sombra entre el ganado'}).waitFor();
     await page.locator('.dialog-choice').first().click();
     await page.waitForFunction(()=>!document.querySelector('#combat-controls').hidden);
@@ -1944,8 +1990,8 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.locator('.loot-item').hover();
     await page.locator('#game-tooltip').filter({hasText:'No sabes qué es ni para qué sirve.'}).waitFor();
     await page.getByRole('button',{name:'Recoger todo',exact:true}).click();
-    await page.locator('.loot-empty').waitFor();
-    await page.keyboard.press('Escape');
+    await page.locator('#window-backdrop').waitFor({state:'hidden'});
+    assert.equal(await page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('combat-corpse')),false);
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
     await page.keyboard.press('KeyI');
     await page.locator('.inv-bag [data-item-id="esencia_sombria"]').waitFor();
@@ -1954,6 +2000,12 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.keyboard.press('KeyJ');
     await page.getByRole('button',{name:'Completadas',exact:true}).click();
     assert.equal(await page.locator('.quest-entry').count(),2,'Both Gnomi and Isberto remain in the completed journal');
+    assert.equal(await page.locator('.quest-completed[open]').count(),0,'Completed quests start collapsed');
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'collapsed-quests.png')});
+    await page.locator('.quest-completed summary').first().click();
+    assert.equal(await page.locator('.quest-completed[open]').count(),1);
+    await page.locator('.quest-completed summary').first().click();
+    assert.equal(await page.locator('.quest-completed[open]').count(),0);
     assert.deepEqual(errors,[]);
   }finally{await context.close();}
 });

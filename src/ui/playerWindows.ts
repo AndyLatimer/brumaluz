@@ -128,7 +128,6 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
   rotateHint.innerHTML = inventoryIcon('rotate');
   rotateHint.append(t('Arrastra para girar'));
   equip.append(rotateHint);
-  if (onEquip) equip.append(el('p', 'inv-hint', t('Pulsa una pieza para desequiparla; pulsa su objeto en la mochila para equiparla.')));
 
   const bag = el('div', 'inv-bag');
   const used = d.inventory.slice(0, INVENTORY_UNLOCKED).filter(Boolean).length;

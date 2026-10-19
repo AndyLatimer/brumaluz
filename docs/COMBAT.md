@@ -160,12 +160,27 @@ No se entregan armas nuevas a los personajes antiguos. Sin arma principal
 de su clase no se puede atacar ni usar habilidades ofensivas; Curación sigue
 permitida sin arma. Desequiparla cancela el ataque automático y el bloqueo.
 
+La espada y el escudo de principiante fijan la referencia visual de los iconos:
+ilustración artesanal de cuento, silueta reconocible en pequeño, contorno oscuro
+cálido, luz superior izquierda y sombra de apoyo suave. Se dibujan sobre una
+cuadrícula de 64 unidades adaptada al viewBox común de 24: acero con planos
+bevelados, latón envejecido, cuero cosido y madera con veta. Los acentos verde
+salvia y los detalles de remaches mantienen el aspecto humilde del equipo
+inicial. El mismo SVG se reutiliza en mochila, equipo, comercio y tooltip,
+sin filtros ni identificadores de gradiente que colisionen entre instancias.
+Los tooltips muestran **Ligado** como un distintivo discreto con candado en
+la esquina superior, en lugar de dedicarle una línea completa.
+
 ## Cadáveres y botín
 
 La victoria conserva el modelo como cuerpo caído, sin objetivo hostil ni daño.
-`E` cerca del cuerpo (o pulsar el modelo a menos de 3 m) abre su contenido;
-abrirlo no recoge nada. Se puede pulsar un objeto o **Recoger todo**. El cadáver
-vacío permanece visible y se conserva al reconectar.
+`E` cerca del cuerpo (o pulsar el modelo a menos de 3 m) abre un panel compacto
+anclado al cuerpo, con el aspecto de un tooltip. No oscurece ni desenfoca el
+mundo, mantiene el HUD visible y permite mover la cámara. Alejarse más de 3 m
+cierra el panel. Abrirlo no recoge nada: otra pulsación de `E` recoge el objeto
+enfocado (o el primero), y también se puede pulsar un objeto o **Recoger todo**.
+Al agotarse el botín se cierra automáticamente y el cuerpo desaparece; el
+estado agotado se conserva al reconectar e impide volver a saquearlo.
 
 El encuentro guarda `instanceId`, `loot` y `looted` en el servidor. Cada derrota
 de esta criatura deja una **Esencia sombría**, vinculada, no vendible, apilable
@@ -194,7 +209,8 @@ locales. El escenario es una arena limitada, no el mapa ni la pelea de la
 historia. No añade la habilidad a la barra real de consumibles. El ataque
 de ballesta usa provisionalmente `Interact`: el pack no incluye disparo.
 
-En el mundo, completa la bienvenida de Gnomi y acompáñale hasta Isberto para
+En el mundo, completa la bienvenida de Gnomi: Isberto aparece junto al jugador
+y ofrece automáticamente la misión. Acéptala y ve al ganado para
 probar el encuentro de la sombra. La escena aislada
 `?test&welcome&graphics=compatible` permite recorrer esa secuencia sin cuenta
 ni persistencia. Los controles son `F` para fijar y atacar, `1–0` para las

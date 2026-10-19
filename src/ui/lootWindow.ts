@@ -7,8 +7,6 @@ export function renderLoot(container: HTMLElement, corpse: CombatEncounter, take
   container.replaceChildren();
   const root = document.createElement('section');
   root.className = 'loot-window';
-  const intro = document.createElement('p');
-  intro.textContent = t('Restos de la criatura. Acércate para recoger su contenido.');
   const list = document.createElement('div');
   list.className = 'loot-list';
   const status = document.createElement('p');
@@ -30,7 +28,9 @@ export function renderLoot(container: HTMLElement, corpse: CombatEncounter, take
     button.innerHTML = itemIcon(item.id);
     const label = document.createElement('strong'); label.textContent = t(itemLabel(item.id));
     const count = document.createElement('span'); count.textContent = `×${item.count}`;
-    const hint = document.createElement('small'); hint.textContent = t('Recoger');
+    const hint = document.createElement('small');
+    const key = document.createElement('kbd'); key.textContent = 'E';
+    hint.append(key, t('Recoger'));
     button.append(label, count, hint);
     button.onclick = () => void collect(slot);
     buttons.push(button); list.append(button);
@@ -39,7 +39,7 @@ export function renderLoot(container: HTMLElement, corpse: CombatEncounter, take
     const all = document.createElement('button');
     all.type = 'button'; all.className = 'btn gold'; all.textContent = t('Recoger todo');
     all.onclick = () => void collect(null);
-    buttons.push(all); root.append(intro, list, all, status);
+    buttons.push(all); root.append(list, all, status);
   } else {
     const empty = document.createElement('p');
     empty.className = 'loot-empty'; empty.textContent = t('El cuerpo está vacío.');

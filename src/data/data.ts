@@ -47,6 +47,7 @@ const noBonuses = (): AttributeBonuses => ({
 
 export interface CharData {
   shadowQuest: ShadowQuest | null;
+  isbertoPosition: { x: number; z: number } | null;
   welcome: WelcomeProgress | null;
   name: string;
   title: TitleId; // título mostrado junto al nombre (ver titles.ts)
@@ -213,7 +214,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    welcome: null, shadowQuest: null, skillRanks: {},
+    welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {},
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
@@ -236,6 +237,10 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.foodBuff = parseFoodBuff(d.foodBuff);
   out.welcome = parseWelcome(d.welcome);
   out.shadowQuest = parseShadowQuest(d.shadowQuest);
+  const isberto = d.isbertoPosition as { x?: unknown; z?: unknown } | null | undefined;
+  if (isberto != null && (typeof isberto.x !== 'number' || !Number.isFinite(isberto.x) || typeof isberto.z !== 'number' || !Number.isFinite(isberto.z)))
+    throw new Error('Posición de Isberto no válida.');
+  out.isbertoPosition = isberto ? { x: Number(isberto.x), z: Number(isberto.z) } : null;
   out.foodRevision = Number.isSafeInteger(d.foodRevision) && Number(d.foodRevision) >= 0 ? Number(d.foodRevision) : 0;
   out.wallet = sanitizeWallet(d.wallet, d.gold);
   delete (out as unknown as Record<string, unknown>).gold;
@@ -310,7 +315,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    welcome: null, shadowQuest: null, skillRanks: {},
+    welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {},
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],

@@ -110,7 +110,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       try {
         const appearance=Object.fromEntries(['sex','height','build','skin','face','hair','hairColor','beard','eyeShape','eyeColor',
           'brows','nose','mouth','detail','trait','primary','secondary','cape','clothA','clothB','hairAcc','hairAccColor','acc','makeup','makeupColor','accColor'].map(key=>[key,0]));
-        const payload={...appearance,name:'Novato',race:'elfo',cls:'mago',attributePoints:{},welcome:{origin:2,stage:'completed'}};
+        const payload={...appearance,name:'Novato',race:'elfo',cls:'mago',attributePoints:{},welcome:{origin:2,stage:'completed'},isbertoPosition:{x:999,z:999}};
         await client.query('reset role');
         await client.query("update public.server_config set value='false' where key='welcome_enabled'");
         await user(a);
@@ -122,6 +122,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         const id=await rpc('create_character',[{...payload,name:'Aprendiz'}]);
         let data=await rpc('character_enter',[id]);
         assert.deepEqual(data.welcome,{origin:null,stage:'available'});
+        assert.equal(data.isbertoPosition,undefined,'Creating a character cannot forge the Isberto introduction position');
         assert.equal((await rpc('character_enter',[before])).welcome,undefined,'Activating does not enroll earlier characters');
         await rejected(()=>rpc('welcome_action',[ca,'origin',0]),/WELCOME_UNAVAILABLE/);
         await rejected(()=>rpc('welcome_action',[id,'origin',0]),/WELCOME_NOT_PLAYING/);
@@ -166,12 +167,20 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         assert.equal(data.welcome.stage,'completed');
         assert.equal(data.experience,40);
         assert.equal(data.wallet.pelines,5);
+        assert.deepEqual(data.isbertoPosition,{x:17.8,z:-5.7},'Isberto meets the player where the badge was returned');
         assert.deepEqual(data.inventory,inventory,'Quest items never consume inventory space, even with a full bag');
         await rejected(()=>rpc('welcome_action',[id,'claim']),/WELCOME_INVALID_STATE/);
         await rejected(()=>rpc('welcome_action',[id,'collect']),/WELCOME_INVALID_STATE/);
         const again=await rpc('character_enter',[id]);
         assert.equal(again.experience,40);
         assert.equal(again.wallet.pelines,5);
+        assert.deepEqual(again.isbertoPosition,data.isbertoPosition,'The farmer stays at the saved meeting point after re-entry');
+        await client.query('reset role');
+        await client.query("update public.server_config set value='true' where key='combat_enabled'");
+        await user(a);
+        const introduction=await rpc('combat_start',[id]);
+        assert.equal(introduction.quest,'active','The next quest can be accepted immediately without visiting the farm');
+        assert.equal(introduction.encounter.z,-62.35,'The creature remains at the farm rather than spawning next to the introduction');
         await rpc('debug_xp',[id]);
         await client.query('reset role');
         await client.query("update public.server_config set value='false' where key='welcome_enabled'");

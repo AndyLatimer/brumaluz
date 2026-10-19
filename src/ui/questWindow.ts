@@ -39,10 +39,10 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
       choices: [{ text: 'Completar misión', action: () => act('claim'), next: 'thanks' }],
     };
     conversation.nodes.thanks = {
-      text: '¡Ahora sí, bien sujeto! Gracias de corazón. Este distintivo significa que puedo ser útil… y hoy tú me has ayudado a serlo.\n\nOye, antes me contabas que buscas tu camino por Brumaluz. Si quieres encontrar un oficio, puedo orientarte. ¡Para eso soy ayudante de bienvenida! Primero acompáñame a ver a Isberto, un granjero de las afueras. Me ha pedido ayuda con algo extraño que ronda su ganado.',
+      text: '¡Ahora sí, bien sujeto! Gracias de corazón. Mira, ahí viene Isberto. Me ha pedido ayuda con algo extraño que ronda su ganado.',
     };
   } else if (progress.stage === 'completed') {
-    conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Cuando quieras, acompáñame a ver a Isberto, el granjero de las afueras; después te ayudaré a encontrar tu camino por Brumaluz.' };
+    conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.' };
   } else conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces.' };
   return conversation;
 }
@@ -109,6 +109,19 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
   const content = document.createElement('div');
   content.className = 'quest-journal-content';
   const buttons: HTMLButtonElement[] = [];
+  function appendEntry(entry: HTMLElement, completed: boolean) {
+    if (!completed) { content.append(entry); return; }
+    const details = document.createElement('details'); details.className = `${entry.className} quest-completed`;
+    const summary = document.createElement('summary');
+    const header = entry.querySelector('header')!;
+    const mark = document.createElement('span'); mark.className = 'quest-completed-mark'; mark.textContent = '✓'; mark.setAttribute('aria-hidden','true');
+    const status = document.createElement('span'); status.className = 'quest-completed-status'; status.textContent = t('Completada');
+    summary.append(mark, header, status);
+    entry.querySelector('.quest-seal')?.remove();
+    const body = document.createElement('div'); body.className = 'quest-completed-body';
+    body.append(...entry.childNodes);
+    details.append(summary, body); content.append(details);
+  }
   function display(completed: boolean) {
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === Number(completed))));
     content.replaceChildren();
@@ -123,7 +136,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
       const label = document.createElement('small'); label.textContent = t(completed ? 'Completada' : 'Siguiente paso');
       const text = document.createElement('p'); text.textContent = t(shadowObjective(data.shadowQuest));
       objective.append(label, text);
-      shadow.append(header, description, objective); content.append(shadow);
+      shadow.append(header, description, objective); appendEntry(shadow, completed);
     }
     const progress = data.welcome;
     if (!progress || (progress.stage === 'completed') !== completed) {
@@ -159,7 +172,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
     if (items) {
       article.append(items);
     }
-    article.append(createQuestRewards(completed)); content.append(article);
+    article.append(createQuestRewards(completed)); appendEntry(article, completed);
   }
   ['Activas', 'Completadas'].forEach((label, i) => {
     const button = document.createElement('button'); button.type = 'button'; button.textContent = t(label);

@@ -3,6 +3,9 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Ligado': 'Bound',
+  '¡Ahora sí, bien sujeto! Gracias de corazón. Mira, ahí viene Isberto. Me ha pedido ayuda con algo extraño que ronda su ganado.': 'There, nice and secure! Thank you from the heart. Look, here comes Isberto. He asked me for help with something strange near his livestock.',
+  '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.': 'My searching companion! The badge is still in place. I checked. Twice. Isberto wanted to talk to you; afterwards I will help you find your way in Brumaluz.',
   'Equipar': 'Equip',
   'Desequipar': 'Unequip',
   'Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.': 'Click in your backpack to equip; click in Equipment to unequip.',

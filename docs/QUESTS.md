@@ -86,6 +86,10 @@ quedan bloqueados.
   por pasos. Su botón minimiza o expande el contenido en el mismo lugar,
   sin abrir el diario ni desactivar la guía del mundo. La preferencia se
   conserva en el navegador y los controles admiten teclado y traducción.
+  Su fondo es semitransparente para conservar la vista del mundo. El diario
+  utiliza también un pergamino translúcido y un fondo menos oscuro.
+  Las entradas completadas empiezan plegadas y se despliegan por separado
+  con clic, Enter o espacio sobre su cabecera.
 - Los nodos de diálogo pueden incluir una tarjeta `quest`: título, objetivo,
   XP, pelines y modo de oferta o entrega. Se presenta en un panel propio,
   separado de las palabras del NPC, con botones de aceptar/completar y salir.
@@ -102,6 +106,9 @@ quedan bloqueados.
   de pantalla. No cambia el zoom ni el giro guardados de exploración.
   Al cerrar se restaura la orientación del NPC y vuelve suavemente la cámara
   de juego. Las interacciones sin interlocutor, como el pozo, no usan este plano.
+  Se puede arrastrar sobre el mundo para orbitar horizontal y verticalmente
+  durante la conversación; no avanza el diálogo ni cambia el giro o zoom
+  guardados para explorar. El plano inicial sigue buscando una vista despejada.
 - El plano busca líneas de visión despejadas para los cuerpos de ambos
   interlocutores, incluyendo edificios, faroles y otros personajes como
   obstáculos (no hierba, flores ni partículas). Al completar la bienvenida,
@@ -127,17 +134,27 @@ quedan bloqueados.
 
 ## Después de Gnomi: Isberto
 
-Solo después de devolver el distintivo aparece Isberto. El rastreador, el
-minimapa y la flecha de borde pasan a señalar al granjero. Su tarjeta ofrece
+Justo después de devolver el distintivo aparece Isberto junto al jugador y
+abre automáticamente su diálogo, sin tener que caminar hasta el granjero ni
+pulsar E. `welcome_action` guarda el punto del encuentro en `isbertoPosition`,
+calculado desde la presencia autoritativa; ese punto se conserva al reconectar.
+Los personajes que ya completaron la bienvenida sin este campo mantienen la
+posición original de la granja. El rastreador, el minimapa y la flecha de borde
+señalan al granjero en su posición real. Su tarjeta ofrece
 **Una sombra entre el ganado**: investigar a la criatura, derrotarla y examinar
 sus restos. Salir del diálogo no acepta la misión ni crea un enemigo.
 Aceptar llama a `combat_start`, que guarda `shadowQuest: active` junto al
-encuentro personal. No hay recompensas ficticias de XP ni pelines en la tarjeta.
+encuentro personal y valida proximidad al punto del granjero. La criatura
+sigue estando junto al ganado; no se traslada a la presentación.
+Abrir o cerrar la oferta automática no acepta la misión. No hay recompensas
+ficticias de XP ni pelines en la tarjeta.
 
 La victoria cambia la fase a `defeated`; el objetivo pasa al cadáver. Abrirlo
 no completa la misión: hay que recoger su **Esencia sombría**, un objeto real de
 mochila cuyo significado todavía no conocemos. `loot_corpse` cambia la fase a
-`completed` solo cuando no queda botín y conserva el cuerpo vacío al reconectar.
+`completed` solo cuando no queda botín; la ventana se cierra y el cadáver
+desaparece. Su registro agotado se conserva en servidor para que no reaparezca
+ni pueda volver a saquearse al reconectar.
 No se puede reiniciar un encuentro completado ni sustituir un cadáver con
 botín pendiente. Si el jugador muere, Isberto permite volver a investigar.
 El diario conserva por separado la bienvenida y el encargo de Isberto;
