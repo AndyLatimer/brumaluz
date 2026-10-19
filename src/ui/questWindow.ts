@@ -85,16 +85,15 @@ function createQuestRewards(completed: boolean) {
   heading.append(title); footer.append(heading);
   const list = document.createElement('div'); list.className = 'quest-reward-list';
   for (const reward of [
-    { kind: 'experience', value: WELCOME_REWARD.experience, label: 'Experiencia', detail: 'Progreso para tu próximo nivel', icon: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 3.7 8.6 9.3 1-7 6.2 2 9.2-8-4.8L8 28l2-9.2-7-6.2 9.3-1Z" fill="#b0c590" stroke="#58774f" stroke-width="1.5"/><path d="m16 9 1.7 5 5.3.3-4.2 3.2 1.4 5-4.2-3-4.2 3 1.4-5L9 14.3l5.3-.3Z" fill="#f9ebbd"/></svg>' },
-    { kind: 'pelines', value: WELCOME_REWARD.pelines, label: 'Pelines', detail: 'Se añaden a tu monedero', icon: currencyIcon('pelines') },
+    { kind: 'experience', value: WELCOME_REWARD.experience, label: 'Experiencia', icon: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 3.7 8.6 9.3 1-7 6.2 2 9.2-8-4.8L8 28l2-9.2-7-6.2 9.3-1Z" fill="#b0c590" stroke="#58774f" stroke-width="1.5"/><path d="m16 9 1.7 5 5.3.3-4.2 3.2 1.4 5-4.2-3-4.2 3 1.4-5L9 14.3l5.3-.3Z" fill="#f9ebbd"/></svg>' },
+    { kind: 'pelines', value: WELCOME_REWARD.pelines, label: 'Pelines', icon: currencyIcon('pelines') },
   ]) {
     const card = document.createElement('div'); card.className = `quest-reward ${reward.kind}`;
     const icon = document.createElement('span'); icon.className = 'quest-reward-icon'; icon.innerHTML = reward.icon;
     const body = document.createElement('div');
     const amount = document.createElement('b'); amount.textContent = `+${reward.value}`;
     const label = document.createElement('strong'); label.textContent = t(reward.label);
-    const detail = document.createElement('small'); detail.textContent = t(reward.detail);
-    body.append(amount, label, detail); card.append(icon, body); list.append(card);
+    body.append(amount, label); card.append(icon, body); list.append(card);
   }
   footer.append(list); return footer;
 }
@@ -158,9 +157,33 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
 export function createQuestTracker(open: () => void) {
   const root = document.createElement('aside'); root.id = 'quest-tracker'; root.hidden = true;
   root.setAttribute('aria-label', t('Misión seguida'));
-  const button = document.createElement('button'); button.type = 'button'; button.onclick = open;
+  let minimized = localStorage.getItem('brumaluz-quest-tracker:minimized') === 'true';
+  const header = document.createElement('header');
+  const journal = document.createElement('button'); journal.type = 'button'; journal.className = 'quest-tracker-journal'; journal.onclick = open;
+  const emblem = document.createElement('span'); emblem.className = 'quest-tracker-emblem'; emblem.textContent = '◇'; emblem.setAttribute('aria-hidden', 'true');
+  const heading = document.createElement('span');
+  journal.append(emblem, heading);
+  const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'quest-tracker-toggle';
+  toggle.setAttribute('aria-controls', 'quest-tracker-detail');
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'quest-tracker-detail'; button.id = 'quest-tracker-detail'; button.onclick = open;
   const label = document.createElement('small'), title = document.createElement('strong'), objective = document.createElement('span');
-  button.append(label, title, objective); root.append(button); document.body.append(root);
+  objective.className = 'quest-tracker-objective';
+  const progress = document.createElement('span'); progress.className = 'quest-tracker-progress';
+  button.append(label, title, objective, progress);
+  function refreshToggle() {
+    root.classList.toggle('minimized', minimized);
+    button.hidden = minimized;
+    toggle.textContent = minimized ? '+' : '−';
+    toggle.setAttribute('aria-expanded', String(!minimized));
+    toggle.setAttribute('aria-label', t(minimized ? 'Expandir misiones' : 'Minimizar misiones'));
+    toggle.title = t(minimized ? 'Expandir misiones' : 'Minimizar misiones');
+  }
+  toggle.onclick = () => {
+    minimized = !minimized;
+    localStorage.setItem('brumaluz-quest-tracker:minimized', String(minimized));
+    refreshToggle();
+  };
+  header.append(journal, toggle); root.append(header, button); document.body.append(root);
   let signature = '';
   return {
     update(data: CharData, visible: boolean) {
@@ -169,9 +192,16 @@ export function createQuestTracker(open: () => void) {
       const key = `${JSON.stringify(data.welcome)}:${t('Diario')}`;
       if (key === signature) return;
       signature = key;
+      root.setAttribute('aria-label', t('Misión seguida'));
+      heading.textContent = t('Misiones');
+      journal.setAttribute('aria-label', t('Abrir diario'));
+      refreshToggle();
       label.textContent = t('Bienvenida · Obligatoria');
       title.textContent = t(WELCOME_TITLE);
       objective.textContent = t(welcomeObjective(data.welcome));
+      const step = data.welcome.stage === 'found' ? 2 : data.welcome.stage === 'active' ? 1 : 0;
+      progress.textContent = t('Paso {current} de {total}', { current: step + 1, total: 3 });
+      progress.style.setProperty('--quest-progress', `${step / 2 * 100}%`);
       button.setAttribute('aria-label', `${t('Abrir diario')}: ${t(WELCOME_TITLE)}`);
     },
   };

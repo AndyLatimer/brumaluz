@@ -2605,8 +2605,14 @@ document.body.append(welcomePlate);
 const questMarker = document.createElement('div');
 questMarker.id = 'quest-objective-marker';
 questMarker.hidden = true;
+const questDirection = document.createElement('span');
+questDirection.className = 'quest-direction-arrow';
+questDirection.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 16-8-4-8 4Z"/></svg>';
+const questDistance = document.createElement('span');
+questMarker.append(questDirection, questDistance);
 document.body.append(questMarker);
 const questAnchor = new THREE.Vector3();
+const questView = new THREE.Vector3();
 let welcomeHintSaid = false;
 let welcomeTravelSaid = false;
 function updateWelcome(dt: number, time: number) {
@@ -2639,10 +2645,27 @@ function updateWelcome(dt: number, time: number) {
   }
   if (state.welcome.stage !== 'active') { welcomeHintSaid = false; welcomeTravelSaid = false; }
   questAnchor.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.3, 0)).project(camera);
-  if (questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
-    questMarker.hidden = false;
-    questMarker.textContent = `${state.welcome.stage === 'available' ? '!' : '◆'} ${Math.round(distance)} m`;
-    questMarker.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+  const screenX = (questAnchor.x * .5 + .5) * innerWidth, screenY = (-questAnchor.y * .5 + .5) * innerHeight;
+  const marginX = Math.min(64, innerWidth / 4), marginY = Math.min(100, innerHeight / 4);
+  const onScreen = questAnchor.z > -1 && questAnchor.z < 1 && screenX >= marginX && screenX <= innerWidth - marginX && screenY >= marginY && screenY <= innerHeight - marginY;
+  questMarker.hidden = false;
+  questMarker.classList.toggle('offscreen', !onScreen);
+  questDirection.hidden = onScreen;
+  questDistance.textContent = `${onScreen ? state.welcome.stage === 'available' ? '! ' : '◆ ' : ''}${Math.round(distance)} m`;
+  if (onScreen) {
+    questMarker.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%,-100%)`;
+  } else {
+    questView.copy(target).add(new THREE.Vector3(0, state.welcome.stage === 'active' ? .55 : 1.3, 0)).applyMatrix4(camera.matrixWorldInverse);
+    let dx = questView.x * camera.projectionMatrix.elements[0], dy = -questView.y * camera.projectionMatrix.elements[5];
+    // Targets behind the camera still point to their actual side, rather than mirroring after projection.
+    if (questView.z >= 0) dy = Math.max(Math.abs(dy), .5);
+    if (Math.abs(dx) + Math.abs(dy) < .0001) { dx = 0; dy = 1; }
+    dx *= innerWidth; dy *= innerHeight;
+    const halfW = innerWidth / 2 - marginX, halfH = innerHeight / 2 - marginY;
+    const scale = 1 / Math.max(Math.abs(dx) / halfW, Math.abs(dy) / halfH);
+    const x = innerWidth / 2 + dx * scale, y = innerHeight / 2 + dy * scale;
+    questDirection.style.transform = `rotate(${Math.atan2(dy, dx) + Math.PI / 2}rad)`;
+    questMarker.style.transform = `translate(${x}px, ${y}px) translate(-50%,-50%)`;
   }
 }
 if (import.meta.hot) import.meta.hot.dispose(() => welcomeWorld.dispose());

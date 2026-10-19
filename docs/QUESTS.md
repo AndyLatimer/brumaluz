@@ -78,12 +78,22 @@ quedan bloqueados.
   Se conserva al reconectar y desaparece al entregarlo. Ambas vistas comparten
   ilustración, nombre, misión asociada y tooltip.
 - La misión obligatoria se sigue automáticamente; su marcador exacto se
-  muestra en el minimapa y, cuando entra en cámara, sobre el objetivo.
+  muestra en el minimapa y, cuando entra en cámara, sobre el objetivo. Si queda
+  fuera del encuadre, una flecha en el borde de pantalla señala su dirección
+  y conserva la distancia, también si está detrás de la cámara. Se oculta
+  junto al resto de indicadores durante diálogos, menús y muerte.
+- El rastreador incluye encabezado con acceso al diario, objetivo y progreso
+  por pasos. Su botón minimiza o expande el contenido en el mismo lugar,
+  sin abrir el diario ni desactivar la guía del mundo. La preferencia se
+  conserva en el navegador y los controles admiten teclado y traducción.
 - Los nodos de diálogo pueden incluir una tarjeta `quest`: título, objetivo,
   XP, pelines y modo de oferta o entrega. Se presenta en un panel propio,
   separado de las palabras del NPC, con botones de aceptar/completar y salir.
   Salir de la oferta no la acepta, no abandona el progreso y no modifica el
   motivo guardado. Las conversaciones normales no muestran tarjeta de misión.
+  Aceptar y completar usan una marca de verificación; la tarjeta omite la ayuda
+  redundante «E · Elegir». Las recompensas del diario muestran icono, cantidad
+  y nombre sin las leyendas explicativas de experiencia y monedero.
 - El encabezado del encuentro muestra nombre y subtítulo/oficio del NPC
   (la misma identidad usada en el marco de objetivo). El encuentro oculta
   temporalmente chat, minimapa y acceso rápido para dejar libre la escena.

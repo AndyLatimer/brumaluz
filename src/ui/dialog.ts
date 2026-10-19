@@ -98,6 +98,7 @@ function render() {
   el.setAttribute('aria-labelledby', 'dialog-speaker');
   document.body.classList.add('conversation-open');
   el.classList.toggle('quest-dialog', !!node?.quest);
+  el.querySelector<HTMLElement>('.dialog-hint')!.hidden = !!node?.quest;
   el.querySelector('.dialog-quest-card')?.remove();
   if (node?.quest) {
     const quest = node.quest;
@@ -149,7 +150,7 @@ function render() {
       const marker = document.createElement('span');
       marker.className = 'dialog-choice-mark';
       marker.setAttribute('aria-hidden', 'true');
-      marker.textContent = c.exit ? '↩' : node?.quest ? node.quest.turnIn ? '✓' : '+' : `${i + 1}.`;
+      marker.textContent = c.exit ? '↩' : node?.quest ? '✓' : `${i + 1}.`;
       const text = document.createElement('span');
       text.textContent = c.exit && !node?.quest ? `[${label}]` : label;
       b.append(marker, text);

@@ -476,6 +476,8 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.equal(await first.page.locator('.dialog-quest-card h3').textContent(),'Algo pequeño, algo importante');
     assert.equal(await first.page.locator('.dialog-quest-card').getAttribute('aria-label'),'Nueva misión');
     assert.deepEqual(await first.page.locator('.dialog-quest-rewards > span').allTextContents(),['40 XP','5 pelines']);
+    assert.equal(await first.page.locator('.dialog-hint').isVisible(),false,'Quest offers omit the redundant E / Choose hint');
+    assert.equal(await first.page.getByRole('button',{name:'Aceptar misión'}).locator('.dialog-choice-mark').textContent(),'✓');
     assert.doesNotMatch(await first.page.locator('.dialog-text').textContent(),/Recompensa|40 XP/,'Rewards are structured UI, not dialogue prose');
     assert.match(await first.page.locator('.dialog-text').textContent(),/Gremio de Ayudantes.*¡Otra vez!.*David/s);
     for(const [width,height] of [[320,844],[390,844],[1280,844],[844,390],[320,568]]){
@@ -536,6 +538,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.equal(await first.page.locator('.quest-origin,.quest-journal-intro').count(),0);
     assert.deepEqual(await first.page.locator('.quest-reward b').allTextContents(),['+40','+5']);
     assert.equal(await first.page.locator('.quest-reward.pelines .currency-icon-pelines').count(),1);
+    assert.equal(await first.page.locator('.quest-reward small').count(),0,'Rewards omit redundant explanatory captions');
     assert.equal(await first.page.locator('.quest-steps li.current').textContent(),'2Encontrar el distintivo');
     assert.equal(await first.page.locator('.quest-items').count(),0,'Uncollected quest items are not owned');
     assert.equal(await first.page.locator('.quest-entry header > small,.quest-rewards-heading > small').count(),0);
@@ -615,6 +618,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     }),'Gnomi stays beside the player through the thank-you conversation');
     assert.equal(await first.page.locator('.dialog-quest-card').count(),0,'Thank-you dialogue clears the quest card');
     assert.equal(await first.page.locator('#dialog').evaluate(el=>el.classList.contains('quest-dialog')),false);
+    assert.equal(await first.page.locator('.dialog-hint').isVisible(),true,'Ordinary dialogue restores its keyboard hint');
     assert.equal(a.character.data.experience,40);
     assert.equal(a.character.data.wallet.pelines,5);
     await first.page.keyboard.press('KeyE');
@@ -1664,6 +1668,69 @@ test('NPC interaction still opens its conversation with E', { timeout: 120000 },
   } finally {await player.context.close();}
 });
 
+test('quest tracker minimizes in place and offscreen objectives point toward the target across camera directions', {timeout:60000}, async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  const prepare=async()=>{
+    await page.goto(`${url}/?test&welcome&graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz);
+    await page.evaluate(()=>{
+      window.brumaluz.set({welcome:{origin:0,stage:'active'}});
+      window.brumaluz.play();
+      window.brumaluz.move(0,0);
+      window.brumaluz.view(Math.atan2(-15.8,5.7),.55,12);
+    });
+    await page.locator('#quest-tracker').waitFor();
+  };
+  try{
+    await prepare();
+    const marker=page.locator('#quest-objective-marker');
+    await page.waitForFunction(()=>!document.querySelector('#quest-objective-marker').classList.contains('offscreen'));
+    assert.match(await page.locator('.quest-tracker-progress').textContent(),/Paso 2 de 3/);
+    const initial=await page.locator('#quest-tracker').boundingBox();
+    await page.getByRole('button',{name:'Minimizar misiones',exact:true}).click();
+    assert.equal(await page.locator('.quest-tracker-detail').isVisible(),false);
+    const minimized=await page.locator('#quest-tracker').boundingBox();
+    assert.equal(minimized.x,initial.x);assert.equal(minimized.y,initial.y);
+    assert.equal(minimized.width,initial.width);assert.ok(minimized.height<initial.height);
+    assert.equal(await page.getByRole('button',{name:'Expandir misiones',exact:true}).getAttribute('aria-expanded'),'false');
+    assert.equal(await marker.isVisible(),true,'Minimizing the tracker does not disable world guidance');
+    await prepare();
+    assert.equal(await page.locator('.quest-tracker-detail').isVisible(),false,'Minimization persists after reload');
+    await page.getByRole('button',{name:'Expandir misiones',exact:true}).click();
+    await page.locator('.quest-tracker-detail').click();
+    await page.locator('.quest-entry').waitFor();
+    assert.equal(await marker.isVisible(),false,'Objective guidance hides in menus');
+    await page.keyboard.press('Escape');
+    for(const width of [320,390,1280]){
+      await page.setViewportSize({width,height:844});
+      for(const [offset,side] of [[-Math.PI/2,'left'],[Math.PI/2,'right'],[Math.PI,'behind']]){
+        await page.evaluate(offset=>window.brumaluz.view(Math.atan2(-15.8,5.7)+offset,.55,12),offset);
+        await page.waitForTimeout(400);
+        await page.waitForFunction(()=>document.querySelector('#quest-objective-marker').classList.contains('offscreen'));
+        const bounds=await marker.boundingBox();
+        assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width&&bounds.y>=0&&bounds.y+bounds.height<=844,`Arrow fits ${width}px facing ${side}`);
+        if(side==='left')assert.ok(bounds.x<width/2);
+        if(side==='right')assert.ok(bounds.x>width/2);
+        assert.equal(await page.locator('.quest-direction-arrow').isVisible(),true);
+        assert.match(await page.locator('.quest-direction-arrow').getAttribute('style'),/rotate\([^N]*rad\)/);
+      }
+      await page.evaluate(()=>window.brumaluz.view(Math.atan2(-15.8,5.7),.55,12));
+      await page.waitForFunction(()=>!document.querySelector('#quest-objective-marker').classList.contains('offscreen'));
+      assert.equal(await page.locator('.quest-direction-arrow').isVisible(),false);
+      assert.ok(await page.locator('#quest-tracker').evaluate(el=>el.scrollWidth<=el.clientWidth&&el.getBoundingClientRect().right<=innerWidth));
+    }
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    await page.getByRole('button',{name:'Minimize quests',exact:true}).waitFor();
+    assert.match(await page.locator('.quest-tracker-progress').textContent(),/Step 2 of 3/);
+    await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'completed'}}));
+    await page.locator('#quest-tracker').waitFor({state:'hidden'});
+    assert.equal(await marker.isVisible(),false);
+    assert.deepEqual(errors,[]);
+  }finally{await context.close();}
+});
+
 test('Isberto starts the local real-time shadowling encounter with working combat controls', {timeout:120000}, async()=>{
   const context=await browser.newContext({viewport:{width:1280,height:800}});
   const page=await context.newPage(),errors=[];
@@ -1701,6 +1768,7 @@ test('Isberto starts the local real-time shadowling encounter with working comba
     await page.keyboard.press('KeyE');
     await page.getByRole('button',{name:'Completar misión'}).click();
     await page.locator('.dialog-text').filter({hasText:'Primero acompáñame a ver a Isberto'}).waitFor();
+    await page.waitForFunction(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible);
     assert.equal(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible),true,'Isberto appears after returning Gnomi’s badge');
     await page.keyboard.press('Escape');
     await page.locator('#dialog').waitFor({state:'hidden'});

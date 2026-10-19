@@ -3,6 +3,9 @@ import { CLASSES, RACES, classLabel, raceLabel, type CharData } from '../data/da
 export type Language = 'es' | 'en';
 
 const translations: Record<string, string> = {
+  'Minimizar misiones': 'Minimize quests',
+  'Expandir misiones': 'Expand quests',
+  'Paso {current} de {total}': 'Step {current} of {total}',
   'Tu senda de aprendizaje': 'Your learning path',
   'Puntos disponibles': 'Available points',
   '1 punto cada 2 niveles · desde el nivel 2': '1 point every 2 levels · starting at level 2',
