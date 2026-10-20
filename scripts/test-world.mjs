@@ -408,6 +408,79 @@ async function revealChat(page) {
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
 }
 
+test('low world props block at ground level and allow landing height above their top', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('Saltador','humano',4.4);
+  account.character.data.position={x:4.4,z:3.2,yaw:0};
+  const player=await openPlayer(world,account);
+  try{
+    await player.enter();
+    const collision=await player.page.evaluate(()=>{
+      const city=window.brumaluz.city(),character=window.brumaluz.char();
+      const x=5.5,z=3.2,top=city.platformY(x,z),ground=city.groundY(x,z),targetX=5.2;
+      const from=character.root.position.clone().set(4.4,ground,z);
+      const low=city.collide(from,from.clone().set(targetX,ground,z));
+      const high=city.collide(from.clone().setY((top??ground)+0.12),from.clone().set(targetX,(top??ground)+0.12,z));
+      return {top,ground,blockedX:low.x,passedX:high.x};
+    });
+    assert.ok(collision.top!==null&&collision.top>collision.ground+0.3,`The plaza barrel exposes a raised top surface: ${JSON.stringify(collision)}`);
+    assert.ok(collision.blockedX<5,`The barrel still blocks horizontal movement from below: ${JSON.stringify(collision)}`);
+    assert.ok(Math.abs(collision.passedX-5.2)<0.01,`The character can move across the barrel top when reaching its height: ${JSON.stringify(collision)}`);
+    await player.page.waitForTimeout(2500);
+    await player.page.evaluate(()=>window.brumaluz.view(0,0.55,12));
+    await player.page.keyboard.down('Space');
+    await player.page.keyboard.down('KeyD');
+    await player.page.waitForTimeout(260);
+    const airborne=await player.page.evaluate(()=>window.brumaluz.char().root.parent.position.y);
+    await player.page.keyboard.up('KeyD');
+    await player.page.keyboard.up('Space');
+    await player.page.waitForTimeout(850);
+    const landed=await player.page.evaluate(()=>{
+      const root=window.brumaluz.char().root;
+      const holder=root.parent,city=window.brumaluz.city();
+      return {x:holder.position.x,y:holder.position.y,z:holder.position.z,ground:city.groundY(holder.position.x,holder.position.z)};
+    });
+    assert.ok(airborne>collision.ground+0.5,`The character rises during the jump: y=${airborne}`);
+    assert.ok(landed.x>5.05&&landed.x<5.95,`The jump moves the character onto the barrel: ${JSON.stringify(landed)}`);
+    assert.ok(landed.y>landed.ground+0.55,`The character lands above ground on the barrel: ${JSON.stringify(landed)}`);
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('world collision shapes cover props and every placed tree or terrain variant', {timeout:60000}, async()=>{
+  const world=backend(),account=fixture('Explorador','humano',4.4);
+  const player=await openPlayer(world,account);
+  try{
+    await player.enter();
+    const audit=await player.page.evaluate(()=>{
+      const city=window.brumaluz.city(),Vector3=city.spawn.constructor;
+      const wheelbarrow=new Vector3(3.5,city.groundY(3.5,-6.2),-6.2);
+      const wheelbarrowResult=city.collide(wheelbarrow,wheelbarrow.clone());
+      const names=['tree_single_A','tree_single_B','trees_A_large','trees_B_large','trees_A_medium','trees_B_medium','trees_A_small','hills_A_trees','hills_B_trees','hills_C_trees','hill_single_A','hill_single_B','mountain_A_grass_trees','mountain_B_grass_trees','mountain_C_grass','watermill'];
+      const features=[];
+      for(const name of names){
+        const mesh=city.root.children.find(child=>child.name===name&&child.isInstancedMesh);
+        if(!mesh||!mesh.count)continue;
+        const matrix=mesh.matrix.clone();mesh.getMatrixAt(0,matrix);
+        const x=matrix.elements[12],z=matrix.elements[14],length=Math.hypot(x,z)||1;
+        const inwardX=-x/length,inwardZ=-z/length;
+        const from=new Vector3(x+inwardX*4,city.groundY(x+inwardX*4,z+inwardZ*4),z+inwardZ*4);
+        const to=new Vector3(x+inwardX*.2,city.groundY(x+inwardX*.2,z+inwardZ*.2),z+inwardZ*.2);
+        const result=city.collide(from,to);
+        features.push({name,count:mesh.count,distance:Math.hypot(result.x-x,result.z-z)});
+      }
+      return {wheelbarrowDistance:Math.hypot(wheelbarrowResult.x-wheelbarrow.x,wheelbarrowResult.z-wheelbarrow.z),features};
+    });
+    assert.ok(audit.wheelbarrowDistance>0.8&&audit.wheelbarrowDistance<2,`The wheelbarrow has a fitted solid collision body: ${JSON.stringify(audit)}`);
+    assert.ok(audit.features.length>=8,`The current map exposes several placed tree and terrain model variants: ${JSON.stringify(audit)}`);
+    for(const feature of audit.features){
+      assert.ok(Number.isFinite(feature.distance),`${feature.name} has a finite collision footprint`);
+      const isTree=feature.name.startsWith('tree_')||feature.name.startsWith('trees_');
+      assert.ok(feature.distance>(isTree?0.7:1.7)&&feature.distance<4.5,`${feature.name} collision matches the visible trunk or terrain footprint: ${JSON.stringify(feature)}`);
+    }
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
 test('starter equipment renders every class weapon without replacing novice clothes or granting legacy kits', {timeout:60000}, async()=>{
   const world=backend(),account=fixture('Equipado','humano',-6.4);
   const player=await openPlayer(world,account);
@@ -831,9 +904,20 @@ test('welcome systems offer three distinct origins per race in the isolated deve
 
 test('independent accounts see real remote models, appearance, names, movement and departure in both graphics modes', { timeout: 240000 }, async () => {
   const world = backend(), a = fixture('Alric', 'humano', -6.4), b = fixture('Elara', 'elfo', -5.4);
+  Object.assign(a.character.data,{hair:14,acc:7,accColor:4});
+  Object.assign(b.character.data,{hair:15,acc:7,accColor:3});
   const first = await openPlayer(world, a, false);
   const second = await openPlayer(world, b);
   try {
+    for(const player of [first,second]) {
+      const portrait=await player.page.locator('.character-portrait').first().evaluate(canvas=>{
+        const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+        const colors=new Set();
+        for(let i=0;i<pixels.length;i+=16)colors.add(`${pixels[i]},${pixels[i+1]},${pixels[i+2]}`);
+        return {width:canvas.width,height:canvas.height,colors:colors.size};
+      });
+      assert.ok(portrait.width>0&&portrait.height>0&&portrait.colors>50,'Saved new appearance renders in the selection portrait');
+    }
     await first.enter();
     await second.enter();
     await remote(first.page, b.character.id);
@@ -849,10 +933,18 @@ test('independent accounts see real remote models, appearance, names, movement a
       const root = window.brumaluz.players()[0].root;
       let meshes = 0;
       root.traverse((object) => { if (object.isMesh && object.visible) meshes++; });
-      return { meshes, attached: !!root.parent, visible: root.visible };
+      return { meshes, attached: !!root.parent, visible: root.visible,
+        hair:!!root.getObjectByName('character-hair'),mask:!!root.getObjectByName('traveler-mask'),
+        maskColor:root.getObjectByName('traveler-mask')?.material.color.getHexString() };
     });
 
     assert.ok(geometry.meshes > 2 && geometry.attached && geometry.visible, JSON.stringify(geometry));
+    assert.ok(geometry.hair&&geometry.mask,'New hair and accessory render on remote actors');
+    assert.equal(geometry.maskColor,'d0404a');
+    assert.deepEqual(await second.page.evaluate(()=>{
+      const root=window.brumaluz.players()[0].root;
+      return {hair:!!root.getObjectByName('character-hair'),maskColor:root.getObjectByName('traveler-mask')?.material.color.getHexString()};
+    }),{hair:true,maskColor:'4a7ad8'});
     assert.equal(await first.page.locator('#graphics-error').isVisible(), false);
     assert.equal(await second.page.locator('#graphics-error').isVisible(), false);
     await second.page.evaluate(() => window.brumaluz.move(-3.4, -11.085));

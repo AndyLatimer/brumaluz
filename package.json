@@ -16,6 +16,12 @@
     "db:apply": "node scripts/apply-sql.mjs",
     "art:build": "node scripts/build-wardrobe.mjs",
     "art:check": "node --test scripts/test-wardrobe.mjs",
+    "assets:import": "node tools/import-kaykit.mjs",
+    "assets:check": "node --test scripts/test-assets.mjs",
+    "art:ambient": "node tools/prepare-ambient-animations.mjs",
+    "art:creator": "node tools/prepare-creator-parts.mjs",
+    "test:creator": "npm run build && node --test scripts/test-creator.mjs",
+    "test:ambient": "npm run build && node --test scripts/test-ambient.mjs",
     "test:combat": "node --test scripts/test-combat.mjs"
   },
   "keywords": [],

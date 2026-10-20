@@ -1,5 +1,27 @@
 # Vestuario modular
 
+## Pelo y complementos del creador
+
+`npm run art:creator` extrae de Adventurers 2.0 tres piezas sin cuerpos,
+esqueletos ni texturas adicionales: el pelo de Ranger, el flequillo de
+Rogue Hooded y su pañuelo. El archivo de producción `creator-parts.glb`
+pesa menos de 170 kB; no se carga el catálogo completo.
+
+- Los IDs 0–11 mantienen sus peinados. El corte asimétrico (12) combina
+  una base corta de Mage con el nuevo flequillo; el corto pegado (13) usa los
+  mechones de Ranger ajustados al cráneo, en vez de una cubierta lisa.
+- Se añaden Melena de explorador (14), con el volumen del modelo original,
+  y Flequillo de viajero (15), con una nuca de media melena.
+- Pañuelo de viajero se añade como accesorio 7 y utiliza el color de
+  complementos. Oculta temporalmente la boca y la barba sin borrar sus valores.
+- Los colores de pelo, los cuatro rostros, los linajes y los adornos siguen
+  usando el montaje compartido por creador, retratos y personajes del mundo.
+  El casco sigue ocultando el pelo.
+
+Los valores anteriores no se reordenan. La validación SQL de apariencia ya
+admite los nuevos IDs y no necesita una migración de personajes.
+`npm run test:creator` comprueba extracción, opciones, ajuste, colores y render.
+
 ## Primera pieza de producción
 
 `src/assets/models/wardrobe/helpers.glb` contiene el uniforme base del Gremio
@@ -24,6 +46,10 @@ el inventario ni se desbloquea equipamiento para jugadores.
   cambiar maniquí, girar y probar reposo, marcha, carrera, saludo e interacción.
   El control de elevación permite mirar desde abajo; al bajar de la horizontal
   se oculta el suelo para inspeccionar las suelas.
+- El probador incluye recoger, consumir y golpes. Los clips adicionales y su
+  integración cosmética se describen en la [biblioteca de recursos](./ASSET-LIBRARY.md).
+  `npm run art:ambient` regenera los dos clips nuevos sin sustituir el rig,
+  el uniforme ni las animaciones originales.
 - Para editar artísticamente, importar `helpers.glb` en Blender mediante
   **File > Import > glTF 2.0**. El archivo incluye la armadura en reposo,
   prendas separadas y materiales con nombre. Guardar un `.blend` como fuente
@@ -85,8 +111,9 @@ y mangas, dentro de la zona que sigue al pecho y no al brazo. La camisa
 no incluye una cola oculta bajo el pantalón que pueda atravesar la cintura.
 Las dos piernas comparten una costura de entrepierna con pesos de cadera
 idénticos; sus arcos exteriores coinciden con el borde inferior de la cintura.
-Las pruebas comprueban ambas costuras en cada postura muestreada de las cinco
-animaciones, no solo la proximidad de las piezas en reposo.
+Las pruebas comprueban ambas costuras en cada postura muestreada de nueve
+animaciones, incluidas recogida, consumo y las dos variantes nuevas de reposo
+e impacto, no solo la proximidad de las piezas en reposo.
 
 El probador solo se sirve en desarrollo; no forma parte de la entrada de
 producción de Vite. La bienvenida sigue desactivada y publicar requiere

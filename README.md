@@ -2,6 +2,18 @@
 
 MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 
+## Biblioteca de recursos
+
+Los cinco paquetes KayKit importados tienen un [catálogo y visor local](./docs/ASSET-LIBRARY.md)
+con 455 GLB: objetos, bosque, mazmorras, personajes y animaciones.
+Con `npm run dev`, abrir `/assets.html`. El visor no modifica el juego.
+Una selección de ocho objetos detalla los servicios y jardines de la ciudad;
+los personajes tienen variaciones de reposo e impactos y gestos al recoger
+y consumir. El creador incorpora pelo de Ranger y Rogue Hooded: dos peinados
+nuevos, dos cortes rehechos con mechones reales y un pañuelo de viajero
+recoloreable. Véase [Pelo y complementos](./docs/CHARACTER-ART.md#pelo-y-complementos-del-creador).
+Se conservan los IDs guardados y las mecánicas, sin cargar toda la biblioteca.
+
 ## Cuentas y personajes
 
 El lore acordado y las decisiones narrativas pendientes se mantienen en

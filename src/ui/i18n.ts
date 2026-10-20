@@ -664,6 +664,8 @@ const translations: Record<string, string> = {
   'Guantes de cuero': 'Leather gloves', 'Mangas con puños': 'Cuffed sleeves', 'Guanteletes': 'Gauntlets', 'Mangas con pelo': 'Fur-trimmed sleeves',
   'Calzas y zapatos': 'Trousers and shoes', 'Botas de viaje': 'Travel boots', 'Grebas': 'Greaves', 'Botas de pelo': 'Fur boots',
   'Rapado': 'Shaved', 'Corto con flequillo': 'Short with bangs', 'Despeinado': 'Tousled', 'Media melena': 'Mid-length', 'Coleta': 'Ponytail', 'Moño': 'Bun', 'Dos coletas': 'Twin ponytails', 'Cresta': 'Mohawk', 'Melena larga': 'Long hair', 'Trenza': 'Braid', 'Moños dobles': 'Twin buns', 'Rizos': 'Curls', 'Corte asimétrico': 'Asymmetrical cut', 'Corto pegado': 'Close-cropped',
+  'Melena de explorador': 'Ranger hair', 'Flequillo de viajero': 'Traveler fringe',
+  'Pañuelo de viajero': 'Traveler face scarf',
   'Barba recortada': 'Trimmed beard', 'Barba completa': 'Full beard', 'Perilla y bigote': 'Goatee and mustache', 'Bigote': 'Mustache', 'Perilla': 'Goatee',
   'Normales': 'Normal', 'Grandes': 'Large', 'Pequeños': 'Small', 'Rasgados': 'Narrow', 'Dulces': 'Gentle', 'Soñolientos': 'Sleepy', 'Redondos': 'Round', 'Varoniles': 'Masculine', 'Afilados': 'Sharp',
   'Naturales': 'Natural', 'Finas': 'Thin', 'Gruesas': 'Thick', 'Altas': 'Raised', 'Enfadadas': 'Angry', 'Preocupadas': 'Worried',
@@ -748,6 +750,9 @@ const translations: Record<string, string> = {
 };
 
 const reverseTranslations = new Map(Object.entries(translations).map(([source, translated]) => [translated, source]));
+const normalizeLineEndings = (text: string) => text.replace(/\r\n/g, '\n');
+const normalizedTranslations = new Map(Object.entries(translations).map(([source, translated]) => [normalizeLineEndings(source), translated]));
+const normalizedReverseTranslations = new Map([...reverseTranslations].map(([translated, source]) => [normalizeLineEndings(translated), source]));
 const textSources = new WeakMap<Text, string>();
 const attributeSources = new WeakMap<Element, Map<string, string>>();
 
@@ -765,9 +770,10 @@ export function setLanguage(next: Language) {
 }
 
 export function t(source: string, values: Record<string, string | number> = {}) {
+  const normalizedSource = normalizeLineEndings(source);
   let translated = language === 'en'
-    ? translations[source] ?? source
-    : reverseTranslations.get(source) ?? source;
+    ? translations[source] ?? normalizedTranslations.get(normalizedSource) ?? source
+    : reverseTranslations.get(source) ?? normalizedReverseTranslations.get(normalizedSource) ?? source;
   for (const [key, value] of Object.entries(values)) translated = translated.replaceAll(`{${key}}`, String(value));
   return translated;
 }

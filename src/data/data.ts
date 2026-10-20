@@ -204,7 +204,7 @@ export const CLOTH_NAMES = ['Carmesí', 'Azul real', 'Bosque', 'Púrpura', 'Oro'
 export const CAPES = ['Sin capa', 'Capa corta', 'Capa de mago', 'Capa noble', 'Capa de piel'];
 export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Pasador metálico', 'Broche rúnico'];
 export const HAIR_ACC_VALUES = [0, 1, 2, 3, 4, 7, 8];
-export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda'];
+export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda', 'Pañuelo de viajero'];
 export const MAKEUPS = ['Ninguno', 'Pestañas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno'];
 export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036'];
 export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro'];
@@ -322,7 +322,7 @@ export function randomChar(): CharData {
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
-    hair: sex ? [3, 4, 5, 6, 8, 9, 10, 11, 12][rnd(9)] : [0, 1, 2, 7, 5, 11, 12, 13][rnd(8)], hairColor: rnd(HAIR_COLORS.length),
+    hair: sex ? pick([3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15]) : pick([0, 1, 2, 7, 5, 11, 12, 13, 14, 15]), hairColor: rnd(HAIR_COLORS.length),
     beard: sex ? 0 : rnd(BEARDS.length), eyeShape: sex ? rnd(7) : [0, 2, 3, 7, 8][rnd(5)], eyeColor: rnd(EYE_COLORS.length),
     brows: rnd(BROWS.length), nose: rnd(NOSES.length), mouth: rnd(MOUTHS.length), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),

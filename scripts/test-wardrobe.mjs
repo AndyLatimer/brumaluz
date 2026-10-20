@@ -125,11 +125,13 @@ test('shoulders, wrists, crotch and waistband remain joined throughout locomotio
   const outfit = await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
   const animationBytes = await io.writeBinary(reference);
   const animations = (await loader.parseAsync(animationBytes.buffer.slice(animationBytes.byteOffset,animationBytes.byteOffset+animationBytes.byteLength),'')).animations;
+  const ambientBytes = await readFile(fileURLToPath(new URL('../src/assets/models/ambient-animations.glb', import.meta.url)));
+  animations.push(...(await loader.parseAsync(ambientBytes.buffer.slice(ambientBytes.byteOffset,ambientBytes.byteOffset+ambientBytes.byteLength),'')).animations);
   const mixer = new THREE.AnimationMixer(outfit.scene);
   const torso = outfit.scene.getObjectByName('helpers-shirt');
   const torsoMesh = torso.isSkinnedMesh ? torso : torso.children.find(child=>child.isSkinnedMesh);
   const bone = outfit.scene.getObjectByName('chest');
-  for (const clipName of ['Idle','Walking_A','Running_A','Cheer','Interact']) {
+  for (const clipName of ['Idle','Walking_A','Running_A','Cheer','Interact','PickUp','Use_Item','Idle_B','Hit_B']) {
     const clip = animations.find(clip=>clip.name===clipName);
     assert.ok(clip,clipName);
     const action = mixer.clipAction(clip).play();

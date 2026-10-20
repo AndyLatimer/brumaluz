@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca KayKit · Brumaluz</title>
+  </head>
+  <body>
+    <main>
+      <h1>Biblioteca KayKit</h1>
+      <p>455 recursos de cinco paquetes. Solo desarrollo: no cambia el mapa, personajes ni inventarios.</p>
+      <label>Paquete <select id="pack"><option value="">Todos</option></select></label>
+      <label>Tipo <select id="kind">
+        <option value="">Todos</option>
+        <option value="objects">Objetos y escenario</option>
+        <option value="characters">Personajes</option>
+        <option value="animations">Bibliotecas de animaciones</option>
+      </select></label>
+      <label>Buscar <input id="search" type="search" placeholder="tree, sword, chest…"></label>
+      <p id="count"></p>
+      <label>Recurso <select id="asset"></select></label>
+      <button id="previous" type="button">Anterior</button>
+      <button id="next" type="button">Siguiente</button>
+      <label>Animación <select id="animation"><option value="">Pose original</option></select></label>
+      <label><span><input id="playing" type="checkbox" checked> Reproducir animación</span></label>
+      <p>Arrastra para girar. Rueda para acercar. Botón derecho para desplazar.</p>
+      <p id="status" role="status">Cargando catálogo…</p>
+      <p id="details"></p>
+      <a id="download" hidden download>Descargar GLB para Blender</a>
+      <p>Kay Lousberg · CC0. Se conservan los nombres, escala y origen del autor.</p>
+    </main>
+    <canvas aria-label="Vista previa 3D del recurso"></canvas>
+    <script type="module" src="/src/dev/assetsPreview.ts"></script>
+  </body>
+</html>

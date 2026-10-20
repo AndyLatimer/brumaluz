@@ -1395,9 +1395,10 @@ begin
   pyaw := (p_state ->> 'yaw')::double precision;
   facing := (p_state ->> 'facing')::double precision;
   v_jump := (p_state ->> 'jump')::double precision;
+  -- El cliente puede estar saltando sobre una superficie baja (salto + altura del objeto).
   if not (px between -cfg_limit and cfg_limit and pz between -cfg_limit and cfg_limit
     and pyaw between -1000000 and 1000000 and facing between -1000000 and 1000000
-    and v_jump between 0 and 0.7 and (p_state ->> 'wave')::numeric between 0 and 2147483647
+    and v_jump between 0 and 2.4 and (p_state ->> 'wave')::numeric between 0 and 2147483647
     and (p_state ->> 'wave')::numeric = trunc((p_state ->> 'wave')::numeric)) then
     raise exception 'INVALID_WORLD_STATE';
   end if;

@@ -6,8 +6,10 @@ import mageUrl from '../assets/models/Mage.glb?url';
 import knightUrl from '../assets/models/Knight.glb?url';
 import rogueUrl from '../assets/models/Rogue.glb?url';
 import barbarianUrl from '../assets/models/Barbarian.glb?url';
+import ambientAnimationsUrl from '../assets/models/ambient-animations.glb?url';
+import creatorPartsUrl from '../assets/models/creator-parts.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
-import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult } from './head';
+import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult, type CreatorParts } from './head';
 import { softDot } from '../world/paint';
 import { STARTER_MODELS } from '../data/starterItems';
 import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
@@ -23,6 +25,8 @@ import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeI
 type Kit = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian';
 const URLS: Record<Kit, string> = { Mage: mageUrl, Knight: knightUrl, Rogue: rogueUrl, Barbarian: barbarianUrl };
 const kits = {} as Record<Kit, GLTF>;
+let ambientAnimations: THREE.AnimationClip[] = [];
+let creatorParts: CreatorParts;
 
 const heads = {} as Record<HeadKit, HeadSource>;
 
@@ -30,6 +34,20 @@ export async function loadKits() {
   await Promise.all([
     ...(Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }),
     loadWardrobe(),
+    loadGLB(ambientAnimationsUrl).then(gltf => { ambientAnimations = gltf.animations; }),
+    loadGLB(creatorPartsUrl).then(gltf => {
+      const geometry = (name: keyof CreatorParts) => {
+        const mesh = gltf.scene.getObjectByName(name);
+        if (!(mesh instanceof THREE.Mesh)) throw new Error(`Falta la pieza del creador ${name}.`);
+        return mesh.geometry;
+      };
+      creatorParts = { 'ranger-hair': geometry('ranger-hair'), 'rogue-fringe': geometry('rogue-fringe'), 'rogue-mask': geometry('rogue-mask') };
+      gltf.scene.traverse(object => {
+        if (object instanceof THREE.Mesh) {
+          for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.dispose();
+        }
+      });
+    }),
   ]);
   // sombreado suave en cuerpos, ropa y accesorios (las aristas marcadas se mantienen)
   for (const k of Object.keys(URLS) as Kit[]) kits[k].scene.traverse((o) => {
@@ -237,7 +255,7 @@ export class Character {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
       hairAcc: d.hairAcc, hairAccColor: ACC_COLORS[d.hairAccColor], acc: d.acc, makeup: d.makeup, makeupColor: ACC_COLORS[d.makeupColor], accColor: ACC_COLORS[d.accColor],
-    }, headMat, flatMat);
+    }, headMat, flatMat, creatorParts);
     this.bones.get('head')!.add(head.group);
     this.owned.push(...head.ownedMaterials);
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
@@ -291,13 +309,14 @@ export class Character {
 
     // Animaciones
     this.mixer = new THREE.AnimationMixer(this.model);
-    for (const clip of base.animations) this.actions.set(clip.name, this.mixer.clipAction(clip));
+    for (const clip of [...base.animations, ...ambientAnimations]) this.actions.set(clip.name, this.mixer.clipAction(clip));
     this.idle = this.actions.get(outfit.idle) ?? this.actions.get('Idle')!;
     this.idle.play();
     this.applyBodyShape();
     this.mixer.addEventListener('finished', (e) => {
       if (e.action !== this.oneShot || this.dead) return;
       this.oneShot = null;
+      this.interruptible = false;
       this.playGait(e.action);
     });
 
@@ -571,11 +590,14 @@ export class Character {
   }
 
   // ---------------- Animación ----------------
-  private play(name: string) {
+  private play(name: string, interruptible = false) {
+    if (this.dead && name !== 'Death_A') return 0;
     const a = this.actions.get(name);
-    if (!a) return 0;
+    if (!a) throw new Error(`Falta la animación ${name}.`);
     const from = this.oneShot ?? this.gaitAction();
     this.oneShot = a;
+    this.interruptible = interruptible;
+    this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
     a.reset();
     a.setLoop(THREE.LoopOnce, 1);
     a.clampWhenFinished = true;
@@ -585,6 +607,8 @@ export class Character {
   }
   private gait: 'idle' | 'walk' | 'run' = 'idle';
   private oneShot: THREE.AnimationAction | null = null;
+  private interruptible = false;
+  private nextIdleAt = Infinity;
   private gaitAction(gait = this.gait) {
     return gait === 'idle' ? this.idle : this.actions.get(gait === 'walk' ? 'Walking_A' : 'Running_A') ?? this.idle;
   }
@@ -597,12 +621,22 @@ export class Character {
   /** Cambia entre reposo, caminar y correr con transición suave. */
   setGait(g: 'idle' | 'walk' | 'run') {
     if (g === this.gait) return;
-    const from = this.gaitAction();
+    const from = this.oneShot ?? this.gaitAction();
     this.gait = g;
-    if (this.oneShot) return;
+    if (this.dead || (this.oneShot && !this.interruptible)) return;
+    this.oneShot = null;
+    this.interruptible = false;
+    this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
     this.playGait(from);
   }
-  wave() { this.play('Cheer'); this.happyReq = true; }
+  private gesture(name: string) {
+    if (this.dead || this.gait !== 'idle' || this.oneShot || this.jumpTime >= 0) return;
+    this.play(name, true);
+  }
+  /** Gestos cosméticos: nunca bloquean el movimiento ni interrumpen el combate. */
+  pickUp() { this.gesture('PickUp'); }
+  useItem() { this.gesture('Use_Item'); }
+  wave() { if (!this.dead) { this.play('Cheer'); this.happyReq = true; } }
   attachToChest(object: THREE.Object3D) {
     const chest = this.bones.get('chest');
     if (!chest) throw new Error('El personaje no tiene hueso de pecho.');
@@ -610,7 +644,12 @@ export class Character {
   }
   /** Mueve la boca como si hablara durante `seconds` segundos. */
   speak(seconds: number) { this.speakUntil = Math.max(this.lastT, 0) + seconds; }
-  hit() { this.play('Hit_A'); }
+  private hitVariant = false;
+  hit() {
+    if (this.dead) return;
+    this.play(this.hitVariant ? 'Hit_B' : 'Hit_A');
+    this.hitVariant = !this.hitVariant;
+  }
   attack(skill = false) {
     const magic = this.d.cls === 'mago' || this.d.cls === 'clerigo';
     this.play(magic ? skill ? 'Spellcast_Raise' : 'Spellcasting'
@@ -621,6 +660,9 @@ export class Character {
   die() {
     if (this.dead) return;
     if (!this.actions.has('Death_A')) return;
+    this.jumpAction?.stop();
+    this.jumpAction = null;
+    this.jumpTime = -1;
     this.dead = true;
     this.play('Death_A');
   }
@@ -629,10 +671,11 @@ export class Character {
     this.dead = false;
     const from = this.oneShot;
     this.oneShot = null;
+    this.interruptible = false;
     this.playGait(from ?? undefined);
   }
   /** Curación discreta: ojos felices y un leve "respiro" del cuerpo, sin gestos con los brazos. */
-  heal() { this.happyReq = true; this.healT = 0; }
+  heal() { if (!this.dead) { this.happyReq = true; this.healT = 0; } }
   private healT = -1;
   hop() { this.play(this.opts.outfit && this.d.cls === 'mago' ? 'Spellcast_Raise' : 'Interact'); }
   private jumpAction: THREE.AnimationAction | null = null;
@@ -640,10 +683,17 @@ export class Character {
   private jumpLength = 0;
   /** El salto se mezcla por encima de la locomoción con un peso suave, para que no parezca un clip aparte. */
   jump() {
+    if (this.dead) return 0;
     const act = this.actions.get('Jump_Full_Short');
     if (!act) return 0;
     if (this.jumpTime >= 0) return this.jumpLength;
-    const speed = act.getClip().duration / 0.62;
+    if (this.oneShot && this.interruptible) {
+      const from = this.oneShot;
+      this.oneShot = null;
+      this.interruptible = false;
+      this.playGait(from);
+    }
+    const speed = act.getClip().duration / 0.82;
     act.reset().setLoop(THREE.LoopOnce, 1);
     act.clampWhenFinished = true;
     act.timeScale = speed;
@@ -660,8 +710,8 @@ export class Character {
     const p = this.jumpTime / this.jumpLength;
     if (p >= 1) { this.jumpAction.stop(); this.jumpAction = null; this.jumpTime = -1; return; }
     const smooth = (a: number, b: number, x: number) => { const k = Math.min(Math.max((x - a) / (b - a), 0), 1); return k * k * (3 - 2 * k); };
-    const envelope = smooth(0, 0.2, p) * (1 - smooth(0.55, 0.95, p));
-    this.jumpAction.setEffectiveWeight(envelope * 0.4);
+    const envelope = smooth(0, 0.14, p) * (1 - smooth(0.72, 0.99, p));
+    this.jumpAction.setEffectiveWeight(envelope * 0.68);
   }
 
   /** Centro aproximado de la cara, para encuadrar la cámara. */
@@ -670,8 +720,12 @@ export class Character {
   }
 
   update(t: number) {
+    if (this.lastT < 0) this.nextIdleAt = t + 10 + Math.random() * 8;
     const dt = this.lastT < 0 ? 0 : Math.min(t - this.lastT, 0.1);
     this.lastT = t;
+    if (!this.dead && this.gait === 'idle' && !this.oneShot && this.jumpTime < 0 && t >= this.nextIdleAt) {
+      this.gesture('Idle_B');
+    }
     this.updateJump(dt);
     if (this.healT >= 0) {
       this.healT += dt;

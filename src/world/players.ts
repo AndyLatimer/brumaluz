@@ -21,7 +21,11 @@ interface Actor {
 
 export class RemotePlayers {
   private actors = new Map<string, Actor>();
-  constructor(private scene: THREE.Scene, private groundY: (x: number, z: number) => number) {}
+  constructor(
+    private scene: THREE.Scene,
+    private groundY: (x: number, z: number) => number,
+    private platformY: (x: number, z: number) => number | null,
+  ) {}
 
   receive(players: WorldPlayer[]) {
     const ids = new Set(players.map((p) => p.id));
@@ -37,7 +41,9 @@ export class RemotePlayers {
         this.actors.delete(player.id);
         actor = undefined;
       }
-      const target = new THREE.Vector3(player.position.x, this.groundY(player.position.x, player.position.z) + player.jump, player.position.z);
+      const floor = this.groundY(player.position.x, player.position.z);
+      const platform = this.platformY(player.position.x, player.position.z);
+      const target = new THREE.Vector3(player.position.x, Math.max(floor + player.jump, platform ?? -Infinity), player.position.z);
       if (!actor) {
         const character = new Character(player.data, { outfit: false });
         character.root.position.copy(target);
@@ -69,7 +75,7 @@ export class RemotePlayers {
         const speed = Math.hypot(target.x - actor.target.x, target.z - actor.target.z) / seconds;
         actor.character.setGait(player.dead || speed < 0.35 ? 'idle' : speed > 4 ? 'run' : 'walk');
         if (player.wave !== actor.player.wave) actor.character.wave();
-        if (player.jump > 0 && actor.player.jump === 0) actor.character.jump();
+        if (player.jump > actor.player.jump + 0.2) actor.character.jump();
         actor.from.copy(actor.character.root.position);
         if (actor.from.distanceTo(target) > 15) actor.from.copy(target);
         actor.target.copy(target);

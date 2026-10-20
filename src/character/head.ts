@@ -16,6 +16,7 @@ import { coatMark } from '../data/data';
 export type HeadKit = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian';
 
 export interface HeadSource { kit: HeadKit; geometry: THREE.BufferGeometry; toBone: THREE.Matrix4 }
+export type CreatorParts = Record<'ranger-hair' | 'rogue-fringe' | 'rogue-mask', THREE.BufferGeometry>;
 
 export interface HeadOptions {
   face: HeadKit;
@@ -72,7 +73,7 @@ const HEAD_SHAPES: Record<HeadKit, { rx: number; ryDown: number; nLow: number }>
   Barbarian: { rx: 0.49, ryDown: 0.465, nLow: 3.7 }, // cuadrada: mandíbula marcada
 };
 
-export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado'];
+export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado', 'Melena de explorador', 'Flequillo de viajero'];
 export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla y bigote', 'Bigote', 'Perilla'];
 export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados'];
 export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas'];
@@ -90,12 +91,23 @@ interface Tris { pos: Float32Array; uv: Float32Array; nrm: Float32Array; count: 
 
 function toTris(g: THREE.BufferGeometry): Tris {
   const ni = g.index ? g.toNonIndexed() : g;
-  return {
-    pos: Float32Array.from(ni.attributes.position.array as ArrayLike<number>),
-    uv: Float32Array.from(ni.attributes.uv.array as ArrayLike<number>),
-    nrm: Float32Array.from(ni.attributes.normal.array as ArrayLike<number>),
+  const read = (attribute: THREE.BufferAttribute | THREE.InterleavedBufferAttribute, size: 2 | 3) => {
+    const values = new Float32Array(attribute.count * size);
+    for (let i = 0; i < attribute.count; i++) {
+      values[i * size] = attribute.getX(i);
+      values[i * size + 1] = attribute.getY(i);
+      if (size === 3) values[i * size + 2] = attribute.getZ(i);
+    }
+    return values;
+  };
+  const triangles = {
+    pos: read(ni.attributes.position, 3),
+    uv: read(ni.attributes.uv, 2),
+    nrm: read(ni.attributes.normal, 3),
     count: ni.attributes.position.count / 3,
   };
+  if (ni !== g) ni.dispose();
+  return triangles;
 }
 const cellOfUV = (u: number, v: number) => Math.min(7, Math.max(0, Math.floor(v * 8))) * 8 + Math.min(7, Math.max(0, Math.floor(u * 8)));
 /** Celda mayoritaria del triángulo t. */
@@ -248,7 +260,7 @@ function isBrow(T: Tris, t: number) {
  * Islas de triángulos conectados (por posición de vértice). Las cejas originales
  * del modelo son islas pequeñas delante de la frente: se quitan del pelo.
  */
-function smallFrontIslands(T: Tris, keep: (t: number) => boolean) {
+function smallFrontIslands(T: Tris, keep: (t: number) => boolean, includeFacialHair = false) {
   const key = (i: number) => `${T.pos[i * 3].toFixed(4)},${T.pos[i * 3 + 1].toFixed(4)},${T.pos[i * 3 + 2].toFixed(4)}`;
   const parent: number[] = [];
   const find = (a: number): number => (parent[a] === a ? a : (parent[a] = find(parent[a])));
@@ -265,11 +277,12 @@ function smallFrontIslands(T: Tris, keep: (t: number) => boolean) {
   for (let t = 0; t < T.count; t++) if (keep(t)) { const r = find(t); (groups.get(r) ?? groups.set(r, []).get(r)!).push(t); }
   const drop = new Set<number>();
   for (const g of groups.values()) {
-    if (g.length > 80) continue;
+    if (g.length > (includeFacialHair ? 120 : 80)) continue;
     const c = V(0, 0, 0);
     for (const t of g) c.add(triCentroid(T, t));
     c.multiplyScalar(1 / g.length);
-    if (c.z > 0.25 && c.y > 1.55 && c.y < 1.85 && Math.abs(c.x) > 0.04) for (const t of g) drop.add(t);
+    const brow = c.y > 1.55 && c.y < 1.85 && Math.abs(c.x) > 0.04;
+    if (c.z > 0.25 && (brow || includeFacialHair && c.y < 1.55)) for (const t of g) drop.add(t);
   }
   // moño bajo suelto detrás del cuello (queda flotando al combinarlo con otras caras)
   for (const g of groups.values()) {
@@ -332,7 +345,7 @@ const BROW = [
   { t: 0.02, l: 0.14, dy: 0.04, rot: 0.02, arc: 0.45 }, { t: 0.026, l: 0.16, dy: -0.01, rot: 0.38, arc: 0 }, { t: 0.022, l: 0.15, dy: 0.015, rot: -0.32, arc: 0.1 },
 ];
 
-export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, material: (kit: HeadKit) => THREE.Material, extraMat: (c: string) => THREE.Material): HeadResult {
+export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, material: (kit: HeadKit) => THREE.Material, extraMat: (c: string) => THREE.Material, parts: CreatorParts): HeadResult {
   const A = analyse(sources[o.face === 'Barbarian' ? 'Mage' : o.face]);
   const group = new THREE.Group();
   const ownedMaterials: THREE.Material[] = [];
@@ -531,9 +544,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   // ---------- Pelo ----------
   const hatShrink = o.hat === 'helmet' ? 0.9 : o.hat === 'bear' ? 0.92 : o.hat === 'wizard' ? 0.94 : o.hat === 'cap' ? 0.96 : 1;
   const hairPieces: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
-  const kitHair = (kit: HeadKit, closeFit = 1) => {
-    const h = analyse(sources[kit]).hair;
-    if (!h || kit === 'Barbarian') return;
+  const addHair = (h: Tris, kit: HeadKit, closeFit = 1, fit: 'shell' | 'authored' | 'cropped' = 'shell') => {
     const T: Tris = { pos: h.pos.slice(), uv: h.uv.slice(), nrm: h.nrm.slice(), count: h.count };
     if (closeFit < 1) for (let i = 0; i < T.count * 3; i++) {
       const p = V(T.pos[i * 3], T.pos[i * 3 + 1], T.pos[i * 3 + 2]).sub(HEAD_C).multiplyScalar(closeFit).add(HEAD_C);
@@ -546,7 +557,31 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
       const p = V(T.pos[i * 3], y, T.pos[i * 3 + 2]).sub(CENTER).multiplyScalar(k).add(CENTER);
       T.pos.set([p.x, p.y, p.z], i * 3);
     }
-    hairPieces.push({ geo: pushOut(fitHairShell(toGeometry(T, true)), 0.014), kit });
+    const geometry = toGeometry(T, true);
+    if (fit === 'cropped') {
+      const p = geometry.attributes.position;
+      const direction = V(0, 0, 0);
+      for (let i = 0; i < p.count; i++) {
+        direction.set(p.getX(i) - HEAD_C.x, p.getY(i) - HEAD_C.y, p.getZ(i) - HEAD_C.z);
+        const length = direction.length();
+        direction.normalize();
+        const radius = headR(direction) + .012 + Math.min(.045, Math.max(0, length - headR(direction)) * .3);
+        p.setXYZ(i, HEAD_C.x + direction.x * radius, HEAD_C.y + direction.y * radius, HEAD_C.z + direction.z * radius);
+      }
+      geometry.computeVertexNormals();
+    }
+    const fitted = fit === 'shell' ? fitHairShell(geometry) : fit === 'authored' ? settle(geometry, .018) : geometry;
+    hairPieces.push({ geo: pushOut(fitted, 0.014), kit });
+  };
+  const kitHair = (kit: HeadKit, closeFit = 1) => {
+    const h = analyse(sources[kit]).hair;
+    if (h && kit !== 'Barbarian') addHair(h, kit, closeFit);
+  };
+  const importedHair = (id: 'ranger-hair' | 'rogue-fringe', cropped = false) => {
+    const triangles = toTris(parts[id]);
+    const brows = smallFrontIslands(triangles, () => true, true);
+    const hair = subset(triangles, triangle => !brows.has(triangle));
+    addHair(hair, o.face, 1, cropped ? 'cropped' : 'authored');
   };
   const hairCell = C_HAIR;
   const blob = (r: number, p: THREE.Vector3, s: THREE.Vector3, rot = new THREE.Euler(), detail = 1) =>
@@ -693,80 +728,20 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
         hairPieces.push({ geo: blob(0.115, V(Math.sin(a) * 0.43, 1.37 - (k % 2) * 0.045, -Math.cos(a) * 0.36 - 0.06), V(1, 1.1, 0.85), new THREE.Euler(), 3), kit: o.face });
       }
       break;
-    case 12: { // corte corto asimétrico con línea frontal ladeada
-      const segments = 128, rings = 32;
-      const pos: number[] = [HEAD_C.x, HEAD_C.y + headR(V(0, 1, 0)) + 0.01, HEAD_C.z];
-      const idx: number[] = [];
-      const limit = (phi: number) => {
-        const z = Math.sin(phi), x = Math.cos(phi);
-        const front = THREE.MathUtils.smoothstep(z, 0, 1);
-        const back = THREE.MathUtils.smoothstep(-z, 0, 1);
-        return 1.62 - 0.32 * front + 0.42 * back + 0.3 * front * x;
-      };
-      for (let ring = 1; ring <= rings; ring++) {
-        const thetaScale = ring / rings;
-        for (let segment = 0; segment < segments; segment++) {
-          const phi = (segment / segments) * 2 * PI;
-          const theta = thetaScale * limit(phi);
-          const d = V(Math.sin(theta) * Math.cos(phi), Math.cos(theta), Math.sin(theta) * Math.sin(phi));
-          const r = headR(d) + 0.01;
-          pos.push(HEAD_C.x + d.x * r, HEAD_C.y + d.y * r, HEAD_C.z + d.z * r);
-        }
-      }
-      for (let segment = 0; segment < segments; segment++) {
-        const next = (segment + 1) % segments;
-        idx.push(0, 1 + next, 1 + segment);
-      }
-      for (let ring = 0; ring < rings - 1; ring++) {
-        const inner = 1 + ring * segments, outer = inner + segments;
-        for (let segment = 0; segment < segments; segment++) {
-          const next = (segment + 1) % segments;
-          idx.push(inner + segment, outer + next, outer + segment);
-          idx.push(inner + segment, inner + next, outer + next);
-        }
-      }
-      const cap = new THREE.BufferGeometry();
-      cap.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      cap.setIndex(idx);
-      cap.computeVertexNormals();
-      hairPieces.push({ geo: paintCell(cap, hairCell, 0.2, 0.8), kit: o.face });
+    case 12: {
+      kitHair('Mage', .97);
+      importedHair('rogue-fringe');
       break;
     }
-    case 13: { // corte corto pegado al cráneo
-      const segments = 128, rings = 32;
-      const pos: number[] = [HEAD_C.x, HEAD_C.y + headR(V(0, 1, 0)) + 0.008, HEAD_C.z];
-      const idx: number[] = [];
-      const limit = (phi: number) => {
-        const z = Math.sin(phi);
-        return 1.55 - 0.32 * THREE.MathUtils.smoothstep(z, 0, 1) + 0.47 * THREE.MathUtils.smoothstep(-z, 0, 1);
-      };
-      for (let ring = 1; ring <= rings; ring++) {
-        const t = ring / rings;
-        for (let segment = 0; segment < segments; segment++) {
-          const phi = (segment / segments) * 2 * PI;
-          const theta = t * limit(phi);
-          const d = V(Math.sin(theta) * Math.cos(phi), Math.cos(theta), Math.sin(theta) * Math.sin(phi));
-          const r = headR(d) + 0.008;
-          pos.push(HEAD_C.x + d.x * r, HEAD_C.y + d.y * r, HEAD_C.z + d.z * r);
-        }
-      }
-      for (let segment = 0; segment < segments; segment++) {
-        const next = (segment + 1) % segments;
-        idx.push(0, 1 + next, 1 + segment);
-      }
-      for (let ring = 0; ring < rings - 1; ring++) {
-        const inner = 1 + ring * segments, outer = inner + segments;
-        for (let segment = 0; segment < segments; segment++) {
-          const next = (segment + 1) % segments;
-          idx.push(inner + segment, outer + next, outer + segment);
-          idx.push(inner + segment, inner + next, outer + next);
-        }
-      }
-      const cap = new THREE.BufferGeometry();
-      cap.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      cap.setIndex(idx);
-      cap.computeVertexNormals();
-      hairPieces.push({ geo: paintCell(cap, hairCell, 0.2, 0.8), kit: o.face });
+    case 13:
+      importedHair('ranger-hair', true);
+      break;
+    case 14:
+      importedHair('ranger-hair');
+      break;
+    case 15: {
+      kitHair('Rogue', .97);
+      importedHair('rogue-fringe');
       break;
     }
   }
@@ -801,7 +776,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   // ---------- Barba ----------
   const beardGeos: THREE.BufferGeometry[] = [];
-  if (o.beard > 0) {
+  if (o.beard > 0 && o.acc !== 7) {
     const my = mouthY;
     const beardPatch = (distance: (x: number, y: number) => number, wrapSides = false) => {
       const xMin = -0.48, xMax = 0.48, yMin = 1.02, yMax = 1.68, nx = 120, ny = 110;
@@ -1400,6 +1375,21 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     g.position.set(s * 0.465, 1.36, 0.0);
     decals.push(g);
   }
+  if (acc === 7) {
+    const geometry = parts['rogue-mask'].clone();
+    pushOut(geometry, .035);
+    if (beast) {
+      const positions = geometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const front = THREE.MathUtils.smoothstep(positions.getZ(i), .1, .4);
+        positions.setZ(i, positions.getZ(i) + front * .1);
+      }
+    }
+    geometry.computeVertexNormals();
+    const mask = new THREE.Mesh(smoothNormals(geometry, 65), extraMat(accCol));
+    mask.name = 'traveler-mask';
+    decals.push(mask);
+  }
   // maquillaje
   const mk = o.makeup ?? 0;
   if (mk === 2 || mk === 4) {
@@ -1432,7 +1422,8 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     const doubleSided = hairMaterial.clone();
     doubleSided.side = THREE.DoubleSide;
     ownedMaterials.push(doubleSided);
-    finish(new THREE.Mesh(h.geo, doubleSided));
+    const mesh = finish(new THREE.Mesh(h.geo, doubleSided));
+    mesh.name = 'character-hair';
   }
   for (const g of beardGeos) finish(new THREE.Mesh(g, material(o.face)));
   // la boca sigue la curva de la cara (en la cara "Dulce" los labios abultan y la tapaban)
@@ -1451,6 +1442,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   // La boca vive en un grupo propio para poder animarla al hablar: la boca en reposo se oculta y una boca
   // abierta (óvalo oscuro) se abre y cierra. Las geometrías se centran en el pivote para escalar desde ahí.
   const mouthRig = new THREE.Group();
+  mouthRig.visible = o.acc !== 7;
   mouthRig.position.copy(mp);
   const rest = new THREE.Group();
   mouthRig.add(rest);

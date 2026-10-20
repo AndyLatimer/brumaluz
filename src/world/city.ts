@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { loadGLB } from './load';
 import cityUrl from '../assets/models/city.glb?url';
 import type { LocationId } from '../data/data';
+import { buildCityDetails } from './cityDetails';
+import { COIN_BAGS } from '../data/coinBags';
+import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN } from '../data/quests';
 
 // ---------------------------------------------------------------------------
 // Brumaluz: ciudad de casillas hexagonales con el pack "KayKit Medieval
@@ -57,7 +60,8 @@ const BLOCK: Record<string, number> = {
 };
 
 interface Placement { model: string; x: number; z: number; ry: number; s?: number; y?: number }
-interface Collider { x: number; z: number; r: number; hx?: number; hz?: number; cos?: number; sin?: number }
+interface Collider { x: number; z: number; r: number; hx?: number; hz?: number; cos?: number; sin?: number; topY?: number }
+interface Platform { x: number; z: number; y: number; hx: number; hz: number; cos: number; sin: number }
 export interface CityVendorSpot {
   id: string;
   role: 'merchant' | 'innkeeper' | 'healer' | 'smith' | 'miller' | 'lumber';
@@ -94,6 +98,8 @@ export interface City {
   /** Corrige un movimiento para no atravesar edificios ni agua. */
   collide(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3;
   groundY(x: number, z: number): number;
+  /** Superficie elevada de objetos bajos, si el punto cae sobre una plataforma. */
+  platformY(x: number, z: number): number | null;
   spawn: THREE.Vector3;
   /** Ángulo desde el que la cámara del creador mira al personaje (el castillo queda de fondo). */
   spawnYaw: number;
@@ -257,7 +263,7 @@ export async function buildCity(): Promise<City> {
     const distance = (BLOCK[model] ?? 2.8) + 1;
     const x = center.x + Math.sin(angle) * distance;
     const z = center.y + Math.cos(angle) * distance;
-    return { id, role, position: new THREE.Vector3(x, terrainHeightAtWorld(x, z), z) };
+    return { id, role, position: new THREE.Vector3(x, terrainHeightAtWorld(x, z), z), yaw: angle };
   });
 
   // Muralla modular siguiendo cada borde exterior del anillo de casillas 9.
@@ -589,7 +595,7 @@ export async function buildCity(): Promise<City> {
     grassMesh = new THREE.InstancedMesh(geometry, grassMaterial, grassTufts.length);
     grassTufts.forEach((tuft, i) => {
       q4.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tuft.ry);
-      s4.setScalar(tuft.s);
+      s4.set(tuft.s, tuft.s * 0.6, tuft.s);
       p4.set(tuft.x, tuft.y, tuft.z);
       grassMesh!.setMatrixAt(i, m4.compose(p4, q4, s4));
     });
@@ -686,56 +692,101 @@ export async function buildCity(): Promise<City> {
   // ---------- Colisiones ----------
   // Cajas orientadas calculadas con la geometría real de cada modelo (los círculos solo para arboledas y colinas).
   const colliders: Collider[] = [];
-  const CIRCLE_ONLY = /^(trees_|hills_|hill_|mountain_)/;
-  const NO_COLLISION = /^(hex_|cloud|water|flag_|bucket_)/;
-  const footprints = new Map<string, { cx: number; cz: number; hx: number; hz: number } | null>();
+  const platforms: Platform[] = [];
+  const TREE_COLLISION_RADIUS: Record<string, number> = {
+    tree_single_A: 0.34, tree_single_B: 0.38,
+    trees_A_large: 0.72, trees_B_large: 0.72,
+    trees_A_medium: 0.64, trees_B_medium: 0.64,
+    trees_A_small: 0.52, trees_B_small: 0.52,
+  };
+  const NO_COLLISION = /^(hex_|cloud|flag_|waterlily_|waterplant_)/;
+  const footprints = new Map<string, { cx: number; cz: number; hx: number; hz: number; maxY: number } | null>();
   const footprintOf = (name: string) => {
     if (footprints.has(name)) return footprints.get(name)!;
     const model = models.get(name);
-    let result: { cx: number; cz: number; hx: number; hz: number } | null = null;
+    let result: { cx: number; cz: number; hx: number; hz: number; maxY: number } | null = null;
     if (model) {
       model.updateMatrixWorld(true);
       const box = new THREE.Box3();
       model.traverse((o) => {
         const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh || /fan|wheel/.test(mesh.name)) return;
+        if (!mesh.isMesh || mesh.name === 'building_windmill_top_fan_blue' || mesh.name === 'building_watermill_wheel_blue') return;
         mesh.geometry.computeBoundingBox();
         box.union(mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrixWorld));
       });
-      if (!box.isEmpty()) result = { cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, hx: (box.max.x - box.min.x) / 2, hz: (box.max.z - box.min.z) / 2 };
+      if (!box.isEmpty()) result = { cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, hx: (box.max.x - box.min.x) / 2, hz: (box.max.z - box.min.z) / 2, maxY: box.max.y };
     }
     footprints.set(name, result);
     return result;
   };
-  const addBox = (p: Placement, cx: number, cz: number, hx: number, hz: number) => {
+  const addBox = (p: Placement, cx: number, cz: number, hx: number, hz: number, maxY: number) => {
     const k = S * (p.s ?? 1), cos = Math.cos(p.ry), sin = Math.sin(p.ry);
     const lx = cx * k, lz = cz * k;
-    colliders.push({ x: p.x + lx * cos + lz * sin, z: p.z - lx * sin + lz * cos, r: 0, hx: hx * k, hz: hz * k, cos, sin });
+    const x = p.x + lx * cos + lz * sin, z = p.z - lx * sin + lz * cos;
+    const topY = (p.y ?? terrainHeightAtWorld(p.x, p.z)) + maxY * k;
+    colliders.push({ x, z, r: 0, hx: hx * k, hz: hz * k, cos, sin, topY });
   };
   for (const p of place) {
     if (NO_COLLISION.test(p.model)) continue;
-    if (p.model === 'tree_single_A' || p.model === 'tree_single_B') { colliders.push({ x: p.x, z: p.z, r: 0.55 }); continue; }
-    if (CIRCLE_ONLY.test(p.model)) { colliders.push({ x: p.x, z: p.z, r: BLOCK[p.model] * (p.s ?? 1) }); continue; }
+    if (p.model.startsWith('trees_') || p.model.startsWith('tree_single_')) {
+      const radius = TREE_COLLISION_RADIUS[p.model] ?? (p.model.endsWith('_large') ? 0.72 : p.model.endsWith('_medium') ? 0.64 : 0.52);
+      colliders.push({ x: p.x, z: p.z, r: radius * (p.s ?? 1) });
+      continue;
+    }
     const f = footprintOf(p.model);
-    if (!f) continue;
+    if (!f) {
+      const fallbackRadius = BLOCK[p.model];
+      if (fallbackRadius !== undefined) colliders.push({ x: p.x, z: p.z, r: Math.min(fallbackRadius, 1.25) * (p.s ?? 1) });
+      continue;
+    }
+    const k = S * (p.s ?? 1), cos = Math.cos(p.ry), sin = Math.sin(p.ry);
+    if (/^(hills_|hill_|mountain_)/.test(p.model)) {
+      const radius = Math.max(f.hx, f.hz) * k * 0.62;
+      colliders.push({ x: p.x + f.cx * k * cos + f.cz * k * sin, z: p.z - f.cx * k * sin + f.cz * k * cos, r: radius });
+      continue;
+    }
+    const platformY = (p.y ?? terrainHeightAtWorld(p.x, p.z)) + f.maxY * k;
+    const rise = platformY - terrainHeightAtWorld(p.x + f.cx * k * cos + f.cz * k * sin, p.z - f.cx * k * sin + f.cz * k * cos);
+    // Solo tratamos como plataformas las partes superiores bajas y amplias; así
+    // árboles, tejados y paredes conservan su bloqueo normal.
+    if (rise >= 0.3 && rise <= 1.2 && f.hx * k >= 0.3 && f.hz * k >= 0.3) {
+      platforms.push({
+        x: p.x + f.cx * k * cos + f.cz * k * sin,
+        z: p.z - f.cx * k * sin + f.cz * k * cos,
+        y: platformY, hx: f.hx * k, hz: f.hz * k, cos, sin,
+      });
+    }
     if (p.model === 'wall_straight_gate') {
       // dos pilares laterales y el hueco central (|x| < 0.5) libre
-      for (const side of [-1, 1]) addBox(p, f.cx + side * 0.75, f.cz, 0.25, f.hz);
-    } else if (p.model === 'wall_straight') addBox(p, f.cx, f.cz, f.hx + 0.05, f.hz);
-    else addBox(p, f.cx, f.cz, f.hx, f.hz);
+      for (const side of [-1, 1]) addBox(p, f.cx + side * 0.75, f.cz, 0.25, f.hz, f.maxY);
+    } else if (p.model === 'wall_straight') addBox(p, f.cx, f.cz, f.hx + 0.05, f.hz, f.maxY);
+    else addBox(p, f.cx, f.cz, f.hx, f.hz, f.maxY);
   }
-  for (const bench of parkBenches) colliders.push({ x: bench.x, z: bench.z, r: 0.9 });
+  for (const bench of parkBenches) {
+    const cos = Math.cos(bench.ry), sin = Math.sin(bench.ry);
+    const seatY = bench.y + 1.09;
+    colliders.push({ x: bench.x, z: bench.z, r: 0, hx: 0.83, hz: 0.32, cos, sin, topY: seatY });
+    platforms.push({ x: bench.x, z: bench.z, y: seatY, hx: 0.725, hz: 0.21, cos, sin });
+  }
   const blockedTile = (x: number, z: number) => {
     const [q, r] = worldToHex(x, z);
     const t = tileType.get(key(q, r));
     return hexDist(q, r) > R_LAND || t === 'water' || t === 'river';
   };
   const ME = 0.45; // radio del personaje
-  const pushOut = (out: THREE.Vector3, c: Collider) => {
+  const pushOut = (out: THREE.Vector3, c: Collider, from: THREE.Vector3) => {
     const dx = out.x - c.x, dz = out.z - c.z;
     if (c.hx === undefined || c.hz === undefined || c.cos === undefined || c.sin === undefined) {
       const d = Math.hypot(dx, dz), min = c.r + ME;
-      if (d < min && d > 1e-4) { out.x = c.x + (dx / d) * min; out.z = c.z + (dz / d) * min; }
+      if (d >= min) return;
+      let nx = dx, nz = dz;
+      if (d <= 1e-4) {
+        nx = from.x - c.x; nz = from.z - c.z;
+        if (Math.hypot(nx, nz) <= 1e-4) { nx = from.x - out.x; nz = from.z - out.z; }
+        if (Math.hypot(nx, nz) <= 1e-4) { nx = 1; nz = 0; }
+      }
+      const length = Math.hypot(nx, nz);
+      out.x = c.x + (nx / length) * min; out.z = c.z + (nz / length) * min;
       return;
     }
     const lx = dx * c.cos - dz * c.sin, lz = dx * c.sin + dz * c.cos;
@@ -749,22 +800,60 @@ export async function buildCity(): Promise<City> {
     } else {
       // centro dentro de la caja: sacarlo por la cara más cercana
       const gx = c.hx - Math.abs(lx), gz = c.hz - Math.abs(lz);
-      if (gx < gz) { px = Math.sign(lx || 1) * (c.hx + ME); pz = lz; } else { px = lx; pz = Math.sign(lz || 1) * (c.hz + ME); }
+      const fromDx = (from.x - c.x) * c.cos - (from.z - c.z) * c.sin;
+      const fromDz = (from.x - c.x) * c.sin + (from.z - c.z) * c.cos;
+      const moveX = lx - fromDx, moveZ = lz - fromDz;
+      const signX = Math.sign(lx || fromDx || -moveX || 1);
+      const signZ = Math.sign(lz || fromDz || -moveZ || 1);
+      if (gx < gz) { px = signX * (c.hx + ME); pz = lz; } else { px = lx; pz = signZ * (c.hz + ME); }
     }
     out.x = c.x + px * c.cos + pz * c.sin;
     out.z = c.z - px * c.sin + pz * c.cos;
   };
+  const platformY = (x: number, z: number) => {
+    const floor = terrainHeightAtWorld(x, z);
+    let top: number | null = null;
+    for (const platform of platforms) {
+      if (platform.y <= floor + 0.2 || platform.y > floor + 1.2 || (top !== null && platform.y <= top)) continue;
+      const dx = x - platform.x, dz = z - platform.z;
+      const lx = dx * platform.cos - dz * platform.sin;
+      const lz = dx * platform.sin + dz * platform.cos;
+      if (Math.abs(lx) <= platform.hx && Math.abs(lz) <= platform.hz) top = platform.y;
+    }
+    return top;
+  };
   const collide = (from: THREE.Vector3, to: THREE.Vector3) => {
-    const out = to.clone();
-    for (let it = 0; it < 3; it++) for (const c of colliders) pushOut(out, c);
-    const steepStep = Math.abs(terrainHeightAtWorld(out.x, out.z) - terrainHeightAtWorld(from.x, from.z)) > 0.55;
-    if (blockedTile(out.x, out.z) || steepStep) {
-      // deslizar por el eje que sí está libre
-      if (!blockedTile(out.x, from.z) && Math.abs(terrainHeightAtWorld(out.x, from.z) - terrainHeightAtWorld(from.x, from.z)) <= 0.55) out.z = from.z;
-      else {
-        if (!blockedTile(from.x, out.z) && Math.abs(terrainHeightAtWorld(from.x, out.z) - terrainHeightAtWorld(from.x, from.z)) <= 0.55) out.x = from.x;
-        else { out.x = from.x; out.z = from.z; }
+    const distance = Math.hypot(to.x - from.x, to.z - from.z);
+    const steps = Math.max(1, Math.ceil(distance / 0.2));
+    const out = from.clone();
+    const legalStep = (x: number, z: number, previous: THREE.Vector3) => !blockedTile(x, z)
+      && Math.abs(terrainHeightAtWorld(x, z) - terrainHeightAtWorld(previous.x, previous.z)) <= 0.55;
+    for (let step = 1; step <= steps; step++) {
+      const previous = out.clone();
+      const candidate = from.clone().lerp(to, step / steps);
+      if (!legalStep(candidate.x, candidate.z, previous)) {
+        const canX = legalStep(candidate.x, previous.z, previous);
+        const canZ = legalStep(previous.x, candidate.z, previous);
+        if (canX && canZ) {
+          if (Math.abs(candidate.x - previous.x) >= Math.abs(candidate.z - previous.z)) candidate.z = previous.z;
+          else candidate.x = previous.x;
+        } else if (canX) candidate.z = previous.z;
+        else if (canZ) candidate.x = previous.x;
+        else { candidate.x = previous.x; candidate.z = previous.z; }
       }
+      for (let iteration = 0; iteration < 6; iteration++) {
+        const beforeX = candidate.x, beforeZ = candidate.z;
+        for (const c of colliders) {
+          if (c.topY !== undefined && Math.min(previous.y, candidate.y) >= c.topY - 0.08) continue;
+          pushOut(candidate, c, previous);
+        }
+        if (Math.hypot(candidate.x - beforeX, candidate.z - beforeZ) < 1e-4) break;
+      }
+      if (!legalStep(candidate.x, candidate.z, previous)) {
+        candidate.x = previous.x;
+        candidate.z = previous.z;
+      }
+      out.copy(candidate);
     }
     return out;
   };
@@ -807,6 +896,41 @@ export async function buildCity(): Promise<City> {
   });
   colliders.push({x:farmerX,z:farmerZ,r:.5});
 
+  const reserved = [
+    { x: spawnPoint.x, z: spawnPoint.y }, WELCOME_START, WELCOME_BADGE, SHADOW_RETURN,
+    COMBAT_SITE, ...COIN_BAGS, ...npcSites.map(site => site.position), ...vendorSpots.map(spot => spot.position),
+  ];
+  const details = await buildCityDetails(vendorSpots, groundY, (x, z, radius) => {
+    if (reserved.some(point => Math.hypot(x - point.x, z - point.z) < radius + 2)) return false;
+    for (let i = 0; i < 9; i++) {
+      const angle = i * PI / 4;
+      const px = x + (i === 8 ? 0 : Math.cos(angle) * (radius + .45));
+      const pz = z + (i === 8 ? 0 : Math.sin(angle) * (radius + .45));
+      const [q, r] = worldToHex(px, pz);
+      if (blockedTile(px, pz) || roads.has(key(q, r)) && liesOnRoad(px, pz, q, r)) return false;
+    }
+    return colliders.every(collider => {
+      const dx = x - collider.x, dz = z - collider.z;
+      if (collider.hx === undefined || collider.hz === undefined || collider.cos === undefined || collider.sin === undefined) {
+        return Math.hypot(dx, dz) > collider.r + radius + .45;
+      }
+      const lx = dx * collider.cos - dz * collider.sin, lz = dx * collider.sin + dz * collider.cos;
+      return Math.hypot(Math.max(0, Math.abs(lx) - collider.hx), Math.max(0, Math.abs(lz) - collider.hz)) > radius + .45;
+    });
+  });
+  root.add(details.root);
+  for (const detail of details.placements) {
+    colliders.push({ x: detail.x, z: detail.z, r: detail.radius, topY: detail.topY });
+    const rise = detail.topY - groundY(detail.x, detail.z);
+    if (detail.prop !== 'bush' && detail.prop !== 'rock'
+      && rise >= .3 && rise <= 1.2 && detail.hx >= .3 && detail.hz >= .3) {
+      platforms.push({
+        x: detail.x, z: detail.z, y: detail.topY, hx: detail.hx, hz: detail.hz,
+        cos: Math.cos(detail.yaw), sin: Math.sin(detail.yaw),
+      });
+    }
+  }
+
   return {
     root,
     locationId: 'brumaluz',
@@ -815,6 +939,7 @@ export async function buildCity(): Promise<City> {
     vendorSpots,
     collide,
     groundY,
+    platformY,
     spawn: (() => { const w = hexToWorld(0, -1.6); return new THREE.Vector3(w.x, groundY(w.x, w.y), w.y); })(),
     spawnYaw: Math.atan2(0.5, SQ3 / 2),
     update(t: number, playerPosition?: THREE.Vector3) {
@@ -847,7 +972,7 @@ export async function buildCity(): Promise<City> {
             grassYaw.multiply(grassTilt);
           }
           grassPosition.set(tuft.x, tuft.y, tuft.z);
-          grassScale.setScalar(tuft.s);
+          grassScale.set(tuft.s, tuft.s * 0.6, tuft.s);
           grassMesh.setMatrixAt(i, grassMatrix.compose(grassPosition, grassYaw, grassScale));
           if (bend > 0) newlyBent.add(i);
           updatedGrass = true;

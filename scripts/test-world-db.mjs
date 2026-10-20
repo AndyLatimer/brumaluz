@@ -62,6 +62,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       try {
         const appearance=Object.fromEntries(['sex','height','build','skin','face','hair','hairColor','beard','eyeShape','eyeColor',
           'brows','nose','mouth','detail','trait','primary','secondary','cape','clothA','clothB','hairAcc','hairAccColor','acc','makeup','makeupColor','accColor'].map(key=>[key,0]));
+        appearance.acc=7;
         const kits = [
           ['guerrero','Espadero','espada_inicial','escudo_inicial'],
           ['mago','Hechicero','baston_inicial',null],
@@ -73,11 +74,13 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
         assert.equal((await rpc('character_enter',[ca])).equipment,undefined,'No retroactive equipment on entry');
         for(const [cls,name,weapon,offhand] of kits) {
           const id=await rpc('create_character',[{
-            ...appearance,name,race:'humano',cls,attributePoints:{},
+            ...appearance,name,race:'humano',cls,hair:cls==='explorador'?15:14,attributePoints:{},
             equipment:{weapon:{id:'forged_weapon',count:99,bound:false}},
             skillRanks:{heavy_strike:5},skillPoints:999,
           }]);
           const data=await rpc('character_enter',[id]);
+          assert.equal(data.hair,cls==='explorador'?15:14);
+          assert.equal(data.acc,7);
           assert.deepEqual(data.equipment.weapon,{id:weapon,count:1,bound:true});
           if(offhand)assert.deepEqual(data.equipment.offhand,{id:offhand,count:1,bound:true});
           else assert.equal(data.equipment.offhand,undefined);
@@ -89,6 +92,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
             ...data,inventory:['private'],wallet:{pelines:9999},welcome:{origin:0,stage:'found'},
           }])).rows[0].result;
           assert.deepEqual(publicData.equipment,data.equipment);
+          assert.equal(publicData.hair,data.hair);assert.equal(publicData.acc,7);
           assert.equal(publicData.inventory,undefined);assert.equal(publicData.wallet,undefined);assert.equal(publicData.welcome,undefined);
           await client.query('update public.characters set data=data||$1::jsonb where id=$2',[
             {inventory:[{id:weapon,count:1,bound:false}]},id,
@@ -814,8 +818,17 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       await user(a);
       assert.equal((await rpc('world_sync', [ca, sa, motion(8.2)])).status, 'ok');
     });
+    await t.test('jump and low-platform heights are accepted up to the exact supported limit', async () => {
+      for (const jump of [0.71, 1.15, 2.4]) {
+        assert.equal((await rpc('world_sync', [ca, sa, motion(8.2, { jump })])).status, 'ok');
+        await client.query('reset role');
+        const stored = (await client.query('select jump from public.world_players where user_id=$1', [a])).rows[0].jump;
+        assert.equal(stored, jump);
+        await user(a);
+      }
+    });
     await t.test('invalid, missing, null and out-of-bounds state is explicitly rejected', async () => {
-      for (const state of [null, {}, motion(401), motion(0, { wave: 1.5 }), motion(0, { jump: 0.71 }), motion(0, { facing: null }), motion(0, { yaw: 'NaN' })]) {
+      for (const state of [null, {}, motion(401), motion(0, { wave: 1.5 }), motion(0, { jump: -0.01 }), motion(0, { jump: 2.41 }), motion(0, { facing: null }), motion(0, { yaw: 'NaN' })]) {
         await rejected(() => rpc('world_sync', [ca, sa, state]), /INVALID_WORLD_STATE/);
       }
     });

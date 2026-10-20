@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Character, loadKits } from '../character/character';
 import { defaultChar } from '../data/data';
-import { loadProp, type PropId } from '../world/props';
+import { loadProp, PROP_URLS, type PropId } from '../world/props';
 import './wardrobePreview.css';
 
 if (!import.meta.env.DEV) throw new Error('El taller solo está disponible en desarrollo.');
@@ -32,6 +32,7 @@ const holder = new THREE.Group();
 scene.add(holder);
 let character: Character | null = null;
 let bounds = new THREE.Box3();
+let buildVersion = 0;
 function updateCamera() {
   const angle = Number(elevation.value) * Math.PI / 180;
   const size = bounds.getSize(new THREE.Vector3()), center = bounds.getCenter(new THREE.Vector3());
@@ -40,8 +41,18 @@ function updateCamera() {
   camera.lookAt(center);
 }
 async function rebuild() {
+  const version = ++buildVersion;
+  const id = prop.value as PropId;
+  const download = document.querySelector<HTMLAnchorElement>('a[download]')!;
+  download.hidden = true;
+  status.textContent = 'Cargando objeto…';
+  const model = await loadProp(id);
+  if (version !== buildVersion) return;
   holder.clear();
-  holder.add(await loadProp(prop.value as PropId));
+  holder.add(model);
+  download.href = PROP_URLS[id];
+  download.download = `${id}.glb`;
+  download.hidden = false;
   holder.traverse(object => { if (object instanceof THREE.Mesh) object.castShadow = object.receiveShadow = true; });
   bounds = new THREE.Box3().setFromObject(holder);
   const size = bounds.getSize(new THREE.Vector3());
@@ -59,7 +70,10 @@ try {
   character.root.position.set(-.7, 0, -.3);
   scene.add(character.root);
   await rebuild(); resize();
-  prop.addEventListener('change', () => void rebuild());
+  prop.addEventListener('change', () => void rebuild().catch(error => {
+    status.textContent = `No se pudo cargar el objeto: ${error instanceof Error ? error.message : String(error)}`;
+    console.error('Taller de objetos:', error);
+  }));
   showMannequin.addEventListener('change', () => { character!.root.visible = showMannequin.checked; updateCamera(); });
   turn.addEventListener('input', () => { holder.rotation.y = Number(turn.value) * Math.PI / 180; });
   holder.rotation.y = Number(turn.value) * Math.PI / 180;
@@ -75,6 +89,7 @@ try {
   throw error;
 }
 window.addEventListener('pagehide', () => {
+  buildVersion++;
   renderer.setAnimationLoop(null);
   character?.dispose();
   floor.geometry.dispose();

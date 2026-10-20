@@ -616,7 +616,7 @@ function updateInteractPrompt() {
   if (interaction?.item || interaction?.player) {
     const label = interaction.player ? t('Interactuar') : t(interaction.item!.label);
     if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
-  }
+  } else $('#interact-label').textContent = '';
 }
 window.addEventListener('blur', () => keys.clear());
 let moveTarget: THREE.Vector3 | null = null;
@@ -703,15 +703,27 @@ function updatePlay(dt: number) {
       holder.rotation.y += d * (1 - Math.exp(-dt * 12));
     }
   }
-  if (jumpDuration > 0 && jumpElapsed < jumpDuration) {
+  const wasJumping = jumpDuration > 0 && jumpElapsed < jumpDuration;
+  const previousJumpHeight = jumpHeight;
+  const previousFootY = holder.position.y;
+  if (wasJumping) {
     jumpElapsed = Math.min(jumpElapsed + dt, jumpDuration);
     const jumpProgress = jumpElapsed / jumpDuration;
-    jumpHeight = 4 * jumpProgress * (1 - jumpProgress) * 0.7; // parábola: gravedad real, sin flotar
+    jumpHeight = 4 * jumpProgress * (1 - jumpProgress) * 1.15; // arco más alto, con caída continua
   } else {
     jumpElapsed = jumpDuration;
     jumpHeight = 0;
   }
-  groundHeight += (city.groundY(holder.position.x, holder.position.z) - groundHeight) * (1 - Math.exp(-dt * 12));
+  const platform = city.platformY(holder.position.x, holder.position.z);
+  let supportY = city.groundY(holder.position.x, holder.position.z);
+  if (platform !== null && Math.abs(platform - groundHeight) < 0.22) supportY = platform;
+  groundHeight += (supportY - groundHeight) * (1 - Math.exp(-dt * 12));
+  if (wasJumping && jumpHeight < previousJumpHeight && platform !== null
+    && previousFootY >= platform && groundHeight + jumpHeight <= platform) {
+    groundHeight = platform;
+    jumpElapsed = jumpDuration;
+    jumpHeight = 0;
+  }
   holder.position.y = groundHeight + jumpHeight;
   if (marker.visible) marker.scale.setScalar(1 + Math.sin(clock.getElapsedTime() * 6) * 0.1);
 }
@@ -889,6 +901,7 @@ async function performWelcome(action: WelcomeAction, origin?: number) {
   try {
     const success = await runOnServer(id => welcomeAction(id, action, origin), () => simulateWelcome(state, action, origin));
     if (!success || !stillCurrent()) return false;
+    if (action === 'collect') char.pickUp();
     updateHud();
     if (openWindow === 'quests') setWindow('quests', false);
     if (action !== 'origin') {
@@ -1100,6 +1113,7 @@ async function pickUpCoinBag(bagId: string) {
     state.wallet.pelines += 10 + Math.floor(Math.random() * 21);
   });
   if (!collected) return;
+  char.pickUp();
   const amount = state.wallet.pelines - before;
   floatText(`+${amount} ${t('Pelines')}`, 'xp');
   chatSystem(t('Has encontrado {amount} pelines.', { amount }));
@@ -1154,6 +1168,7 @@ async function useInventoryItem(slot: number) {
   const before = totalHealth();
   const resourceBefore = vitalsOf(state).resource;
   if (!(await runOnServer((id) => useItem(id, slot), () => simulateUse(state, slot)))) return;
+  char.useItem();
   const healed = totalHealth() - before;
   const restored = vitalsOf(state).resource - resourceBefore;
   if (restored > 0) chatCombat(t('Recuperas {n} puntos de {resource}.', { n: restored, resource: t(vitalsOf(state).resourceKind === 'mana' ? 'Maná' : 'Estamina') }), 'heal');
@@ -1335,7 +1350,8 @@ function enterPlay() {
   void setAmbientEnabled(ambientEnabled);
   yaw = city.spawnYaw; pitch = 0.55; followDist = 12; zoomTarget = 12; playerVel.set(0, 0, 0);
   if (state.position) {
-    holder.position.set(state.position.x, city.groundY(state.position.x, state.position.z), state.position.z);
+    const savedY = city.platformY(state.position.x, state.position.z) ?? city.groundY(state.position.x, state.position.z);
+    holder.position.set(state.position.x, savedY, state.position.z);
     yaw = state.position.yaw;
   } else holder.position.copy(city.spawn);
   running = true;
@@ -2402,7 +2418,7 @@ async function loadWorldState() {
   }
 }
 
-const remotePlayers = new RemotePlayers(scene, (x, z) => city.groundY(x, z));
+const remotePlayers = new RemotePlayers(scene, (x, z) => city.groundY(x, z), (x, z) => city.platformY(x, z));
 let worldConnection: WorldConnection | null = null;
 let worldRetrying = false;
 
@@ -2424,7 +2440,8 @@ function receiveWorld(value: WorldSnapshot) {
   if(value.encounter!==undefined)setCombatEncounter(value.encounter);
   state.position = value.position;
   if (value.status === 'corrected') {
-    holder.position.set(value.position.x, city.groundY(value.position.x, value.position.z), value.position.z);
+    const correctedY = city.platformY(value.position.x, value.position.z) ?? city.groundY(value.position.x, value.position.z);
+    holder.position.set(value.position.x, correctedY, value.position.z);
     groundHeight = holder.position.y;
     playerVel.set(0, 0, 0);
     moveTarget = null;
@@ -2438,7 +2455,8 @@ async function prepareMultiplayer() {
   if (TEST || !activeCharacterId) return;
   waveSequence = 0;
   const connection = new WorldConnection(activeCharacterId, {
-    motion: () => ({ x: holder.position.x, z: holder.position.z, yaw, facing: holder.rotation.y, jump: Math.min(0.7, Math.max(0, jumpHeight)), wave: waveSequence }),
+    motion: () => ({ x: holder.position.x, z: holder.position.z, yaw, facing: holder.rotation.y,
+      jump: Math.min(2.4, Math.max(0, holder.position.y - city.groundY(holder.position.x, holder.position.z))), wave: waveSequence }),
     receive: receiveWorld,
     stale: () => { remotePlayers.clear(); refreshWorldStatus(); },
     connection: (status) => {
@@ -2743,7 +2761,7 @@ function testCity(): City {
   return { root, locationId: 'brumaluz', npcSites: [
     { id: 'testiculos', position: new THREE.Vector3(2, 0, -1), yaw: Math.PI / 2 },
     { id: 'isberto', position: new THREE.Vector3(LOCAL_COMBAT_SITE.x - 3, 0, LOCAL_COMBAT_SITE.z), yaw: Math.PI / 2 },
-  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, platformY: () => null, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 const clock = new THREE.Clock();
 try {

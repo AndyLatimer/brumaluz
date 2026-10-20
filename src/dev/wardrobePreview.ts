@@ -76,6 +76,9 @@ try {
   elevation.addEventListener('input', updateCamera);
   document.querySelector('#wave')!.addEventListener('click', () => character.wave());
   document.querySelector('#interact')!.addEventListener('click', () => character.hop());
+  document.querySelector('#pickup')!.addEventListener('click', () => character.pickUp());
+  document.querySelector('#consume')!.addEventListener('click', () => character.useItem());
+  document.querySelector('#hit')!.addEventListener('click', () => character.hit());
   window.addEventListener('resize', resize);
   renderer.setAnimationLoop(time => {
     character.update(time / 1000);
