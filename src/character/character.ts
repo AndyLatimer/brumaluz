@@ -9,7 +9,7 @@ import barbarianUrl from '../assets/models/Barbarian.glb?url';
 import ambientAnimationsUrl from '../assets/models/ambient-animations.glb?url';
 import creatorPartsUrl from '../assets/models/creator-parts.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
-import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult, type CreatorParts } from './head';
+import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult, type CreatorParts, type HeadOptions } from './head';
 import { softDot } from '../world/paint';
 import { STARTER_MODELS } from '../data/starterItems';
 import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
@@ -25,6 +25,10 @@ import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeI
 type Kit = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian';
 const URLS: Record<Kit, string> = { Mage: mageUrl, Knight: knightUrl, Rogue: rogueUrl, Barbarian: barbarianUrl };
 const kits = {} as Record<Kit, GLTF>;
+export function characterKit(kit: Kit) {
+  if (!kits[kit]) throw new Error('Los modelos deben cargarse antes de crear personajes.');
+  return kits[kit];
+}
 let ambientAnimations: THREE.AnimationClip[] = [];
 let creatorParts: CreatorParts;
 
@@ -65,7 +69,7 @@ export async function loadKits() {
 // Celdas de la paleta por función
 const SKIN = [0, 8, 39, 47];
 const HAIR = [1, 9];
-const CLOTH_CELLS: Record<Kit, { primary: number[]; secondary: number[] }> = {
+export const CLOTH_CELLS: Record<Kit, { primary: number[]; secondary: number[] }> = {
   Mage: { primary: [16, 17, 23, 24, 25, 31], secondary: [35, 43] },
   Rogue: { primary: [16, 17, 24, 25, 33, 41], secondary: [5, 13, 35, 43] },
   Knight: { primary: [16, 24, 34, 42], secondary: [18, 26] },
@@ -91,7 +95,7 @@ const texCache = new Map<string, THREE.Texture>();
 const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
 
 /** Copia la textura cambiando el color de algunas celdas, conservando su degradado. */
-function recolor(src: THREE.Texture, kit: Kit, map: [number[], string][]): THREE.Texture {
+export function recolor(src: THREE.Texture, kit: string, map: [number[], string][]): THREE.Texture {
   const key = kit + '|' + map.map(([c, h]) => c.join(',') + h).join(';');
   let t = texCache.get(key);
   if (t) return t;
@@ -140,6 +144,14 @@ export interface BuildOpts {
   outfit: boolean;
   wardrobe?: WardrobeId;
   proportions?: { width: number; height: number };
+  hat?: boolean;
+  cape?: HeadKit;
+  useEquipment?: boolean;
+  scale?: number;
+  clothing?: {
+    hairFit: HeadOptions['hat'];
+    mount(model: THREE.Object3D, bones: ReadonlyMap<string, THREE.Bone>, skin: string, own: (resource: { dispose(): void }) => void): void;
+  };
 }
 
 const PI = Math.PI;
@@ -147,7 +159,7 @@ const PI = Math.PI;
 const UNIT = 0.65;
 
 /** Luz de contorno cálida para integrar los materiales del personaje en la escena. */
-function charm(m: THREE.MeshStandardMaterial) {
+export function charm(m: THREE.MeshStandardMaterial) {
   m.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
       {
@@ -184,6 +196,7 @@ export class Character {
 
   constructor(public d: CharData, public opts: BuildOpts) {
     this.build();
+    this.root.scale.setScalar(opts.scale ?? 1);
   }
 
   private build() {
@@ -250,7 +263,7 @@ export class Character {
       if (!m) { m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); flatMats.set(c, m); this.owned.push(m); }
       return m;
     };
-    const hatKind = this.opts.wardrobe ? WARDROBES[this.opts.wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
+    const hatKind = this.opts.clothing ? this.opts.clothing.hairFit : this.opts.hat === false ? 'none' : this.opts.wardrobe ? WARDROBES[this.opts.wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
@@ -264,35 +277,44 @@ export class Character {
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
-    const replaced = this.opts.wardrobe ? wardrobeRegions(this.opts.wardrobe) : new Set<string>();
-    const covered = (part: string) => replaced.has(part === 'Body' ? 'torso' : part.startsWith('Arm') ? 'arms' : 'legs');
-    if (this.opts.outfit) {
-      for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) {
-        if (!covered(part)) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
-      }
-      // Capas desactivadas temporalmente; restaurar esta línea para reactivarlas:
-      // if (outfit.cape) { const cm = capeMat(outfit.kit); this.addRigid(outfit.kit, `${outfit.kit}_Cape`, cm); this.addMantle(outfit.kit, outfit.kit, cm); }
+    if (this.opts.clothing) {
+      this.opts.clothing.mount(this.model, this.bones, skin, resource => this.owned.push(resource));
     } else {
-      const kit = VILLAGER.kit;
-      if (!covered('Body')) this.addSkinned(kit, `${kit}_Body`, mat(kit, true));
-      for (const side of ['Left', 'Right']) {
-        if (!covered(`Arm${side}`)) this.addSkinned(kit, `${kit}_Arm${side}`, mat(kit, true));
-        if (!covered(`Leg${side}`)) this.addSkinned(kit, `${kit}_Leg${side}`, mat(kit, true));
+      const replaced = this.opts.wardrobe ? wardrobeRegions(this.opts.wardrobe) : new Set<string>();
+      const covered = (part: string) => replaced.has(part === 'Body' ? 'torso' : part.startsWith('Arm') ? 'arms' : 'legs');
+      if (this.opts.outfit) {
+        for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) {
+          if (!covered(part)) this.addSkinned(outfit.kit, `${outfit.kit}_${part}`, mat(outfit.kit, true));
+        }
+        // Capas desactivadas temporalmente; restaurar esta línea para reactivarlas:
+        // if (outfit.cape) { const cm = capeMat(outfit.kit); this.addRigid(outfit.kit, `${outfit.kit}_Cape`, cm); this.addMantle(outfit.kit, outfit.kit, cm); }
+      } else {
+        const kit = VILLAGER.kit;
+        if (!covered('Body')) this.addSkinned(kit, `${kit}_Body`, mat(kit, true));
+        for (const side of ['Left', 'Right']) {
+          if (!covered(`Arm${side}`)) this.addSkinned(kit, `${kit}_Arm${side}`, mat(kit, true));
+          if (!covered(`Leg${side}`)) this.addSkinned(kit, `${kit}_Leg${side}`, mat(kit, true));
+        }
+        // Restaurar esta línea junto con el selector de capa para habilitar capas en ropa diaria:
+        // if (d.cape > 0) { const cm = capeMat(kit); this.addRigid(kit, `${kit}_Cape`, cm); this.addMantle(kit, kit, cm); }
       }
-      // Restaurar esta línea junto con el selector de capa para habilitar capas en ropa diaria:
-      // if (d.cape > 0) { const cm = capeMat(kit); this.addRigid(kit, `${kit}_Cape`, cm); this.addMantle(kit, kit, cm); }
+      if (outfit.hat && !this.opts.wardrobe && this.opts.hat !== false) {
+        // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
+        // doble cara: el interior del casco/sombrero no debe desaparecer según el ángulo
+        const hatMat = mat(outfit.kit, true).clone();
+        hatMat.side = THREE.DoubleSide;
+        this.owned.push(hatMat);
+        const hat = this.addRigid(outfit.kit, outfit.hat, hatMat);
+        if (hat) hat.scale.multiplyScalar(1.06);
+      }
+      if (this.opts.cape) {
+        const cm = capeMat(this.opts.cape);
+        this.addRigid(this.opts.cape, `${this.opts.cape}_Cape`, cm);
+        this.addMantle(outfit.kit, this.opts.cape, cm);
+      }
+      if (this.opts.wardrobe) mountWardrobe(this.opts.wardrobe, this.model, this.bones, skin, resource => this.owned.push(resource), this.opts.hat !== false);
     }
-    if (outfit.hat && !this.opts.wardrobe) {
-      // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
-      // doble cara: el interior del casco/sombrero no debe desaparecer según el ángulo
-      const hatMat = mat(outfit.kit, true).clone();
-      hatMat.side = THREE.DoubleSide;
-      this.owned.push(hatMat);
-      const hat = this.addRigid(outfit.kit, outfit.hat, hatMat);
-      if (hat) hat.scale.multiplyScalar(1.06);
-    }
-    if (this.opts.wardrobe) mountWardrobe(this.opts.wardrobe, this.model, this.bones, skin, resource => this.owned.push(resource));
-    const heldItems = this.opts.outfit ? outfit.items : [d.equipment.weapon, d.equipment.offhand]
+    const heldItems = this.opts.outfit && !this.opts.useEquipment ? outfit.items : [d.equipment.weapon, d.equipment.offhand]
       .flatMap(item => {
         const model = item && STARTER_MODELS[item.id];
         return model ? [{ kit: model.kit, name: model.node }] : [];
@@ -605,6 +627,23 @@ export class Character {
     if (from !== a) from.crossFadeTo(a, 0.2, false);
     return a.getClip().duration;
   }
+  /** Reproduce un clip compatible sin reemplazar las animaciones del personaje. */
+  playClip(clip: THREE.AnimationClip) {
+    for (const track of clip.tracks) {
+      const { nodeName } = THREE.PropertyBinding.parseTrackName(track.name);
+      if (!THREE.PropertyBinding.findNode(this.model, nodeName)) throw new Error(`Animación incompatible: falta ${nodeName}.`);
+    }
+    const key = `external:${clip.uuid}`;
+    if (!this.actions.has(key)) this.actions.set(key, this.mixer.clipAction(clip));
+    return this.play(key, true);
+  }
+  stopGesture() {
+    if (!this.oneShot || this.dead) return;
+    const from = this.oneShot;
+    this.oneShot = null;
+    this.interruptible = false;
+    this.playGait(from);
+  }
   private gait: 'idle' | 'walk' | 'run' = 'idle';
   private oneShot: THREE.AnimationAction | null = null;
   private interruptible = false;
@@ -730,7 +769,7 @@ export class Character {
     if (this.healT >= 0) {
       this.healT += dt;
       const p = this.healT / 0.7;
-      this.root.scale.setScalar(p >= 1 ? 1 : 1 + Math.sin(p * Math.PI) * 0.035);
+      this.root.scale.setScalar((this.opts.scale ?? 1) * (p >= 1 ? 1 : 1 + Math.sin(p * Math.PI) * 0.035));
       if (p >= 1) this.healT = -1;
     }
     this.mixer.update(dt);

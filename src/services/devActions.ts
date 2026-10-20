@@ -37,7 +37,7 @@ export function simulateWelcome(d: CharData, action: WelcomeAction, origin?: num
 
 export function simulateAction(d: CharData, action: CharacterAction) {
   if (action === 'respawn') {
-    if (d.health === 0) { d.health = -1; d.overheal = 0; d.position = null; }
+    if (d.health === 0) { d.health = -1; d.overheal = 0; d.position = null; d.location = 'brumaluz'; }
     return;
   }
   if (d.health === 0) return;

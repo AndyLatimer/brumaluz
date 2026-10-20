@@ -1,6 +1,6 @@
 import { requestFriend, updateFriend, type FriendEntry } from '../services/account';
 import { readFriends as listFriends } from '../services/friends';
-import { CLASSES, type ClassId } from '../data/data';
+import { CLASSES, locationName, type ClassId } from '../data/data';
 import { classIcon } from './classIcons';
 import { t } from './i18n';
 import { getParty, observeParty } from '../services/party';
@@ -223,7 +223,7 @@ export function renderSocial(container: HTMLElement, whisper: (username: string)
           if (entry.online) {
             const details = document.createElement('dl');
             details.className = 'social-details';
-            for (const [label, value] of [['Personaje', entry.characterName], ['Ubicación', entry.location === 'brumaluz' ? 'Brumaluz' : entry.location]] as const) {
+            for (const [label, value] of [['Personaje', entry.characterName], ['Ubicación', entry.location ? locationName(entry.location) : entry.location]] as const) {
               if (!value) continue;
               const dt = document.createElement('dt');
               dt.append(icon(label === 'Personaje' ? 'character' : 'location'), document.createTextNode(t(label)));

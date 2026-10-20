@@ -123,7 +123,7 @@ const timer=window.setInterval(()=>{
     state=result.state;lastCombat=time;scene.attack(cls,false,false,time);message(`Ataque: ${result.damage.join(' + ')} de daño.`);
   }
   if(state.health>0&&state.enemyHealth>0&&distance<=2&&time>=nextEnemy){
-    nextEnemy=time+2;state.health=Math.max(0,state.health-12);lastCombat=time;scene.hit();message('El rival causa 12 de daño.');
+    nextEnemy=time+2;state.health=Math.max(0,state.health-12);lastCombat=time;scene.hit(time);message('El rival causa 12 de daño.');
     if(state.health===0)scene.die();
   }
   if(state.health===0&&automatic){automatic=false;approaching=false;message('Has caído. Puedes reaparecer.');}

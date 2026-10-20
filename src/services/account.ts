@@ -92,6 +92,7 @@ interface Database {
       world_join: { Args: { p_character_id: string; p_session_id: string }; Returns: Json };
       world_sync: { Args: { p_character_id: string; p_session_id: string; p_state: Json }; Returns: Json };
       world_leave: { Args: { p_character_id: string; p_session_id: string }; Returns: undefined };
+      world_travel: { Args: { p_character_id: string; p_session_id: string; p_portal: string }; Returns: Json };
       combat_start: { Args: { p_character_id: string }; Returns: Json };
       combat_action: { Args: { p_character_id: string; p_action: string }; Returns: Json };
       combat_stop: { Args: { p_character_id: string }; Returns: Json };
@@ -223,6 +224,10 @@ const SERVER_ERRORS: Record<string, string> = {
   INVALID_FRIEND_ACTION: 'Esta solicitud ya no se puede aceptar.',
   WORLD_SESSION_REPLACED: 'Tu cuenta ha entrado al mundo desde otra pestaña o equipo.',
   INVALID_WORLD_STATE: 'El servidor ha rechazado el movimiento del personaje.',
+  PORTAL_NOT_FOUND: 'Este camino todavía no lleva a ninguna parte.',
+  PORTAL_TOO_FAR: 'Acércate más a la salida para viajar.',
+  CHARACTER_DEAD: 'No puedes viajar mientras estás muerto.',
+  IN_COMBAT: 'No puedes viajar en mitad de un combate.',
   CHARACTER_LIMIT_REACHED: `Cada cuenta puede tener un máximo de ${MAX_CHARACTERS_PER_ACCOUNT} personajes. Borra uno antes de crear otro.`,
   INVALID_NAME: 'Tu nombre necesita entre 3 y 16 letras.',
   INVALID_CHARACTER: 'El servidor ha rechazado los datos del personaje.',
@@ -432,6 +437,11 @@ export function syncWorld(characterId: string, sessionId: string, state: { x: nu
 
 export async function leaveWorld(characterId: string, sessionId: string) {
   await serverCall(requireClient().rpc('world_leave', { p_character_id: characterId, p_session_id: sessionId }).abortSignal(AbortSignal.timeout(8000)));
+}
+
+/** Cruza un portal del mapa actual: el servidor comprueba que el personaje está junto a él y lo lleva al otro mapa. */
+export function travelWorld(characterId: string, sessionId: string, portal: string) {
+  return serverCall(requireClient().rpc('world_travel', { p_character_id: characterId, p_session_id: sessionId, p_portal: portal }).abortSignal(AbortSignal.timeout(10000)));
 }
 
 export interface FriendEntry {

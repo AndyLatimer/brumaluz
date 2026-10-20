@@ -7,15 +7,15 @@ export const MAP_EXTENT = 120;
  * Dibuja la ciudad una sola vez desde arriba (cámara ortográfica, norte = -Z arriba) y devuelve la imagen.
  * Solo se ve `city` (sin cielo, niebla, personajes ni nubes), así que el mapa es exactamente el mundo real.
  */
-export function captureTopDown(renderer: THREE.WebGLRenderer, scene: THREE.Scene, city: THREE.Object3D, size: number): HTMLCanvasElement {
+export function captureTopDown(renderer: THREE.WebGLRenderer, scene: THREE.Scene, city: THREE.Object3D, size: number, bounds = { x: 0, z: 0, extent: MAP_EXTENT }): HTMLCanvasElement {
   const px = Math.min(size, renderer.capabilities.maxTextureSize);
   const target = new THREE.WebGLRenderTarget(px, px, { type: THREE.UnsignedByteType, format: THREE.RGBAFormat, depthBuffer: true });
   target.texture.colorSpace = THREE.SRGBColorSpace;
 
-  const camera = new THREE.OrthographicCamera(-MAP_EXTENT, MAP_EXTENT, MAP_EXTENT, -MAP_EXTENT, 1, 400);
+  const camera = new THREE.OrthographicCamera(-bounds.extent, bounds.extent, bounds.extent, -bounds.extent, 1, 2400);
   camera.up.set(0, 0, -1);
-  camera.position.set(0, 200, 0);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(bounds.x, 1200, bounds.z);
+  camera.lookAt(bounds.x, 0, bounds.z);
   camera.updateMatrixWorld(true);
 
   // Oculta todo salvo la ciudad y las luces; las nubes (muy altas) taparían el mapa.
@@ -24,7 +24,7 @@ export function captureTopDown(renderer: THREE.WebGLRenderer, scene: THREE.Scene
     if (child !== city && !(child as THREE.Light).isLight && child.visible) { child.visible = false; hidden.push(child); }
   }
   for (const child of city.children) {
-    if (child.position.y > 15 && child.visible) { child.visible = false; hidden.push(child); }
+    if ((child.position.y > 15 || child.userData.hideFromMinimap) && child.visible) { child.visible = false; hidden.push(child); }
   }
   const { fog, background } = scene;
   const previousTarget = renderer.getRenderTarget();

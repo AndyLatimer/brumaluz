@@ -30,6 +30,7 @@ const STORE_KEY = 'brumaluz-minimap';
 
 let hooks: MinimapHooks | null = null;
 let image: HTMLCanvasElement | null = null;
+let mapBounds = { x: 0, z: 0, extent: MAP_EXTENT };
 let zoom = 1;
 let off = false;
 let lastZone = '';
@@ -43,7 +44,13 @@ const canvas = () => root().querySelector<HTMLCanvasElement>('.minimap-canvas')!
 
 function save() { localStorage.setItem(STORE_KEY, JSON.stringify({ zoom, off })); }
 
-export function setMinimapImage(map: HTMLCanvasElement | null) { image = map; }
+export function setMinimapImage(map: HTMLCanvasElement | null, bounds = { x: 0, z: 0, extent: MAP_EXTENT }) {
+  image = map; mapBounds = bounds; VIEWS[3] = bounds.extent * 2;
+}
+
+export function currentMapImage() {
+  return { image, bounds: mapBounds };
+}
 
 export function setMapPlayerCount(count: number | null) {
   playerCount = count;
@@ -134,11 +141,11 @@ export function updateMinimap() {
   ctx.fillStyle = SEA;
   ctx.fillRect(0, 0, size, size);
   if (image) {
-    const scale = image.width / (2 * MAP_EXTENT);
+    const scale = image.width / (2 * mapBounds.extent);
     const side = view * scale;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(image, (player.x + MAP_EXTENT) * scale - side / 2, (player.z + MAP_EXTENT) * scale - side / 2, side, side, 0, 0, size, size);
+    ctx.drawImage(image, (player.x - mapBounds.x + mapBounds.extent) * scale - side / 2, (player.z - mapBounds.z + mapBounds.extent) * scale - side / 2, side, side, 0, 0, size, size);
   }
 
   // Cono de visión: hacia dónde mira el personaje.

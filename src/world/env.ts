@@ -7,11 +7,17 @@ const PI = Math.PI;
 
 export interface Env {
   cameraObstacles: THREE.Object3D[];
+  /** Muestra u oculta los faroles fijos de la plaza (solo existen en la Brumaluz procedural; los mapas del editor traen los suyos). */
+  setLampposts(visible: boolean): void;
+  /** Centra el cielo en la cámara (los mapas grandes, como Pompelín, se salen de la esfera). */
+  follow(center: THREE.Vector3): void;
   update(t: number): void;
 }
 
 export function buildEnv(scene: THREE.Scene): Env {
   const flames: THREE.Sprite[] = [];
+  const lampposts: THREE.Group[] = [];
+  const lamppostParts: THREE.Object3D[] = [];
   const cameraObstacles: THREE.Object3D[] = [];
   const songbirds: { mesh: THREE.LineSegments; radius: number; height: number; speed: number; phase: number }[] = [];
 
@@ -51,6 +57,7 @@ export function buildEnv(scene: THREE.Scene): Env {
     const g = new THREE.Group();
     g.position.set(Math.cos(a) * 6.2, 0, Math.sin(a) * 6.2);
     scene.add(g);
+    lampposts.push(g);
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.6, 8), iron);
     pole.position.y = 1.3;
     const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.36, 0.28), glass);
@@ -61,6 +68,7 @@ export function buildEnv(scene: THREE.Scene): Env {
     for (const m of [pole, cap]) { m.castShadow = true; }
     g.add(pole, lamp, cap);
     cameraObstacles.push(pole, lamp, cap);
+    lamppostParts.push(pole, lamp, cap);
     const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     fl.position.y = 2.75;
     fl.scale.setScalar(1.3);
@@ -120,6 +128,17 @@ export function buildEnv(scene: THREE.Scene): Env {
 
   return {
     cameraObstacles,
+    setLampposts(visible: boolean) {
+      for (const lamppost of lampposts) lamppost.visible = visible;
+      for (const part of lamppostParts) {
+        const index = cameraObstacles.indexOf(part);
+        if (visible && index < 0) cameraObstacles.push(part);
+        else if (!visible && index >= 0) cameraObstacles.splice(index, 1);
+      }
+    },
+    follow(center: THREE.Vector3) {
+      sky.position.set(center.x, 0, center.z);
+    },
     update(t: number) {
       flames.forEach((f, i) => f.scale.setScalar(1.25 + Math.sin(t * 9 + i * 2) * 0.08 + Math.sin(t * 23 + i) * 0.05));
       songbirds.forEach((bird, i) => {

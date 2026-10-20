@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { catalog, loadLibraryAsset } from '../art/library';
+import { catalog, loadLibraryAsset, animationLibrariesFor } from '../art/library';
+import { attachAnimationHelpers } from '../art/animationBindings';
 import './wardrobePreview.css';
 
 if (!import.meta.env.DEV) throw new Error('La biblioteca solo está disponible en desarrollo.');
@@ -90,10 +91,12 @@ async function rebuild() {
     if (closed || version !== request) { dispose(pending); return; }
     const available = [...gltf.animations];
     if (asset.kind === 'characters') {
-      for (const library of catalog.assets.filter(value => value.pack === asset.pack && value.kind === 'animations')) {
+      for (const library of animationLibrariesFor(asset)) {
         const loaded = await loadLibraryAsset(library.id);
-        available.push(...loaded.gltf.animations);
-        dispose(loaded.gltf.scene);
+        try {
+          attachAnimationHelpers(pending, loaded.gltf.scene, loaded.gltf.animations);
+          available.push(...loaded.gltf.animations);
+        } finally { dispose(loaded.gltf.scene); }
       }
     }
     if (closed || version !== request) { dispose(pending); return; }
@@ -122,7 +125,8 @@ async function rebuild() {
     download.download = `${asset.name}.glb`;
     download.hidden = false;
     status.textContent = `Listo. ${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)} m.`;
-    element('#details').textContent = `${asset.name} · ${asset.meshes} mallas · ${asset.skins} rigs · ${clips.length} animaciones · ${(asset.bytes / 1024).toFixed(1)} KB. Origen: ${asset.source}`;
+    const author = catalog.packs.find(pack => pack.id === asset.pack)!.author;
+    element('#details').textContent = `${asset.name} · ${author} · ${asset.meshes} mallas · ${asset.skins} rigs${asset.rig ? ` (${asset.rig})` : ''} · ${clips.length} animaciones · ${(asset.bytes / 1024).toFixed(1)} KB. Origen: ${asset.source}`;
   } catch (error) {
     if (pending) dispose(pending);
     if (!closed && version === request) {
@@ -145,6 +149,7 @@ function filter() {
   void rebuild();
 }
 for (const value of catalog.packs) pack.add(new Option(value.label, value.id));
+element('#summary').textContent = `${catalog.assets.length} recursos de ${catalog.packs.length} paquetes`;
 pack.addEventListener('change', filter);
 kind.addEventListener('change', filter);
 search.addEventListener('input', filter);

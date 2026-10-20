@@ -367,11 +367,11 @@
     </button>
     <section id="player-menu-panel" class="game-menu-panel frame" aria-labelledby="player-menu-title" hidden>
       <h2 id="player-menu-title">Personaje</h2>
-      <button class="btn ghost" type="button" data-window="inventory">Inventario</button>
-      <button class="btn ghost" type="button" data-window="sheet">Ficha de personaje</button>
-      <button class="btn ghost" type="button" data-window="skills">Habilidades</button>
-      <button class="btn ghost" type="button" data-window="social">Social</button>
-      <button class="btn ghost" type="button" data-window="quests" hidden>Diario</button>
+      <button class="btn ghost" type="button" data-window="inventory">Inventario<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="M8 11h16l3 16H5Z"/><path d="M11 11V8a5 5 0 0 1 10 0v3M8 17h16M13 17v5h6v-5M8 25h3m10 0h3"/><path class="menu-icon-shine" d="m24 3 1 3 3 1-3 1-1 3-1-3-3-1 3-1Z"/></svg></button>
+      <button class="btn ghost" type="button" data-window="sheet">Ficha de personaje<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="M7 4h18v24H7Z"/><path d="M10 4V2m12 2V2M11 22h10M11 25h7"/><circle class="menu-icon-shine" cx="16" cy="11" r="3"/><path d="M11 18c0-5 10-5 10 0Z"/></svg></button>
+      <button class="btn ghost" type="button" data-window="skills">Habilidades<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="M5 7q6-3 11 1 5-4 11-1v20q-6-3-11 1-5-4-11-1Z"/><path d="M16 8v20M8 13l4 1m-4 4 4 1m8 3 4-1"/><path class="menu-icon-shine" d="m22 4 1.5 4.5L28 10l-4.5 1.5L22 16l-1.5-4.5L16 10l4.5-1.5Z"/></svg></button>
+      <button class="btn ghost" type="button" data-window="social">Social<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><circle class="menu-icon-fill" cx="11" cy="10" r="4"/><circle class="menu-icon-fill" cx="23" cy="11" r="3"/><path class="menu-icon-fill" d="M3 25v-3a8 8 0 0 1 16 0v3ZM21 18a6 6 0 0 1 8 5v2h-6"/><path class="menu-icon-shine" d="m23 2 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z"/></svg></button>
+      <button class="btn ghost" type="button" data-window="quests" hidden>Diario<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="M7 5h18v23H7Z"/><path d="M10 5v23M5 10h4m-4 6h4m-4 6h4M14 22h7"/><path class="menu-icon-shine" d="M16 9h4l-1 8h-2Z"/><circle class="menu-icon-shine" cx="18" cy="19" r=".8"/></svg></button>
     </section>
   </div>
 
@@ -381,15 +381,17 @@
     </button>
     <section id="world-menu-panel" class="game-menu-panel frame" aria-labelledby="world-menu-title" hidden>
       <h2 id="world-menu-title">Mundo</h2>
-      <button id="world-menu-collections" class="btn ghost" type="button" data-window="collections">Colecciones</button>
-      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Profesiones</button>
-      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Enciclopedia</button>
+      <button id="world-menu-map" class="btn ghost" type="button" data-window="map" aria-keyshortcuts="M">Mapa<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="m3 7 9-3 9 3 8-3v21l-8 3-9-3-9 3Z"/><path d="M12 4v21M21 7v21M7 17l4-3 5 4 7-6"/><path class="menu-icon-shine" d="m23 8 1 3 3 1-3 1-1 3-1-3-3-1 3-1Z"/></svg></button>
+      <button id="world-menu-collections" class="btn ghost" type="button" data-window="collections">Colecciones<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="M5 14h22v13H5ZM5 14V9q11-8 22 0v5Z"/><path d="M5 18h22M11 6v8M21 6v8"/><path class="menu-icon-shine" d="m16 15 3 4-3 4-3-4ZM25 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1Z"/></svg></button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Profesiones<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="m7 5 4-2 6 8-4 3Zm7 10 4-3 11 13-4 4ZM5 27l-2-2L22 6l3 3Z"/><path class="menu-icon-shine" d="m19 4 4-2 7 7-4 4Z"/><path d="m5 22 5 5"/></svg></button>
+      <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Enciclopedia<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path class="menu-icon-fill" d="M7 4h19v24H9a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/><path d="M10 4v19M6 25a3 3 0 0 1 3-2h17M13 18h9M13 26h9"/><circle class="menu-icon-shine" cx="18" cy="11" r="4"/><path d="m18 7 1 4-1 4-1-4Z"/></svg></button>
     </section>
   </div>
 
   <div id="window-backdrop" class="dialog-backdrop" hidden>
     <section class="game-window frame" role="dialog" aria-modal="true" aria-labelledby="window-title">
       <h2 id="window-title"></h2>
+      <button id="map-window-close" class="map-window-close" type="button" aria-label="Cerrar mapa" hidden>×</button>
       <div id="window-body"></div>
       <div class="options-actions">
         <button id="window-confirm" type="button" class="btn gold" hidden>Confirmar puntos</button>

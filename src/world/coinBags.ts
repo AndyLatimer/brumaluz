@@ -25,7 +25,8 @@ function sparkleTexture() {
 }
 
 /** Bolsas de pelines personales: cada jugador ve solo las que aún no ha recogido. */
-export function createCoinBags(scene: THREE.Scene, city: City) {
+export function createCoinBags(scene: THREE.Scene, citySource: City | (() => City)) {
+  let city = typeof citySource === 'function' ? citySource() : citySource;
   const texture = sparkleTexture();
   const sparkleMaterial = new THREE.SpriteMaterial({
     map: texture, color: '#ffd77a', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -47,6 +48,7 @@ export function createCoinBags(scene: THREE.Scene, city: City) {
   let playing = false;
 
   function update(collected: readonly string[], visible: boolean, time: number) {
+    if (typeof citySource === 'function') city = citySource();
     playing = visible;
     for (const bag of bags) {
       const taken = collected.includes(bag.spot.id);

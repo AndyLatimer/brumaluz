@@ -1,8 +1,20 @@
 import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { npcWorkshopPlugin } from './tools/npc-workshop-plugin.mjs';
+import { mapEditorPlugin } from './tools/map-editor-plugin.mjs';
+import { readFileSync } from 'node:fs';
 
-export default defineConfig({
-  plugins: [viteSingleFile()],
-  build: { target: 'es2022' },
-  assetsInclude: ['**/*.glb'],
+export default defineConfig(() => {
+  const catalog = JSON.parse(readFileSync(new URL('./src/data/npcs.json', import.meta.url), 'utf8'));
+  const uses = (source: string) => catalog.npcs.some((npc: { render: { clothing?: Record<string, { piece: string }> } }) =>
+    Object.values(npc.render.clothing ?? {}).some(item => item.piece.startsWith(`${source}.`)));
+  return {
+    plugins: [viteSingleFile(), npcWorkshopPlugin(), mapEditorPlugin()],
+    define: {
+      'import.meta.env.NPC_RANGER': JSON.stringify(uses('Ranger')),
+      'import.meta.env.NPC_ROGUE_HOODED': JSON.stringify(uses('Rogue_Hooded')),
+    },
+    build: { target: 'es2022' },
+    assetsInclude: ['**/*.glb'],
+  };
 });

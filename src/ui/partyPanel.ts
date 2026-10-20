@@ -1,4 +1,4 @@
-import { CLASSES } from '../data/data';
+import { CLASSES, locationName } from '../data/data';
 import { observeParty, getParty, isPartyLeader, partySelf, inviteToParty, answerPartyInvite, exitParty, type PartyMember } from '../services/party';
 import { classIcon } from './classIcons';
 import { t } from './i18n';
@@ -44,7 +44,7 @@ export function partyMemberCard(member: PartyMember, leader: boolean, compact = 
   if(!compact) {
     const identity=document.createElement('div');identity.className='party-member-identity';
     const account=document.createElement('small');account.textContent=`~${member.username ?? ''}`;
-    const location=document.createElement('small');location.append(partyIcon('location'),document.createTextNode(t(member.location==='brumaluz'?'Brumaluz':member.location)));
+    const location=document.createElement('small');location.append(partyIcon('location'),document.createTextNode(t(locationName(member.location))));
     identity.append(account,location);details.append(identity);
     const role=document.createElement('span');role.className='party-member-role';
     role.textContent=t(leader?'Líder del grupo':CLASSES[member.data.cls].label);details.insertBefore(role,identity);

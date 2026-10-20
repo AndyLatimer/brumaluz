@@ -31,6 +31,67 @@ set value = jsonb_set(value, '{reina_de_pompelin}', (
 ))
 where key = 'staff_titles';
 
+-- ---------- Mapas de Pompelín ----------
+-- Cada mapa publicado desde el editor es un lugar (`data.location`). supabase/world.sql, que genera el
+-- editor al publicar, rellena estas tablas; aquí solo se garantiza la capital.
+create table if not exists public.world_maps (
+  id text primary key check (id ~ '^[a-z0-9][a-z0-9_-]{0,63}$'),
+  name text not null,
+  spawn jsonb not null check (jsonb_typeof(spawn -> 'x') = 'number' and jsonb_typeof(spawn -> 'z') = 'number')
+);
+alter table public.world_maps enable row level security;
+alter table public.world_maps add column if not exists bounds jsonb;
+revoke all on table public.world_maps from public, anon, authenticated;
+insert into public.world_maps(id, name, spawn)
+  select 'brumaluz', 'Brumaluz', value || '{"yaw":0}'::jsonb from public.server_config where key = 'spawn'
+on conflict (id) do nothing;
+
+-- Portales: al estar dentro de (x, z, radius) en `map`, world_travel lleva al personaje a `target` de `target_map`.
+create table if not exists public.world_portals (
+  map text not null references public.world_maps(id) on delete cascade,
+  id text not null,
+  x double precision not null,
+  z double precision not null,
+  radius double precision not null check (radius between 0 and 100),
+  target_map text not null references public.world_maps(id) on delete cascade,
+  target jsonb not null check (jsonb_typeof(target -> 'x') = 'number' and jsonb_typeof(target -> 'z') = 'number'),
+  primary key (map, id)
+);
+alter table public.world_portals enable row level security;
+revoke all on table public.world_portals from public, anon, authenticated;
+
+create or replace function public.game_location_spawn(p_location text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(
+    (select jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', coalesce(spawn -> 'yaw', '0'::jsonb)) from public.world_maps where id = p_location),
+    (select value || '{"yaw":0}'::jsonb from public.server_config where key = 'spawn'),
+    '{"x":0,"z":0,"yaw":0}'::jsonb)
+$$;
+revoke all on function public.game_location_spawn(text) from public, anon, authenticated;
+
+create or replace function public.game_location_contains(p_location text, p_x double precision, p_z double precision)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select p_x between (bounds ->> 'minX')::double precision and (bounds ->> 'maxX')::double precision
+       and p_z between (bounds ->> 'minZ')::double precision and (bounds ->> 'maxZ')::double precision
+    from public.world_maps where id = p_location and bounds is not null
+  ), p_x between -(select (value #>> '{}')::double precision from public.server_config where key = 'world_limit')
+                  and (select (value #>> '{}')::double precision from public.server_config where key = 'world_limit')
+     and p_z between -(select (value #>> '{}')::double precision from public.server_config where key = 'world_limit')
+                  and (select (value #>> '{}')::double precision from public.server_config where key = 'world_limit'), false)
+$$;
+revoke all on function public.game_location_contains(text, double precision, double precision) from public, anon, authenticated;
+
 -- ---------- Fórmulas (internas) ----------
 -- New characters become eligible only after narrative/presentation approval.
 insert into public.server_config(key,value) values('welcome_enabled','false') on conflict(key) do nothing;
@@ -386,10 +447,14 @@ declare
   d jsonb := c.data;
 begin
   if coalesce((d ->> 'health')::int, -1) = 0 then
-    d := (d - 'position') || jsonb_build_object('health', -1);
+    d := (d - 'position') || jsonb_build_object('health', -1, 'location', 'brumaluz');
     update public.world_players set dead = true where character_id = c.id;
   end if;
-  d := d || jsonb_build_object('location', 'brumaluz', 'position_at', extract(epoch from now()));
+  -- Se conserva el mapa (lugar de Pompelín) donde se quedó; si ya no está publicado, vuelve a la capital.
+  if not exists (select 1 from public.world_maps where id = d ->> 'location') then
+    d := (d - 'position') || jsonb_build_object('location', 'brumaluz');
+  end if;
+  d := d || jsonb_build_object('position_at', extract(epoch from now()));
   return public.game_store(c.id, d);
 end;
 $$;
@@ -429,7 +494,7 @@ begin
   if coalesce((d ->> 'health')::int, -1) <> 0 then return d; end if;
   d := (d - 'position') || jsonb_build_object('health', -1, 'location', 'brumaluz', 'position_at', extract(epoch from now()));
   update public.world_players set dead = true,
-    position = (select value || '{"yaw":0}'::jsonb from public.server_config where key = 'spawn')
+    position = public.game_location_spawn('brumaluz')
     where character_id = c.id;
   return public.game_store(c.id, d);
 end;
@@ -851,9 +916,8 @@ as $$
 declare
   c public.characters := public.game_lock_character(p_character_id);
   d jsonb := c.data;
-  cfg_limit numeric := coalesce((select (value #>> '{}')::numeric from public.server_config where key = 'world_limit'), 400);
   cfg_speed numeric := coalesce((select (value #>> '{}')::numeric from public.server_config where key = 'max_speed'), 9);
-  spawn jsonb := coalesce((select value from public.server_config where key = 'spawn'), '{"x":0,"z":0}'::jsonb);
+  spawn jsonb := public.game_location_spawn(coalesce(d ->> 'location', 'brumaluz'));
   now_s numeric := extract(epoch from now());
   prev_x numeric := coalesce((d -> 'position' ->> 'x')::numeric, (spawn ->> 'x')::numeric);
   prev_z numeric := coalesce((d -> 'position' ->> 'z')::numeric, (spawn ->> 'z')::numeric);
@@ -864,7 +928,7 @@ begin
     return jsonb_build_object('status', 'dead', 'position', d -> 'position');
   end if;
   if p_x is null or p_z is null or p_yaw is null
-    or not (p_x between -cfg_limit and cfg_limit and p_z between -cfg_limit and cfg_limit
+    or not (public.game_location_contains(coalesce(d ->> 'location', 'brumaluz'), p_x, p_z)
       and p_yaw between -1000000 and 1000000) then
     return jsonb_build_object('status', 'too_far', 'position', coalesce(d -> 'position', jsonb_build_object('x', spawn -> 'x', 'z', spawn -> 'z', 'yaw', 0)));
   end if;
@@ -1316,13 +1380,14 @@ declare
   uid uuid := (select auth.uid());
   c public.characters;
   previous public.world_players;
-  spawn jsonb := (select value from public.server_config where key = 'spawn');
+  spawn jsonb;
   pos jsonb;
 begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   if p_session_id is null then raise exception 'INVALID_WORLD_STATE'; end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
   c := public.game_lock_character(p_character_id);
+  spawn := public.game_location_spawn(coalesce(c.data ->> 'location', 'brumaluz'));
   select * into previous from public.world_players where user_id = uid;
   if previous.character_id is not null and previous.character_id <> c.id then
     perform public.game_lock_character(previous.character_id);
@@ -1364,9 +1429,8 @@ declare
   uid uuid := (select auth.uid());
   c public.characters;
   w public.world_players;
-  cfg_limit double precision := (select (value #>> '{}')::double precision from public.server_config where key = 'world_limit');
   cfg_speed double precision := (select (value #>> '{}')::double precision from public.server_config where key = 'max_speed');
-  spawn jsonb := (select value from public.server_config where key = 'spawn');
+  spawn jsonb;
   px double precision;
   pz double precision;
   pyaw double precision;
@@ -1382,6 +1446,7 @@ begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
   c := public.game_lock_character(p_character_id);
+  spawn := public.game_location_spawn(coalesce(c.data ->> 'location', 'brumaluz'));
   select * into w from public.world_players where user_id = uid for update;
   if w.session_id is distinct from p_session_id or w.character_id is distinct from c.id then
     raise exception 'WORLD_SESSION_REPLACED';
@@ -1396,7 +1461,7 @@ begin
   facing := (p_state ->> 'facing')::double precision;
   v_jump := (p_state ->> 'jump')::double precision;
   -- El cliente puede estar saltando sobre una superficie baja (salto + altura del objeto).
-  if not (px between -cfg_limit and cfg_limit and pz between -cfg_limit and cfg_limit
+  if not (public.game_location_contains(coalesce(c.data ->> 'location', 'brumaluz'), px, pz)
     and pyaw between -1000000 and 1000000 and facing between -1000000 and 1000000
     and v_jump between 0 and 2.4 and (p_state ->> 'wave')::numeric between 0 and 2147483647
     and (p_state ->> 'wave')::numeric = trunc((p_state ->> 'wave')::numeric)) then
@@ -1466,6 +1531,56 @@ $$;
 revoke all on function public.game_public_character(jsonb), public.game_world_snapshot(uuid) from public, anon, authenticated;
 revoke all on function public.world_join(uuid, uuid), public.world_sync(uuid, uuid, jsonb), public.world_leave(uuid, uuid) from public, anon;
 grant execute on function public.world_join(uuid, uuid), public.world_sync(uuid, uuid, jsonb), public.world_leave(uuid, uuid) to authenticated;
+
+-- Viajar por un portal a otro mapa de Pompelín. Exige estar vivo, fuera de combate y junto al portal
+-- (según la última posición sincronizada); coloca al personaje en la llegada del destino.
+create or replace function public.world_travel(p_character_id uuid, p_session_id uuid, p_portal text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  c public.characters;
+  w public.world_players;
+  p public.world_portals;
+  here text;
+  distance double precision;
+begin
+  if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(uid::text, 1));
+  c := public.game_lock_character(p_character_id);
+  select * into w from public.world_players where user_id = uid for update;
+  if w.session_id is distinct from p_session_id or w.character_id is distinct from c.id then
+    raise exception 'WORLD_SESSION_REPLACED';
+  end if;
+  if w.seen_at < now() - interval '15 seconds' then raise exception 'WORLD_SESSION_REPLACED'; end if;
+  if public.game_health(c.data) = 0 or w.dead then raise exception 'CHARACTER_DEAD'; end if;
+  if c.data -> 'combatEncounter' ->> 'status' = 'active' then raise exception 'IN_COMBAT'; end if;
+  here := coalesce(c.data ->> 'location', 'brumaluz');
+  select * into p from public.world_portals where map = here and id = p_portal;
+  if not found then raise exception 'PORTAL_NOT_FOUND'; end if;
+  distance := sqrt(power((w.position ->> 'x')::double precision - p.x, 2) + power((w.position ->> 'z')::double precision - p.z, 2));
+  if distance is null or distance > p.radius + 0.5 then raise exception 'PORTAL_TOO_FAR'; end if;
+  if not public.game_location_contains(p.target_map, (p.target ->> 'x')::double precision, (p.target ->> 'z')::double precision) then
+    raise exception 'INVALID_WORLD_STATE';
+  end if;
+  c.data := public.game_store(c.id, c.data || jsonb_build_object(
+    'location', p.target_map, 'position', p.target, 'position_at', extract(epoch from now())));
+  update public.world_players set position = p.target,
+    facing = coalesce((p.target ->> 'yaw')::double precision, 0) + pi(), jump = 0,
+    movement_credit = 3, seen_at = now(), saved_at = now()
+    where user_id = uid;
+  return jsonb_build_object('status', 'ok', 'location', p.target_map, 'position', p.target,
+    'players', public.game_world_snapshot(uid),
+    'encounter', c.data -> 'combatEncounter',
+    'vitals', public.game_public_vitals(c.data),
+    'food', jsonb_build_object('buff', c.data -> 'foodBuff', 'revision', c.data -> 'foodRevision', 'at', c.data -> 'food_at'));
+end;
+$$;
+revoke all on function public.world_travel(uuid, uuid, text) from public, anon;
+grant execute on function public.world_travel(uuid, uuid, text) to authenticated;
 
 -- ---------- Amigos por cuenta ----------
 create table if not exists public.friendships (

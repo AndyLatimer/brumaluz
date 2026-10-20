@@ -5,6 +5,8 @@ import type { LocationId } from '../data/data';
 import { buildCityDetails } from './cityDetails';
 import { COIN_BAGS } from '../data/coinBags';
 import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN } from '../data/quests';
+import { brumaluzGateMarkers } from '../data/pompelin';
+import type { MapMarker } from '../data/maps';
 
 // ---------------------------------------------------------------------------
 // Brumaluz: ciudad de casillas hexagonales con el pack "KayKit Medieval
@@ -77,6 +79,8 @@ export interface Interactable {
   radius: number;
   /** Texto del aviso (español; se traduce con i18n). */
   label: string;
+  /** Texto que se muestra al interactuar (interacciones creadas en el editor de mapas). */
+  text?: string;
 }
 
 export interface NpcSite {
@@ -85,6 +89,19 @@ export interface NpcSite {
   /** Rotación Y del NPC (hacia dónde mira). */
   yaw: number;
 }
+
+/** Salida a otro mapa de Pompelín (marcador «Portal» del editor de mapas). */
+export interface CityPortal {
+  id: string;
+  name: string;
+  position: THREE.Vector3;
+  radius: number;
+  target?: { map: string; arrival?: string };
+  trigger: 'walk' | 'interact';
+}
+
+/** Punto de llegada desde otro mapa; `yaw` es el de la cámara, como `spawnYaw`. */
+export interface CityArrival { position: THREE.Vector3; yaw: number }
 
 export interface City {
   root: THREE.Group;
@@ -103,7 +120,32 @@ export interface City {
   spawn: THREE.Vector3;
   /** Ángulo desde el que la cámara del creador mira al personaje (el castillo queda de fondo). */
   spawnYaw: number;
+  portals: CityPortal[];
+  arrivals: Record<string, CityArrival>;
+  mapBounds?: { x: number; z: number; extent: number };
+  /** Datos de construcción para convertir Brumaluz en un mapa editable. */
+  layout?: CityLayout;
   update(t: number, playerPosition?: THREE.Vector3): void;
+}
+
+export interface CityLayout {
+  placements: readonly Readonly<{ model: string; x: number; y?: number; z: number; ry: number; s?: number }>[];
+  heightAt(x: number, z: number): number;
+  grassTufts: readonly Readonly<{ x: number; z: number }>[];
+  benches: readonly Readonly<{ x: number; y: number; z: number; ry: number }>[];
+  details: readonly Readonly<{ prop: string; x: number; y: number; z: number; yaw: number; scale: number }>[];
+}
+
+/** Portales y llegadas a partir de los marcadores de un mapa. */
+export function cityLinks(markers: readonly MapMarker[], groundY: (x: number, z: number) => number) {
+  const at = (position: readonly number[]) => new THREE.Vector3(position[0], groundY(position[0], position[2]), position[2]);
+  const portals: CityPortal[] = markers.filter(marker => marker.type === 'portal').map(marker => ({
+    id: marker.id, name: marker.name, position: at(marker.position), radius: Math.max(0.5, marker.radius),
+    target: marker.target ? { ...marker.target } : undefined, trigger: marker.trigger ?? 'walk',
+  }));
+  const arrivals: Record<string, CityArrival> = {};
+  for (const marker of markers) if (marker.type === 'arrival') arrivals[marker.id] = { position: at(marker.position), yaw: marker.rotationY };
+  return { portals, arrivals };
 }
 
 export async function buildCity(): Promise<City> {
@@ -942,6 +984,10 @@ export async function buildCity(): Promise<City> {
     platformY,
     spawn: (() => { const w = hexToWorld(0, -1.6); return new THREE.Vector3(w.x, groundY(w.x, w.y), w.y); })(),
     spawnYaw: Math.atan2(0.5, SQ3 / 2),
+    ...cityLinks(brumaluzGateMarkers(), groundY),
+    layout: {
+      placements: place, heightAt: terrainHeightAtWorld, grassTufts, benches: parkBenches, details: details.placements,
+    },
     update(t: number, playerPosition?: THREE.Vector3) {
       clouds.forEach((c, i) => { c.position.x += Math.sin(i) * 0.004; c.rotation.y = t * 0.003 + i; });
       windmillFans.forEach((fan, i) => { fan.rotation.z = t * 0.8 + i; });

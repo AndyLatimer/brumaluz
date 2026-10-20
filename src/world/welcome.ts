@@ -1,25 +1,18 @@
 import * as THREE from 'three';
 import type { City, Interactable } from './city';
 import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN, type WelcomeProgress } from '../data/quests';
-import { Character } from '../character/character';
-import { defaultChar } from '../data/data';
+import type { Character } from '../character/character';
 
 /** Personal actors: never added to shared world presence or NPC spawn tables. */
-export function createWelcomeWorld(scene: THREE.Scene, city: City) {
+export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() => City), character: Character, name: string) {
+  let city = typeof citySource === 'function' ? citySource() : citySource;
   const root = new THREE.Group();
   root.name = 'gnomi-personal';
   root.visible = false;
   root.position.set(WELCOME_START.x, city.groundY(WELCOME_START.x, WELCOME_START.z), WELCOME_START.z);
   scene.add(root);
-  const character = new Character({
-    ...defaultChar(), name: 'Gnomi', race: 'humano', sex: 0,
-    face: 0, hair: 0, hairColor: 6, beard: 1, eyeShape: 4, eyeColor: 2,
-    brows: 0, nose: 5, mouth: 0, detail: 1, height: .25, build: .7,
-    clothA: 1, clothB: 5,
-  }, { outfit: false, wardrobe: 'helpers', proportions: { width: 1.06, height: .92 } });
   const body = new THREE.Group();
   body.name = 'gnomi-rig';
-  body.scale.setScalar(.48);
   body.add(character.root);
   root.add(body);
   const materials = new Map<string, THREE.MeshStandardMaterial>();
@@ -45,7 +38,7 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
   scene.add(lost);
   lost.visible = false;
   lost.position.set(WELCOME_BADGE.x, city.groundY(WELCOME_BADGE.x, WELCOME_BADGE.z), WELCOME_BADGE.z);
-  const interaction: Interactable = { id: 'welcome:gnomi', position: root.position, radius: 2.6, label: 'Hablar con Gnomi' };
+  const interaction: Interactable = { id: 'welcome:gnomi', position: root.position, radius: 2.6, label: `Hablar con ${name}` };
   const pickup: Interactable = { id: 'welcome:badge', position: lost.position, radius: 2.5, label: 'Recoger distintivo' };
   let lastStage = '';
   let trail: THREE.Vector3[] = [];
@@ -59,6 +52,7 @@ export function createWelcomeWorld(scene: THREE.Scene, city: City) {
     trail = []; sample.copy(player);
   }
   function update(progress: WelcomeProgress | null, playing: boolean, player: THREE.Vector3, dt: number, time: number, talking = false, returned = false) {
+    if (typeof citySource === 'function') city = citySource();
     root.visible = playing;
     lost.visible = root.visible && progress?.stage === 'active';
     if (!root.visible) { lastStage = ''; trail = []; return; }

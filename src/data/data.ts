@@ -10,8 +10,12 @@ import { isCoinBagId } from './coinBags';
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
 export type ClassId = 'guerrero' | 'mago' | 'picaro' | 'clerigo' | 'explorador';
-export type LocationId = 'brumaluz';
+/** Mapa (lugar de Pompelín) donde está el personaje: ID de un mapa publicado desde el editor. */
+export type LocationId = string;
+/** Nombres de los lugares conocidos; los mapas publicados se añaden al cargar el mundo. */
 export const LOCATIONS: Record<LocationId, string> = { brumaluz: 'Brumaluz' };
+export const locationName = (id: string | null | undefined) => (id && Object.prototype.hasOwnProperty.call(LOCATIONS, id) ? LOCATIONS[id] : id) ?? '';
+const LOCATION_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 export type AttributeId = 'fuerza' | 'intelecto' | 'corpulencia' | 'agilidad' | 'pericia' | 'presencia' | 'percepcion';
 
 export interface AttributeDef {
@@ -249,7 +253,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   delete (out as unknown as Record<string, unknown>).gold;
   out.inventory = sanitizeInventory(out.inventory);
   out.equipment = sanitizeEquipment(out.equipment);
-  if (typeof out.location !== 'string' || !Object.prototype.hasOwnProperty.call(LOCATIONS, out.location)) out.location = 'brumaluz';
+  if (typeof out.location !== 'string' || !LOCATION_ID.test(out.location)) out.location = 'brumaluz';
   const pos = d.position as Partial<NonNullable<CharData['position']>> | null | undefined;
   out.position = pos && [pos.x, pos.z, pos.yaw].every((n) => typeof n === 'number' && Number.isFinite(n))
     ? { x: pos.x!, z: pos.z!, yaw: pos.yaw! }

@@ -10,6 +10,7 @@ import {
 import { createCoinBags } from './world/coinBags';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
+import { renderZoneMap } from './ui/mapWindow';
 import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
 import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse, simulateWelcome, addItem } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
@@ -17,6 +18,9 @@ import { applyLanguage, getLanguage, setLanguage, t, raceText, classText } from 
 import { world } from './world/paint';
 import { buildEnv } from './world/env';
 import { Character, loadKits } from './character/character';
+import { createNpc } from './character/npc';
+import { loadWorldNpcs } from './data/worldNpcs';
+import { isWorldNpcId, type WorldNpcId } from './data/npcs';
 import { createCharacterPortrait } from './character/portrait';
 import { setupStage, castShadows } from './world/render';
 import { createGraphics } from './world/graphics';
@@ -30,11 +34,14 @@ import { getParty, observeParty, startParty, stopParty, partySelf, isPartyLeader
 import { initPartyHud } from './ui/partyPanel';
 import { WorldConnection, parseCombatEncounter, parsePublicVitals, type CombatEncounter, type WorldSnapshot } from './services/multiplayer';
 import { buildCity, City, COMBAT_SITE, type Interactable } from './world/city';
+import { loadPublishedMap, publishedMaps } from './world/mapCity';
+import type { CityPortal } from './world/city';
+import { beginMapTransition } from './ui/transitionLoading';
 import { AmbientSoundscape } from './world/audio';
 import { FACE_KITS, FACE_LABELS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from './character/head';
 import {
   CharData, Race, ClassId, RACES, CLASSES, ATTRIBUTES, ATTRIBUTE_POINTS_AVAILABLE, ATTRIBUTE_BASE_VALUE, ATTRIBUTE_MAX_VALUE, MAX_LEVEL, unspentAttributePoints, AttributeId, HAIR_COLORS, HAIR_NAMES, CLOTH, CLOTH_NAMES, EYE_COLORS, EYE_COLOR_NAMES,
-  defaultChar, randomChar, randomName, sanitize, HAIR_ACCS, HAIR_ACC_VALUES, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES, LOCATIONS,
+  defaultChar, randomChar, randomName, sanitize, HAIR_ACCS, HAIR_ACC_VALUES, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES, locationName,
 } from './data/data';
 import { vitalsOf, experienceToNextLevel, attributeTotal, OVERHEAL } from './data/stats';
 import { TITLES, isReservedTitle, setGrantedTitles, PHOENIX_ICON } from './data/titles';
@@ -58,12 +65,14 @@ import { EQUIPPABLE, hasCombatWeapon, transferEquipment } from './data/equipment
 import type { EquipmentSlot } from './data/inventory';
 import { renderLoot } from './ui/lootWindow';
 import { createWelcomeWorld } from './world/welcome';
+import { buildShadowEnemy, playShadowEnemyAction, updateShadowEnemy } from './world/shadowEnemy';
 import { createQuestTracker, renderQuestJournal, welcomeConversation } from './ui/questWindow';
 import { COMBAT_KITS, MAX_SKILL_RANK, resolveCombat, skillRank, unspentSkillPoints, upgradeSkill, type CombatState } from './data/combat';
 
 
 // ---------------- Estado ----------------
 let state: CharData = defaultChar();
+let registeredNpcs: ReturnType<typeof loadWorldNpcs>;
 let skillReadyAt = 0;
 let lockedEnemy = false;
 let combatApproach = false;
@@ -116,6 +125,9 @@ function characterContext() {
   return () => state === character && activeCharacterId === characterId && currentUser?.id === userId && playGeneration === generation && accountSyncId === accountGeneration;
 }
 let city: City;
+let mapTravelling = false;
+let portalsArmed = false;
+const portalWarnings = new Set<string>();
 let char: Character;
 let pendingHop = false;
 let rebuildQueued = false;
@@ -220,7 +232,7 @@ function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
 }
 function focusConversationSpeaker(speaker: string) {
   if (!conversationActor || isbertoArrival) return;
-  const actor = speaker === 'Gnomi' ? welcomeWorld.root
+  const actor = speaker === registeredNpcs.gnomi.name ? welcomeWorld.root
     : npcActors.find(npc => NPCS[npc.id].name === speaker)?.character.root;
   if (!actor || !actor.visible || actor === conversationActor) return;
   if (!conversationFacings.has(actor)) conversationFacings.set(actor, actor.rotation.y);
@@ -263,7 +275,10 @@ function updateConversationCamera(dt: number) {
     city.root.updateWorldMatrix(true, true);
     conversationObstacles = [
       ...env.cameraObstacles,
-      ...city.root.children.filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_')),
+      ...city.root.children
+        // Las ciudades del editor agrupan sus piezas en «map-objects»: se evalúan una a una para ignorar las baldosas.
+        .flatMap(object => object.name === 'map-objects' ? object.children.filter(piece => !String(piece.userData.mapAsset ?? '').startsWith('city/hex_')) : [object])
+        .filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_') && object.name !== 'map-environment'),
       ...npcActors.filter(npc => npc.character.root !== actor).map(npc => npc.character.root),
       ...remotePlayers.list().map(player => player.root),
     ];
@@ -407,6 +422,7 @@ function startJump() {
 }
 window.addEventListener('keydown', (e) => {
   if (mode !== 'play') return;
+  if (mapTravelling) { e.preventDefault(); return; }
   if (isbertoArrival) { e.preventDefault(); return; }
   if (tradeWindow.isOpen) { tradeWindow.key(e); return; }
   if (dead) {
@@ -463,7 +479,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (!e.repeat && !gameMenuOpen && openWindow !== 'vendor' && (e.target as HTMLElement).tagName !== 'INPUT') {
-    const win = e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : e.code === 'KeyK' ? 'skills' : null;
+    const win = e.code === 'KeyM' ? 'map' : e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : e.code === 'KeyK' ? 'skills' : null;
     if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
     if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
   }
@@ -512,7 +528,10 @@ function nearestInteractable(): Interactable | null {
   const corpses: Interactable[] = combatTargetRoot && combatEncounter?.status === 'defeated'
     ? [{ id: 'corpse:shadowling', position: combatTargetRoot.position, radius: 3, label: 'Registrar cuerpo' }] : [];
   if (corpses[0] && !combatEncounter?.looted && holder.position.distanceTo(corpses[0].position) <= 3) return corpses[0];
-  for (const item of [...corpses, ...city.interactables, ...welcomeWorld.interactions(), ...coinBags.interactions()]) {
+  const portals = city.portals.filter(portal => portal.trigger === 'interact').map(portal => ({
+    id: `portal:${portal.id}`, label: portal.name, position: portal.position, radius: portal.radius,
+  }));
+  for (const item of [...portals, ...corpses, ...city.interactables, ...welcomeWorld.interactions(), ...coinBags.interactions()]) {
     if (item.id === 'npc:isberto' && !isbertoUnlocked()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -542,7 +561,7 @@ function talkTo(npcId: string) {
   if (actor) beginConversation(actor.character.root, { ...conv, subtitle: NPCS[npcId].title });
 }
 function interact() {
-  if (mode !== 'play' || dead || isbertoArrival || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || worldMenuOpen || optionsOpen) return;
+  if (mode !== 'play' || mapTravelling || dead || isbertoArrival || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || worldMenuOpen || optionsOpen) return;
   const { item, player } = nearestInteraction();
   if (player) {
     pendingTalk = null;
@@ -554,12 +573,17 @@ function interact() {
     return;
   }
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
+  if (item?.id.startsWith('portal:')) {
+    const portal = city.portals.find(portal => portal.id === item.id.slice(7));
+    if (portal && confirm(`${portal.name}\n¿Viajar a ${locationName(portal.target?.map)}?`)) void travelPortal(portal);
+    return;
+  }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
   if (item?.id === 'corpse:shadowling') { setWindow('loot'); return; }
   if (item?.id.startsWith('coinbag:')) { void pickUpCoinBag(item.id.slice('coinbag:'.length)); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   if (npcId) { talkTo(npcId); return; }
-  const lines = item && INTERACTIONS[item.id]?.();
+  const lines = item && (INTERACTIONS[item.id]?.() ?? (item.text ? [{ speaker: state.name, text: item.text }] : undefined));
   if (!lines) return;
   keys.clear();
   moveTarget = null;
@@ -614,7 +638,8 @@ function updateInteractPrompt() {
   const interaction = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
   prompt.hidden = !interaction?.item && !interaction?.player;
   if (interaction?.item || interaction?.player) {
-    const label = interaction.player ? t('Interactuar') : t(interaction.item!.label);
+    const label = interaction.player ? t('Interactuar') : interaction.item?.id === 'welcome:gnomi'
+      ? t('Hablar con {name}', { name: registeredNpcs.gnomi.name }) : t(interaction.item!.label);
     if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
   } else $('#interact-label').textContent = '';
 }
@@ -728,14 +753,15 @@ function updatePlay(dt: number) {
   if (marker.visible) marker.scale.setScalar(1 + Math.sin(clock.getElapsedTime() * 6) * 0.1);
 }
 
-function tickWorldCombat(time:number) {
+function tickWorldCombat(time:number,dt:number) {
   renderActionBar();
-  if(!combatTargetRoot||combatEncounter?.status!=='active')return;
+  if(!combatTargetRoot)return;
+  const active = combatEncounter?.status === 'active';
+  updateShadowEnemy(combatTargetRoot,time,dt,holder.position,active);
+  if(!active)return;
   const ring = combatTargetRoot.getObjectByName('combat-lock-ring');
   if (ring) ring.visible = lockedEnemy;
   if (lockedEnemy && combatTargetRoot.position.distanceTo(holder.position) > 35) releaseCombatTarget();
-  combatTargetRoot.rotation.y=Math.sin(time*1.6)*.15;
-  combatTargetRoot.scale.y=.97+Math.sin(time*4)*.035;
   const kit=COMBAT_KITS[state.cls];
   const distance=Math.hypot(combatTargetRoot.position.x-holder.position.x,combatTargetRoot.position.z-holder.position.z);
   if(pendingCombatSkill&&lockedEnemy&&distance<=kit.range){
@@ -852,7 +878,7 @@ function talkGnomi() {
   if (state.shadowQuest === 'returning' || state.shadowQuest === 'returned') {
     const arrived = Math.hypot(holder.position.x - SHADOW_RETURN.x, holder.position.z - SHADOW_RETURN.z) <= 4;
     beginConversation(welcomeWorld.root, {
-      speaker:'Gnomi', subtitle:'Ayudante del Gremio', start:'intro',
+      speaker:registeredNpcs.gnomi.name, subtitle:registeredNpcs.gnomi.subtitle, start:'intro',
       nodes:{
         intro: state.shadowQuest === 'returned'
           ? {text:'Aquí estamos bien por ahora. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.'}
@@ -867,13 +893,13 @@ function talkGnomi() {
   }
   if (!state.welcome) {
     beginConversation(welcomeWorld.root, {
-      speaker:'Gnomi',subtitle:'Ayudante del Gremio',start:'intro',
+      speaker:registeredNpcs.gnomi.name,subtitle:registeredNpcs.gnomi.subtitle,start:'intro',
       nodes:{intro:{text:'¡Hola! Soy Gnomi, del Gremio de Ayudantes. Ahora mismo no tengo ningún encargo para ti, pero seguro que nos cruzamos pronto.'}},
     });
     return;
   }
   if (state.welcome.origin === null) welcomeWorld.greet();
-  beginConversation(welcomeWorld.root, welcomeConversation(state, performWelcome));
+  beginConversation(welcomeWorld.root, { ...welcomeConversation(state, performWelcome), speaker: registeredNpcs.gnomi.name, subtitle: registeredNpcs.gnomi.subtitle });
 }
 async function performShadow(action: ShadowAction) {
   const target = action === 'return' ? SHADOW_RETURN : npcActors.find(npc => npc.id === 'isberto')?.character.root.position;
@@ -1002,7 +1028,15 @@ function die() {
 
 /** Reaparece en la capital (por ahora, el punto de inicio de Brumaluz) con la vida completa. */
 async function respawn() {
-  if (!dead || !(await serverAction('respawn'))) return;
+  if (!dead || mapTravelling) return;
+  mapTravelling = true;
+  const connection = worldConnection;
+  const finish = beginMapTransition({ name: locationName('brumaluz'), region: 'Pompelín', loadingTip: 'Al caer, vuelves a la capital.' });
+  try {
+  await connection?.suspend();
+  await gameCity('brumaluz');
+  if (!(await serverAction('respawn'))) return;
+  await switchGameMap('brumaluz');
   dead = false;
   $('#death-screen').hidden = true;
   document.body.classList.remove('dead');
@@ -1017,6 +1051,15 @@ async function respawn() {
   updateHud();
   restartClass($('#heal-vignette'), 'hit');
   restartClass($('.hud-health'), 'healed');
+  } catch (error) {
+    console.error('No se pudo reaparecer en Brumaluz.', error);
+    toast('No se pudo reaparecer', errorMessage(error), true);
+    if (connection === worldConnection && connection) await returnToCharacters();
+  } finally {
+    mapTravelling = false;
+    finish();
+    if (connection === worldConnection) connection?.resume();
+  }
 }
 
 /** Cura al jugador (sin pasar del máximo) con viñeta verde, destellos ascendentes, animación y número flotante. */
@@ -1286,7 +1329,7 @@ function playerSay(name: string, text: string) {
   speech.el.classList.add('pop');
 }
 function npcSay(name: string, text: string) {
-  if (name === 'Gnomi') { welcomeWorld.speak(speechSeconds(text)); return; }
+  if (name === registeredNpcs.gnomi.name) { welcomeWorld.speak(speechSeconds(text)); return; }
   const npc = npcActors.find((n) => NPCS[n.id]?.name === name);
   npc?.character.speak(speechSeconds(text));
 }
@@ -1323,7 +1366,8 @@ function updateNameplate() {
   } else if (!nameplate.el.hidden) nameplate.el.hidden = true;
   for (const npc of npcActors) {
     if (npc.id === 'isberto' && !npc.character.root.visible) { npc.plate.hidden = true; continue; }
-    npc.anchor.set(npc.character.root.position.x, npc.character.root.position.y + 1.95, npc.character.root.position.z).project(camera);
+    const heightScale = (npc.character.opts.scale ?? 1) * (npc.character.opts.proportions?.height ?? 1);
+    npc.anchor.set(npc.character.root.position.x, npc.character.root.position.y + 1.95 * heightScale, npc.character.root.position.z).project(camera);
     const inView = visible && npc.anchor.z > -1 && npc.anchor.z < 1
       && Math.abs(npc.anchor.x) < 1.2 && Math.abs(npc.anchor.y) < 1.2;
     if (inView) {
@@ -1491,7 +1535,7 @@ initMinimap({
       id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
     })),
   ],
-  zone: () => LOCATIONS[state.location],
+  zone: () => locationName(state.location),
 });
 initPartyHud();
 let previousPartyInvites=new Set<string>();
@@ -1540,7 +1584,7 @@ function refreshLanguageDependentUI() {
   renderBuffs(state, !foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests' || openWindow === 'skills') setWindow(openWindow, false);
+  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests' || openWindow === 'skills' || openWindow === 'map') setWindow(openWindow, false);
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -1581,9 +1625,10 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
 let worldMenuOpen = false;
-type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills' | 'collections' | 'loot';
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
+let updateZoneMap: (() => void) | null = null;
 
 function refreshOverlayHud() {
   document.body.classList.toggle('ui-menu-open', gameMenuOpen || playerMenuOpen || worldMenuOpen || (!!openWindow && openWindow !== 'loot') || optionsOpen);
@@ -1632,6 +1677,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   playerInteractions.close();
   closeSocial?.();
   closeSocial = null;
+  updateZoneMap = null;
   if (win !== openWindow) pointDraft = {};
   openWindow = win;
   refreshOverlayHud();
@@ -1648,12 +1694,14 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('inventory-window-frame', win === 'inventory');
   $('#window-backdrop .game-window').classList.toggle('collection-window-frame', win === 'collections');
   $('#window-backdrop .game-window').classList.toggle('skills-window-frame', win === 'skills');
+  $('#window-backdrop .game-window').classList.toggle('map-window-frame', win === 'map');
+  $('#map-window-close').hidden = win !== 'map';
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
   $('#window-confirm').hidden = true;
   keys.clear();
   if (!win) { vendor = null; return; }
   if (closeMenu) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); }
-  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : win === 'collections' ? 'Colecciones' : 'Ficha de personaje');
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'map' ? 'Mapa de la zona' : win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : win === 'collections' ? 'Colecciones' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social' || win === 'skills' || win === 'collections');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
   if (win === 'loot') {
@@ -1672,6 +1720,17 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
     }
     return success;
   });
+  else if (win === 'map') {
+    moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
+    updateZoneMap = renderZoneMap(body, locationName(city.locationId),
+      () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
+      () => [
+        ...npcActors.filter(npc => npc.character.root.visible && (npc.id !== 'isberto' || isbertoUnlocked()))
+          .map(npc => ({ id:npc.id, name:NPCS[npc.id].name, x:npc.character.root.position.x, z:npc.character.root.position.z })),
+        ...(welcomeWorld.root.visible ? [{id:'gnomi',name:registeredNpcs.gnomi.name,x:welcomeWorld.root.position.x,z:welcomeWorld.root.position.z}] : []),
+      ]);
+    updateZoneMap();
+  }
   else if (win === 'quests') renderQuestJournal(body, state);
   else if (win === 'collections') renderCollections(body, state.coinBags);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
@@ -1703,7 +1762,7 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
     ? body.querySelector<HTMLElement>(`[data-attribute="${CSS.escape(focusedAttribute.dataset.attribute)}"]`) : null;
   const restoredControl = restoredAttribute?.querySelectorAll('button')[focusedControl];
   const focusTarget = restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
-  (focusTarget ?? (win === 'loot' ? body.querySelector<HTMLButtonElement>('.loot-item') : null) ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet });
+  (focusTarget ?? (win === 'map' ? $('#map-window-close') : win === 'loot' ? body.querySelector<HTMLButtonElement>('.loot-item') : null) ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet });
   body.scrollTop = sheetScroll;
 }
 $('#window-confirm').onclick = async () => {
@@ -1729,10 +1788,12 @@ $('#window-confirm').onclick = async () => {
 $('#player-menu-toggle').onclick = () => setPlayerMenuOpen(!playerMenuOpen);
 $('#world-menu-toggle').onclick = () => setWorldMenuOpen(!worldMenuOpen);
 $('#world-menu-collections').onclick = () => setWindow('collections');
+$('#world-menu-map').onclick = () => setWindow('map');
 for (const b of document.querySelectorAll<HTMLButtonElement>('#player-menu-panel [data-window]')) {
   b.onclick = () => setWindow(b.dataset.window as PlayerWindow);
 }
 $('#window-close').onclick = () => setWindow(null);
+$('#map-window-close').onclick = () => setWindow(null);
 $('#window-backdrop').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget) setWindow(null); });
 document.addEventListener('click', (event) => {
   if (playerMenuOpen && event.target instanceof Node && !$('#player-menu').contains(event.target)) setPlayerMenuOpen(false, false);
@@ -2169,9 +2230,9 @@ function displayCharacters(characters: SavedCharacter[]) {
     locationIcon.setAttribute('viewBox', '0 0 24 24');
     locationIcon.setAttribute('aria-hidden', 'true');
     locationIcon.innerHTML = '<path d="m12 2.8 8 4.6v9.2l-8 4.6-8-4.6V7.4l8-4.6Z"/><path d="M8 16V9.5l4-2.3 4 2.3V16M6.5 16h11M10 11h.01M14 11h.01M11 16v-2.5h2V16"/>';
-    const locationName = t(LOCATIONS[data.location]);
-    location.append(locationIcon, document.createTextNode(locationName));
-    location.setAttribute('aria-label', t('Ubicación: {location}', { location: locationName }));
+    const placeName = t(locationName(data.location));
+    location.append(locationIcon, document.createTextNode(placeName));
+    location.setAttribute('aria-label', t('Ubicación: {location}', { location: placeName }));
     copy.append(name, detail, level, location);
     info.append(portrait, copy);
     const actions = document.createElement('div');
@@ -2402,6 +2463,8 @@ async function loadWorldState() {
     const data = await enterCharacter(characterId);
     if (!stillCurrent()) return false;
     Object.assign(state, sanitize(data));
+    await switchGameMap(state.location);
+    if (!stillCurrent()) return false;
     resetFoodTimer(typeof data.food_at === 'number' ? data.food_at : 0);
     resetOverheal();
     const titles = await getMyTitles();
@@ -2761,23 +2824,42 @@ function testCity(): City {
   return { root, locationId: 'brumaluz', npcSites: [
     { id: 'testiculos', position: new THREE.Vector3(2, 0, -1), yaw: Math.PI / 2 },
     { id: 'isberto', position: new THREE.Vector3(LOCAL_COMBAT_SITE.x - 3, 0, LOCAL_COMBAT_SITE.z), yaw: Math.PI / 2 },
-  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], collide: (_f, t) => t, groundY: () => 0, platformY: () => null, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], portals: [], arrivals: {}, collide: (_f, t) => t, groundY: () => 0, platformY: () => null, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 const clock = new THREE.Clock();
+const loadedCities = new Map<string, City>();
+async function gameCity(id: string): Promise<City> {
+  const cached = loadedCities.get(id);
+  if (cached) return cached;
+  const result = TEST ? testCity() : publishedMaps()[id]
+    ? (await loadPublishedMap(id, scene)).city
+    : id === 'brumaluz' ? await buildCity()
+      : (() => { throw new Error(`El mapa «${id}» no está incluido en esta versión del juego.`); })();
+  loadedCities.set(id, result);
+  return result;
+}
+let worldCharacters: Record<keyof ReturnType<typeof loadWorldNpcs>, Character>;
 try {
   await loadKits();
-  city = TEST ? testCity() : await buildCity();
+  registeredNpcs = loadWorldNpcs();
+  worldCharacters = {
+    testiculos: await createNpc(registeredNpcs.testiculos),
+    gnomi: await createNpc(registeredNpcs.gnomi),
+    isberto: await createNpc(registeredNpcs.isberto),
+  };
+  city = await gameCity('brumaluz');
+  env.setLampposts(!publishedMaps().brumaluz);
 } catch (e) {
   $('#loading p').textContent = t('No se pudo cargar Brumaluz: ') + (e instanceof Error ? e.message : String(e));
   throw e;
 }
 scene.add(city.root);
-const welcomeWorld = createWelcomeWorld(scene, city);
-const coinBags = createCoinBags(scene, city);
+const welcomeWorld = createWelcomeWorld(scene, () => city, worldCharacters.gnomi, registeredNpcs.gnomi.name);
+const coinBags = createCoinBags(scene, () => city);
 const questTracker = createQuestTracker(() => setWindow('quests'));
 const welcomePlate = document.createElement('div');
 welcomePlate.className = 'nameplate npc welcome-nameplate';
-welcomePlate.textContent = 'Gnomi';
+welcomePlate.textContent = registeredNpcs.gnomi.name;
 welcomePlate.hidden = true;
 document.body.append(welcomePlate);
 const questMarker = document.createElement('div');
@@ -2787,7 +2869,12 @@ const questDirection = document.createElement('span');
 questDirection.className = 'quest-direction-arrow';
 questDirection.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 16-8-4-8 4Z"/></svg>';
 const questDistance = document.createElement('span');
-questMarker.append(questDirection, questDistance);
+questDistance.className = 'quest-marker-distance';
+const questSymbol = document.createElement('span');
+questSymbol.className = 'quest-marker-symbol';
+questSymbol.textContent = '!';
+questSymbol.setAttribute('aria-hidden', 'true');
+questMarker.append(questDirection, questSymbol, questDistance);
 document.body.append(questMarker);
 const questAnchor = new THREE.Vector3();
 const questView = new THREE.Vector3();
@@ -2800,14 +2887,15 @@ function shadowQuestTarget(): { x: number; z: number } {
     ?? state.isbertoPosition ?? {x: -3, z: TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z};
 }
 function updateWelcome(dt: number, time: number) {
-  welcomeWorld.update(state.welcome, mode === 'play', holder.position, dead || isbertoArrival || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root, state.shadowQuest === 'returned');
-  const visible = mode === 'play' && !dead && !isbertoArrival && !openWindow && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
+  welcomeWorld.update(state.welcome, mode === 'play' && city.locationId === 'brumaluz', holder.position, dead || isbertoArrival || isDialogOpen() || !!openWindow ? 0 : dt, time, conversationActor === welcomeWorld.root, state.shadowQuest === 'returned');
+  const visible = mode === 'play' && city.locationId === 'brumaluz' && !dead && !isbertoArrival && !openWindow && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   questTracker.update(state, visible);
   welcomePlate.hidden = true;
   questMarker.hidden = true;
   if (!welcomeWorld.root.visible || !visible) return;
   camera.updateMatrixWorld();
-  questAnchor.copy(welcomeWorld.root.position).add(new THREE.Vector3(0, 1.1, 0)).project(camera);
+  const welcomeHeight = 1.1 * registeredNpcs.gnomi.render.scale / .48 * registeredNpcs.gnomi.render.height / .92;
+  questAnchor.copy(welcomeWorld.root.position).add(new THREE.Vector3(0, welcomeHeight, 0)).project(camera);
   if (questAnchor.z > -1 && questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
     welcomePlate.hidden = false;
     welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
@@ -2821,12 +2909,12 @@ function updateWelcome(dt: number, time: number) {
   if (state.welcome.stage === 'active' && !welcomeTravelSaid && Math.hypot(holder.position.x - WELCOME_START.x, holder.position.z - WELCOME_START.z) > 5 && distance > 8) {
     welcomeTravelSaid = true;
     const line = t('El mercado queda por aquí. Yo venía mirando los puestos… Tendría que haber mirado también el distintivo.');
-    chatNpc('Gnomi', line);
+    chatNpc(registeredNpcs.gnomi.name, line);
     welcomeWorld.speak(speechSeconds(line));
   }
   if (state.welcome.stage === 'active' && distance < 8 && !welcomeHintSaid) {
     welcomeHintSaid = true;
-    chatNpc('Gnomi', t('Por aquí estuve mirando los puestos. ¡A ver si mi distintivo también se quedó mirando!'));
+    chatNpc(registeredNpcs.gnomi.name, t('Por aquí estuve mirando los puestos. ¡A ver si mi distintivo también se quedó mirando!'));
     welcomeWorld.speak(5);
   }
   if (state.welcome.stage !== 'active') { welcomeHintSaid = false; welcomeTravelSaid = false; }
@@ -2837,7 +2925,7 @@ function updateWelcome(dt: number, time: number) {
   questMarker.hidden = false;
   questMarker.classList.toggle('offscreen', !onScreen);
   questDirection.hidden = onScreen;
-  questDistance.textContent = `${onScreen ? state.welcome.stage === 'available' ? '! ' : '◆ ' : ''}${Math.round(distance)} m`;
+  questDistance.textContent = `${Math.round(distance)} m`;
   if (onScreen) {
     questMarker.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%,-100%)`;
   } else {
@@ -2855,16 +2943,19 @@ function updateWelcome(dt: number, time: number) {
   }
 }
 if (import.meta.hot) import.meta.hot.dispose(() => { welcomeWorld.dispose(); coinBags.dispose(); });
-try {
-  setMinimapImage(captureTopDown(renderer, scene, city.root, graphics.compatible ? 1024 : lowEnd ? 1536 : 2560));
-} catch (e) {
-  console.warn('Sin imagen para el minimapa:', e);
+function refreshCityMinimap() {
+  try {
+    setMinimapImage(captureTopDown(renderer, scene, city.root, graphics.compatible ? 1024 : lowEnd ? 1536 : 2560, city.mapBounds), city.mapBounds);
+  } catch (e) {
+    setMinimapImage(null, city.mapBounds);
+    console.warn('Sin imagen para el minimapa:', e);
+  }
 }
+refreshCityMinimap();
 
 // ---------------- NPCs ----------------
 interface NpcDef {
   name: string;
-  look: Partial<CharData>;
   type: NpcType;
   title: string;
   level: number;
@@ -2875,20 +2966,20 @@ interface NpcDef {
 // Mismas opciones y mismo orden en todos los nodos del NPC de prueba.
 const testChoices: DialogChoice[] = [
   { text: 'Hola', next: 'hola' },
-  { text: 'Recibir 10 puntos de daño', next: 'dano', action: () => void damagePlayer('Testículos, the Debugger') },
-  { text: 'Recibir 10 puntos de vida', next: 'cura', action: () => void healPlayer('Testículos, the Debugger') },
+  { text: 'Recibir 10 puntos de daño', next: 'dano', action: () => void damagePlayer(registeredNpcs.testiculos.name) },
+  { text: 'Recibir 10 puntos de vida', next: 'cura', action: () => void healPlayer(registeredNpcs.testiculos.name) },
   { text: 'Recibir 200 puntos de experiencia', next: 'xp', action: () => void gainExperience() },
   { text: 'Recibir 100 pelines', next: 'dinero', action: () => void receiveMoney() },
   { text: 'Comerciar', action: () => openVendor('testiculos') },
 ];
 function isbertoConversation(): Conversation {
   if (state.shadowQuest === 'defeated') return {
-    speaker:'Isberto', subtitle:'Granjero · explorador retirado', start:'intro',
+    speaker:registeredNpcs.isberto.name, subtitle:registeredNpcs.isberto.subtitle, start:'intro',
     nodes:{
       intro:{text:'Gracias por ocuparte de esa criatura. El ganado ya está más tranquilo, pero yo no. He recorrido unos cuantos caminos y nunca había visto nada parecido.',next:'gnomi'},
-      gnomi:{speaker:'Gnomi',subtitle:'Ayudante del Gremio',text:'Yo tampoco sé qué era. Y mira que me cruzo con gente y bichos de todas clases… Esto no me suena de nada.',next:'isberto'},
+      gnomi:{speaker:registeredNpcs.gnomi.name,subtitle:registeredNpcs.gnomi.subtitle,text:'Yo tampoco sé qué era. Y mira que me cruzo con gente y bichos de todas clases… Esto no me suena de nada.',next:'isberto'},
       isberto:{text:'Pues no vamos a ponerle nombre por inventar. Si has recogido algo de sus restos, guárdalo. Por ahora no sabemos qué significa.',next:'return'},
-      return:{speaker:'Gnomi',subtitle:'Ayudante del Gremio',text:'Dejemos a Isberto cuidar del ganado. Volvamos a la plaza del pozo; te acompaño.',
+      return:{speaker:registeredNpcs.gnomi.name,subtitle:registeredNpcs.gnomi.subtitle,text:'Dejemos a Isberto cuidar del ganado. Volvamos a la plaza del pozo; te acompaño.',
         choices:[{text:'Volver con Gnomi a la plaza',action:()=>performShadow('report')}]},
     },
   };
@@ -2898,7 +2989,7 @@ function isbertoConversation(): Conversation {
     : 'Una cosa negra y rara se ha metido entre el ganado. No reconozco la criatura, y a estas alturas ya he tenido bastantes aventuras. Si te ves con ganas, échale un ojo. Yo me quedo vigilando el camino.';
   const offer = !state.shadowQuest;
   return {
-    speaker:'Isberto', subtitle:'Granjero · explorador retirado', start:'intro',
+    speaker:registeredNpcs.isberto.name, subtitle:registeredNpcs.isberto.subtitle, start:'intro',
     nodes:{intro:{text,
       ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Derrota a la criatura, habla con Isberto y vuelve con Gnomi a la plaza del pozo.',experience:0,pelines:0}} : {}),
       ...(offer || (state.shadowQuest === 'active' && combatEncounter?.status !== 'active')
@@ -2908,28 +2999,26 @@ function isbertoConversation(): Conversation {
 }
 const NPCS: Record<string, NpcDef> = {
   isberto: {
-    name:'Isberto',
+    name:registeredNpcs.isberto.name,
     type:'resident',
-    title:'Granjero · explorador retirado',
-    level:1,
-    vitals:{health:100,maxHealth:100,overheal:0,resource:50,maxResource:50,resourceKind:'stamina'},
-    look:{race:'humano',sex:0,hair:3,hairColor:5,beard:2,clothA:3,clothB:6,height:.45,build:.62},
+    title:registeredNpcs.isberto.subtitle,
+    level:registeredNpcs.isberto.stats.level,
+    vitals:{health:registeredNpcs.isberto.stats.health,maxHealth:registeredNpcs.isberto.stats.maxHealth,overheal:0,resource:50,maxResource:50,resourceKind:'stamina'},
     get conversation() { return isbertoConversation(); },
   },
   testiculos: {
-    name: 'Testículos, the Debugger',
+    name: registeredNpcs.testiculos.name,
     type: 'debug',
-    title: 'Depuración',
-    level: 1,
-    vitals: { health: 100, maxHealth: 100, overheal: 0, resource: 100, maxResource: 100, resourceKind: 'mana' },
-    look: { race: 'elfo', sex: 0, hair: 4, hairColor: 8, clothA: 2, clothB: 9 },
+    title: registeredNpcs.testiculos.subtitle,
+    level: registeredNpcs.testiculos.stats.level,
+    vitals: { health: registeredNpcs.testiculos.stats.health, maxHealth: registeredNpcs.testiculos.stats.maxHealth, overheal: 0, resource: 100, maxResource: 100, resourceKind: 'mana' },
     barks: [
       '¿Alguien ha visto mi documentación? Ah, no, no tengo.',
       'Psst, viajero... ¿quieres probar mis pociones? Son de mentira, pero curan.',
       'Un día más depurando el universo.',
     ],
     conversation: {
-      speaker: 'Testículos, the Debugger',
+      speaker: registeredNpcs.testiculos.name,
       start: 'intro',
       nodes: {
         intro: { text: '¡Saludos, viajero! Soy un NPC de prueba, no tengo lore ni ganas de tenerlo.', choices: testChoices },
@@ -2942,7 +3031,7 @@ const NPCS: Record<string, NpcDef> = {
     },
   },
 };
-const npcActors: { id: string; character: Character; plate: HTMLElement; anchor: THREE.Vector3 }[] = [];
+const npcActors: { id: WorldNpcId; character: Character; plate: HTMLElement; anchor: THREE.Vector3 }[] = [];
 let isbertoPositionKey = '';
 function beginIsbertoArrival(character: Character) {
   closeDialog();
@@ -3020,11 +3109,18 @@ function updateIsbertoArrival(dt: number) {
   if (distance <= step + .001) path.shift();
   if (!path.length) { endIsbertoArrival(); talkTo('isberto'); }
 }
+function placeCityNpcs() {
+for (const npc of npcActors.splice(0)) {
+  npc.character.root.removeFromParent();
+  npc.plate.remove();
+}
+isbertoPositionKey = '';
+city.interactables = city.interactables.filter(item => !item.id.startsWith('npc:'));
 for (const site of city.npcSites) {
   const def = NPCS[site.id];
   if (!def) continue;
-  const npcData = sanitize({ ...defaultChar(), ...def.look, name: def.name } as unknown as Record<string, unknown>);
-  const character = new Character(npcData, { outfit: false });
+  if (!isWorldNpcId(site.id)) throw new Error(`Falta el personaje registrado ${site.id}.`);
+  const character = worldCharacters[site.id];
   character.root.name = `npc:${site.id}`;
   character.root.position.copy(site.position);
   character.root.rotation.y = site.yaw;
@@ -3042,6 +3138,112 @@ for (const site of city.npcSites) {
   npcActors.push({ id: site.id, character, plate, anchor: new THREE.Vector3() });
   city.interactables.push({ id: `npc:${site.id}`, position: character.root.position, radius: 2.6, label: 'Hablar' });
 }
+}
+placeCityNpcs();
+async function switchGameMap(id: string) {
+  if (city.locationId === id) return;
+  const next = await gameCity(id);
+  setWindow(null, false);
+  closeDialog();
+  endIsbertoArrival();
+  pendingTalk = null;
+  moveTarget = null; marker.visible = false;
+  keys.clear(); playerVel.set(0, 0, 0);
+  city.root.removeFromParent();
+  city = next;
+  scene.add(city.root);
+  env.setLampposts(id === 'brumaluz' && !publishedMaps().brumaluz);
+  conversationShot = '';
+  remotePlayers.clear();
+  placeCityNpcs();
+  portalsArmed = false;
+  setCombatEncounter(combatEncounter);
+  refreshCityMinimap();
+}
+
+function placeAfterTravel(position: { x: number; z: number; yaw: number }) {
+  holder.position.set(position.x, city.groundY(position.x, position.z), position.z);
+  yaw = position.yaw; holder.rotation.y = yaw + Math.PI;
+  groundHeight = holder.position.y;
+  jumpElapsed = jumpDuration; jumpHeight = 0;
+  playerVel.set(0, 0, 0); moveTarget = null; marker.visible = false;
+  camTarget.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0));
+  portalsArmed = false;
+}
+
+async function travelPortal(portal: CityPortal) {
+  if (mapTravelling || dead || combatEncounter?.status === 'active') return;
+  if (!portal.target) { toast('Camino cerrado', 'Este portal todavía no tiene un destino.', false); return; }
+  const target = portal.target;
+  if (target.map !== 'brumaluz' && !publishedMaps()[target.map]) {
+    toast('Camino cerrado', 'El mapa de destino todavía no está publicado.', true);
+    return;
+  }
+  mapTravelling = true;
+  keys.clear(); playerVel.set(0, 0, 0); moveTarget = null; marker.visible = false;
+  const entry = publishedMaps()[target.map];
+  const connection = worldConnection;
+  let finish = () => {};
+  let serverMoved = false;
+  try {
+    const module = entry ? await entry.load() : null;
+    const preview = module && typeof module.map === 'object' && module.map && 'preview' in module.map && typeof module.map.preview === 'string'
+      ? module.map.preview : undefined;
+    finish = beginMapTransition({ name: locationName(target.map), region: entry?.region, loadingTip: entry?.loadingTip, preview });
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    // Carga antes de pedir el viaje: un recurso defectuoso nunca deja al jugador en un mapa que no puede ver.
+    const destination = await gameCity(target.map);
+    if (mode !== 'play') return;
+    if (!connection || TEST) {
+      const arrival = target.arrival ? destination.arrivals[target.arrival] : undefined;
+      if (target.arrival && !arrival) throw new Error(`No existe la llegada «${target.arrival}» en el destino.`);
+      await switchGameMap(target.map);
+      state.location = target.map;
+      state.position = { x: (arrival?.position ?? city.spawn).x, z: (arrival?.position ?? city.spawn).z, yaw: arrival?.yaw ?? city.spawnYaw };
+      placeAfterTravel(state.position);
+    } else {
+      const result = await connection.travel(portal.id);
+      serverMoved = true;
+      if (connection !== worldConnection || mode !== 'play') return;
+      if (result.location !== target.map) throw new Error('El destino del servidor no coincide con la publicación local. Actualiza el SQL del mundo.');
+      await switchGameMap(result.location);
+      state.location = result.location;
+      receiveWorld(result);
+      placeAfterTravel(result.position);
+    }
+    updateHud();
+    chatSystem(`Has llegado a ${locationName(state.location)}.`);
+  } catch (error) {
+    console.error('No se pudo viajar por el portal.', error);
+    toast('No se pudo viajar', errorMessage(error), true);
+    // Ante una respuesta perdida, vuelve a selección: reentrar recupera mapa y posición autoritativos.
+    if (connection && (serverMoved || worldConnection === connection)) await returnToCharacters();
+  } finally {
+    mapTravelling = false;
+    finish();
+    if (connection === worldConnection) connection?.resume();
+  }
+}
+
+function updatePortals() {
+  if (mode !== 'play' || mapTravelling || dead || isDialogOpen() || isbertoArrival || openWindow || gameMenuOpen || playerMenuOpen || worldMenuOpen || optionsOpen || tradeWindow.isOpen) return;
+  const inside = city.portals.filter(portal => Math.hypot(holder.position.x - portal.position.x, holder.position.z - portal.position.z) <= portal.radius);
+  // Hay que salir de todas las zonas de portal tras una llegada para evitar viajes de ida y vuelta infinitos.
+  if (!inside.length) { portalsArmed = true; return; }
+  if (!portalsArmed) return;
+  const portal = inside.find(portal => portal.trigger === 'walk');
+  if (!portal) return;
+  portalsArmed = false;
+  if (!portal.target || (portal.target.map !== 'brumaluz' && !publishedMaps()[portal.target.map])) {
+    const key = `${city.locationId}:${portal.id}`;
+    if (!portalWarnings.has(key)) {
+      portalWarnings.add(key);
+      toast('Camino cerrado', 'Este destino todavía no está publicado.', false);
+    }
+    return;
+  }
+  void travelPortal(portal);
+}
 let combatEncounter: CombatEncounter|null=null;
 let combatTargetRoot: THREE.Group|null=null;
 let combatAuto=false;
@@ -3050,43 +3252,23 @@ let nextCombatAttack=0;
 let nextLocalEnemyAttack=0;
 let pendingCombatSkill=false;
 let localCombatState:CombatState|null=null;
-function buildShadowling(encounter:CombatEncounter) {
-  const root=new THREE.Group();
-  root.name='combat-enemy';
-  const body=new THREE.Mesh(
-    new THREE.SphereGeometry(.72,20,16),
-    new THREE.MeshStandardMaterial({color:'#302337',roughness:.8,emissive:'#21112d',emissiveIntensity:.5}),
-  );
-  body.scale.set(.9,1.15,.82);body.position.y=.85;body.castShadow=true;root.add(body);
-  for(const x of [-.23,.23]){
-    const eye=new THREE.Mesh(new THREE.SphereGeometry(.105,12,10),new THREE.MeshStandardMaterial({
-      color:'#d4a4ff',emissive:'#a83dff',emissiveIntensity:2.1,roughness:.25,
-    }));
-    eye.position.set(x,1.02,.58);root.add(eye);
-  }
-  for(const x of [-.35,.35]){
-    const foot=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),new THREE.MeshStandardMaterial({color:'#23192b',roughness:1}));
-    foot.scale.set(1,.45,1.2);foot.position.set(x,.18,.02);foot.castShadow=true;root.add(foot);
-  }
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(.82,.035,8,32),new THREE.MeshBasicMaterial({color:'#c694f6',transparent:true,opacity:.85}));
-  ring.name='combat-lock-ring';
-  ring.rotation.x=-Math.PI/2;ring.position.y=.04;root.add(ring);
-  root.position.set(encounter.x,city.groundY(encounter.x,encounter.z),encounter.z);
-  castShadows(root);
-  scene.add(root);
-  return root;
-}
 function setCombatEncounter(value:unknown) {
   const previousStatus = combatEncounter?.status;
+  const previousHealth = combatEncounter?.health;
   combatEncounter=parseCombatEncounter(value);
-  if(combatEncounter?.status==='active'||(combatEncounter?.status==='defeated' && !combatEncounter.looted)){
-    if(!combatTargetRoot)combatTargetRoot=buildShadowling(combatEncounter);
+  if(city.locationId === 'brumaluz' && (combatEncounter?.status==='active'||(combatEncounter?.status==='defeated' && !combatEncounter.looted))){
+    if(!combatTargetRoot){
+      combatTargetRoot=buildShadowEnemy(combatEncounter.x,combatEncounter.z,city.groundY(combatEncounter.x,combatEncounter.z));
+      castShadows(combatTargetRoot);
+      scene.add(combatTargetRoot);
+    }
     combatTargetRoot.position.set(combatEncounter.x,city.groundY(combatEncounter.x,combatEncounter.z),combatEncounter.z);
     const corpse = combatEncounter.status === 'defeated';
     combatTargetRoot.name = corpse ? 'combat-corpse' : 'combat-enemy';
-    combatTargetRoot.rotation.z = corpse ? Math.PI / 2 : 0;
-    combatTargetRoot.scale.setScalar(corpse ? .8 : 1);
-    combatTargetRoot.position.y += corpse ? .12 : 0;
+    if (corpse && previousStatus !== 'defeated') playShadowEnemyAction(combatTargetRoot,'death',clock.getElapsedTime());
+    else if (!corpse && previousStatus === 'active' && previousHealth !== undefined && combatEncounter.health < previousHealth) {
+      playShadowEnemyAction(combatTargetRoot,'hit',clock.getElapsedTime());
+    }
     if (corpse) releaseCombatTarget();
     $('#combat-controls').hidden=corpse;
     $('#combat-auto').setAttribute('aria-pressed',String(combatAuto));
@@ -3119,6 +3301,7 @@ function applyCombatResult(value:Record<string,unknown>) {
   if (typeof value.skillCooldown === 'number') skillReadyAt = performance.now() + Math.max(0, value.skillCooldown) * 1000;
   if(state.health===0&&combatEncounter?.status==='active')setCombatEncounter({...combatEncounter,status:'failed'});
   resetOverheal();updateHud();
+  if(vitalsOf(state).health<before&&combatEncounter?.status==='active')playShadowEnemyAction(combatTargetRoot,'attack',clock.getElapsedTime());
   if(vitalsOf(state).health<before){char.hit();chatCombat(t('La criatura extraña te hiere.'));}
   if(state.health===0&&!dead)die();
   if(typeof value.damage==='number'&&value.damage>0){
@@ -3259,7 +3442,7 @@ window.setInterval(() => {
     npcSay(NPCS[npc.id].name, line);
   }
 }, 4000);
-const targetFrame = createTargetFrame(canvas, camera, city.root);
+const targetFrame = createTargetFrame(canvas, camera, () => city.root);
 function updateTargetFrame() {
   const enabled = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !openWindow && !optionsOpen && !playerInteractions.isOpen;
   if (!enabled) { targetFrame.update([], false, holder.position); return; }
@@ -3269,18 +3452,22 @@ function updateTargetFrame() {
   for (const npc of npcActors) {
     if (npc.id === 'isberto' && !isbertoUnlocked()) continue;
     const def = NPCS[npc.id];
-    targets.push({ id: `npc:${npc.id}`, root: npc.character.root, name: def.name, level: def.level, height: npc.character.d.height,
-      vitals: def.vitals, identity: { kind: 'npc', type: def.type, title: def.title } });
+    const data = registeredNpcs[npc.id];
+    targets.push({ id: `npc:${npc.id}`, root: npc.character.root, name: def.name, level: def.level, height: data.appearance.height,
+      scale: data.render.scale * data.render.height, widthScale: data.render.scale * data.render.width,
+      vitals: def.vitals, identity: { kind: 'npc', type: def.type, title: def.title, badgeIcon: data.badgeIcon } });
   }
   if(combatTargetRoot&&combatEncounter?.status==='active')targets.push({
-    id:'enemy:shadowling',root:combatTargetRoot,name:'Sombra extraña',level:1,height:0,
+    id:'enemy:shadowling',root:combatTargetRoot,name:'Sombra de Isberto',level:1,height:1.4,
     vitals:{health:combatEncounter.health,maxHealth:combatEncounter.maxHealth,overheal:0,resource:0,maxResource:1,resourceKind:'stamina'},
-    identity:{kind:'npc',type:'hostile',title:'Criatura extraña'},
+    identity:{kind:'npc',type:'hostile',title:'Espectro umbrío'},
   });
   if (welcomeWorld.root.visible) targets.push({
-    id: 'npc:gnomi', root: welcomeWorld.root, name: 'Gnomi', level: 1, height: 0,
-    vitals: { health: 100, maxHealth: 100, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' },
-    identity: { kind: 'npc', type: 'resident', title: 'Ayudante de bienvenida' },
+    id: 'npc:gnomi', root: welcomeWorld.root, name: registeredNpcs.gnomi.name, level: registeredNpcs.gnomi.stats.level, height: registeredNpcs.gnomi.appearance.height,
+    scale: registeredNpcs.gnomi.render.scale * registeredNpcs.gnomi.render.height,
+    widthScale: registeredNpcs.gnomi.render.scale * registeredNpcs.gnomi.render.width,
+    vitals: { health: registeredNpcs.gnomi.stats.health, maxHealth: registeredNpcs.gnomi.stats.maxHealth, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' },
+    identity: { kind: 'npc', type: 'resident', title: registeredNpcs.gnomi.subtitle, badgeIcon: registeredNpcs.gnomi.badgeIcon },
   });
   targetFrame.update(targets, true, holder.position, lockedEnemy ? 'enemy:shadowling' : null);
 }
@@ -3297,7 +3484,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(t - last, 0.05);
   last = t;
   world.uTime.value = t;
-  if (mode === 'play') { updatePlay(dt); tickWorldCombat(t); tickOverheal(); tickFood(); }
+  if (mode === 'play' && !mapTravelling) { updatePlay(dt); tickWorldCombat(t,dt); tickOverheal(); tickFood(); }
   else if (!dragging) {
     holder.rotation.y += spinVel;
     spinVel *= 0.92;
@@ -3327,15 +3514,18 @@ renderer.setAnimationLoop(() => {
   city.update(t, mode === 'play' ? holder.position : undefined);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
+  env.follow(camera.position);
   if (openWindow === 'loot') positionLootWindow();
   updateWelcome(dt, t);
-  coinBags.update(state.coinBags, mode === 'play', t);
+  coinBags.update(state.coinBags, mode === 'play' && city.locationId === 'brumaluz', t);
+  updatePortals();
   applyCameraShake();
   updateNameplate();
   if (mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);
   updateInteractPrompt();
   updateTargetFrame();
   if (mode === 'play') updateMinimap();
+  if (mode === 'play') updateZoneMap?.();
   try {
     if (TEST) renderer.render(scene, camera); else stage.render();
   } catch (error) {

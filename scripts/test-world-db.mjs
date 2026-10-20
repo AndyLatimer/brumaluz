@@ -29,6 +29,7 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
     const a = randomUUID(), b = randomUUID(), ca = randomUUID(), cb = randomUUID(), ca2 = randomUUID();
     const sa = randomUUID(), sb = randomUUID(), replacement = randomUUID();
     const location = `test_${randomUUID()}`;
+    await client.query('insert into public.world_maps(id,name,spawn) values($1,$2,$3)', [location, 'Zona de pruebas', {x:0,z:0,yaw:0}]);
     for (const id of [a, b]) {
       await client.query('insert into auth.users(id, raw_user_meta_data) values($1, $2)', [id, { username: `test_${id.replaceAll('-', '').slice(0, 12)}` }]);
     }
@@ -57,6 +58,56 @@ test('world RPCs validate multiplayer state without persisting test data', { tim
       }
     }
     const motion = (x, extra = {}) => ({ x, z: 0, yaw: 0, facing: 1, jump: 0, wave: 0, ...extra });
+    await t.test('portals validate authority, persist the destination and isolate players by map', async () => {
+      await client.query('savepoint map_travel');
+      try {
+        const destination = `zone_${randomUUID()}`;
+        await client.query('insert into public.world_maps(id,name,spawn,bounds) values($1,$2,$3,$4)', [
+          destination, 'Destino', {x:450,z:0,yaw:1}, {minX:-500,maxX:500,minZ:-300,maxZ:300},
+        ]);
+        await client.query('insert into public.world_portals(map,id,x,z,radius,target_map,target) values($1,$2,0,0,3,$3,$4),($3,$5,450,0,3,$1,$6)', [
+          location, 'out', destination, {x:450,z:0,yaw:1}, 'back', {x:0,z:0,yaw:0},
+        ]);
+        await user(b); await rpc('world_join', [cb, sb]);
+        await user(a);
+        await rpc('character_enter', [ca]);
+        assert.ok((await rpc('world_join', [ca, sa])).players.some(player => player.id === cb));
+        await rejected(() => rpc('world_travel', [cb, sa, 'out']), /CHARACTER_NOT_FOUND/);
+        await rejected(() => rpc('world_travel', [ca, replacement, 'out']), /WORLD_SESSION_REPLACED/);
+        await rejected(() => rpc('world_travel', [ca, sa, 'invented']), /PORTAL_NOT_FOUND/);
+        const travelled = await rpc('world_travel', [ca, sa, 'out']);
+        assert.equal(travelled.location, destination);
+        assert.equal(travelled.position.x, 450);
+        assert.ok(!travelled.players.some(player => player.id === cb));
+        assert.equal((await rpc('character_enter', [ca])).location, destination);
+        assert.equal((await rpc('world_join', [ca, sa])).position.x, 450, 'reconexión conserva destino y posición');
+        assert.equal((await rpc('world_sync', [ca, sa, motion(450)])).position.x, 450, 'usa los límites del mapa, no los 400 m de la capital');
+        await rejected(() => rpc('world_sync', [ca, sa, motion(501)]), /INVALID_WORLD_STATE/);
+        assert.ok((await rpc('world_travel', [ca, sa, 'back'])).players.some(player => player.id === cb));
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":30,\"z\":0,\"yaw\":0}' where character_id=$1", [ca]);
+        await user(a);
+        await rejected(() => rpc('world_travel', [ca, sa, 'out']), /PORTAL_TOO_FAR/);
+        await client.query('reset role');
+        await client.query("update public.world_players set position='{\"x\":0,\"z\":0,\"yaw\":0}',seen_at=now()-interval '16 seconds' where character_id=$1", [ca]);
+        await user(a);
+        await rejected(() => rpc('world_travel', [ca, sa, 'out']), /WORLD_SESSION_REPLACED/);
+        await client.query('reset role');
+        await client.query("update public.world_players set dead=true,seen_at=now() where character_id=$1", [ca]);
+        await client.query("update public.characters set data=data||$1::jsonb where id=$2", [{location:destination,health:0},ca]);
+        await user(a);
+        await rejected(() => rpc('world_travel', [ca, sa, 'back']), /CHARACTER_DEAD/);
+        const revived = await rpc('character_enter', [ca]);
+        assert.equal(revived.location, 'brumaluz', 'entrar caído vuelve a la capital');
+        await client.query('reset role');
+        await client.query("update public.characters set data=data||$1::jsonb where id=$2", [{location:'removed_map',position:{x:1,z:0,yaw:0}},ca]);
+        await user(a);
+        assert.equal((await rpc('character_enter', [ca])).location, 'brumaluz');
+      } finally {
+        await client.query('rollback to savepoint map_travel');
+        await client.query('release savepoint map_travel');
+      }
+    });
     await t.test('new characters receive only their class kit; legacy characters keep equipment and starter gear cannot be sold', async () => {
       await client.query('savepoint starter_kits');
       try {

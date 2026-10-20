@@ -1,5 +1,5 @@
 import { sanitize, type CharData } from '../data/data';
-import { joinWorld, leaveWorld, syncWorld } from './account';
+import { joinWorld, leaveWorld, syncWorld, travelWorld } from './account';
 import type { Vitals } from '../data/stats';
 import { parseFoodBuff, type FoodBuff } from '../data/food';
 import type { ItemStack } from '../data/inventory';
@@ -132,6 +132,7 @@ export class WorldConnection {
   private joined = false;
   private started = false;
   private retrying = false;
+  private paused = false;
   private lastSuccess = performance.now();
 
   constructor(private characterId: string, private hooks: WorldHooks) {}
@@ -173,13 +174,13 @@ export class WorldConnection {
           this.hooks.stale();
         }
       } finally {
-        if (!this.closed) this.timer = setTimeout(() => this.tick(), this.retrying ? 1500 : 250);
+        if (!this.closed && !this.paused) this.timer = setTimeout(() => this.tick(), this.retrying ? 1500 : 250);
       }
     })();
   }
 
   async stop() {
-    const finalMotion = this.started && !this.closed ? this.hooks.motion() : null;
+    const finalMotion = this.started && !this.closed && !this.paused ? this.hooks.motion() : null;
     this.closed = true;
     clearTimeout(this.timer);
     await this.pending;
@@ -188,6 +189,45 @@ export class WorldConnection {
       catch (error) { console.error('[Brumaluz multiplayer] No se pudo enviar la última posición.', error); }
     }
     if (this.joined) await this.leave();
+  }
+
+  /**
+   * Cruza un portal: pausa la sincronización, envía la última posición y pide el viaje al servidor.
+   * Después hay que llamar a `resume()` (también si falla) cuando el nuevo mapa esté listo.
+   */
+  async travel(portal: string): Promise<WorldSnapshot & { location: string }> {
+    if (this.closed || !this.joined) throw new Error('No estás conectado al mundo.');
+    if (this.paused) throw new Error('Ya hay un viaje en curso.');
+    this.paused = true;
+    clearTimeout(this.timer);
+    const previous = this.pending;
+    const operation = (async () => {
+      await previous;
+      if (this.closed) throw new Error('La conexión al mundo se ha cerrado.');
+      const synced = snapshot(await syncWorld(this.characterId, this.session, this.hooks.motion()));
+      if (this.closed) throw new Error('La conexión al mundo se ha cerrado.');
+      this.hooks.receive(synced);
+      const response = record(await travelWorld(this.characterId, this.session, portal));
+      if (this.closed) throw new Error('La conexión al mundo se ha cerrado.');
+      if (typeof response.location !== 'string') throw new Error('Respuesta multijugador no válida.');
+      this.lastSuccess = performance.now();
+      return { ...snapshot(response), location: response.location };
+    })();
+    // stop espera también el RPC de viaje y nunca envía coordenadas del mapa anterior al destino.
+    this.pending = operation.then(() => {}, () => {});
+    return operation;
+  }
+
+  async suspend() {
+    this.paused = true;
+    clearTimeout(this.timer);
+    await this.pending;
+  }
+
+  resume() {
+    if (!this.paused) return;
+    this.paused = false;
+    if (this.started && !this.closed) { clearTimeout(this.timer); this.tick(); }
   }
 
   private async leave() {

@@ -10,6 +10,7 @@ import { chromium } from 'playwright';
 
 const port = Number(process.env.TEST_WORLD_PORT || 4175);
 const url = `http://127.0.0.1:${port}`;
+const npcDefinitions = JSON.parse(readFileSync(new URL('../src/data/npcs.json', import.meta.url), 'utf8')).npcs;
 const project = readFileSync(new URL('../dist/index.html', import.meta.url), 'utf8').match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
 let server, browser;
 before(async () => {
@@ -574,7 +575,7 @@ test('welcome systems save origins directly, present quest cards, await server a
       let skins=0,bones=0;
       g.traverse(object=>{if(object.isSkinnedMesh)skins++;if(object.isBone)bones++;});
       return {
-        skins,bones,scale:g.getObjectByName('gnomi-rig').scale.y,
+        skins,bones,scale:g.getObjectByName('gnomi-rig').scale.y*g.getObjectByName('gnomi-rig').children[0].scale.y,
         hat:!!g.getObjectByName('helpers-soft-cap'),
         hatAnchor:g.getObjectByName('helpers-soft-cap')?.parent.name,
         bindings:(()=>{
@@ -617,7 +618,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     await approach(first.page,-6.4,-8.5);
     await talk(first.page);
     assert.match(await first.page.locator('.dialog-text').textContent(),/ayudante de bienvenida/);
-    assert.equal(await first.page.locator('.dialog-subtitle').textContent(),'Ayudante de bienvenida');
+    assert.equal(await first.page.locator('.dialog-subtitle').textContent(),npcDefinitions.find(npc=>npc.id==='gnomi').subtitle);
     assert.equal(await first.page.locator('.dialog-quest-card').count(),0,'Ordinary conversation has no quest panel');
     world.rpcDelay.set('welcome_action',600);
     await first.page.getByRole('button',{name:'He venido a probar suerte.'}).click();
@@ -1857,7 +1858,7 @@ test('NPC interaction still opens its conversation with E', { timeout: 120000 },
     await player.page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await player.page.keyboard.press('KeyE');
     await player.page.locator('#dialog').waitFor({state:'visible'});
-    assert.equal(await player.page.locator('.dialog-subtitle').textContent(),'Ayudante del Gremio');
+    assert.equal(await player.page.locator('.dialog-subtitle').textContent(),npcDefinitions.find(npc=>npc.id==='gnomi').subtitle);
     assert.match(await player.page.locator('.dialog-text').textContent(),/Soy Gnomi/);
     assert.equal(await player.page.locator('.dialog-quest-card').count(),0,'Meeting Gnomi does not activate the welcome quest');
     await player.page.keyboard.press('Escape');
@@ -1906,6 +1907,27 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     await prepare();
     const marker=page.locator('#quest-objective-marker');
     await page.waitForFunction(()=>!document.querySelector('#quest-objective-marker').classList.contains('offscreen'));
+    assert.equal(await marker.locator('.quest-marker-symbol').textContent(),'!');
+    assert.doesNotMatch(await marker.textContent(),/◆/);
+    assert.match(await marker.locator('.quest-marker-distance').textContent(),/^\d+ m$/);
+    for(const menu of ['player','world']){
+      await page.locator(`#${menu}-menu-toggle`).click();
+      const buttons=page.locator(`#${menu}-menu-panel > button`);
+      assert.equal(await buttons.locator('svg.menu-option-icon[aria-hidden="true"]').count(),await buttons.count());
+      const positions=await buttons.evaluateAll(buttons=>buttons.filter(b=>!b.hidden).map(b=>{
+        const rect=b.getBoundingClientRect(),icon=b.querySelector('svg').getBoundingClientRect();
+        return icon.right<=rect.right&&icon.left>rect.left+rect.width/2;
+      }));
+      assert.ok(positions.every(Boolean),'Menu icons stay at the right edge');
+      await page.locator(`#${menu}-menu-toggle`).click();
+    }
+    assert.equal(await page.locator('#game-menu-panel .menu-option-icon').count(),0);
+    assert.equal(await page.locator('#world-menu-map').textContent(),'Mapa');
+    assert.equal(await page.locator('#world-menu-map kbd').count(),0);
+    await page.keyboard.press('m');
+    await page.locator('.zone-map-chart').waitFor();
+    await page.keyboard.press('m');
+    await page.locator('#window-backdrop').waitFor({state:'hidden'});
     assert.match(await page.locator('.quest-tracker-progress').textContent(),/Paso 2 de 3/);
     const initial=await page.locator('#quest-tracker').boundingBox();
     await page.getByRole('button',{name:'Minimizar misiones',exact:true}).click();
@@ -2264,7 +2286,7 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.keyboard.press('KeyE');
     await page.locator('.dialog-speaker').filter({hasText:'Gnomi'}).waitFor();
     assert.match(await page.locator('.dialog-text').textContent(),/tampoco sé qué era/);
-    assert.equal(await page.locator('.dialog-subtitle').textContent(),'Ayudante del Gremio');
+    assert.equal(await page.locator('.dialog-subtitle').textContent(),npcDefinitions.find(npc=>npc.id==='gnomi').subtitle);
     await page.keyboard.press('KeyE');
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
     await page.keyboard.press('KeyE');

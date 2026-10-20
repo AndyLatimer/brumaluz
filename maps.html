@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de mapas · Brumaluz</title>
+  </head>
+  <body class="map-editor">
+    <header id="topbar">
+      <strong class="brand">Editor de mapas</strong>
+      <label class="map-selector">Editar mapa
+        <select id="map-selector" aria-label="Mapa a editar" title="Cambiar entre el continente, ciudades y otros mapas guardados"></select>
+      </label>
+      <div class="group" role="group" aria-label="Mapa">
+        <button type="button" data-action="new" title="Nuevo mapa">Nuevo</button>
+        <button type="button" data-action="open" title="Abrir un mapa guardado (Ctrl+O)">Abrir</button>
+        <button type="button" data-action="save" title="Guardar en el proyecto (Ctrl+S)">Guardar</button>
+        <button type="button" data-action="save-as" title="Guardar con otro ID">Guardar como…</button>
+        <button type="button" data-action="export" title="Descargar el mapa como JSON">Exportar</button>
+        <label class="file-button" title="Abrir un JSON exportado">Importar<input id="import-file" type="file" accept=".json,application/json"></label>
+      </div>
+      <div class="group" role="group" aria-label="Historial">
+        <button type="button" data-action="undo" title="Deshacer (Ctrl+Z)">↶</button>
+        <button type="button" data-action="redo" title="Rehacer (Ctrl+Y)">↷</button>
+      </div>
+      <div class="group" role="group" aria-label="Vista">
+        <button type="button" data-toggle="grid" aria-pressed="true" title="Rejilla">Rejilla</button>
+        <button type="button" data-toggle="collisions" aria-pressed="false" title="Mostrar colisiones (K)">Colisiones</button>
+        <button type="button" data-toggle="markers" aria-pressed="true" title="Mostrar marcadores">Marcadores</button>
+        <button type="button" data-toggle="grass" aria-pressed="true" title="Mostrar hierba">Hierba</button>
+        <button type="button" data-action="top-view" title="Vista cenital (Inicio)">Cenital</button>
+        <button type="button" data-action="frame-all" title="Encuadrar el mapa">Encuadrar</button>
+      </div>
+      <button type="button" class="accent" data-action="walk" title="Pasear por el mapa con un personaje (J)">▶ Pasear</button>
+      <button type="button" class="publish" data-action="publish" title="Guardar y publicar este mapa en el mundo del juego">⇪ Publicar en el juego</button>
+      <span id="map-title" class="map-title"></span>
+      <span id="save-state" class="save-state" role="status" aria-live="polite"></span>
+      <span id="published-state" class="published-state" hidden></span>
+      <nav class="dev-links"><a href="./npcs.html">NPCs</a> · <a href="./assets.html">Recursos</a> · <a href="./wardrobe.html">Vestuario</a> · <button type="button" data-action="help" class="link">Ayuda (F1)</button></nav>
+    </header>
+
+    <nav id="tools" aria-label="Herramientas"></nav>
+
+    <aside id="left" class="panel">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="catalog" aria-selected="true">Catálogo</button>
+        <button type="button" role="tab" data-tab="outliner" aria-selected="false">Escena</button>
+      </div>
+      <section data-panel="catalog" class="catalog">
+        <input id="catalog-search" type="search" placeholder="Buscar recursos (casa, árbol, barril…)" autocomplete="off">
+        <div id="catalog-groups" class="chips"></div>
+        <div id="catalog-categories" class="chips small"></div>
+        <p id="catalog-count" class="hint"></p>
+        <div id="catalog-grid" class="asset-grid"></div>
+      </section>
+      <section data-panel="outliner" hidden>
+        <h3>Capas</h3>
+        <div id="layers"></div>
+        <div class="row"><button type="button" data-action="add-layer">+ Capa</button><label>Nuevos en <select id="active-layer"></select></label></div>
+        <h3>Elementos</h3>
+        <input id="outliner-search" type="search" placeholder="Filtrar por nombre, recurso o tipo" autocomplete="off">
+        <div id="outliner" class="outliner"></div>
+      </section>
+    </aside>
+
+    <main id="viewport">
+      <div id="tool-options" class="tool-options"></div>
+      <div id="loading" class="loading">Cargando editor…</div>
+      <div id="walk-hint" class="walk-hint" hidden>WASD mover · Mayús correr · Espacio saltar · ratón derecho girar · Esc salir</div>
+      <footer id="statusbar"><span id="cursor-info"></span><span id="scene-info"></span><span id="hint-info"></span></footer>
+    </main>
+
+    <aside id="right" class="panel">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="properties" aria-selected="true">Propiedades</button>
+        <button type="button" role="tab" data-tab="map" aria-selected="false">Mapa</button>
+      </div>
+      <section data-panel="properties" id="properties"></section>
+      <section data-panel="map" id="map-settings" hidden></section>
+    </aside>
+
+    <dialog id="open-dialog">
+      <form method="dialog">
+        <h2>Mapas del proyecto</h2>
+        <p class="hint">Guardados en <code>src/data/maps/</code>. Se quedan aquí hasta que decidas usarlos; «Publicar en el juego» convierte el mapa abierto en la ciudad de Brumaluz.</p>
+        <p class="hint published-hint" id="published-hint"></p>
+        <div id="map-list" class="map-list"></div>
+        <div class="row end"><button type="button" data-action="overworld">Mundo de Pompelín</button><button type="button" data-action="pompelin">Capital: Brumaluz</button><button value="cancel">Cerrar</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="new-dialog">
+      <form method="dialog" id="new-form">
+        <h2 id="new-title">Nuevo mapa</h2>
+        <label>Nombre <input name="name" required maxlength="80" value="Mapa nuevo"></label>
+        <label>ID (archivo) <input name="id" required pattern="[a-z0-9][a-z0-9_\-]{0,63}" value="mapa_nuevo"></label>
+        <div class="new-terrain">
+          <label>Ancho (m) <input name="width" type="number" min="16" max="10000" step="8" value="128"></label>
+          <label>Fondo (m) <input name="depth" type="number" min="16" max="10000" step="8" value="128"></label>
+          <label>Celda (m) <select name="cell"><option value="0.5">0,5</option><option value="1" selected>1</option><option value="2">2</option><option value="4">4</option><option value="8">8 · continente</option><option value="16">16 · gran extensión</option></select></label>
+          <label>Suelo <select name="paint"></select></label>
+          <label>Hierba <input name="grass" type="range" min="0" max="255" value="110"></label>
+        </div>
+        <p class="hint" id="new-note"></p>
+        <div class="row end"><button value="cancel" formnovalidate>Cancelar</button><button value="ok" class="accent">Aceptar</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="help-dialog">
+      <form method="dialog">
+        <h2>Atajos</h2>
+        <div class="help-grid">
+          <div><h3>Cámara</h3><p><kbd>Botón derecho</kbd> girar · <kbd>Botón central</kbd> desplazar · <kbd>Rueda</kbd> zoom · <kbd>WASD</kbd>/<kbd>flechas</kbd> mover · <kbd>Q</kbd>/<kbd>E</kbd> rotar · <kbd>F</kbd> enfocar selección · <kbd>Inicio</kbd> cenital</p></div>
+          <div><h3>Herramientas</h3><p><kbd>V</kbd> seleccionar · <kbd>B</kbd> colocar · <kbd>N</kbd> dispersar · <kbd>X</kbd> borrar · <kbd>T</kbd> esculpir · <kbd>P</kbd> pintar suelo · <kbd>H</kbd> hierba · <kbd>C</kbd> colisiones · <kbd>M</kbd> marcadores</p></div>
+          <div><h3>Objetos</h3><p><kbd>1</kbd> mover · <kbd>2</kbd> rotar · <kbd>3</kbd> escalar · <kbd>R</kbd> girar 45° (<kbd>Mayús</kbd> 15°) · <kbd>G</kbd> asentar en el suelo · <kbd>Supr</kbd> borrar · <kbd>Ctrl+C/V/D</kbd> copiar, pegar, duplicar · <kbd>Ctrl+A</kbd> todo · <kbd>Mayús</kbd>+clic añade · arrastrar en vacío selecciona por caja · <kbd>Alt</kbd>+arrastrar con el gizmo duplica</p></div>
+          <div><h3>Pinceles</h3><p><kbd>[</kbd>/<kbd>]</kbd> tamaño · <kbd>Ctrl</kbd> invierte subir/bajar o añadir/quitar · <kbd>Mayús</kbd> suaviza al esculpir · <kbd>Alt</kbd>+clic toma la altura o el material</p></div>
+          <div><h3>General</h3><p><kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> deshacer/rehacer · <kbd>Ctrl+S</kbd> guardar · <kbd>Ctrl+O</kbd> abrir · <kbd>J</kbd> pasear · <kbd>K</kbd> colisiones · <kbd>Esc</kbd> cancelar</p></div>
+          <div><h3>Publicar en el juego</h3><p>Guarda el mapa y lo convierte en la ciudad de Brumaluz: aparición (marcador de aparición), Testículos e Isberto (marcadores de NPC), el pozo y las interacciones con texto (marcadores de interacción), faroles y luces. Las misiones y las bolsas de pelines no se mueven. «Abrir» permite volver a la ciudad procedural; <code>?ciudad-procedural</code> en el juego la fuerza sin despublicar.</p></div>
+        </div>
+        <div class="row end"><button value="close">Cerrar</button></div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/dev/mapEditor/main.ts"></script>
+  </body>
+</html>

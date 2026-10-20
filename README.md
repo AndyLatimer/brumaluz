@@ -4,8 +4,11 @@ MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 
 ## Biblioteca de recursos
 
-Los cinco paquetes KayKit importados tienen un [catálogo y visor local](./docs/ASSET-LIBRARY.md)
-con 455 GLB: objetos, bosque, mazmorras, personajes y animaciones.
+Los doce paquetes KayKit y Kenney importados tienen un [catálogo y visor local](./docs/ASSET-LIBRARY.md)
+con 1.021 GLB: objetos, bosque, mazmorras, edificios medievales, terreno hexagonal,
+mobiliario, herramientas, cocina, personajes y animaciones.
+Restaurant incluye solo 68 recursos aptos para fantasia medieval. Las nuevas
+bibliotecas conservan 173 clips para rigs Medium y Large, disponibles en el visor.
 Con `npm run dev`, abrir `/assets.html`. El visor no modifica el juego.
 Una selección de ocho objetos detalla los servicios y jardines de la ciudad;
 los personajes tienen variaciones de reposo e impactos y gestos al recoger
@@ -13,6 +16,204 @@ y consumir. El creador incorpora pelo de Ranger y Rogue Hooded: dos peinados
 nuevos, dos cortes rehechos con mechones reales y un pañuelo de viajero
 recoloreable. Véase [Pelo y complementos](./docs/CHARACTER-ART.md#pelo-y-complementos-del-creador).
 Se conservan los IDs guardados y las mecánicas, sin cargar toda la biblioteca.
+
+## Creador de NPCs (desarrollo)
+
+Con `npm run dev`, abrir `/npcs.html` desde el mismo ordenador (localhost).
+El taller permite crear, abrir, editar, duplicar y eliminar NPCs, con nombre,
+subtítulo, notas y todas las opciones de apariencia del creador: linaje, piel,
+rostro, pelo, barba, ojos, rasgos, complementos, maquillaje y colores.
+Cada NPC tiene **un único atuendo fijo**, compuesto de piezas independientes:
+torso, cada brazo y pierna, sobrerropa, calzado adicional, sombrero, capa y
+complemento de espalda. Hay 48 prendas compatibles de Mago, Caballero, Viajero,
+Bárbaro, Explorador, Viajero encapuchado y Ayudantes, con colores por pieza
+o el color original del recurso. La clase no cambia la ropa. Las bases solo
+rellenan las piezas del único atuendo; no se guardan conjuntos alternativos.
+Algunas piernas incluyen ya el calzado; las botas adicionales de Ayudantes
+se prepararon para su pantalón, no para superponerlas a otras botas.
+También hay equipo visible de ambas manos, escala y proporciones adicionales.
+
+- Nivel, vida máxima/actual y siete atributos totales son valores propios del
+  NPC, sin el límite de puntos de creación de los jugadores. La vida se edita
+  explícitamente; hay un botón para sugerirla con la fórmula del juego.
+- Vista 3D con giro, zoom, gestos y los 139 clips compatibles Medium del nuevo
+  paquete; no se guarda una IA ni un comportamiento por seleccionar animaciones.
+- Icono del recuadro del NPC al seleccionarlo: automático según su función,
+  una imagen disponible o un identificador reservado para un dibujo futuro.
+  Añadir los dibujos en `src/assets/npc-badges/` como PNG, WebP o SVG, con nombres
+  únicos como `herrero.png`; el identificador es `herrero`, sin ruta ni extensión.
+  Debe comenzar por una letra minúscula y usar solo letras ASCII minúsculas,
+  números, `_` o `-`, hasta 64 caracteres. No repetir el mismo nombre con
+  diferentes extensiones. Mientras no exista la imagen, el taller indica
+  **pendiente** y el juego conserva el icono automático. No afecta al distintivo
+  de misión sobre la cabeza ni añade dibujos que todavía no se han entregado.
+- **Guardar ficha** escribe `src/data/npcs.json`, no solo el navegador. El ID
+  queda estable al guardar. Para editar uno existente, seleccionarlo en la
+  biblioteca y pulsar **Editar NPC seleccionado**; **Guardar cambios en este
+  NPC** actualiza la misma ficha, sin duplicarla ni cambiar su ID.
+  Las fichas del formato anterior se convierten a piezas al cargarlas y se
+  guardan en el nuevo formato al confirmar, conservando identidad y estadísticas.
+  Exportar/importar JSON permite transportar fichas
+  o bibliotecas. Una ficha importada con ID existente se convierte en copia;
+  una biblioteca con colisiones se rechaza completa, sin sobrescribir nada.
+- Guardado validado, revisión del archivo y detección de ediciones simultáneas.
+  Ante un conflicto se conserva el borrador; recargar obtiene la nueva revisión
+  y reemplazar una ficha modificada requiere confirmación. No es un bloqueo
+  exclusivo frente a editores externos. Los borradores sin guardar no persisten.
+- El API `/__dev/npcs` solo existe en Vite de desarrollo y acepta peticiones
+  locales del propio origen. No requiere SQL ni una cuenta. Ni el taller ni
+  la biblioteca completa se incluyen en la entrada de producción.
+
+El catálogo incluye **Testículos, Gnomi e Isberto**, conectados a sus personajes
+reales del juego. Sus fichas se pueden editar y guardar sin duplicar los NPCs;
+se conservan colocación, diálogos, misiones y desbloqueos. No pueden eliminarse
+desde el taller. Los cambios de apariencia, nombre, subtítulo, estadísticas
+e icono se aplican al **recargar el juego**; para publicarlos hay que recompilar
+y desplegar. Guardar no recarga el editor ni descarta el borrador.
+El subtítulo de la ficha es único y se usa tanto en el recuadro como en las
+conversaciones, también para Gnomi tras terminar la bienvenida.
+
+Guardar una ficha nueva **no coloca ese NPC en el mapa**. Para integrarla
+después, validar su definición con `src/data/npcs.ts`, cargar los modelos con
+`loadKits` y usar `await createNpc(definition)` de `src/character/npc.ts`.
+Las prendas adicionales se cargan bajo demanda. La definición conserva vida máxima,
+atributos, identidad y notas; conectar esos datos al servidor, diálogos,
+combate, comportamiento y colocación es una integración posterior, no automática.
+No pasar estas fichas por `sanitize`, que aplica restricciones de jugador.
+Las pruebas `npm run test:npcs` usan un catálogo temporal y no modifican fichas
+reales del proyecto. Incluyen persistencia, conflictos, validación, interfaz,
+edición de los tres NPCs del mundo, iconos, 600 montajes de ropa/equipo y
+compatibilidad de los 139 clips.
+El catálogo extensible de prendas es `src/data/npcClothing.ts`: sus IDs
+persisten en las fichas y alimentan automáticamente los selectores y validación.
+Para una fuente nueva hay que registrar también su carga y paleta en
+`src/character/npcClothing.ts` y verificar huesos, ajuste y animaciones.
+Importar un GLB a la biblioteca no lo convierte automáticamente en ropa modular.
+
+## Editor de mapas (desarrollo)
+
+Con `npm run dev`, abrir `/maps.html` desde el mismo ordenador. Es un editor
+visual en 3D para construir mapas con **todos los recursos** (1.078: las piezas
+de Pompelín, el mobiliario del juego y los 12 paquetes de la biblioteca),
+al estilo de un constructor de ciudades.
+
+- **Catálogo** (izquierda): grupos, categorías, ★ recientes y buscador que
+  entiende español (`casa`, `árbol`, `barril`, `valla`…). Clic para colocar,
+  arrastrar una miniatura al mapa, Ctrl+clic para añadirla al pincel de dispersar.
+- **Herramientas** (barra vertical, con su tecla):
+  `V` seleccionar y mover con gizmo (`1` mover, `2` rotar, `3` escalar; Alt+arrastrar
+  duplica), `B` colocar (arrastrar crea filas; «Seguir el trazo» orienta vallas
+  y muros), `N` dispersar bosques/rocas/flores, `X` borrar con pincel,
+  `T` esculpir (subir, bajar, suavizar, aplanar, ruido, cauce), `P` pintar
+  12 materiales de suelo, `H` hierba, `C` dibujar colisiones (caja o cilindro,
+  bloqueante o plataforma transitable) y `M` marcadores (aparición, NPC del
+  catálogo de NPCs, interacción, zona, luz, nota).
+- Imán a rejilla configurable o a la rejilla **hexagonal** de Pompelín,
+  giro por pasos, apilar sobre otros objetos y pegar al relieve.
+- **Escena**: capas (ver, bloquear, renombrar, crear, borrar) y lista de todo
+  lo colocado con filtro. **Propiedades**: posición/rotación/escala exactas,
+  colisión automática, caja, círculo o ninguna, transitable, tinte, bloqueo,
+  reemplazar el recurso, edición múltiple. **Mapa**: nombre, cielo, niebla,
+  nubes, agua, tamaño y resolución del terreno, rellenos globales.
+- **Colisiones** (`K`): naranja las automáticas de cada objeto, azul las
+  dibujadas y verde las plataformas. **▶ Pasear** (`J`) baja con un personaje
+  al mapa para probar escala y colisiones (WASD, Mayús, Espacio, Esc).
+- Deshacer/rehacer hasta 200 pasos (`Ctrl+Z`/`Ctrl+Y`), copiar/pegar,
+  duplicar, `F` enfocar, `Inicio` vista cenital. `F1` muestra todos los atajos.
+- **Guardar** (`Ctrl+S`) escribe `src/data/maps/<id>.json` con una miniatura;
+  **Abrir** lista los mapas del proyecto. También exportar/importar JSON.
+  Se detectan cambios hechos desde otra pestaña y se guarda un borrador local
+  automático que se ofrece recuperar si se cierra sin guardar.
+- **Crear desde plantilla Pompelín** convierte la ciudad actual del juego en un
+  mapa editable (casillas, edificios, naturaleza, bancos, marcadores de NPCs).
+
+### Pompelín, Brumaluz y los viajes entre mapas
+
+En el juego, **M** o **Mundo → Mapa** abre el mapa completo de la zona actual,
+con norte arriba y un indicador de tu posición y orientación. **M**, **Esc**,
+la **X** superior derecha o el fondo lo cierran. La ventana se ajusta a la
+pantalla sin scroll. Los NPC visibles aparecen en verde y muestran su nombre
+al pasar el ratón o recibir foco. **+ / −** y la rueda acercan o alejan hasta
+8×; arrastrar desplaza la vista y **Ver zona completa** restaura el encuadre.
+El marco de atlas incluye una rosa de los vientos, leyenda de marcadores y
+una escala en metros/kilómetros que se ajusta al zoom.
+No permite todavía navegar entre mapas: al viajar cambia al mapa de la nueva zona.
+El minimapa sigue siendo independiente y se oculta o muestra con **º**.
+Los menús de personaje y Mundo llevan iconos propios a la derecha de cada
+opción; «Mapa» no muestra la tecla, pero conserva el atajo **M**. La guía de
+misión utiliza una exclamación discreta junto a la distancia y mantiene la
+flecha de dirección cuando el objetivo está fuera de pantalla.
+
+**Pompelín es el mundo; Brumaluz es su capital**, no dos nombres de la misma ciudad.
+Los borradores de `src/data/maps/` no cambian el juego hasta publicarlos.
+
+El selector **Editar mapa**, en la cabecera, permite cambiar directamente entre
+todos los mapas guardados (continente, ciudades, exteriores e interiores).
+Si hay cambios sin guardar, pide confirmación antes de descartarlos.
+**Brumaluz** aparece incluso sin borrador: al seleccionarla por primera vez se
+crea y guarda una copia editable de la capital detallada, no del icono de ciudad
+en el continente. Después el selector vuelve a abrir esa misma copia, conservando
+las ediciones. Cambiar de mapa no publica nada.
+
+1. En `/maps.html`, **Abrir → Mundo de Pompelín** abre el continente o crea una
+   plantilla editable basada en el croquis: capital central, caminos, Arboleda,
+   Cumbres de Cobre, costa e isla de Lunargenta. Las zonas incompletas son
+   referencias editables, no ciudades terminadas. **Capital: Brumaluz** crea
+   la copia detallada de la ciudad, con sus cinco puertas al continente.
+   El continente mide **3.600 × 2.700 m**: ×5 en cada eje y ×25 de superficie
+   respecto al primer boceto. Las poblaciones y edificios conservan su tamaño;
+   se amplían los exteriores entre regiones. El terreno usa celdas de 4 m para
+   mantener la edición manejable. Los mapas detallados de ciudad siguen separados.
+   El editor admite lados de hasta 10 km y celdas de hasta 16 m, siempre
+   respetando el límite de vértices.
+   Las representaciones de Brumaluz, Rusty Hearth y Lunargenta incluyen barrios,
+   mercados, pozos, faroles, bancos y mercancías medievales editables. Brumaluz
+   tiene torres y estandartes junto a sus cinco accesos; los radios de viaje y
+   llegada quedan despejados. Son decoraciones del continente, independientes
+   de los mapas detallados al entrar en cada ciudad.
+2. En **Mapa** define **Tipo**, **Región** y **Consejo al cargar**. La miniatura
+   guardada se usa como fondo de la pantalla de carga, que muestra el destino.
+3. Coloca un marcador **Llegada** en el destino, fuera del radio de su salida.
+   En el mapa de origen coloca un **Portal**, elige **Mapa de destino** y
+   **Llegada**, y selecciona **Al caminar dentro** o **Pulsar E y confirmar**.
+   **Conectar ida y vuelta** guarda ambos mapas y crea las llegadas y el
+   regreso cerca de la aparición del destino; abre ese mapa para moverlos.
+   La lista **Abrir** muestra las conexiones de cada mapa.
+4. Pulsa **⇪ Publicar en el juego** en **cada mapa** que quieras habilitar.
+   Se conserva el resto del mundo publicado. No es obligatorio publicar una
+   copia de Brumaluz: la capital procedural también tiene las cinco puertas.
+   Un portal sin destino publicado queda cerrado y se avisa al publicar.
+   Una llegada nombrada inexistente u oculta impide publicar: nunca se elige
+   otra llegada silenciosamente.
+5. Se generan `src/data/world/published.ts`, `src/data/world/maps/<id>.json`
+   y `<id>.ts` (solo los GLB usados), además de **`supabase/world.sql`** con
+   mapas, límites, apariciones y portales. **`npm run db:apply`** aplica
+   `server.sql` y ese SQL en una transacción. Publicar no ejecuta SQL remoto.
+   Para producción, confirma los mapas y el SQL y despliega cliente y base
+   con la misma versión. Las pestañas del juego local se recargan al publicar.
+
+El servidor valida sesión, vida, combate y distancia al portal antes del
+viaje. Guarda mapa y posición al llegar; al volver a entrar recupera ambos.
+Solo se ven jugadores del mismo mapa. Morir lleva a Brumaluz y un mapa retirado
+también devuelve allí al volver a entrar. Las llegadas se desarman hasta salir
+de todos los radios de portal para evitar rebotes automáticos.
+
+En **Abrir**, **Retirar del juego** retira un mapa sin borrar su borrador.
+Retirar todos restaura la Brumaluz procedural; los caminos sin destino quedan
+cerrados. `?ciudad-procedural` fuerza ese modo para diagnóstico. Un error de
+carga se muestra explícitamente, sin sustituir el destino por otro mapa.
+
+Los mapas conservan la iluminación y el cielo del juego; agua, nubes, objetos
+y colisiones vienen del mapa. Los NPC del catálogo (Testículos, Isberto…)
+se colocan mediante sus marcadores; los oficios de tienda son vendedores, el
+texto `well` es el pozo y otras interacciones muestran texto con `E`.
+Bienvenida, combate y bolsas de monedas siguen en Brumaluz, en sus posiciones
+fijas (sus marcadores de plantilla son referencias).
+
+El API `/__dev/maps` solo existe en Vite de desarrollo, acepta peticiones
+locales y no entra en el build de producción. `npm run test:maps` prueba
+esquema, API, publicación, el adaptador del juego y el editor en el navegador
+con directorios temporales.
 
 ## Cuentas y personajes
 
@@ -28,7 +229,7 @@ El lore acordado y las decisiones narrativas pendientes se mantienen en
 - El acceso permite solicitar un correo de recuperación y cambiar la contraseña desde el enlace enviado por Supabase Auth.
 - Los personajes se guardan en `public.characters`, protegidos por políticas RLS para que cada cuenta solo acceda a los suyos.
 - Tras iniciar sesión aparece la selección de personajes. Desde ahí se puede jugar con uno existente o crear otro. Cada cuenta puede tener un máximo de cinco personajes; para crear más, primero hay que borrar uno. El creador guarda el personaje al pulsar «Guardar y entrar».
-- Cada personaje guarda su nivel (comienza en 1), sus puntos de experiencia (comienzan en 0), vida, atributos, título, ubicación y última posición exacta en el mapa; la tarjeta de selección muestra el nivel y la zona guardada. Por ahora solo está disponible Brumaluz. Al volver a jugar apareces donde lo dejaste (si estabas caído, reapareces en la capital).
+- Cada personaje guarda su nivel (comienza en 1), sus puntos de experiencia (comienzan en 0), vida, atributos, título, mapa y última posición exacta; la tarjeta de selección muestra el nivel y la zona guardada. Los mapas publicados del mundo de Pompelín se conectan mediante portales. Al volver a jugar apareces donde lo dejaste (si estabas caído o el mapa se retiró, reapareces en la capital).
 - **El servidor manda.** El navegador no puede escribir en `public.characters` (solo leer y borrar). Crear personajes, ganar XP/nivel, recibir daño o curación, repartir puntos de atributo, cambiar de título, reaparecer y guardar la posición pasan por funciones de [`supabase/server.sql`](./supabase/server.sql) que validan todo y calculan el resultado: el cliente solo pide la acción y muestra lo que el servidor responde. Sin guardado manual: el mundo sincroniza el movimiento y guarda una posición persistente cada 5 s y al salir normalmente; si se cierra el navegador de golpe se conserva el último checkpoint. El servidor rechaza posiciones fuera del mundo y desplazamientos que superan el presupuesto de velocidad acumulado, y devuelve al jugador a la última posición válida.
 - Las acciones del NPC de pruebas y demás: cada acción del juego tiene su propia función en el servidor: `respawn_character`, `debug_damage`, `debug_heal`, `debug_xp`, `spend_attribute_points`, `set_character_title`, `save_character_position`, `create_character` y `character_enter`. Las `debug_*` (Testículos: daño, curación, XP y pelines) funcionan para todos mientras `server_config.debug_actions` sea `true`; en producción ponlo en `false` (`update public.server_config set value = 'false' where key = 'debug_actions';`). Con las acciones desactivadas, únicamente la cuenta administradora `manuelperezardanuy@gmail.com` puede seguir utilizándolas sobre sus propios personajes. El servidor comprueba el correo de la cuenta autenticada en `auth.users`, sin confiar en datos enviados por el navegador.
 - **Sobrecuración:** la vida curada por encima del máximo no se pierde: pasa a una reserva dorada (máximo el 30 % de la vida máxima) que se dibuja al final de la barra de vida, absorbe el daño antes que la vida y se desvanece con el tiempo (1 punto por segundo). Se calcula en el servidor (`game_overheal_now`) y el cliente solo la descuenta en pantalla; los parámetros están en `OVERHEAL` (`src/data/stats.ts`) y en `server.sql`. Solo se muere al llegar a cero de vida real: el valor guardado `-1` significa vida completa, también después de un golpe absorbido por la reserva.

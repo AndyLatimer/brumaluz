@@ -42,3 +42,28 @@ export function beginTransition(label: string) {
     if (panel) { panel.hidden = true; panel.classList.remove('slow'); }
   };
 }
+
+export function beginMapTransition(map: { name: string; region?: string; loadingTip?: string; preview?: string }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'map-transition';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-live', 'polite');
+  if (map.preview) {
+    const background = document.createElement('img');
+    background.src = map.preview; background.alt = '';
+    overlay.append(background);
+  }
+  const content = document.createElement('section');
+  const region = document.createElement('p');
+  region.textContent = map.region || 'Pompelín';
+  const title = document.createElement('h1');
+  title.textContent = map.name;
+  const tip = document.createElement('p');
+  tip.textContent = map.loadingTip || t('Cargando…');
+  const spinner = document.createElement('span');
+  spinner.className = 'transition-spinner';
+  content.append(region, title, spinner, tip);
+  overlay.append(content);
+  document.body.append(overlay);
+  return () => overlay.remove();
+}

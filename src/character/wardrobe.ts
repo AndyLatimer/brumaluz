@@ -36,6 +36,10 @@ export const WARDROBES = {
 } as const satisfies Record<string, WardrobeSet>;
 export type WardrobeId = keyof typeof WARDROBES;
 let asset: GLTF;
+export function wardrobeSource() {
+  if (!asset) throw new Error('El vestuario debe cargarse antes de crear personajes.');
+  return asset;
+}
 
 export async function loadWardrobe() {
   asset = await loadGLB(helpersUrl);
@@ -46,10 +50,42 @@ export function wardrobeRegions(id: WardrobeId): ReadonlySet<BodyRegion> {
   return new Set(set.pieces.flatMap(piece => piece.replaces ?? []));
 }
 
+export function mountCharacterPiece(
+  source: THREE.Object3D, model: THREE.Object3D, bones: ReadonlyMap<string, THREE.Bone>,
+  material: (source: THREE.Material) => THREE.Material, own: (resource: { dispose(): void }) => void,
+  attachment?: string,
+) {
+  const copy = source.clone(true);
+  copy.traverse(object => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.material = Array.isArray(object.material) ? object.material.map(material) : material(object.material);
+    object.castShadow = true;
+    if (object instanceof THREE.SkinnedMesh) {
+      const mapped = object.skeleton.bones.map(bone => {
+        const target = bones.get(bone.name);
+        if (!target) throw new Error(`Hueso incompatible en ${source.name}: ${bone.name}`);
+        return target;
+      });
+      const skeleton = new THREE.Skeleton(mapped, object.skeleton.boneInverses);
+      object.bind(skeleton, object.bindMatrix);
+      object.frustumCulled = false;
+      own(skeleton);
+    }
+  });
+  const anchor = attachment ?? (source.parent instanceof THREE.Bone ? source.parent.name : undefined);
+  if (anchor) {
+    const bone = bones.get(anchor);
+    if (!bone) throw new Error(`Anclaje inexistente: ${anchor}`);
+    bone.add(copy);
+  } else model.add(copy);
+  return copy;
+}
+
 /** Shared geometry stays cached; each wearer owns its materials and skeleton bindings. */
 export function mountWardrobe(
   id: WardrobeId, model: THREE.Object3D, bones: ReadonlyMap<string, THREE.Bone>,
   skinColor: string, own: (resource: { dispose(): void }) => void,
+  hat = true,
 ) {
   if (!asset) throw new Error('El vestuario debe cargarse antes de crear personajes.');
   const set: WardrobeSet = WARDROBES[id];
@@ -65,29 +101,9 @@ export function mountWardrobe(
     return result;
   };
   for (const piece of set.pieces) {
+    if (!hat && 'attachment' in piece && piece.attachment === 'head') continue;
     const source = asset.scene.getObjectByName(piece.node);
     if (!source) throw new Error(`Falta la pieza de vestuario: ${piece.node}`);
-    const copy = source.clone(true);
-    copy.traverse(object => {
-      if (!(object instanceof THREE.Mesh)) return;
-      object.material = Array.isArray(object.material) ? object.material.map(material) : material(object.material);
-      object.castShadow = true;
-      if (object instanceof THREE.SkinnedMesh) {
-        const mapped = object.skeleton.bones.map(bone => {
-          const target = bones.get(bone.name);
-          if (!target) throw new Error(`Hueso incompatible en ${piece.node}: ${bone.name}`);
-          return target;
-        });
-        const skeleton = new THREE.Skeleton(mapped, object.skeleton.boneInverses);
-        object.bind(skeleton, object.bindMatrix);
-        object.frustumCulled = false;
-        own(skeleton);
-      }
-    });
-    if (piece.attachment) {
-      const bone = bones.get(piece.attachment);
-      if (!bone) throw new Error(`Anclaje inexistente: ${piece.attachment}`);
-      bone.add(copy);
-    } else model.add(copy);
+    mountCharacterPiece(source, model, bones, material, own, piece.attachment);
   }
 }

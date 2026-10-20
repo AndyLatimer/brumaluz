@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biblioteca KayKit · Brumaluz</title>
+    <title>Biblioteca de recursos · Brumaluz</title>
   </head>
   <body>
     <main>
-      <h1>Biblioteca KayKit</h1>
-      <p>455 recursos de cinco paquetes. Solo desarrollo: no cambia el mapa, personajes ni inventarios.</p>
+      <h1>Biblioteca de recursos</h1>
+      <nav><a href="./npcs.html">Creador de NPCs</a> · <a href="./wardrobe.html">Vestuario</a> · <a href="./combat.html">Combate</a></nav>
+      <p><span id="summary">Biblioteca de recursos</span>. Solo desarrollo: no cambia el mapa, personajes ni inventarios. Restaurant contiene solo la selección medieval.</p>
       <label>Paquete <select id="pack"><option value="">Todos</option></select></label>
       <label>Tipo <select id="kind">
         <option value="">Todos</option>
@@ -27,7 +28,7 @@
       <p id="status" role="status">Cargando catálogo…</p>
       <p id="details"></p>
       <a id="download" hidden download>Descargar GLB para Blender</a>
-      <p>Kay Lousberg · CC0. Se conservan los nombres, escala y origen del autor.</p>
+      <p>Kay Lousberg y Kenney · CC0. Se conservan los nombres, escala y origen de cada autor.</p>
     </main>
     <canvas aria-label="Vista previa 3D del recurso"></canvas>
     <script type="module" src="/src/dev/assetsPreview.ts"></script>

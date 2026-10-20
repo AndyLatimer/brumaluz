@@ -18,11 +18,14 @@
     "art:check": "node --test scripts/test-wardrobe.mjs",
     "assets:import": "node tools/import-kaykit.mjs",
     "assets:check": "node --test scripts/test-assets.mjs",
+    "assets:check:browser": "node --test scripts/test-assets-browser.mjs",
     "art:ambient": "node tools/prepare-ambient-animations.mjs",
     "art:creator": "node tools/prepare-creator-parts.mjs",
     "test:creator": "npm run build && node --test scripts/test-creator.mjs",
     "test:ambient": "npm run build && node --test scripts/test-ambient.mjs",
-    "test:combat": "node --test scripts/test-combat.mjs"
+    "test:combat": "node --test scripts/test-combat.mjs",
+    "test:npcs": "node --test scripts/test-npcs.mjs",
+    "test:maps": "node --test scripts/test-maps.mjs"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +38,7 @@
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.1.1",
+    "@gltf-transform/extensions": "4.1.1",
     "@gltf-transform/functions": "^4.1.1",
     "@types/three": "^0.170.0",
     "pg": "^8.23.1",

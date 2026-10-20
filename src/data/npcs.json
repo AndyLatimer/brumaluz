@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "npcs": [
+    {
+      "id": "testiculos",
+      "name": "Testículos, the Debugger",
+      "subtitle": "Depuración",
+      "notes": "NPC de pruebas existente. Conserva las acciones de depuración, la tienda y los diálogos del juego.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo", "cls": "guerrero", "sex": 0, "height": 0.5, "build": 0.5,
+        "skin": 1, "face": 3, "hair": 4, "hairColor": 8, "beard": 0,
+        "eyeShape": 7, "eyeColor": 1, "brows": 2, "nose": 0, "mouth": 0, "detail": 0,
+        "trait": 0, "hairAcc": 0, "hairAccColor": 0, "acc": 0, "makeup": 0, "makeupColor": 2, "accColor": 0
+      },
+      "stats": {
+        "level": 1, "maxHealth": 100, "health": 100,
+        "attributes": { "fuerza": 5, "intelecto": 7, "corpulencia": 5, "agilidad": 6, "pericia": 7, "presencia": 5, "percepcion": 5 }
+      },
+      "render": {
+        "scale": 1, "width": 1, "height": 1, "weapon": "", "offhand": "",
+        "clothing": {
+          "torso": { "piece": "Rogue.torso", "primary": 2, "secondary": 9 },
+          "leftArm": { "piece": "Rogue.leftArm", "primary": 2, "secondary": 9 },
+          "rightArm": { "piece": "Rogue.rightArm", "primary": 2, "secondary": 9 },
+          "leftLeg": { "piece": "Rogue.leftLeg", "primary": 2, "secondary": 9 },
+          "rightLeg": { "piece": "Rogue.rightLeg", "primary": 2, "secondary": 9 },
+          "overlay": { "piece": "", "primary": 2, "secondary": 9 },
+          "footwear": { "piece": "", "primary": 2, "secondary": 9 },
+          "head": { "piece": "", "primary": 2, "secondary": 9 },
+          "cape": { "piece": "", "primary": 2, "secondary": 9 },
+          "back": { "piece": "", "primary": 2, "secondary": 9 }
+        }
+      }
+    },
+    {
+      "id": "gnomi",
+      "name": "Gnomi",
+      "subtitle": "Ayudante de bienvenida",
+      "notes": "Ayudante personal de la bienvenida. El distintivo de misión, seguimiento, diálogos y recompensas siguen gestionados por la misión.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano", "cls": "guerrero", "sex": 0, "height": 0.25, "build": 0.7,
+        "skin": 1, "face": 0, "hair": 0, "hairColor": 6, "beard": 1,
+        "eyeShape": 4, "eyeColor": 2, "brows": 0, "nose": 5, "mouth": 0, "detail": 1,
+        "trait": 0, "hairAcc": 0, "hairAccColor": 0, "acc": 0, "makeup": 0, "makeupColor": 2, "accColor": 0
+      },
+      "stats": {
+        "level": 1, "maxHealth": 100, "health": 100,
+        "attributes": { "fuerza": 5, "intelecto": 5, "corpulencia": 5, "agilidad": 5, "pericia": 8, "presencia": 7, "percepcion": 5 }
+      },
+      "render": {
+        "scale": 0.48, "width": 1.06, "height": 0.92, "weapon": "", "offhand": "",
+        "clothing": {
+          "torso": { "piece": "helpers.torso", "primary": -1, "secondary": -1 },
+          "leftArm": { "piece": "helpers.leftArm", "primary": -1, "secondary": -1 },
+          "rightArm": { "piece": "helpers.rightArm", "primary": -1, "secondary": -1 },
+          "leftLeg": { "piece": "helpers.leftLeg", "primary": -1, "secondary": -1 },
+          "rightLeg": { "piece": "helpers.rightLeg", "primary": -1, "secondary": -1 },
+          "overlay": { "piece": "helpers.overlay", "primary": -1, "secondary": -1 },
+          "footwear": { "piece": "helpers.footwear", "primary": -1, "secondary": -1 },
+          "head": { "piece": "helpers.head", "primary": -1, "secondary": -1 },
+          "cape": { "piece": "", "primary": -1, "secondary": -1 },
+          "back": { "piece": "", "primary": -1, "secondary": -1 }
+        }
+      }
+    },
+    {
+      "id": "isberto",
+      "name": "Isberto",
+      "subtitle": "Granjero · explorador retirado",
+      "notes": "NPC existente de la historia. Conserva la aparición, acercamiento, posición por jugador y la misión de la criatura.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano", "cls": "guerrero", "sex": 0, "height": 0.45, "build": 0.62,
+        "skin": 1, "face": 3, "hair": 3, "hairColor": 5, "beard": 2,
+        "eyeShape": 7, "eyeColor": 1, "brows": 2, "nose": 0, "mouth": 0, "detail": 0,
+        "trait": 0, "hairAcc": 0, "hairAccColor": 0, "acc": 0, "makeup": 0, "makeupColor": 2, "accColor": 0
+      },
+      "stats": {
+        "level": 1, "maxHealth": 100, "health": 100,
+        "attributes": { "fuerza": 5, "intelecto": 5, "corpulencia": 5, "agilidad": 5, "pericia": 8, "presencia": 7, "percepcion": 5 }
+      },
+      "render": {
+        "scale": 1, "width": 1, "height": 1, "weapon": "", "offhand": "",
+        "clothing": {
+          "torso": { "piece": "Rogue.torso", "primary": 3, "secondary": 6 },
+          "leftArm": { "piece": "Rogue.leftArm", "primary": 3, "secondary": 6 },
+          "rightArm": { "piece": "Rogue.rightArm", "primary": 3, "secondary": 6 },
+          "leftLeg": { "piece": "Rogue.leftLeg", "primary": 3, "secondary": 6 },
+          "rightLeg": { "piece": "Rogue.rightLeg", "primary": 3, "secondary": 6 },
+          "overlay": { "piece": "", "primary": 3, "secondary": 6 },
+          "footwear": { "piece": "", "primary": 3, "secondary": 6 },
+          "head": { "piece": "", "primary": 3, "secondary": 6 },
+          "cape": { "piece": "", "primary": 3, "secondary": 6 },
+          "back": { "piece": "", "primary": 3, "secondary": 6 }
+        }
+      }
+    }
+  ]
+}

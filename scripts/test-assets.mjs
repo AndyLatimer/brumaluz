@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { packs, assetName, restaurantMedieval, restaurantExclusion } from '../tools/kaykit-packs.mjs';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { Mesh } from 'three';
 import { createHash } from 'node:crypto';
@@ -13,25 +15,31 @@ const directory = path.join(root, 'src', 'assets', 'library');
 const catalog = JSON.parse(await readFile(path.join(directory, 'catalog.json'), 'utf8'));
 const inventory = JSON.parse(await readFile(path.join(directory, 'sources.json'), 'utf8'));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-const io = new NodeIO();
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
-test('all five packs and every unique model are represented, including OBJ-only pieces', () => {
-  assert.equal(catalog.packs.length, 5);
-  assert.equal(catalog.assets.length, 455);
+test('all twelve packs and every selected unique model are represented, including OBJ-only pieces', () => {
+  assert.deepEqual(catalog.packs.map(pack => pack.id), packs.map(pack => pack[0]));
+  assert.equal(catalog.assets.length, 1021);
   assert.equal(new Set(catalog.assets.map(asset => asset.id)).size, catalog.assets.length);
-  assert.equal(catalog.assets.filter(asset => asset.kind === 'characters').length, 10);
-  assert.equal(catalog.assets.filter(asset => asset.kind === 'animations').length, 4);
+  assert.equal(catalog.assets.filter(asset => asset.kind === 'characters').length, 12);
+  assert.equal(catalog.assets.filter(asset => asset.kind === 'animations').length, 18);
   for (const pack of catalog.packs) {
     const originals = inventory.packs.find(value => value.id === pack.id);
     assert.ok(originals);
     assert.equal(originals.files.length, pack.sourceFiles);
     const models = originals.files.filter(file => /\.(gltf|glb)$/i.test(file.path));
-    const modelNames = new Set(models.map(file => path.posix.basename(file.path, path.posix.extname(file.path))));
+    const modelNames = new Set(models.map(file => assetName(file.path)));
     const objOnly = originals.files.filter(file => file.path.endsWith('.obj')
-      && !modelNames.has(path.posix.basename(file.path, '.obj')));
+      && !modelNames.has(assetName(file.path)));
     const assets = catalog.assets.filter(asset => asset.pack === pack.id);
     assert.equal(assets.length, pack.count);
-    assert.deepEqual(assets.map(asset => asset.source).sort(), [...models, ...objOnly].map(file => file.path).sort());
+    assert.deepEqual([...assets.map(asset => asset.source), ...pack.excluded.map(entry => entry.source)].sort(),
+      [...models, ...objOnly].map(file => file.path).sort());
+    if (pack.id === 'restaurant') {
+      assert.deepEqual(assets.map(asset => asset.name).sort(), [...restaurantMedieval].sort());
+      assert.equal(pack.excluded.length, 82);
+      assert.ok(pack.excluded.every(entry => entry.reason === restaurantExclusion));
+    } else assert.deepEqual(pack.excluded, []);
   }
 });
 
@@ -89,19 +97,37 @@ test('original files are preserved byte-for-byte and conversion preserves source
         assert.equal(converted.listMeshes().length, meshes.length, asset.id);
         for (let index = 0; index < meshes.length; index++) {
           const geometry = meshes[index].geometry;
-          const primitive = converted.listMeshes()[index].listPrimitives()[0];
-          for (const [attribute, semantic] of [['position', 'POSITION'], ['normal', 'NORMAL'], ['uv', 'TEXCOORD_0']]) {
-            assert.deepEqual(primitive.getAttribute(semantic).getArray(), geometry.getAttribute(attribute).array, asset.id);
+          const mesh = meshes[index];
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          const groups = geometry.groups.length ? geometry.groups
+            : [{ start: 0, count: geometry.getAttribute('position').count, materialIndex: 0 }];
+          const primitives = converted.listMeshes()[index].listPrimitives();
+          assert.equal(primitives.length, groups.length, asset.id);
+          for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+            const group = groups[groupIndex], primitive = primitives[groupIndex];
+            assert.equal(primitive.getMaterial().getName(), materials[group.materialIndex ?? 0].name, asset.id);
+            for (const [attribute, semantic] of [['position', 'POSITION'], ['normal', 'NORMAL'], ['uv', 'TEXCOORD_0']]) {
+              const value = geometry.getAttribute(attribute);
+              if (value) assert.deepEqual(primitive.getAttribute(semantic).getArray(),
+                value.array.subarray(group.start * value.itemSize, (group.start + group.count) * value.itemSize), asset.id);
+            }
           }
           geometry.dispose();
           for (const material of Array.isArray(meshes[index].material) ? meshes[index].material : [meshes[index].material]) material.dispose();
         }
         const mtl = await readFile(filename.replace(/\.obj$/, '.mtl'), 'utf8');
-        assert.match(mtl, /^Kd 1\.000000 1\.000000 1\.000000\r?$/m, asset.id);
-        assert.match(mtl, /^d 1\.000000\r?$/m, asset.id);
-        const texture = mtl.match(/^map_Kd (.+)\r?$/m)[1].trim();
-        assert.equal(hash(converted.listTextures()[0].getImage()),
-          hash(await readFile(path.join(path.dirname(filename), texture))), asset.id);
+        for (const material of converted.listMaterials()) {
+          const block = mtl.split(/^newmtl /m).slice(1).find(block => block.split(/\r?\n/, 1)[0].trim() === material.getName());
+          assert.ok(block, `${asset.id}:${material.getName()}`);
+          const diffuse = block.match(/^Kd (.+)\r?$/m)[1].trim().split(/\s+/).map(Number);
+          const opacity = Number(block.match(/^d (.+)\r?$/m)?.[1] ?? 1);
+          assert.deepEqual(material.getBaseColorFactor(), [...diffuse, opacity], asset.id);
+          assert.equal(material.getAlphaMode(), opacity < 1 ? 'BLEND' : 'OPAQUE', asset.id);
+          const texture = block.match(/^map_Kd (.+)\r?$/m)?.[1].trim();
+          if (texture) assert.equal(hash(material.getBaseColorTexture().getImage()),
+            hash(await readFile(path.join(path.dirname(filename), texture))), asset.id);
+          else assert.equal(material.getBaseColorTexture(), null, asset.id);
+        }
         continue;
       }
       const original = (await io.read(path.join(source, asset.source))).getRoot();
@@ -123,13 +149,21 @@ test('original files are preserved byte-for-byte and conversion preserves source
       for (let index = 0; index < original.listTextures().length; index++) {
         assert.equal(hash(converted.listTextures()[index].getImage()), hash(original.listTextures()[index].getImage()), asset.id);
       }
+      assert.deepEqual(converted.listExtensionsUsed().map(extension => extension.extensionName).sort(),
+        original.listExtensionsUsed().map(extension => extension.extensionName).sort(), asset.id);
+      for (let index = 0; index < original.listMaterials().length; index++) {
+        const extension = 'KHR_materials_emissive_strength';
+        const expected = original.listMaterials()[index].getExtension(extension);
+        const actual = converted.listMaterials()[index].getExtension(extension);
+        if (expected) assert.equal(actual.getEmissiveStrength(), expected.getEmissiveStrength(), asset.id);
+      }
     }
   }
 });
 
 test('all 260 character/clip combinations have compatible named animation targets', async () => {
   let combinations = 0;
-  for (const asset of catalog.assets.filter(asset => asset.kind === 'characters')) {
+  for (const asset of catalog.assets.filter(asset => asset.kind === 'characters' && ['adventurers', 'skeletons'].includes(asset.pack))) {
     const character = (await io.read(path.join(directory, asset.path))).getRoot();
     const names = character.listNodes().map(node => node.getName());
     for (const library of catalog.assets.filter(value => value.pack === asset.pack && value.kind === 'animations')) {
@@ -144,6 +178,36 @@ test('all 260 character/clip combinations have compatible named animation target
     }
   }
   assert.equal(combinations, 260);
+});
+
+test('full Medium and Large libraries preserve all 173 clips and bind only to their own rig family', async () => {
+  const libraries = catalog.assets.filter(asset => asset.pack === 'character-animations' && asset.kind === 'animations');
+  assert.equal(libraries.length, 14);
+  assert.equal(libraries.reduce((count, asset) => count + asset.animations.length, 0), 173);
+  const documents = new Map();
+  for (const asset of libraries) documents.set(asset.id, (await io.read(path.join(directory, asset.path))).getRoot());
+  let combinations = 0;
+  for (const asset of catalog.assets.filter(asset => asset.kind === 'characters')) {
+    const character = (await io.read(path.join(directory, asset.path))).getRoot();
+    for (const library of libraries.filter(library => library.rig === asset.rig)) {
+      for (const clip of documents.get(library.id).listAnimations()) {
+        for (const channel of clip.listChannels()) {
+          const source = channel.getTargetNode();
+          const targets = character.listNodes().filter(node => node.getName() === source.getName());
+          if (asset.name === 'Mannequin_Medium' && ['handslot.l', 'handslot.r'].includes(source.getName())) {
+            assert.equal(targets.length, 0, 'Original mannequin has no hand attachment helpers');
+            assert.ok(character.listNodes().some(node => node.getName() === source.getParentNode().getName()));
+            continue;
+          }
+          assert.equal(targets.length, 1, `${asset.id}:${clip.getName()}:${source.getName()}`);
+          source.getMatrix().forEach((value, index) => assert.ok(Math.abs(value - targets[0].getMatrix()[index]) < 1e-4,
+            `${asset.id}:${clip.getName()}:${source.getName()}: rest pose`));
+        }
+        combinations++;
+      }
+    }
+  }
+  assert.equal(combinations, 1563);
 });
 
 test('library and preview are not imported by the production entry point', async () => {

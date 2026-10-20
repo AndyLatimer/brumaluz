@@ -1,6 +1,7 @@
-// Aplica supabase/server.sql (idempotente) a la base de datos indicada en SUPABASE_DB_URL (.env.local).
-// Uso: npm run db:apply            (solo server.sql)
-//      npm run db:apply -- --schema (schema.sql y después server.sql)
+// Aplica supabase/server.sql (idempotente) y supabase/world.sql (mapas y portales publicados desde el
+// editor de mapas) a la base de datos indicada en SUPABASE_DB_URL (.env.local).
+// Uso: npm run db:apply            (server.sql + world.sql)
+//      npm run db:apply -- --schema (schema.sql, server.sql y world.sql)
 import { readFileSync, existsSync } from 'node:fs';
 import pg from 'pg';
 
@@ -20,7 +21,8 @@ if (!url) {
   process.exit(1);
 }
 
-const files = process.argv.includes('--schema') ? ['supabase/schema.sql', 'supabase/server.sql'] : ['supabase/server.sql'];
+const files = [...(process.argv.includes('--schema') ? ['supabase/schema.sql'] : []), 'supabase/server.sql',
+  ...(existsSync('supabase/world.sql') ? ['supabase/world.sql'] : [])];
 const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 let transaction = false;
 try {
