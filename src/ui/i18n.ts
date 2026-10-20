@@ -728,7 +728,7 @@ const translations: Record<string, string> = {
   'Mapa completo de {zone}': 'Full map of {zone}',
   'No se pudo cargar el mapa de esta zona.': 'The map of this zone could not be loaded.',
   '▲ Tu posición · Norte arriba · M o Esc para cerrar': '▲ Your position · North up · M or Esc to close',
-  'La arboleda': 'The Grove', 'Isla de Luna Argéntea': 'Silver Moon Isle', 'Cumbres de cobre': 'Copper Peaks',
+  'La arboleda': 'The Grove', 'Isla de Luna Argéntea': 'Silver Moon Isle', 'Isla de Lunargenta': 'Lunargenta Isle', 'Cumbres de cobre': 'Copper Peaks',
   'Alrededores de Brumaluz': 'Brumaluz outskirts', 'Bolsas de pelines': 'Peline pouches', 'Bolsa de pelines de la plaza': 'Peline pouch by the plaza',
   'Junto al pozo de la plaza.': 'By the plaza well.', 'Bolsa de pelines junto a Testículos': 'Peline pouch by Testículos',
   'Cerca de Testículos, the Debugger.': 'Near Testículos, the Debugger.', 'Encuentra los objetos especiales repartidos por el mundo.': 'Find the special objects scattered throughout the world.',

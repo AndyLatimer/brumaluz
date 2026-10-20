@@ -141,8 +141,10 @@ No permite todavía navegar entre mapas: al viajar cambia al mapa de la nueva zo
 El minimapa sigue siendo independiente y se oculta o muestra con **º**.
 Los menús de personaje y Mundo llevan iconos propios a la derecha de cada
 opción; «Mapa» no muestra la tecla, pero conserva el atajo **M**. La guía de
-misión utiliza una exclamación discreta junto a la distancia y mantiene la
+misión utiliza una exclamación sobre una pequeña insignia dorada junto a la distancia y mantiene la
 flecha de dirección cuando el objetivo está fuera de pantalla.
+Colecciones muestra emblemas ilustrados propios para cada región, incluida
+la **Isla de Lunargenta**, con colores legibles también en las zonas todavía bloqueadas.
 
 **Pompelín es el mundo; Brumaluz es su capital**, no dos nombres de la misma ciudad.
 Los borradores de `src/data/maps/` no cambian el juego hasta publicarlos.

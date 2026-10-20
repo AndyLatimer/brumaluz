@@ -1928,6 +1928,29 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     await page.locator('.zone-map-chart').waitFor();
     await page.keyboard.press('m');
     await page.locator('#window-backdrop').waitFor({state:'hidden'});
+    await page.evaluate(()=>window.brumaluz.set({coinBags:['plaza_pozo']}));
+    await page.locator('#world-menu-toggle').click();
+    await page.locator('#world-menu-collections').click();
+    const realms=page.locator('.collections-realm-tile');
+    assert.equal(await realms.count(),5);
+    assert.equal(await realms.locator('svg[viewBox="0 0 64 64"] .realm-emblem-art').count(),5);
+    assert.ok(await realms.filter({hasText:'Isla de Lunargenta'}).isVisible());
+    assert.doesNotMatch(await page.locator('.collections-realm-grid').textContent(),/Luna Argéntea/);
+    assert.match(await realms.first().textContent(),/50%/);
+    for(const width of [320,390,1280]){
+      await page.setViewportSize({width,height:844});
+      assert.ok(await page.locator('.collections-realm-grid').evaluate(grid=>grid.scrollWidth<=grid.clientWidth));
+      const iconsFit=await realms.evaluateAll(tiles=>tiles.every(tile=>{
+        const icon=tile.querySelector('.collections-realm-icon').getBoundingClientRect(),rect=tile.getBoundingClientRect();
+        return icon.left>=rect.left&&icon.right<=rect.right;
+      }));
+      assert.ok(iconsFit,'Custom region emblems fit narrow tiles');
+    }
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    assert.ok(await page.getByRole('button',{name:'Lunargenta Isle, coming soon',exact:true}).isVisible());
+    await page.locator('[data-language="es"]').first().dispatchEvent('click');
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({width:1280,height:800});
     assert.match(await page.locator('.quest-tracker-progress').textContent(),/Paso 2 de 3/);
     const initial=await page.locator('#quest-tracker').boundingBox();
     await page.getByRole('button',{name:'Minimizar misiones',exact:true}).click();

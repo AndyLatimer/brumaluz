@@ -9,11 +9,11 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
 };
 
 const realms = [
-  { id: 'brumaluz', label: 'Brumaluz', available: true, icon: '<path d="M8 21V9l8-5v17M16 12h6v9M5 21h18M11 12h2m-2 4h2m5 0h2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
-  { id: 'arboleda', label: 'La arboleda', available: false, icon: '<path d="m12 3 6 8h-3l5 7h-6v3h-4v-3H4l5-7H6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' },
-  { id: 'luna_argentea', label: 'Isla de Luna Argéntea', available: false, icon: '<path d="M18.5 16.8A8.5 8.5 0 0 1 9 5.5a8.5 8.5 0 1 0 9.5 11.3Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m19 4 .8 2.2L22 7l-2.2.8L19 10l-.8-2.2L16 7l2.2-.8Z" fill="currentColor"/>' },
-  { id: 'cumbres_cobre', label: 'Cumbres de cobre', available: false, icon: '<path d="m3 20 6-11 4 6 3-5 5 10ZM9 9l1.5 2.3M16 10l1 1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>' },
-  { id: 'rusty_hearts', label: 'Rusty Hearts', available: false, icon: '<path d="M12 21 4.8 14A4.5 4.5 0 0 1 11 7.5l1 1 1-1a4.5 4.5 0 0 1 6.2 6.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8 13 2 2 4-4 2 2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>' },
+  { id: 'brumaluz', label: 'Brumaluz', available: true, icon: '<path d="M12 48V26h11v22m18 0V26h11v22" fill="#c4ad7b"/><path d="m10 26 7-14 8 14m14 0 7-14 8 14" fill="#617d7c"/><path d="M23 48V20h18v28Z" fill="#ecd7a6"/><path d="m20 20 12-12 12 12Z" fill="#5d787a"/><path d="M27 48V37a5 5 0 0 1 10 0v11" fill="#564332"/><path d="M16 32h3m-3 6h3m25-6h3m-3 6h3M29 25h6m-6 5h6M8 49h48"/><path d="M32 8V3l9 3-9 2" fill="#dfaf52"/><path d="m11 53 21 3 21-3" fill="none" stroke="#c59c55"/>' },
+  { id: 'arboleda', label: 'La arboleda', available: false, icon: '<path d="M10 48q22-10 44 0l-5 5H15Z" fill="#87976a"/><path d="M28 47V23h8v24" fill="#92704a"/><path d="M30 38 20 30m14 6 9-12" fill="none"/><path d="M19 32c-15-2-11-17-1-18 0-10 16-15 23-4 13-2 20 17 7 21-4 11-20 12-29 1Z" fill="#65845c"/><path d="M18 23q-2-9 8-11m9 1q10-1 11 8" fill="none" stroke="#adc58c"/><path d="m11 37 2 3 3 1-3 1-2 3-1-3-3-1 3-1m39-28 1 2 3 1-3 1-1 3-1-3-2-1 2-1" fill="#f5d68c"/>' },
+  { id: 'luna_argentea', label: 'Isla de Lunargenta', available: false, icon: '<path d="M46 9a13 13 0 0 1-16 18A14 14 0 1 0 46 9Z" fill="#dce6dc"/><path d="M10 43q16-5 27-1l13 6H12Z" fill="#929d76"/><path d="M25 42V31h9v11" fill="#e6d5af"/><path d="m23 31 7-7 7 7Z" fill="#748e98"/><path d="M19 42c-6-12-3-17 2-21m-3 9-7-5m7 1 8-5" fill="none" stroke="#5f8274"/><path d="M7 49q6-3 12 0t12 0 12 0 14 0M11 54q6-3 12 0t12 0 14 0" fill="none" stroke="#779da1"/><path d="m16 9 1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5Z" fill="#f5d68c"/>' },
+  { id: 'cumbres_cobre', label: 'Cumbres de cobre', available: false, icon: '<path d="m6 49 15-28 10 17 10-27 18 38Z" fill="#a98264"/><path d="m21 21-6 12 6-3 5 3Zm20-10-7 19 7-5 6 5Z" fill="#eee5cf"/><path d="m31 38 10-13 1 24m-21-19 2 19" fill="none" stroke="#795d46"/><path d="m11 49 9-7 8 7m16 0 6-10 6 10" fill="#bf9569"/><path d="m28 49 4-9 5 9-5 7Z" fill="#d39860"/><path d="m32 40 0 16m-4-7h9" fill="none" stroke="#f6d49a"/><path d="M7 54h18m14 0h16" fill="none"/>' },
+  { id: 'rusty_hearts', label: 'Rusty Hearts', available: false, icon: '<path d="M9 50V22h32v28Z" fill="#c6ad83"/><path d="m7 23 17-14 20 14Z" fill="#a66e4c"/><path d="M38 19V9h8v22" fill="#a18e78"/><path d="M41 5q-4-4 0-6m7 7q-3-3 0-6" fill="none" stroke="#a5977a"/><path d="M15 50V38a7 7 0 0 1 14 0v12" fill="#584331"/><path d="M19 48c-5-5 1-7 2-12 5 4 3 6 5 8 0 5-4 6-7 4Z" fill="#e0aa4c"/><path d="M39 39h17l-4 7H41l-5-3h-4v-4Zm4 7v5m-5 0h18" fill="#81908a"/><path d="M13 28h5m9 0h5M6 53h24m-6-36v6" fill="none"/>' },
 ] as const;
 
 const areas = ['Brumaluz', 'Alrededores de Brumaluz'] as const;
@@ -95,7 +95,7 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
     heading.append(el('h3', undefined, t('Zonas')), el('span', undefined, t('Elige una región')));
     const grid = el('div', 'collections-realm-grid');
     for (const realm of realms) {
-      const bags = realmBags(realm.label);
+      const bags = realmBags(realm.id);
       const tile = el('button', `collections-realm-tile${realm.available ? '' : ' locked'}`);
       tile.type = 'button';
       tile.disabled = !realm.available;
@@ -103,7 +103,7 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
         realm: t(realm.label), found: foundIn(bags), total: bags.length,
       }));
       const icon = el('span', 'collections-realm-icon');
-      icon.innerHTML = `<svg viewBox="0 0 28 28" aria-hidden="true">${realm.icon}</svg>`;
+      icon.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="realm-emblem-field" cx="32" cy="32" r="30"/><g class="realm-emblem-art">${realm.icon}</g></svg>`;
       tile.append(icon, el('strong', undefined, t(realm.label)));
       if (realm.available) {
         const percent = percentIn(bags);
