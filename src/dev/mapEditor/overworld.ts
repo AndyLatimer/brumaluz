@@ -2,8 +2,10 @@ import { createTerrain, decodeTerrain, encodeTerrain, GROUND_MATERIALS, newMap, 
 import { BRUMALUZ_GATES } from '../../data/pompelin';
 
 type Point = readonly [number, number];
-export const OVERWORLD_SCALE = 5;
-export const OVERWORLD_SIZE = { width: 3600, depth: 2700, cell: 4 } as const;
+export const OVERWORLD_SCALE = 3;
+export const OVERWORLD_SIZE = { width: 2160, depth: 1620, cell: 2.4 } as const;
+// Anchura de los caminos en metros, independiente de la escala del continente.
+const ROAD_HALF_WIDTH = 4 / OVERWORLD_SCALE;
 const land: Point[] = [[-330,-80],[-290,-120],[-250,-100],[-250,-225],[-150,-220],[-100,-210],[-10,-235],[70,-215],[90,-185],[200,-195],[245,-160],[250,-80],[325,-65],[330,25],[300,60],[330,150],[310,240],[160,230],[95,200],[0,220],[-40,160],[-90,155],[-140,125],[-215,105],[-240,55],[-225,0],[-320,25]];
 const island: Point[] = [[-340,170],[-290,145],[-245,155],[-210,190],[-225,245],[-310,250],[-350,220]];
 const river: Point[] = [[330,-8],[260,20],[200,47],[145,75],[90,110],[50,160],[-10,150],[-55,135],[-100,160]];
@@ -39,14 +41,14 @@ const material = (id: string) => GROUND_MATERIALS.findIndex(item => item.id === 
 /** Aproximación editable al croquis del continente: no sustituye los mapas detallados de las ciudades. */
 export function overworldTemplate(): MapDocument {
   const map = newMap('pompelin', 'Pompelín', { ...OVERWORLD_SIZE, grass: 0 });
-  map.description = 'Continente de 3,6 × 2,7 km basado en el croquis, con amplios exteriores jugables: Brumaluz central, Rusty Hearth al oeste, la Arboleda al este, Cumbres de Cobre al sureste e isla de Lunargenta al suroeste. Las zonas del norte quedan vacías para ampliar.';
+  map.description = 'Continente de 2,2 × 1,6 km basado en el croquis, con amplios exteriores jugables: Brumaluz central, Rusty Hearth al oeste, la Arboleda al este, Cumbres de Cobre al sureste e isla de Lunargenta al suroeste. Las zonas del norte quedan vacías para ampliar.';
   map.settings = { ...map.settings, kind: 'world', region: 'Continente de Pompelín', fog: .08,
     water: { enabled: true, level: -1, color: '#427f9f', opacity: .9 },
     loadingTip: 'Brumaluz es la capital. Sus puertas conectan la ciudad con el continente.' };
   const terrain = createTerrain(OVERWORLD_SIZE.width, OVERWORLD_SIZE.depth, OVERWORLD_SIZE.cell, -5, material('sand'), 0);
   const pointOnLand = (x: number, z: number) => inside([x,z],land) || inside([x,z],island);
-  const roadAt = (x: number, z: number) => Math.abs(Math.hypot((x+40)/1.1,z+30)-83) < .8
-    || roads.some(line => distance([x,z],line) < .8);
+  const roadAt = (x: number, z: number) => Math.abs(Math.hypot((x+40)/1.1,z+30)-83) < ROAD_HALF_WIDTH
+    || roads.some(line => distance([x,z],line) < ROAD_HALF_WIDTH);
   const heightAt = (x: number, z: number) => pointOnLand(x,z) ? Math.max(.2, .9 + Math.sin(x*.025)*Math.cos(z*.021)*.55) : -5;
   for (let j=0;j<terrain.rows;j++) for (let i=0;i<terrain.columns;i++) {
     const x=(terrain.origin[0]+i*terrain.cell)/OVERWORLD_SCALE, z=(terrain.origin[1]+j*terrain.cell)/OVERWORLD_SCALE, index=j*terrain.columns+i;

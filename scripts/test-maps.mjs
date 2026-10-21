@@ -190,15 +190,15 @@ test('Pompelín starter follows the continent layout and connects all five capit
   const map = maps.validateMap(overworldTemplate());
   assert.equal(map.id, 'pompelin'); assert.equal(map.settings.kind, 'world');
   assert.ok(map.objects.length > 250);
-  assert.deepEqual(map.terrain.origin, [-1800, -1350]);
-  assert.equal((map.terrain.columns - 1) * map.terrain.cell, 3600);
-  assert.equal((map.terrain.rows - 1) * map.terrain.cell, 2700);
-  assert.equal(((map.terrain.columns - 1) * map.terrain.cell * (map.terrain.rows - 1) * map.terrain.cell) / (720 * 540), 25);
+  assert.deepEqual(map.terrain.origin, [-1080, -810]);
+  assert.equal(Math.round((map.terrain.columns - 1) * map.terrain.cell), 2160);
+  assert.equal(Math.round((map.terrain.rows - 1) * map.terrain.cell), 1620);
+  assert.equal(Math.round(((map.terrain.columns - 1) * map.terrain.cell * (map.terrain.rows - 1) * map.terrain.cell) / (720 * 540)), 9);
   assert.ok(map.terrain.columns * map.terrain.rows <= maps.MAX_TERRAIN_VERTICES);
   const castle = map.objects.find(object => object.asset === 'city/castle');
   assert.deepEqual(castle.scale, [10,10,10], 'no agranda los edificios al ampliar los exteriores');
-  assert.deepEqual(castle.position.filter((_,i)=>i!==1), [-200,-160]);
-  const homes = map.objects.filter(object => /^city\/home_/.test(object.asset) && Math.hypot(object.position[0]+200,object.position[2]+150)<30);
+  assert.deepEqual(castle.position.filter((_,i)=>i!==1).map(Math.round), [-120,-100]);
+  const homes = map.objects.filter(object => /^city\/home_/.test(object.asset) && Math.hypot(object.position[0]+120,object.position[2]+90)<30);
   assert.equal(homes.length,12,'la capital conserva su agrupación y tamaño');
   for (const portal of brumaluzGateMarkers().filter(item => item.type === 'portal')) {
     assert.ok(maps.arrivalPoint(map, portal.target.arrival), `la puerta ${portal.id} tiene llegada en el continente`);
@@ -559,7 +559,8 @@ test('published Isberto doors and capital gates are reachable with matching clie
     await page.evaluate(x=>window.brumaluz.move(x,0),eastGate.position[0]);
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='pompelin',null,{timeout:90000});
     await page.waitForFunction(()=>!document.querySelector('.map-transition'));
-    await page.evaluate(()=>window.brumaluz.move(-150,-150));
+    const eastEntry=(await readFile(join(process.cwd(),'src','data','world','maps','pompelin.json'),'utf8').then(JSON.parse)).markers.find(m=>m.id==='entrada_brumaluz_este');
+    await page.evaluate(([x,z])=>window.brumaluz.move(x,z),[eastEntry.position[0],eastEntry.position[2]]);
     await page.locator('#interact-label').filter({hasText:'Brumaluz'}).waitFor();
     await page.keyboard.press('e');
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
