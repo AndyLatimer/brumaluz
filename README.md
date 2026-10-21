@@ -129,19 +129,33 @@ al estilo de un constructor de ciudades.
 
 ### Pompelín, Brumaluz y los viajes entre mapas
 
-La **Brumaluz normal publicada** ocupa **480 × 480 m** (cuatro veces el área
-anterior), con 3.259 objetos, 128 viviendas nuevas, cuatro plazas con edificios
-compuestos de piezas editables, huertas y lomas de hasta 7,39 m. Conserva los
-982 objetos, el terreno y todos los marcadores del casco antiguo, incluida la
-puerta de Isberto y las cinco puertas continentales. Su canal sigue intacto:
-los **transbordadores** junto a las llegadas de las puertas permiten cruzarlo
-con **E** hacia el ensanche y regresar; no son puentes físicos sobre el agua.
-Dos circuitos de paseo, veinte calles transversales y cuatro plazas conectan
-los barrios exteriores, dejando praderas libres para contenido futuro.
-`node --test scripts/test-brumaluz-expansion.mjs` comprueba conservación,
-pendientes, colisiones, recorridos y coincidencia entre borrador y publicación.
-El generador puntual `node tools/expand-brumaluz.mjs` solo acepta el borrador
-original de 240 m y guarda mediante ETag; no regenera ni reemplaza un ensanche editado.
+La **Brumaluz normal publicada** ocupa **392 × 392 m**: una sola ciudad dentro de
+una muralla hexagonal con las mismas salidas que el original (este, noreste,
+sureste, suroeste y oeste; el noroeste sigue cerrado por el castillo). Todo el
+suelo son las casillas hexagonales del juego, en la misma rejilla de 8 m que el
+casco antiguo: hierba, calles de piezas `hex_road_*` encajadas según sus vecinas
+(la misma tabla de bordes que `src/world/city.ts`), dos lagunas donde desemboca
+el río y, fuera de la muralla, lomas y arboledas. El casco antiguo conserva sus
+casillas, edificios y marcadores (incluida la puerta de Isberto), pero ya no tiene
+foso ni muralla propia: sus seis puertas viejas se prolongan en calles mayores
+hasta las puertas nuevas. Alrededor hay seis barrios con unas 260 viviendas (una
+por casilla, mirando a su calle), anillos de calles, seis plazas, casas gremiales
+y casas torre hechas con piezas modulares, tres colinas (molino, cantera y
+mirador), huertas, aserradero y cuartel.
+`npm run test:brumaluz` comprueba que el suelo está completo, que cada salida de
+camino conecta con su casilla vecina, los recorridos, puertas, portales y colinas,
+y la coincidencia entre borrador y publicación. El generador
+`node tools/build-brumaluz.mjs --out <archivo>` crea la ciudad sin guardarla y
+`--apply` la guarda (con ETag) y la publica; vuelve a generar todo lo que lleva el
+prefijo `urbe_`, así que los retoques a mano conviene hacerlos después.
+`node tools/snap-map.mjs <mapa.json> <carpeta> [vistas.json]` saca capturas del editor sin tocar `src/data`.
+
+**Rendimiento de los mapas en el juego.** Las piezas estáticas se dibujan con un
+`BatchedMesh` por material (unas 100 llamadas de dibujo para todo el mapa en vez
+de miles). Además hay un campo de visión: los objetos se agrupan en celdas de 24 m
+y solo se dibujan las que quedan dentro de la niebla (más un margen para la
+cámara); los pequeños (barriles, bancos, flores…) se dejan de dibujar a 75 m. El
+minimapa y el editor siguen viendo el mapa completo.
 
 En el juego, **M**, un clic en el minimapa o **Mundo → Mapa** abre el mapa completo de la zona actual,
 con norte arriba y un indicador de tu posición y orientación. **M**, **Esc**,

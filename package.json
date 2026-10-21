@@ -25,7 +25,8 @@
     "test:ambient": "npm run build && node --test scripts/test-ambient.mjs",
     "test:combat": "node --test scripts/test-combat.mjs",
     "test:npcs": "node --test scripts/test-npcs.mjs",
-    "test:maps": "node --test scripts/test-maps.mjs"
+    "test:maps": "node --test scripts/test-maps.mjs",
+    "test:brumaluz": "node --test scripts/test-brumaluz-city.mjs"
   },
   "keywords": [],
   "author": "",

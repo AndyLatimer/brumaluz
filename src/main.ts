@@ -279,8 +279,11 @@ function updateConversationCamera(dt: number) {
     conversationObstacles = [
       ...env.cameraObstacles,
       ...city.root.children
-        // Las ciudades del editor agrupan sus piezas en «map-objects»: se evalúan una a una para ignorar las baldosas.
-        .flatMap(object => object.name === 'map-objects' ? object.children.filter(piece => !String(piece.userData.mapAsset ?? '').startsWith('city/hex_')) : [object])
+        // Las ciudades del editor agrupan sus piezas en «map-objects» (por celdas del campo de visión):
+        // se evalúan una a una para ignorar las baldosas.
+        .flatMap(object => object.name === 'map-objects'
+          ? object.children.flatMap(chunk => chunk.userData.mapChunk ? chunk.children : [chunk]).filter(piece => !String(piece.userData.mapAsset ?? '').startsWith('city/hex_'))
+          : [object])
         .filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_') && object.name !== 'map-environment'),
       ...npcActors.filter(npc => npc.character.root !== actor).map(npc => npc.character.root),
       ...remotePlayers.list().map(player => player.root),

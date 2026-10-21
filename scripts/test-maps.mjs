@@ -552,9 +552,11 @@ test('published Isberto doors and capital gates are reachable with matching clie
     await page.keyboard.press('e');
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
     await page.waitForFunction(()=>!document.querySelector('.map-transition'));
-    await page.evaluate(()=>window.brumaluz.move(75,0));
+    // La puerta este está en la muralla exterior publicada: se llega a ella desde dentro y se pisa su portal.
+    const eastGate=(await readFile(join(process.cwd(),'src','data','world','maps','brumaluz.json'),'utf8').then(JSON.parse)).markers.find(m=>m.id==='salida_este');
+    await page.evaluate(x=>window.brumaluz.move(x-9,0),eastGate.position[0]);
     await page.waitForTimeout(150);
-    await page.evaluate(()=>window.brumaluz.move(84,0));
+    await page.evaluate(x=>window.brumaluz.move(x,0),eastGate.position[0]);
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='pompelin',null,{timeout:90000});
     await page.waitForFunction(()=>!document.querySelector('.map-transition'));
     await page.evaluate(()=>window.brumaluz.move(-150,-150));

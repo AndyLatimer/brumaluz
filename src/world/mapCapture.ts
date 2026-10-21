@@ -26,6 +26,10 @@ export function captureTopDown(renderer: THREE.WebGLRenderer, scene: THREE.Scene
   for (const child of city.children) {
     if ((child.position.y > 15 || child.userData.hideFromMinimap) && child.visible) { child.visible = false; hidden.push(child); }
   }
+  // El campo de visión oculta las celdas lejanas del jugador: el mapa debe verlas todas.
+  const restore: (() => void)[] = [];
+  city.traverse(child => { if (typeof child.userData.revealAll === 'function') restore.push(child.userData.revealAll()); });
+  city.traverse(child => { if (child.userData.mapChunk && !child.visible) { child.visible = true; restore.push(() => { child.visible = false; }); } });
   const { fog, background } = scene;
   const previousTarget = renderer.getRenderTarget();
   const clear = new THREE.Color();
@@ -57,6 +61,7 @@ export function captureTopDown(renderer: THREE.WebGLRenderer, scene: THREE.Scene
     scene.fog = fog;
     scene.background = background;
     for (const object of hidden) object.visible = true;
+    for (const undo of restore) undo();
     target.dispose();
   }
   return canvas;

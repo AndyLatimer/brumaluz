@@ -166,15 +166,17 @@ export class MaterialVariants {
             float h01 = texelFetch(mapHeight, ivec2(a.x, b.y), 0).r, h11 = texelFetch(mapHeight, b, 0).r;
             return mix(mix(h00, h10, t.x), mix(h01, h11, t.x), t.y);
           }`).replace('#include <begin_vertex>', `#include <begin_vertex>
-          #ifdef USE_INSTANCING
+          #if defined(USE_INSTANCING)
             mat4 mapWorld = modelMatrix * instanceMatrix;
+          #elif defined(USE_BATCHING)
+            mat4 mapWorld = modelMatrix * batchingMatrix;
           #else
             mat4 mapWorld = modelMatrix;
           #endif
           vec4 mapWorldPosition = mapWorld * vec4(transformed, 1.0);
           transformed.y += mapHeightAt(mapWorldPosition.xz) / max(1e-4, length(mapWorld[1].xyz));`);
       };
-      material.customProgramCacheKey = () => `brumaluz-map-v2|${conform ? 1 : 0}|${ground ? 1 : 0}|${source.type}`;
+      material.customProgramCacheKey = () => `brumaluz-map-v3|${conform ? 1 : 0}|${ground ? 1 : 0}|${source.type}`;
     }
     this.cache.set(key, material);
     return material;
@@ -422,7 +424,7 @@ export class MapEnvironment {
 // Objetos
 // ---------------------------------------------------------------------------
 
-export interface ObjectView { id: string; key: string; container: THREE.Group; animations: ((t: number) => void)[]; loaded: Promise<void> }
+export interface ObjectView { id: string; key: string; container: THREE.Group; animations: ((t: number) => void)[]; loaded: Promise<void>; detail?: boolean }
 const missing = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: '#d0359a', wireframe: true }));
 
 export function applyObjectTransform(container: THREE.Object3D, object: MapObject) {
@@ -444,10 +446,57 @@ function objectAnimations(asset: string, root: THREE.Object3D, seed: number) {
   return result;
 }
 
+/** Lado (m) de las celdas en que se agrupan los objetos para el campo de visión. */
+export const VIEW_CHUNK = 24;
+/** Objetos cuya diagonal (ya escalada) no llega a esto se consideran detalle y se dejan de dibujar antes. */
+const DETAIL_SIZE = 3;
+const templateSizes = new WeakMap<THREE.Object3D, number>();
+function templateSize(template: THREE.Object3D) {
+  let size = templateSizes.get(template);
+  if (size === undefined) {
+    size = new THREE.Box3().setFromObject(template).getSize(new THREE.Vector3()).length();
+    templateSizes.set(template, size);
+  }
+  return size;
+}
+
 export class ObjectLayer {
   readonly root = new THREE.Group();
   readonly views = new Map<string, ObjectView>();
+  /** Celdas del campo de visión: `b:` edificios y piezas grandes, `d:` detalles pequeños. */
+  private readonly chunks = new Map<string, THREE.Group>();
   constructor(private provider: MapAssetProvider, private materials: MaterialVariants) { this.root.name = 'map-objects'; }
+  private chunk(x: number, z: number, detail: boolean) {
+    const gx = Math.floor(x / VIEW_CHUNK), gz = Math.floor(z / VIEW_CHUNK), key = `${detail ? 'd' : 'b'}:${gx},${gz}`;
+    let group = this.chunks.get(key);
+    if (!group) {
+      group = new THREE.Group();
+      group.name = 'map-chunk';
+      group.userData.mapChunk = true;
+      group.userData.detail = detail;
+      group.userData.center = new THREE.Vector2((gx + 0.5) * VIEW_CHUNK, (gz + 0.5) * VIEW_CHUNK);
+      this.chunks.set(key, group);
+      this.root.add(group);
+    }
+    return group;
+  }
+  private place(view: ObjectView) {
+    const chunk = this.chunk(view.container.position.x, view.container.position.z, !!view.detail);
+    if (view.container.parent !== chunk) chunk.add(view.container);
+  }
+  /**
+   * Campo de visión: solo se dibujan (y animan) las celdas a menos de `distance` m de `focus`;
+   * los detalles pequeños, a menos de `detailDistance`. Sin llamarlo, todo queda visible (editor).
+   */
+  cull(focus: THREE.Vector3, distance: number, detailDistance = distance) {
+    const half = VIEW_CHUNK * Math.SQRT1_2;
+    for (const chunk of this.chunks.values()) {
+      const center = chunk.userData.center as THREE.Vector2;
+      const reach = (chunk.userData.detail ? detailDistance : distance) + half;
+      const visible = Math.hypot(center.x - focus.x, center.y - focus.z) <= reach;
+      if (visible !== chunk.visible) this.setChunkVisible(chunk, visible);
+    }
+  }
   /** Sincroniza las vistas con el documento; reutiliza las que no cambian de recurso. */
   sync(objects: readonly MapObject[], layers: readonly MapLayer[]) {
     const visible = new Set(layers.filter(layer => layer.visible).map(layer => layer.id));
@@ -462,6 +511,7 @@ export class ObjectLayer {
       }
       applyObjectTransform(view.container, object);
       view.container.visible = !object.hidden && visible.has(object.layer);
+      this.place(view);
     });
     for (const view of [...this.views.values()]) if (!seen.has(view.id)) this.remove(view);
   }
@@ -470,10 +520,12 @@ export class ObjectLayer {
     container.name = object.id;
     container.userData.mapObjectId = object.id;
     container.userData.mapAsset = object.asset;
-    this.root.add(container);
     const view: ObjectView = { id: object.id, key, container, animations: [], loaded: Promise.resolve() };
     view.loaded = this.provider.template(object.asset).then(template => {
       if (this.views.get(object.id) !== view) return;
+      // Los detalles pequeños pasan a sus propias celdas, que se dejan de dibujar más cerca.
+      view.detail = !object.asset.startsWith('city/hex_') && templateSize(template) * Math.max(...object.scale) < DETAIL_SIZE;
+      if (container.parent) this.place(view);
       const copy = template.clone(true);
       const ground = object.asset.startsWith('city/hex_');
       copy.traverse(part => {
@@ -502,7 +554,81 @@ export class ObjectLayer {
     this.views.delete(view.id);
   }
   async ready() { await Promise.all([...this.views.values()].map(view => view.loaded)); }
-  update(t: number) { for (const view of this.views.values()) for (const animate of view.animations) animate(t); }
+  /**
+   * Solo para el juego (el editor mueve objetos): las piezas estáticas se dibujan con un BatchedMesh por material,
+   * unas pocas llamadas de dibujo para todo el mapa en vez de una por pieza. Cada celda del campo de visión
+   * enciende o apaga sus instancias (`cull`). Los objetos originales quedan ocultos y siguen sirviendo para los
+   * rayos de la cámara. Los animados (molinos, banderas) no se agrupan.
+   */
+  batch() {
+    this.root.updateMatrixWorld(true);
+    const inverse = new THREE.Matrix4().copy(this.root.matrixWorld).invert();
+    type Group = { material: THREE.Material; castShadow: boolean; receiveShadow: boolean; conform: boolean; items: { mesh: THREE.Mesh; chunk: THREE.Group }[] };
+    const groups = new Map<string, Group>();
+    for (const chunk of this.chunks.values()) {
+      for (const container of [...chunk.children]) {
+        const view = this.views.get(container.name);
+        if (!view || view.container !== container || view.animations.length || !container.visible) continue;
+        const meshes: THREE.Mesh[] = [];
+        let plain = true;
+        container.traverse(part => {
+          const mesh = part as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          if (Array.isArray(mesh.material) || (mesh as THREE.SkinnedMesh).isSkinnedMesh || !mesh.visible) plain = false;
+          else meshes.push(mesh);
+        });
+        if (!plain || !meshes.length) continue;
+        for (const mesh of meshes) {
+          const geometry = mesh.geometry, material = mesh.material as THREE.Material;
+          // Un lote exige los mismos atributos (y lo mismo con o sin índice) en todas sus geometrías.
+          const layout = Object.entries(geometry.attributes).map(([name, attribute]) => `${name}:${attribute.itemSize}:${attribute.normalized ? 1 : 0}`).sort().join(',');
+          const key = `${material.uuid}|${layout}|${geometry.index ? 1 : 0}|${mesh.castShadow ? 1 : 0}|${mesh.frustumCulled ? 1 : 0}`;
+          let group = groups.get(key);
+          if (!group) groups.set(key, group = { material, castShadow: mesh.castShadow, receiveShadow: mesh.receiveShadow, conform: !mesh.frustumCulled, items: [] });
+          group.items.push({ mesh, chunk });
+        }
+        container.visible = false;
+      }
+    }
+    const matrix = new THREE.Matrix4();
+    for (const group of groups.values()) {
+      const unique = [...new Set(group.items.map(item => item.mesh.geometry))];
+      const vertices = unique.reduce((sum, geometry) => sum + geometry.getAttribute('position').count, 0);
+      const indices = unique.reduce((sum, geometry) => sum + (geometry.index?.count ?? 0), 0);
+      const batched = new THREE.BatchedMesh(group.items.length, vertices, Math.max(indices, 1), group.material);
+      const ids = new Map(unique.map(geometry => [geometry, batched.addGeometry(geometry)]));
+      for (const { mesh, chunk } of group.items) {
+        const instance = batched.addInstance(ids.get(mesh.geometry)!);
+        batched.setMatrixAt(instance, matrix.multiplyMatrices(inverse, mesh.matrixWorld));
+        ((chunk.userData.instances ??= []) as [THREE.BatchedMesh, number][]).push([batched, instance]);
+      }
+      batched.castShadow = group.castShadow;
+      batched.receiveShadow = group.receiveShadow;
+      batched.sortObjects = false;
+      // Las casillas que se adaptan al terreno se deforman en la GPU: su caja no sirve para recortar.
+      batched.perObjectFrustumCulled = !group.conform;
+      batched.frustumCulled = !group.conform;
+      batched.name = 'map-batch';
+      batched.raycast = () => {};
+      this.root.add(batched);
+    }
+    // El minimapa necesita ver el mapa entero un momento.
+    this.root.userData.revealAll = () => {
+      const hidden = [...this.chunks.values()].filter(chunk => !chunk.visible);
+      for (const chunk of hidden) this.setChunkVisible(chunk, true);
+      return () => { for (const chunk of hidden) this.setChunkVisible(chunk, false); };
+    };
+  }
+  private setChunkVisible(chunk: THREE.Group, visible: boolean) {
+    chunk.visible = visible;
+    for (const [batched, instance] of (chunk.userData.instances ?? []) as [THREE.BatchedMesh, number][]) batched.setVisibleAt(instance, visible);
+  }
+  update(t: number) {
+    for (const view of this.views.values()) {
+      if (!view.animations.length || view.container.parent?.visible === false) continue;
+      for (const animate of view.animations) animate(t);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -724,7 +850,8 @@ export function buildCollision(
 }
 
 /** Carga completa de un mapa (para pruebas de paseo o para usarlo en el juego). */
-export async function loadMapWorld(doc: MapDocument, scene: THREE.Scene, provider: MapAssetProvider, options: { lighting?: boolean } = {}) {
+/** `batch`: agrupa las piezas estáticas en InstancedMesh (juego; no sirve para editar). */
+export async function loadMapWorld(doc: MapDocument, scene: THREE.Scene, provider: MapAssetProvider, options: { lighting?: boolean; batch?: boolean } = {}) {
   const field = new TerrainField(decodeTerrain(doc.terrain));
   const surface = new TerrainSurface(field);
   const materials = new MaterialVariants(surface);
@@ -739,6 +866,7 @@ export async function loadMapWorld(doc: MapDocument, scene: THREE.Scene, provide
   grass.rebuild(field, environment.waterLevel);
   objects.sync(doc.objects, doc.layers);
   await objects.ready();
+  if (options.batch) objects.batch();
   const assets = [...new Set(doc.objects.map(object => object.asset))];
   const boxes = new Map(await Promise.all(assets.map(async asset => [asset, await provider.collisionBox(asset).catch(() => new THREE.Box3())] as const)));
   const collision = buildCollision(doc, field, boxes);
@@ -747,6 +875,10 @@ export async function loadMapWorld(doc: MapDocument, scene: THREE.Scene, provide
     root, field, surface, environment, grass, objects, collision,
     spawn: spawn ? new THREE.Vector3(spawn.position[0], field.heightAt(spawn.position[0], spawn.position[2]), spawn.position[2]) : new THREE.Vector3(),
     spawnYaw: spawn?.rotationY ?? 0,
-    update(t: number, focus: THREE.Vector3) { grass.update(t); objects.update(t); environment.update(t, focus); },
+    /** `view`: campo de visión (m) para edificios y para detalles; sin él se dibuja todo. */
+    update(t: number, focus: THREE.Vector3, view?: { distance: number; detail: number }) {
+      if (view) objects.cull(focus, view.distance, view.detail);
+      grass.update(t); objects.update(t); environment.update(t, focus);
+    },
   };
 }

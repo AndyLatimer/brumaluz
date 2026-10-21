@@ -28,6 +28,9 @@ export type PublishedWorld = Record<string, PublishedMap>;
 
 const VENDOR_ROLES = new Set<CityVendorSpot['role']>(['merchant', 'innkeeper', 'healer', 'smith', 'miller', 'lumber']);
 const MAX_LIGHTS = 12;
+/** Campo de visión: margen sobre el final de la niebla y distancia a la que se dejan de dibujar los detalles pequeños. */
+const VIEW_MARGIN = 30;
+const DETAIL_DISTANCE = 75;
 
 // En desarrollo, «Publicar en el juego» del editor recarga las pestañas del juego.
 import.meta.hot?.on('brumaluz:city-published', () => location.reload());
@@ -114,7 +117,7 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     if (!url) throw new Error(`El mapa publicado no incluye ${id}.`);
     return (await loadGLB(url)).scene;
   });
-  const world = await loadMapWorld(doc, scene, provider, { lighting: false });
+  const world = await loadMapWorld(doc, scene, provider, { lighting: false, batch: true });
   const { collision, field } = world;
   const root = world.root;
   root.name = `city:${doc.id}`;
@@ -187,7 +190,9 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     spawnYaw: spawnMarker?.rotationY ?? 0,
     ...cityLinks(markers, (x, z) => field.heightAt(x, z)),
     update(t: number, playerPosition?: THREE.Vector3) {
-      world.update(t, playerPosition ?? world.spawn);
+      // Campo de visión: lo que queda tras la niebla no se dibuja (con margen para la cámara, detrás del jugador).
+      const fog = scene.fog instanceof THREE.Fog ? scene.fog.far : Infinity;
+      world.update(t, playerPosition ?? world.spawn, { distance: fog + VIEW_MARGIN, detail: Math.min(fog + VIEW_MARGIN, DETAIL_DISTANCE) });
       flames.forEach((flame, i) => flame.scale.setScalar(flame.userData.size * (0.96 + Math.sin(t * 9 + i * 2) * 0.06 + Math.sin(t * 23 + i) * 0.04)));
     },
   };
