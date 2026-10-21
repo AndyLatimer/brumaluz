@@ -13,10 +13,17 @@ const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(source).t
 const inventory = moduleUrl(await compile('../src/data/inventory.ts'));
 const code = (await compile('../src/data/combat.ts')).replace("'./inventory'",JSON.stringify(inventory));
 const { COMBAT_KITS, starterEquipment, resolveCombat, regenerateCombat, skillRank, skillPointsAllowed,
-  unspentSkillPoints, upgradeSkill, basicAttackDamage, skillPower } = await import(moduleUrl(code));
+  unspentSkillPoints, upgradeSkill, basicAttackDamage, skillPower, isInCombat } = await import(moduleUrl(code));
 const state = () => ({health:60,maxHealth:100,resource:50,enemyHealth:100,nextAttack:0,nextSkill:0});
 const equipmentCode = (await compile('../src/data/equipment.ts')).replace("'./inventory'",JSON.stringify(inventory));
 const {hasCombatWeapon,transferEquipment} = await import(moduleUrl(equipmentCode));
+
+test('a pending mission enemy is not combat until an engagement occurs',()=>{
+  assert.equal(isInCombat(null),false);
+  assert.equal(isInCombat({status:'active',engaged:false}),false);
+  assert.equal(isInCombat({status:'active',engaged:true}),true);
+  for(const status of ['defeated','fled','failed'])assert.equal(isInCombat({status,engaged:true}),false);
+});
 
 test('local equipment transfers preserve all starter pieces, reject stale/class/full-bag changes and allow legacy unequip',()=>{
   for(const [cls,kit] of Object.entries(COMBAT_KITS)){

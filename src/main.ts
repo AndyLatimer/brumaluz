@@ -11,6 +11,9 @@ import { createCoinBags } from './world/coinBags';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
 import { renderZoneMap } from './ui/mapWindow';
+import { createDestinationIndicator } from './ui/destinationIndicator';
+import { createQuestTracking } from './ui/questTracking';
+import type { MapPoint } from './ui/mapIcons';
 import { initChat, chatReceive, chatCombat, chatSystem, chatNpc, chatSelfSay, setChatSelf, setChatSpeechListener, focusChat, clearChat } from './ui/chatWindow';
 import { simulateAction, simulateSpend, simulateBuy, simulateSell, simulateUse, simulateWelcome, addItem } from './services/devActions';
 import type { User } from '@supabase/supabase-js';
@@ -29,7 +32,7 @@ import { renderSocial } from './ui/socialWindow';
 import { startFriendNotifications } from './ui/friendNotifications';
 import { createPlayerInteractions } from './ui/playerInteractions';
 import { createTradeWindow } from './ui/tradeWindow';
-import { createTargetFrame, type NpcType, type TargetDetails } from './ui/targetFrame';
+import { createTargetFrame, TARGET_RANGE, type NpcType, type TargetDetails } from './ui/targetFrame';
 import { getParty, observeParty, startParty, stopParty, partySelf, isPartyLeader } from './services/party';
 import { initPartyHud } from './ui/partyPanel';
 import { WorldConnection, parseCombatEncounter, parsePublicVitals, type CombatEncounter, type WorldSnapshot } from './services/multiplayer';
@@ -67,7 +70,7 @@ import { renderLoot } from './ui/lootWindow';
 import { createWelcomeWorld } from './world/welcome';
 import { buildShadowEnemy, playShadowEnemyAction, updateShadowEnemy } from './world/shadowEnemy';
 import { createQuestTracker, renderQuestJournal, welcomeConversation } from './ui/questWindow';
-import { COMBAT_KITS, MAX_SKILL_RANK, resolveCombat, skillRank, unspentSkillPoints, upgradeSkill, type CombatState } from './data/combat';
+import { COMBAT_KITS, MAX_SKILL_RANK, isInCombat, resolveCombat, skillRank, unspentSkillPoints, upgradeSkill, type CombatState } from './data/combat';
 
 
 // ---------------- Estado ----------------
@@ -575,7 +578,7 @@ function interact() {
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
   if (item?.id.startsWith('portal:')) {
     const portal = city.portals.find(portal => portal.id === item.id.slice(7));
-    if (portal && confirm(`${portal.name}\n¿Viajar a ${locationName(portal.target?.map)}?`)) void travelPortal(portal);
+    if (portal) void travelPortal(portal);
     return;
   }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
@@ -638,8 +641,9 @@ function updateInteractPrompt() {
   const interaction = mode === 'play' && !dead && !isbertoArrival && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !openWindow && !optionsOpen ? nearestInteraction() : null;
   prompt.hidden = !interaction?.item && !interaction?.player;
   if (interaction?.item || interaction?.player) {
-    const label = interaction.player ? t('Interactuar') : interaction.item?.id === 'welcome:gnomi'
+    let label = interaction.player ? t('Interactuar') : interaction.item?.id === 'welcome:gnomi'
       ? t('Hablar con {name}', { name: registeredNpcs.gnomi.name }) : t(interaction.item!.label);
+    if (interaction.item?.id.startsWith('portal:') && isInCombat(combatEncounter)) label += ` · ${t('Bloqueado: combate activo')}`;
     if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
   } else $('#interact-label').textContent = '';
 }
@@ -775,7 +779,7 @@ function tickWorldCombat(time:number,dt:number) {
     localCombatState={...localCombatState,health:Math.max(0,current.health-8),maxHealth:current.maxHealth,resource:current.resource};
     const vitals=vitalsOf(state);
     applyCombatResult({
-      encounter:combatEncounter,
+      encounter:{...combatEncounter,engaged:true},
       vitals:{health:localCombatState.health,maxHealth:localCombatState.maxHealth,overheal:0,
         resource:localCombatState.resource,maxResource:vitals.maxResource,resourceKind:vitals.resourceKind},
       damage:0,healing:0,
@@ -929,7 +933,6 @@ async function performWelcome(action: WelcomeAction, origin?: number) {
     if (!success || !stillCurrent()) return false;
     if (action === 'collect') char.pickUp();
     updateHud();
-    if (openWindow === 'quests') setWindow('quests', false);
     if (action !== 'origin') {
       const message = action === 'claim' ? 'Misión completada: 40 XP y 5 pelines.' : action === 'collect' ? 'Has encontrado el distintivo. Habla con Gnomi.' : 'Misión aceptada. Gnomi te acompaña.';
       toast(WELCOME_TITLE, message);
@@ -1292,6 +1295,7 @@ function updateHud() {
   document.querySelector<HTMLButtonElement>('[data-window="quests"]')!.hidden = !state.welcome;
   document.querySelector('#player-menu-panel [data-window="sheet"]')!.classList.toggle('has-points', unspentAttributePoints(state) > 0);
   refreshNameplateText();
+  if (openWindow === 'quests') setWindow('quests', false);
 }
 
 const nameplate = { el: null as unknown as HTMLElement, shown: false };
@@ -1368,7 +1372,7 @@ function updateNameplate() {
     if (npc.id === 'isberto' && !npc.character.root.visible) { npc.plate.hidden = true; continue; }
     const heightScale = (npc.character.opts.scale ?? 1) * (npc.character.opts.proportions?.height ?? 1);
     npc.anchor.set(npc.character.root.position.x, npc.character.root.position.y + 1.95 * heightScale, npc.character.root.position.z).project(camera);
-    const inView = visible && npc.anchor.z > -1 && npc.anchor.z < 1
+    const inView = visible && npc.character.root.visible && npc.character.root.position.distanceToSquared(holder.position) <= TARGET_RANGE * TARGET_RANGE && npc.anchor.z > -1 && npc.anchor.z < 1
       && Math.abs(npc.anchor.x) < 1.2 && Math.abs(npc.anchor.y) < 1.2;
     if (inView) {
       const x = (npc.anchor.x * 0.5 + 0.5) * window.innerWidth;
@@ -1518,24 +1522,41 @@ initChat({
     if (sequence === chatSeq) chatReceive(message);
   },
 });
+const personalWaypoints = new Map<string, { x: number; z: number }>();
+const questTracking = createQuestTracking(() => `brumaluz-quest-tracking:${activeCharacterId ?? 'test'}`);
+function zoneMapPoints(): MapPoint[] {
+  const quest = city.locationId === 'brumaluz' ? questTracking.current(state) : null;
+  const objective = quest === 'shadow'
+    ? { name:t(shadowObjective(state.shadowQuest)), ...shadowQuestTarget() }
+    : quest === 'welcome' && state.welcome
+      ? { name:t(welcomeObjective(state.welcome)), ...(state.welcome.stage === 'active' ? WELCOME_BADGE : welcomeWorld.root.position) }
+      : null;
+  return [
+    ...npcActors.filter(npc => npc.character.root.visible)
+      .map(npc => ({ id:npc.id, name:NPCS[npc.id].name, x:npc.character.root.position.x, z:npc.character.root.position.z })),
+    ...(welcomeWorld.root.visible ? [{id:'gnomi',name:registeredNpcs.gnomi.name,x:welcomeWorld.root.position.x,z:welcomeWorld.root.position.z}] : []),
+    ...city.portals.map(portal => ({
+      id:`portal:${portal.id}`, name:`${portal.name}${!portal.target || (portal.target.map !== 'brumaluz' && !publishedMaps()[portal.target.map]) ? ` · ${t('Camino cerrado')}` : ''}`,
+      x:portal.position.x, z:portal.position.z,
+      kind:publishedMaps()[portal.target?.map ?? '']?.kind === 'interior' ? 'interior' as const : 'exit' as const,
+      closed:!portal.target || (portal.target.map !== 'brumaluz' && !publishedMaps()[portal.target.map]),
+    })),
+    ...(objective ? [{id:'quest-objective',...objective,kind:'quest' as const}] : []),
+  ];
+}
 initMinimap({
   player: () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
   markers: () => [
-    ...npcActors.filter(npc => npc.id !== 'isberto' || isbertoUnlocked())
-      .map((npc) => ({ id: npc.id, name: NPCS[npc.id].name, x: npc.character.root.position.x, z: npc.character.root.position.z })),
-    ...(state.welcome && state.welcome.stage !== 'completed' ? [{
-      id: 'welcome', name: t(welcomeObjective(state.welcome)), quest: true,
-      ...(state.welcome.stage === 'active' ? WELCOME_BADGE : { x: welcomeWorld.root.position.x, z: welcomeWorld.root.position.z }),
-    }] : []),
-    ...(isbertoUnlocked() && state.shadowQuest !== 'returned' ? [{
-      id:'shadow-quest',name:t(shadowObjective(state.shadowQuest)),quest:true,
-      ...shadowQuestTarget(),
-    }] : []),
+    ...zoneMapPoints(),
+    ...[personalWaypoints.get(city.locationId)].flatMap(point => point ? [{ id:'personal-waypoint', name:t('Destino personal'), ...point, kind:'waypoint' as const }] : []),
     ...getParty().members.filter(member=>member.userId!==partySelf() && member.location===state.location).map(member=>({
       id:member.characterId,name:member.data.name,x:member.position.x,z:member.position.z,party:true,leader:member.userId===getParty().members[0]?.userId,
     })),
   ],
   zone: () => locationName(state.location),
+  openMap: () => {
+    if (mode === 'play' && !mapTravelling && !dead && !isDialogOpen() && !tradeWindow.isOpen) setWindow('map');
+  },
 });
 initPartyHud();
 let previousPartyInvites=new Set<string>();
@@ -1584,7 +1605,7 @@ function refreshLanguageDependentUI() {
   renderBuffs(state, !foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests' || openWindow === 'skills' || openWindow === 'map') setWindow(openWindow, false);
+  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests' || openWindow === 'skills' || openWindow === 'map' || openWindow === 'collections') setWindow(openWindow, false);
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -1669,9 +1690,13 @@ const draftTotal = () => Object.values(pointDraft).reduce((sum, n) => sum + (n ?
 function setWindow(win: PlayerWindow | null, closeMenu = true) {
   const body = $('#window-body');
   const refreshingSheet = win === 'sheet' && openWindow === 'sheet';
-  const sheetScroll = refreshingSheet ? body.scrollTop : 0;
-  const focused = refreshingSheet && document.activeElement instanceof HTMLElement && body.contains(document.activeElement)
+  const refreshingJournal = win === 'quests' && openWindow === 'quests';
+  const journalCompleted = refreshingJournal ? body.querySelector('[data-quest-control="completed"]')?.getAttribute('aria-pressed') === 'true' : undefined;
+  const expandedQuests = refreshingJournal ? [...body.querySelectorAll<HTMLDetailsElement>('details.quest-completed[open]')].map(entry => entry.dataset.quest) : [];
+  const sheetScroll = refreshingSheet || refreshingJournal ? body.scrollTop : 0;
+  const focused = (refreshingSheet || refreshingJournal) && document.activeElement instanceof HTMLElement && body.contains(document.activeElement)
     ? document.activeElement : null;
+  const focusedQuestControl = focused?.dataset.questControl;
   const focusedAttribute = focused?.closest<HTMLElement>('[data-attribute]');
   const focusedControl = focusedAttribute && focused instanceof HTMLButtonElement ? [...focusedAttribute.querySelectorAll('button')].indexOf(focused) : -1;
   playerInteractions.close();
@@ -1724,14 +1749,19 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
     moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
     updateZoneMap = renderZoneMap(body, locationName(city.locationId),
       () => ({ x: holder.position.x, z: holder.position.z, facing: holder.rotation.y }),
-      () => [
-        ...npcActors.filter(npc => npc.character.root.visible && (npc.id !== 'isberto' || isbertoUnlocked()))
-          .map(npc => ({ id:npc.id, name:NPCS[npc.id].name, x:npc.character.root.position.x, z:npc.character.root.position.z })),
-        ...(welcomeWorld.root.visible ? [{id:'gnomi',name:registeredNpcs.gnomi.name,x:welcomeWorld.root.position.x,z:welcomeWorld.root.position.z}] : []),
-      ]);
+      zoneMapPoints, {
+        get: () => personalWaypoints.get(city.locationId),
+        set: point => {
+          if (point) personalWaypoints.set(city.locationId, point);
+          else personalWaypoints.delete(city.locationId);
+        },
+      });
     updateZoneMap();
   }
-  else if (win === 'quests') renderQuestJournal(body, state);
+  else if (win === 'quests') {
+    renderQuestJournal(body, state, questTracking, journalCompleted);
+    for (const entry of body.querySelectorAll<HTMLDetailsElement>('details.quest-completed')) entry.open = expandedQuests.includes(entry.dataset.quest);
+  }
   else if (win === 'collections') renderCollections(body, state.coinBags);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
@@ -1761,8 +1791,8 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   const restoredAttribute = focusedAttribute?.dataset.attribute
     ? body.querySelector<HTMLElement>(`[data-attribute="${CSS.escape(focusedAttribute.dataset.attribute)}"]`) : null;
   const restoredControl = restoredAttribute?.querySelectorAll('button')[focusedControl];
-  const focusTarget = restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
-  (focusTarget ?? (win === 'map' ? $('#map-window-close') : win === 'loot' ? body.querySelector<HTMLButtonElement>('.loot-item') : null) ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet });
+  const focusTarget = focusedQuestControl ? body.querySelector<HTMLElement>(`[data-quest-control="${CSS.escape(focusedQuestControl)}"]`) : restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
+  (focusTarget ?? (win === 'map' ? $('#map-window-close') : win === 'loot' ? body.querySelector<HTMLButtonElement>('.loot-item') : null) ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet || refreshingJournal });
   body.scrollTop = sheetScroll;
 }
 $('#window-confirm').onclick = async () => {
@@ -2856,28 +2886,15 @@ try {
 scene.add(city.root);
 const welcomeWorld = createWelcomeWorld(scene, () => city, worldCharacters.gnomi, registeredNpcs.gnomi.name);
 const coinBags = createCoinBags(scene, () => city);
-const questTracker = createQuestTracker(() => setWindow('quests'));
+const questTracker = createQuestTracker(() => setWindow('quests'), questTracking);
 const welcomePlate = document.createElement('div');
 welcomePlate.className = 'nameplate npc welcome-nameplate';
 welcomePlate.textContent = registeredNpcs.gnomi.name;
 welcomePlate.hidden = true;
 document.body.append(welcomePlate);
-const questMarker = document.createElement('div');
-questMarker.id = 'quest-objective-marker';
-questMarker.hidden = true;
-const questDirection = document.createElement('span');
-questDirection.className = 'quest-direction-arrow';
-questDirection.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 16-8-4-8 4Z"/></svg>';
-const questDistance = document.createElement('span');
-questDistance.className = 'quest-marker-distance';
-const questSymbol = document.createElement('span');
-questSymbol.className = 'quest-marker-symbol';
-questSymbol.textContent = '!';
-questSymbol.setAttribute('aria-hidden', 'true');
-questMarker.append(questDirection, questSymbol, questDistance);
-document.body.append(questMarker);
+const questIndicator = createDestinationIndicator('quest-objective-marker', 'quest');
+const waypointIndicator = createDestinationIndicator('waypoint-objective-marker', 'waypoint');
 const questAnchor = new THREE.Vector3();
-const questView = new THREE.Vector3();
 let welcomeHintSaid = false;
 let welcomeTravelSaid = false;
 function shadowQuestTarget(): { x: number; z: number } {
@@ -2891,12 +2908,12 @@ function updateWelcome(dt: number, time: number) {
   const visible = mode === 'play' && city.locationId === 'brumaluz' && !dead && !isbertoArrival && !openWindow && !gameMenuOpen && !playerMenuOpen && !worldMenuOpen && !optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   questTracker.update(state, visible);
   welcomePlate.hidden = true;
-  questMarker.hidden = true;
+  questIndicator.hide();
   if (!welcomeWorld.root.visible || !visible) return;
   camera.updateMatrixWorld();
   const welcomeHeight = 1.1 * registeredNpcs.gnomi.render.scale / .48 * registeredNpcs.gnomi.render.height / .92;
   questAnchor.copy(welcomeWorld.root.position).add(new THREE.Vector3(0, welcomeHeight, 0)).project(camera);
-  if (questAnchor.z > -1 && questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
+  if (settings.nameplates && welcomeWorld.root.position.distanceToSquared(holder.position) <= TARGET_RANGE * TARGET_RANGE && questAnchor.z > -1 && questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
     welcomePlate.hidden = false;
     welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
   }
@@ -2918,29 +2935,14 @@ function updateWelcome(dt: number, time: number) {
     welcomeWorld.speak(5);
   }
   if (state.welcome.stage !== 'active') { welcomeHintSaid = false; welcomeTravelSaid = false; }
-  questAnchor.set(target.x, city.groundY(target.x, target.z) + (state.welcome.stage === 'active' ? .55 : 1.3), target.z).project(camera);
-  const screenX = (questAnchor.x * .5 + .5) * innerWidth, screenY = (-questAnchor.y * .5 + .5) * innerHeight;
-  const marginX = Math.min(64, innerWidth / 4), marginY = Math.min(100, innerHeight / 4);
-  const onScreen = questAnchor.z > -1 && questAnchor.z < 1 && screenX >= marginX && screenX <= innerWidth - marginX && screenY >= marginY && screenY <= innerHeight - marginY;
-  questMarker.hidden = false;
-  questMarker.classList.toggle('offscreen', !onScreen);
-  questDirection.hidden = onScreen;
-  questDistance.textContent = `${Math.round(distance)} m`;
-  if (onScreen) {
-    questMarker.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%,-100%)`;
-  } else {
-    questView.set(target.x, city.groundY(target.x, target.z) + (state.welcome.stage === 'active' ? .55 : 1.3), target.z).applyMatrix4(camera.matrixWorldInverse);
-    let dx = questView.x * camera.projectionMatrix.elements[0], dy = -questView.y * camera.projectionMatrix.elements[5];
-    // Targets behind the camera still point to their actual side, rather than mirroring after projection.
-    if (questView.z >= 0) dy = Math.max(Math.abs(dy), .5);
-    if (Math.abs(dx) + Math.abs(dy) < .0001) { dx = 0; dy = 1; }
-    dx *= innerWidth; dy *= innerHeight;
-    const halfW = innerWidth / 2 - marginX, halfH = innerHeight / 2 - marginY;
-    const scale = 1 / Math.max(Math.abs(dx) / halfW, Math.abs(dy) / halfH);
-    const x = innerWidth / 2 + dx * scale, y = innerHeight / 2 + dy * scale;
-    questDirection.style.transform = `rotate(${Math.atan2(dy, dx) + Math.PI / 2}rad)`;
-    questMarker.style.transform = `translate(${x}px, ${y}px) translate(-50%,-50%)`;
-  }
+  if (questTracking.current(state)) questIndicator.update({ x: target.x, y: city.groundY(target.x, target.z) + (state.welcome.stage === 'active' ? .55 : 1.3), z: target.z }, holder.position, camera);
+}
+function updatePersonalWaypoint() {
+  waypointIndicator.hide();
+  const point = personalWaypoints.get(city.locationId);
+  if (!point || mode !== 'play' || mapTravelling || dead || isbertoArrival || isDialogOpen() || openWindow || gameMenuOpen || playerMenuOpen || worldMenuOpen || optionsOpen || tradeWindow.isOpen) return;
+  waypointIndicator.update({ ...point, y: city.groundY(point.x, point.z) + .8 }, holder.position, camera);
+  waypointIndicator.element.classList.toggle('arrived', Math.hypot(point.x - holder.position.x, point.z - holder.position.z) < 2);
 }
 if (import.meta.hot) import.meta.hot.dispose(() => { welcomeWorld.dispose(); coinBags.dispose(); });
 function refreshCityMinimap() {
@@ -3172,7 +3174,11 @@ function placeAfterTravel(position: { x: number; z: number; yaw: number }) {
 }
 
 async function travelPortal(portal: CityPortal) {
-  if (mapTravelling || dead || combatEncounter?.status === 'active') return;
+  if (mapTravelling || dead) return;
+  if (isInCombat(combatEncounter)) {
+    toast('No se pudo viajar', 'Termina el combate activo antes de usar este portal.', true);
+    return;
+  }
   if (!portal.target) { toast('Camino cerrado', 'Este portal todavía no tiene un destino.', false); return; }
   const target = portal.target;
   if (target.map !== 'brumaluz' && !publishedMaps()[target.map]) {
@@ -3371,7 +3377,7 @@ async function beginIsbertoEncounter() {
       enemyHealth:100,nextAttack:0,nextSkill:0,
     };
     setCombatEncounter({
-      id:'shadowling',status:'active',health:100,maxHealth:100,
+      id:'shadowling',status:'active',engaged:false,health:100,maxHealth:100,
       x:LOCAL_COMBAT_SITE.x+3.5,z:LOCAL_COMBAT_SITE.z,enemyAttackAt:performance.now()/1000+2,
       instanceId: crypto.randomUUID(), loot: [], looted: false,
     });
@@ -3402,7 +3408,7 @@ async function performWorldCombatAction(action:'attack'|'skill') {
       localCombatState=result.state;
       if (action === 'skill') skillReadyAt = performance.now() + COMBAT_KITS[state.cls].skill.cooldown * 1000;
       applyCombatResult({
-        ...(combatEncounter ? {encounter:{...combatEncounter,health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active',
+        ...(combatEncounter ? {encounter:{...combatEncounter,engaged:combatEncounter.engaged || result.damage.some(amount=>amount>0),health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active',
           ...(result.state.enemyHealth === 0 ? {loot:[{id:'esencia_sombria',count:1,bound:true}],looted:false} : {})},
           quest: result.state.enemyHealth === 0 ? 'defeated' : 'active'} : {}),
         vitals:{health:result.state.health,maxHealth:result.state.maxHealth,overheal:0,
@@ -3517,6 +3523,7 @@ renderer.setAnimationLoop(() => {
   env.follow(camera.position);
   if (openWindow === 'loot') positionLootWindow();
   updateWelcome(dt, t);
+  updatePersonalWaypoint();
   coinBags.update(state.coinBags, mode === 'play' && city.locationId === 'brumaluz', t);
   updatePortals();
   applyCameraShake();
@@ -3546,13 +3553,22 @@ if (TEST) {
 
 // Gancho de depuración para pruebas desde la consola.
 (window as unknown as { brumaluz: object }).brumaluz = {
-  set(d: Partial<CharData>) { state = sanitize({ ...state, ...d } as unknown as Record<string, unknown>); rebuildNow(); refreshUI(); },
+  set(d: Partial<CharData>) { state = sanitize({ ...state, ...d } as unknown as Record<string, unknown>); rebuildNow(); refreshUI(); updateHud(); },
   tab: selectTab,
   wave() { char.wave(); waveSequence++; },
   speak(s: number) { char.speak(s); },
   play: () => enterPlay(),
   spin(a: number) { holder.rotation.y = a; spinVel = 0; },
-  move(x: number, z: number) { holder.position.set(x, 0, z); },
+  move(x: number, z: number) {
+    holder.position.set(x, city ? city.groundY(x, z) : 0, z);
+    groundHeight = holder.position.y;
+    playerVel.set(0, 0, 0);
+    moveTarget = null;
+    marker.visible = false;
+    if (state) {
+      state.position = { ...state.position, x, z, yaw };
+    }
+  },
   view(y: number, p: number, d: number) { yaw = y; pitch = p; followDist = d; zoomTarget = d; },
   char: () => char,
   camera: () => camera,

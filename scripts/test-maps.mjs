@@ -35,6 +35,96 @@ after(async () => {
   if (publishDirectory) await rm(publishDirectory, { recursive: true });
 });
 
+test('minimap uses the atlas icons and tracking preferences stay isolated by character', async () => {
+  const page=await browser.newPage();
+  try {
+    await page.goto(`${url}/src/ui/mapIcons.ts`);
+    const result=await page.evaluate(async()=>{
+      const {mapIcon,drawMapIcon}=await import('/src/ui/mapIcons.ts');
+      const {initMinimap,updateMinimap}=await import('/src/ui/minimap.ts');
+      const {createQuestTracking}=await import('/src/ui/questTracking.ts');
+      document.body.innerHTML=`<div id="minimap"><canvas class="minimap-canvas" style="width:176px;height:176px"></canvas>
+        <button class="minimap-zoom-in"></button><button class="minimap-zoom-out"></button>
+        <span class="minimap-players"><span class="minimap-player-count"></span></span>
+        <span class="minimap-dir n"></span><span class="minimap-dir e"></span><span class="minimap-dir s"></span><span class="minimap-dir w"></span>
+        <span class="minimap-zone"></span><span class="minimap-coords"></span><span class="minimap-tip" hidden></span></div>`;
+      const kinds=['npc','quest','waypoint','exit','interior'];
+      const markers=kinds.map((kind,i)=>({id:kind,name:kind,x:Math.cos(i*Math.PI*2/5)*12,z:Math.sin(i*Math.PI*2/5)*12,kind}));
+      let opened=0;
+      initMinimap({player:()=>({x:0,z:0,facing:0}),markers:()=>markers,zone:()=> 'Brumaluz',openMap:()=>opened++});
+      const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+      const calls=[],arrows=[],stroke=ctx.stroke.bind(ctx);
+      ctx.stroke=function(path){
+        if(path instanceof Path2D)calls.push({color:this.strokeStyle,alpha:this.globalAlpha,fill:this.fillStyle,scale:this.getTransform().a});
+        else arrows.push(this.fillStyle);
+        return path?stroke(path):stroke();
+      };
+      updateMinimap();
+      const colors=calls.map(call=>call.color);
+      const npcCalls=calls.filter(call=>call.color==='#8be07a'),questCalls=calls.filter(call=>call.color==='#ffe19b');
+      const npcStyle={fill:npcCalls[0].fill,dotFill:npcCalls[1]?.fill,size:npcCalls[0].scale*24/(canvas.width/176),questSize:questCalls[0].scale*24/(canvas.width/176)};
+      markers.find(marker=>marker.kind==='exit').closed=true;
+      calls.length=0; updateMinimap();
+      const faded=calls.some(call=>call.color==='#d1c7ff'&&Math.abs(call.alpha-.45)<.001);
+      for(const [i,marker] of markers.entries()){marker.x=1000+i*100;marker.z=0;}
+      calls.length=0;arrows.length=0;updateMinimap();
+      const farPortalHidden=calls.every(call=>call.color!=='#d1c7ff'&&call.color!=='#ffc69d');
+      const farArrows=[...arrows];
+      const exit=markers.find(marker=>marker.kind==='exit');
+      exit.x=25.5;
+      calls.length=0;updateMinimap();
+      const nearExit=calls.some(call=>call.color==='#d1c7ff');
+      exit.x=25.7;
+      calls.length=0;updateMinimap();
+      const distantExit=calls.some(call=>call.color==='#d1c7ff');
+      const drawings=[];
+      for(const kind of [...kinds,'player']){
+        const reference=document.createElement('canvas');reference.width=reference.height=32;
+        drawMapIcon(reference.getContext('2d'),kind,16,16,24,'#ffe19b');
+        drawings.push(reference.toDataURL());
+      }
+      canvas.click();
+      const data={welcome:{origin:0,stage:'active'},shadowQuest:null},before=JSON.stringify(data);
+      let key='quest-test:character-a';
+      const tracking=createQuestTracking(()=>key);
+      const defaultQuest=tracking.current(data);
+      tracking.toggle('welcome');
+      const untracked=tracking.current(data);
+      key='quest-test:character-b';
+      const otherCharacter=tracking.current(data);
+      key='quest-test:character-a';
+      const restored=createQuestTracking(()=>key).current(data);
+      const unchanged=JSON.stringify(data)===before;
+      data.welcome.stage='completed';
+      const nextQuest=tracking.current(data);
+      tracking.toggle('shadow');
+      const shadowUntracked=tracking.current(data);
+      data.shadowQuest='returned';
+      const completed=tracking.current(data);
+      return {colors,npcStyle,faded,farPortalHidden,farArrows,nearExit,distantExit,unique:new Set(drawings).size,icons:kinds.every(kind=>mapIcon(kind).includes('<path d=')),opened,
+        defaultQuest,untracked,otherCharacter,restored,nextQuest,shadowUntracked,completed,unchanged};
+    });
+    assert.ok(result.icons);
+    assert.equal(result.npcStyle.fill,'#262c31','NPC portraits use a quiet dark fill rather than a solid green silhouette');
+    assert.equal(result.npcStyle.dotFill,'#8be07a','NPCs have a bright center dot');
+    assert.ok(Math.abs(result.npcStyle.size-16)<.001,'NPC minimap icons are 16 CSS pixels at the standard size');
+    assert.ok(result.npcStyle.size<result.npcStyle.questSize,'NPC portraits are more subtle than objective icons');
+    assert.equal(result.unique,6,'Each atlas/minimap symbol has a distinct shape');
+    for(const color of ['#8be07a','#ffe19b','#a5edff','#d1c7ff','#ffc69d','#fff2a6'])assert.ok(result.colors.includes(color),color);
+    assert.ok(result.faded,'Unavailable portals are faded in the minimap too');
+    assert.ok(result.farPortalHidden,'Distant exits and interiors do not draw icons at the rim');
+    assert.deepEqual(result.farArrows,['#8be07a','#ffe19b','#a5edff'],'Distant NPCs, quests and waypoints use arrows in their own colors');
+    assert.equal(result.nearExit,true,'A portal fitting in the view is drawn');
+    assert.equal(result.distantExit,false,'A portal outside the view is hidden');
+    assert.equal(result.opened,1);
+    assert.equal(result.defaultQuest,'welcome');assert.equal(result.untracked,null);
+    assert.equal(result.otherCharacter,'welcome');assert.equal(result.restored,null);
+    assert.equal(result.nextQuest,'shadow');assert.equal(result.shadowUntracked,null);
+    assert.equal(result.completed,null);
+    assert.equal(result.unchanged,true,'Tracking never mutates quest progress');
+  } finally {await page.close();}
+});
+
 test('map schema validates documents, terrain encoding, resampling and limits', () => {
   const map = maps.newMap('prueba', 'Prueba', { width: 64, depth: 32, cell: 2, height: 1.5, paint: 3, grass: 90 });
   const valid = maps.validateMap(JSON.parse(JSON.stringify(map)));
@@ -244,7 +334,8 @@ test('game crosses walk and E portals with loading screens and without arrival b
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('dialog', dialog => dialog.accept());
+  const dialogs = [];
+  page.on('dialog', dialog => { dialogs.push(dialog.message()); return dialog.dismiss(); });
   await page.route('**/src/data/world/published.ts*', route => route.fulfill({
     contentType: 'application/javascript',
     body: `const maps = ${JSON.stringify([capital, zone])};
@@ -269,19 +360,32 @@ test('game crosses walk and E portals with loading screens and without arrival b
       window.brumaluz.play();
     });
     await page.waitForTimeout(1500);
-    await page.keyboard.press('m');
+    await page.locator('.minimap-canvas').click();
     await page.waitForSelector('.zone-map-chart');
     assert.equal(await page.locator('.zone-map h3').textContent(),'Brumaluz');
     assert.equal(await page.locator('.zone-map-chart canvas').getAttribute('aria-label'),'Mapa completo de Brumaluz');
-    assert.ok(await page.locator('.zone-map-player').isVisible());
+    await page.locator('.zone-map-player').waitFor();
     assert.ok(await page.locator('.zone-map-north svg').isVisible());
-    assert.equal(await page.locator('.zone-map-key > span').count(),2);
+    assert.equal(await page.locator('.zone-map-key > span').count(),6);
+    assert.match(await page.locator('.zone-map-key-npc').evaluate(icon=>icon.parentElement.innerText),/NPC \(bolita\)/);
+    assert.ok(await page.locator('.zone-map-poi-exit').isVisible());
     const initialScale=await page.locator('.zone-map-scale').textContent();
     assert.match(initialScale,/^\d+(?:\.\d+)? (?:m|km)$/);
     const npc=page.locator('.zone-map-npc').first();
     assert.ok(await npc.isVisible());
     await npc.hover();
     assert.match(await npc.locator('.zone-map-npc-name').innerText(),/Testículos/);
+    for(const icon of [npc,page.locator('.zone-map-poi-exit'),page.locator('.zone-map-player')]){
+      const expected=await icon.evaluate(el=>({x:el.style.left,z:el.style.top}));
+      await icon.click();
+      await page.locator('.zone-map-waypoint').waitFor();
+      assert.deepEqual(await page.locator('.zone-map-waypoint').evaluate(el=>({x:el.style.left,z:el.style.top})),expected,'Clicking a map icon sets the waypoint at its exact coordinates');
+      await page.locator('.zone-map-waypoint').click();
+      await page.locator('.zone-map-waypoint').waitFor({state:'hidden'});
+    }
+    await npc.focus();await page.keyboard.press('Enter');
+    await page.locator('.zone-map-waypoint').waitFor();
+    await page.locator('.zone-map-waypoint').click();
     await page.getByRole('button',{name:'Acercar mapa',exact:true}).click();
     assert.equal(await page.locator('.zone-map-tools output').textContent(),'150%');
     assert.notEqual(await page.locator('.zone-map-scale').textContent(),initialScale);
@@ -297,11 +401,39 @@ test('game crosses walk and E portals with loading screens and without arrival b
     await page.waitForTimeout(100);
     const afterPan=await page.locator('.zone-map-player').evaluate(marker=>parseFloat(marker.style.left));
     assert.ok(afterPan>beforePan+5,'arrastrar desplaza la imagen y sus marcadores');
-    await page.getByRole('button',{name:'Acercar mapa',exact:true}).click({clickCount:5,delay:30});
+    assert.ok(await page.locator('.zone-map-waypoint').isHidden(),'arrastrar no crea un destino');
+    const mapCanvas = page.locator('.zone-map-chart canvas');
+    const canvasRect = await mapCanvas.boundingBox();
+    await page.mouse.click(canvasRect.x+canvasRect.width*.65,canvasRect.y+canvasRect.height*.6);
+    await page.locator('.zone-map-waypoint').waitFor();
+    await page.locator('.zone-map-waypoint').click();
+    await page.locator('.zone-map-waypoint').waitFor({state:'hidden'});
+    await page.mouse.click(canvasRect.x+canvasRect.width*.65,canvasRect.y+canvasRect.height*.6);
+    await page.locator('.zone-map-waypoint').waitFor();
+    const pinPosition = await page.locator('.zone-map-waypoint').evaluate(pin=>({x:parseFloat(pin.style.left),z:parseFloat(pin.style.top)}));
+    assert.ok(Math.abs(pinPosition.x-65)<.5 && Math.abs(pinPosition.z-60)<.5,'el destino respeta el zoom y desplazamiento');
+    await page.keyboard.press('m');
+    await page.locator('#waypoint-objective-marker').waitFor();
+    assert.match(await page.locator('#waypoint-objective-marker .quest-marker-distance').textContent(),/^\d+ m$/);
+    await page.keyboard.press('m');
+    assert.ok(await page.locator('.zone-map-waypoint').isVisible(),'el destino se mantiene al reabrir el mapa');
+    await page.getByRole('button',{name:'Acercar mapa',exact:true}).click({clickCount:6,delay:30});
     assert.equal(await page.locator('.zone-map-tools output').textContent(),'800%');
     await page.getByRole('button',{name:'Ver zona completa',exact:true}).click();
     assert.equal(await page.locator('.zone-map-tools output').textContent(),'100%');
     assert.equal(await page.locator('.zone-map-scale').textContent(),initialScale);
+    const resetPin=await page.locator('.zone-map-waypoint').evaluate(pin=>parseFloat(pin.style.left));
+    assert.notEqual(resetPin,pinPosition.x,'el pin sigue coordenadas de mundo al quitar zoom');
+    await page.getByRole('button',{name:'Quitar destino',exact:true}).click();
+    await page.locator('.zone-map-waypoint').waitFor({state:'hidden'});
+    assert.ok(await page.getByRole('button',{name:'Quitar destino',exact:true}).isDisabled());
+    await page.locator('.zone-map-chart').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('.zone-map-waypoint').waitFor();
+    await page.keyboard.press('Delete');
+    await page.locator('.zone-map-waypoint').waitFor({state:'hidden'});
+    await page.keyboard.press('Enter');
+    await page.locator('.zone-map-waypoint').waitFor();
     const noScroll=()=>page.locator('.map-window-frame').evaluate(frame=>({
       fits:frame.scrollHeight<=frame.clientHeight+1,
       bodyFits:frame.querySelector('#window-body').scrollHeight<=frame.querySelector('#window-body').clientHeight+1,
@@ -327,6 +459,7 @@ test('game crosses walk and E portals with loading screens and without arrival b
     await page.locator('#world-menu-toggle').click();
     await page.locator('#world-menu-map').click();
     assert.equal(await page.locator('.zone-map h3').textContent(),'Pompelín');
+    assert.ok(await page.locator('.zone-map-waypoint').isHidden(),'los destinos no se dibujan en mapas distintos');
     const markerPosition=await page.locator('.zone-map-player').evaluate(marker=>({x:parseFloat(marker.style.left),z:parseFloat(marker.style.top)}));
     assert.equal(markerPosition.x,65.625,'sitúa al jugador en coordenadas del mapa completo, no centrado como el minimapa');
     assert.equal(markerPosition.z,50);
@@ -339,7 +472,98 @@ test('game crosses walk and E portals with loading screens and without arrival b
     assert.equal(screens.length, 2);
     assert.ok(screens.every(text => text.includes('Región de prueba') && text.includes('Consejo de prueba')));
     assert.match(screens[0], /Pompelín/); assert.match(screens[1], /Brumaluz/);
+    assert.deepEqual(dialogs,[],'viajar con E no abre confirmación');
     assert.deepEqual(errors, []);
+  } finally { await page.close(); }
+});
+
+test('published Isberto doors and capital gates are reachable with matching client and server radii', { timeout: 240000 }, async () => {
+  const page = await browser.newPage();
+  const errors=[],dialogs=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('dialog',dialog=>{dialogs.push(dialog.message());return dialog.dismiss();});
+  try {
+    await page.goto(`${url}/src/data/maps.ts`);
+    const checks = await page.evaluate(async () => {
+      const source = await (await fetch('/src/world/mapCity.ts')).text();
+      const THREE = await import(/from\s+["']([^"']*\/three\.js[^"']*)["']/.exec(source)[1]);
+      const { buildMapCity } = await import('/src/world/mapCity.ts');
+      const { PUBLISHED_WORLD } = await import('/src/data/world/published.ts');
+      const result = [];
+      for (const id of ['brumaluz','casa_de_isberto_interior']) {
+        const {map,assets} = await PUBLISHED_WORLD[id].load();
+        const city = await buildMapCity(map,assets,new THREE.Scene());
+        const free = point => city.collide(point,point.clone()).distanceTo(point)<.01;
+        const arrivalId = id==='brumaluz' ? 'link_02bfa0ee' : 'link_3610f501';
+        const portalId = id==='brumaluz' ? 'mknnlaak' : 'link_70713897';
+        const portal = city.portals.find(p=>p.id===portalId);
+        const arrival = city.arrivals[arrivalId].position;
+        const saved = map.markers.find(m=>m.id===portalId);
+        let position = id==='brumaluz' ? new THREE.Vector3(29,0,-48.5) : arrival.clone();
+        position.y=city.groundY(position.x,position.z);
+        for(let step=0;step<100;step++){
+          const next=position.clone().lerp(portal.position,.08);
+          next.y=city.groundY(next.x,next.z);
+          position=city.collide(position,next);
+        }
+        result.push({id,free:free(arrival),radiusMatches:portal.radius===saved.radius,
+          reachable:Math.hypot(position.x-portal.position.x,position.z-portal.position.z)<=portal.radius});
+        if(id==='brumaluz'){
+          for(const gate of city.portals.filter(p=>p.target?.map==='pompelin')){
+            if(!PUBLISHED_WORLD[gate.target.map])throw new Error('Missing overworld');
+            const target=(await PUBLISHED_WORLD[gate.target.map].load()).map;
+            if(!target.markers.some(m=>m.id===gate.target.arrival&&m.type==='arrival'))throw new Error('Missing overworld arrival');
+          }
+          const gate=city.portals.find(p=>p.id==='salida_este');
+          let position=city.arrivals.llegada_este.position.clone();
+          for(let step=0;step<200;step++){
+            const next=position.clone();next.x+=.15;next.y=city.groundY(next.x,next.z);
+            position=city.collide(position,next);
+            if(Math.hypot(position.x-gate.position.x,position.z-gate.position.z)<gate.radius)break;
+          }
+          result.push({id:'east-gate',reachable:Math.hypot(position.x-gate.position.x,position.z-gate.position.z)<gate.radius});
+        }
+        city.root.clear();
+      }
+      return result;
+    });
+    for(const check of checks){
+      assert.ok(check.reachable,`${check.id} must be reachable by walking`);
+      if('free' in check)assert.ok(check.free,`${check.id} arrival must not intersect collision`);
+      if('radiusMatches' in check)assert.ok(check.radiusMatches,`${check.id} radius must match publication`);
+    }
+    const sql=await readFile(join(process.cwd(),'supabase','world.sql'),'utf8');
+    assert.match(sql,/'pompelin'/);
+    assert.match(sql,/'mknnlaak', 23\.5, -48\.5, 2\.2/);
+    await page.route(/https:\/\/[^/]+\.supabase\.co\//,route=>route.fulfill({status:200,contentType:'application/json',body:'null'}));
+    await page.goto(`${url}/?graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz,null,{timeout:90000});
+    await page.evaluate(()=>{
+      document.getElementById('account-gate').hidden=true;
+      document.body.classList.remove('auth-visible','characters-visible');
+      window.brumaluz.play();
+      window.brumaluz.move(24.5,-48.5);
+    });
+    await page.locator('#interact-label').filter({hasText:/Casa de Isberto/i}).waitFor();
+    await page.keyboard.press('e');
+    await page.waitForFunction(()=>window.brumaluz.city().locationId==='casa_de_isberto_interior',null,{timeout:60000});
+    await page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await page.locator('#interact-label').filter({hasText:'Salir a Brumaluz'}).waitFor();
+    await page.keyboard.press('e');
+    await page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
+    await page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await page.evaluate(()=>window.brumaluz.move(75,0));
+    await page.waitForTimeout(150);
+    await page.evaluate(()=>window.brumaluz.move(84,0));
+    await page.waitForFunction(()=>window.brumaluz.city().locationId==='pompelin',null,{timeout:90000});
+    await page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await page.evaluate(()=>window.brumaluz.move(-150,-150));
+    await page.locator('#interact-label').filter({hasText:'Brumaluz'}).waitFor();
+    await page.keyboard.press('e');
+    await page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
+    await page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    assert.deepEqual(dialogs,[],'actual house and city travel never prompt for confirmation');
+    assert.deepEqual(errors,[]);
   } finally { await page.close(); }
 });
 
@@ -404,7 +628,17 @@ test('browser editor places, sculpts, undoes, saves and reopens a map', { timeou
   page.on('dialog', dialog => dialog.accept().catch(() => {}));
   try {
     await page.goto(`${url}/maps.html`);
-    await page.waitForFunction(() => document.getElementById('loading')?.hidden && window.__mapEditor?.state.assets.length > 1000, null, { timeout: 120000 });
+    try {
+      await page.waitForFunction(() => document.getElementById('loading')?.hidden && window.__mapEditor?.state.assets.length > 1000, null, { timeout: 120000 });
+    } catch (error) {
+      const state = await page.evaluate(() => ({
+        loading: document.getElementById('loading')?.textContent,
+        hidden: document.getElementById('loading')?.hidden,
+        editor: !!window.__mapEditor,
+        assets: window.__mapEditor?.state.assets.length,
+      })).catch(() => null);
+      throw new Error(`${error.message}; editor state: ${JSON.stringify(state)}; browser errors: ${errors.join(' | ')}`);
+    }
     const editor = () => page.evaluate(() => {
       const { state } = window.__mapEditor;
       return { objects: state.doc.objects.length, markers: state.doc.markers.length, colliders: state.doc.colliders.length, tool: state.tool, dirty: state.dirty, id: state.doc.id };
@@ -450,7 +684,7 @@ test('browser editor places, sculpts, undoes, saves and reopens a map', { timeou
     assert.equal(saved.objects.length, 1); assert.equal(saved.colliders.length, 1); assert.equal(saved.markers.length, 2);
     assert.match(saved.preview, /^data:image\/jpeg;base64,/);
     await page.reload();
-    await page.waitForFunction(() => document.getElementById('loading')?.hidden && window.__mapEditor?.state.savedId, null, { timeout: 120000 });
+    await page.waitForFunction(() => document.getElementById('loading')?.hidden && window.__mapEditor?.state.savedId && !window.__mapEditor.state.dirty, null, { timeout: 120000 });
     const reopened = await editor();
     assert.deepEqual([reopened.objects, reopened.colliders, reopened.markers, reopened.dirty], [1, 1, 2, false]);
 

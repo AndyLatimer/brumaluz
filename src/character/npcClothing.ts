@@ -5,10 +5,12 @@ import { wardrobeSource, mountCharacterPiece } from './wardrobe';
 import { CLOTH } from '../data/data';
 import { clothingPiece, type ClothingSource, type NpcClothing } from '../data/npcClothing';
 import { loadGLB } from '../world/load';
+import rangerUrl from '../assets/library/adventurers/characters/Ranger.glb?url';
+import rogueHoodedUrl from '../assets/library/adventurers/characters/Rogue_Hooded.glb?url';
 
 const additional = {
-  Ranger: import.meta.env.DEV || import.meta.env.NPC_RANGER ? () => import('../assets/library/adventurers/characters/Ranger.glb?url') : undefined,
-  Rogue_Hooded: import.meta.env.DEV || import.meta.env.NPC_ROGUE_HOODED ? () => import('../assets/library/adventurers/characters/Rogue_Hooded.glb?url') : undefined,
+  Ranger: import.meta.env.DEV || import.meta.env.NPC_RANGER ? rangerUrl : undefined,
+  Rogue_Hooded: import.meta.env.DEV || import.meta.env.NPC_ROGUE_HOODED ? rogueHoodedUrl : undefined,
 };
 const loaded = new Map<ClothingSource, GLTF>(), pending = new Map<ClothingSource, Promise<void>>();
 export async function loadNpcClothing(clothing: NpcClothing) {
@@ -17,7 +19,7 @@ export async function loadNpcClothing(clothing: NpcClothing) {
     if (!pending.has(source)) {
       const load = additional[source];
       if (!load) throw new Error(`La ropa de ${source} no se incluyó en esta compilación. Registra la ficha y vuelve a compilar.`);
-      pending.set(source, load().then(module => loadGLB(module.default))
+      pending.set(source, loadGLB(load)
         .then(gltf => { loaded.set(source, gltf); }).catch(error => { pending.delete(source); throw error; }));
     }
     await pending.get(source);

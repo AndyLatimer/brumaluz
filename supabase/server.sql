@@ -1099,6 +1099,7 @@ declare
 begin
   if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false)
     or encounter->>'status' is distinct from 'active'
+    or coalesce(d->>'location','brumaluz')<>'brumaluz'
     or coalesce((d->>'health')::int,-1)=0
     or stamp<coalesce((encounter->>'enemyAttackAt')::numeric,stamp) then
     return d;
@@ -1116,7 +1117,7 @@ begin
     'overheal_at',stamp,'combat_at',stamp
   );
   encounter := encounter || jsonb_build_object(
-    'enemyAttackAt',stamp+2,
+    'enemyAttackAt',stamp+2,'engaged',true,
     'status',case when hp=0 then 'failed' else 'active' end
   );
   return jsonb_set(d,'{combatEncounter}',encounter);
@@ -1163,11 +1164,11 @@ begin
   if c.data->>'shadowQuest' in ('completed','returned') then raise exception 'SHADOW_QUEST_COMPLETED'; end if;
   if c.data->>'shadowQuest' in ('defeated','returning') then raise exception 'SHADOW_ALREADY_DEFEATED'; end if;
   encounter:=jsonb_build_object(
-    'id','shadowling','status','active','health',100,'maxHealth',100,
+    'id','shadowling','status','active','engaged',false,'health',100,'maxHealth',100,
     'instanceId',gen_random_uuid()::text,'loot','[]'::jsonb,'looted',false,
     'x',sx+3.5,'z',sz,'enemyAttackAt',stamp+2
   );
-  c.data:=c.data||jsonb_build_object('combatEncounter',encounter,'combat_at',stamp,'shadowQuest','active');
+  c.data:=c.data||jsonb_build_object('combatEncounter',encounter,'shadowQuest','active');
   c.data:=public.game_store(c.id,c.data);
   return jsonb_build_object(
     'encounter',encounter,'vitals',public.game_public_vitals(c.data),
@@ -1264,7 +1265,11 @@ begin
   if skill then c.data:=c.data||jsonb_build_object('combatNextSkill',stamp+cooldown);
   else c.data:=c.data||jsonb_build_object('combatNextAttack',stamp+cadence);
   end if;
-  c.data:=c.data||jsonb_build_object('resource',resource,'combat_at',stamp);
+  c.data:=c.data||jsonb_build_object('resource',resource);
+  if not healing or (encounter->>'status'='active' and coalesce((encounter->>'engaged')::boolean,
+    (encounter->>'health')::numeric<(encounter->>'maxHealth')::numeric,false)) then
+    c.data:=c.data||jsonb_build_object('combat_at',stamp);
+  end if;
 
   if healing then
     healed:=least(32+4*(skill_rank-1),public.game_max_health(c.data)-hp);
@@ -1275,14 +1280,13 @@ begin
       when cls='guerrero' then 18 when cls='mago' then 18
       when cls='picaro' then 8 when cls='explorador' then 19 else damage end;
     if skill then each_hit:=each_hit+(skill_rank-1)*case when cls='picaro' then 1 else 2 end; end if;
-    if skill then c.data:=c.data||jsonb_build_object('combat_at',stamp); end if;
     for i in 1..hits loop
       exit when enemy_hp<=0;
       total_damage:=total_damage+least(each_hit,enemy_hp);
       enemy_hp:=greatest(0,enemy_hp-each_hit);
     end loop;
     encounter:=encounter||jsonb_build_object(
-      'health',enemy_hp,'status',case when enemy_hp=0 then 'defeated' else 'active' end
+      'health',enemy_hp,'engaged',true,'status',case when enemy_hp=0 then 'defeated' else 'active' end
     );
     if enemy_hp=0 then
       encounter:=encounter||jsonb_build_object(
@@ -1557,7 +1561,10 @@ begin
   end if;
   if w.seen_at < now() - interval '15 seconds' then raise exception 'WORLD_SESSION_REPLACED'; end if;
   if public.game_health(c.data) = 0 or w.dead then raise exception 'CHARACTER_DEAD'; end if;
-  if c.data -> 'combatEncounter' ->> 'status' = 'active' then raise exception 'IN_COMBAT'; end if;
+  if c.data -> 'combatEncounter' ->> 'status' = 'active'
+    and coalesce((c.data->'combatEncounter'->>'engaged')::boolean,
+      (c.data->'combatEncounter'->>'health')::numeric<(c.data->'combatEncounter'->>'maxHealth')::numeric,false)
+    then raise exception 'IN_COMBAT'; end if;
   here := coalesce(c.data ->> 'location', 'brumaluz');
   select * into p from public.world_portals where map = here and id = p_portal;
   if not found then raise exception 'PORTAL_NOT_FOUND'; end if;

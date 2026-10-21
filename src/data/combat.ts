@@ -91,6 +91,10 @@ export interface CombatResult {
 
 export const REGENERATION = { health: .01, combatHealth: .0025, mana: .02, stamina: .04, combatGrace: 5 };
 
+export function isInCombat(encounter: { status: string; engaged: boolean } | null | undefined): boolean {
+  return encounter?.status === 'active' && encounter.engaged;
+}
+
 /** Fractional values are retained so low rates do not disappear between frames. */
 export function regenerateCombat(
   state: Readonly<CombatState>, maxResource: number, resource: 'mana' | 'stamina', seconds: number, inCombat: boolean,

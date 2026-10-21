@@ -299,7 +299,7 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       world.combatCalls.push({userId:key,fn,action:args.p_action??null});
       if(fn==='combat_start'){
         if(player.encounter?.status==='active')return fulfill({message:'COMBAT_ALREADY_ACTIVE'},400);
-        player.encounter={id:'shadowling',status:'active',health:100,maxHealth:100,x:3.5,z:-62.35,enemyAttackAt:(Date.now()+750)/1000};
+        player.encounter={id:'shadowling',status:'active',engaged:false,health:100,maxHealth:100,x:3.5,z:-62.35,enemyAttackAt:(Date.now()+750)/1000};
         player.nextEnemyAttack=Date.now()+750;
         return fulfill({encounter:player.encounter,vitals:player.vitals,damage:0,healing:0});
       }
@@ -313,7 +313,7 @@ async function openPlayer(world, account, compatible = true, clockTime) {
         if(player.vitals.resource<15)return fulfill({message:'COMBAT_NOT_ENOUGH_RESOURCE'},400);
         player.vitals={...player.vitals,resource:player.vitals.resource-15};
       }
-      player.encounter={...player.encounter,health:Math.max(0,player.encounter.health-damage),
+      player.encounter={...player.encounter,engaged:true,health:Math.max(0,player.encounter.health-damage),
         status:player.encounter.health<=damage?'defeated':'active'};
       return fulfill({encounter:player.encounter,vitals:player.vitals,damage,healing:0});
     }
@@ -343,7 +343,7 @@ async function openPlayer(world, account, compatible = true, clockTime) {
         &&Math.hypot(player.position.x-player.encounter.x,player.position.z-player.encounter.z)<=2){
         player.vitals={...player.vitals,health:Math.max(0,player.vitals.health-8)};
         player.nextEnemyAttack=Date.now()+3000;
-        player.encounter={...player.encounter,enemyAttackAt:player.nextEnemyAttack/1000,
+        player.encounter={...player.encounter,engaged:true,enemyAttackAt:player.nextEnemyAttack/1000,
           status:player.vitals.health===0?'failed':'active'};
       }
     }
@@ -1951,6 +1951,7 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     await page.locator('[data-language="es"]').first().dispatchEvent('click');
     await page.keyboard.press('Escape');
     await page.setViewportSize({width:1280,height:800});
+    await page.locator('#quest-tracker').waitFor();
     assert.match(await page.locator('.quest-tracker-progress').textContent(),/Paso 2 de 3/);
     const initial=await page.locator('#quest-tracker').boundingBox();
     await page.getByRole('button',{name:'Minimizar misiones',exact:true}).click();
@@ -1977,12 +1978,14 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
         assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width&&bounds.y>=0&&bounds.y+bounds.height<=844,`Arrow fits ${width}px facing ${side}`);
         if(side==='left')assert.ok(bounds.x<width/2);
         if(side==='right')assert.ok(bounds.x>width/2);
-        assert.equal(await page.locator('.quest-direction-arrow').isVisible(),true);
-        assert.match(await page.locator('.quest-direction-arrow').getAttribute('style'),/rotate\([^N]*rad\)/);
+        assert.equal(await marker.locator('.quest-direction-arrow').isVisible(),true);
+        assert.equal(await marker.locator('.quest-marker-symbol').isVisible(),false,'offscreen guidance has no exclamation');
+        assert.match(await marker.locator('.quest-direction-arrow').getAttribute('style'),/rotate\([^N]*rad\)/);
       }
       await page.evaluate(()=>window.brumaluz.view(Math.atan2(-15.8,5.7),.55,12));
       await page.waitForFunction(()=>!document.querySelector('#quest-objective-marker').classList.contains('offscreen'));
-      assert.equal(await page.locator('.quest-direction-arrow').isVisible(),false);
+      assert.equal(await marker.locator('.quest-direction-arrow').isVisible(),false);
+      assert.equal(await marker.locator('.quest-marker-symbol').isVisible(),true);
       assert.ok(await page.locator('#quest-tracker').evaluate(el=>el.scrollWidth<=el.clientWidth&&el.getBoundingClientRect().right<=innerWidth));
     }
     await page.locator('[data-language="en"]').first().dispatchEvent('click');
@@ -1993,6 +1996,222 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     await page.evaluate(()=>window.brumaluz.set({shadowQuest:'returned'}));
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
     assert.equal(await marker.isVisible(),false);
+    assert.deepEqual(errors,[]);
+  }finally{await context.close();}
+});
+
+test('NPC names and target badges share the same ten metre visibility limit', {timeout:60000}, async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage();
+  try{
+    await page.goto(`${url}/?test&graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz);
+    await page.evaluate(()=>window.brumaluz.play());
+    const plate=page.locator('.nameplate.npc:not(.welcome-nameplate)').first();
+    for(const [distance,visible] of [[9.9,true],[10.1,false],[9.9,true]]){
+      await page.evaluate(distance=>{
+        const site=window.brumaluz.city().npcSites.find(npc=>npc.id==='testiculos');
+        window.brumaluz.move(site.position.x,site.position.z+distance);
+        window.brumaluz.view(0,.55,12);
+      },distance);
+      await plate.waitFor({state:visible?'visible':'hidden'});
+      if(visible){
+        await page.mouse.move(1278,798);
+        await page.evaluate(()=>window.brumaluz.view(.5,.55,12));
+        await page.locator('#target-frame').waitFor({state:'hidden'});
+        assert.equal(await plate.isVisible(),true,'Nearby NPC names remain visible without aiming or hovering');
+        await page.evaluate(()=>window.brumaluz.view(0,.55,12));
+        await page.waitForTimeout(300);
+        await hoverActor(page,plate);
+        await page.waitForFunction(()=>!document.querySelector('#target-frame').hidden&&document.querySelector('#target-frame').dataset.targetId==='npc:testiculos');
+      }else await page.locator('#target-frame').waitFor({state:'hidden'});
+    }
+    await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'available'},shadowQuest:null}));
+    for(const [distance,visible] of [[9.9,true],[10.1,false]]){
+      await page.evaluate(distance=>{
+        window.brumaluz.move(-6.4,-8.5+distance);
+        window.brumaluz.view(0,.55,12);
+      },distance);
+      await page.locator('.welcome-nameplate').waitFor({state:visible?'visible':'hidden'});
+    }
+  }finally{await context.close();}
+});
+
+test('online portals distinguish a pending mission encounter from engaged combat', {timeout:180000}, async()=>{
+  const world=backend(),account=fixture('Viajero','humano',24.5);
+  world.combatSimulationEnabled=true;
+  Object.assign(account.character.data,{
+    position:{x:24.5,z:-48.5,yaw:0},welcome:{origin:0,stage:'completed'},shadowQuest:'active',
+    combatEncounter:{id:'shadowling',instanceId:randomUUID(),status:'active',engaged:true,health:100,maxHealth:100,
+      x:3.5,z:-62.35,enemyAttackAt:Date.now()/1000+100,loot:[],looted:false},
+  });
+  const maps=Object.fromEntries(['brumaluz','casa_de_isberto_interior','pompelin'].map(id=>[
+    id,JSON.parse(readFileSync(join(process.cwd(),'src','data','world','maps',`${id}.json`),'utf8')),
+  ]));
+  const player=await openPlayer(world,account),calls=[];
+  await player.context.route(/\/rest\/v1\/rpc\/world_travel$/,async route=>{
+    const {p_portal}=route.request().postDataJSON();
+    const current=world.players.get(account.user.id);
+    const map=current.data.location??'brumaluz',portal=maps[map].markers.find(marker=>marker.id===p_portal);
+    assert.ok(portal,`Portal ${p_portal} exists in ${map}`);
+    assert.ok(current.encounter?.status!=='active'||!current.encounter.engaged,'Only engaged combat blocks the travel RPC');
+    assert.ok(Math.hypot(current.position.x-portal.position[0],current.position.z-portal.position[2])<=portal.radius+.5);
+    const arrival=maps[portal.target.map].markers.find(marker=>marker.id===portal.target.arrival);
+    const position={x:arrival.position[0],z:arrival.position[2],yaw:arrival.rotationY};
+    calls.push({from:map,to:portal.target.map});
+    current.position=position;
+    current.data.location=portal.target.map;
+    current.data.position=position;
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      status:'ok',location:portal.target.map,position,players:[],encounter:current.encounter,vitals:current.vitals,
+    })});
+  });
+  const move=async(x,z)=>{
+    world.players.get(account.user.id).position={x,z,yaw:0};
+    await player.page.evaluate(({x,z})=>window.brumaluz.move(x,z),{x,z});
+  };
+  try{
+    await player.enter();
+    await player.page.waitForTimeout(800);
+    assert.deepEqual(player.errors,[]);
+    assert.equal(await player.page.evaluate(()=>window.brumaluz.city().locationId),'brumaluz');
+    await player.page.locator('#interact-label').filter({hasText:/Casa de Isberto/i}).waitFor();
+    assert.match(await player.page.locator('#interact-label').textContent(),/Bloqueado: combate activo/);
+    await player.page.keyboard.press('e');
+    await player.page.locator('#toast.error.show').filter({hasText:'Termina el combate activo'}).waitFor();
+    assert.equal(await player.page.evaluate(()=>window.brumaluz.city().locationId),'brumaluz');
+    assert.equal(calls.length,0);
+    const current=world.players.get(account.user.id);
+    current.encounter={...current.encounter,status:'active',engaged:false,health:100};
+    await player.page.waitForFunction(()=>!document.querySelector('#interact-label').textContent.includes('Bloqueado'));
+    await player.page.keyboard.press('e');
+    await player.page.waitForFunction(()=>window.brumaluz.city().locationId==='casa_de_isberto_interior');
+    assert.equal(current.encounter.status,'active','Travelling with a pending quest does not complete or discard its enemy');
+    assert.equal(current.encounter.engaged,false);
+    await player.page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await player.page.locator('#interact-label').filter({hasText:'Salir a Brumaluz'}).waitFor();
+    await player.page.keyboard.press('e');
+    await player.page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
+    await player.page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    current.encounter={...current.encounter,status:'active',engaged:true,health:100};
+    await move(70,0);
+    await player.page.waitForTimeout(600);
+    await move(84,0);
+    await player.page.locator('#toast.error.show').filter({hasText:'Termina el combate activo'}).waitFor();
+    assert.equal(calls.length,2,'An automatic exit also refuses combat with a visible explanation');
+    current.encounter={...current.encounter,status:'active',engaged:false,health:100};
+    await move(70,0);
+    await player.page.waitForTimeout(600);
+    await move(84,0);
+    await player.page.waitForFunction(()=>window.brumaluz.city().locationId==='pompelin');
+    await player.page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await move(-150,-150);
+    await player.page.locator('#interact-label').filter({hasText:'Brumaluz'}).waitFor();
+    await player.page.keyboard.press('e');
+    await player.page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
+    assert.deepEqual(calls,[
+      {from:'brumaluz',to:'casa_de_isberto_interior'},{from:'casa_de_isberto_interior',to:'brumaluz'},
+      {from:'brumaluz',to:'pompelin'},{from:'pompelin',to:'brumaluz'},
+    ]);
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('quest journal tracking persists without changing progress, completed entries or personal waypoints', {timeout:60000}, async()=>{
+  const context=await browser.newContext({viewport:{width:1280,height:800}});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  const prepare=async()=>{
+    await page.goto(`${url}/?test&welcome&graphics=compatible`);
+    await page.waitForFunction(()=>!!window.brumaluz);
+    await page.evaluate(()=>{
+      window.brumaluz.set({welcome:{origin:0,stage:'active'},shadowQuest:null});
+      window.brumaluz.play();
+      window.brumaluz.move(0,0);
+      window.brumaluz.view(Math.atan2(-15.8,5.7),.55,12);
+    });
+    await page.locator('.minimap-canvas').waitFor();
+  };
+  const journal=async()=>{
+    await page.locator('#player-menu-toggle').click();
+    await page.locator('[data-window="quests"]').click();
+    await page.locator('.quest-journal').waitFor();
+  };
+  try{
+    await prepare();
+    await page.locator('#quest-tracker').waitFor();
+    await journal();
+    const untrack=page.getByRole('button',{name:'Dejar de seguir misión',exact:true});
+    assert.equal(await untrack.getAttribute('aria-pressed'),'true');
+    await untrack.click();
+    const track=page.getByRole('button',{name:'Seguir misión',exact:true});
+    assert.equal(await track.getAttribute('aria-pressed'),'false');
+    assert.equal(await track.evaluate(el=>el===document.activeElement),true,'Tracking does not destroy keyboard focus');
+    await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'active'}}));
+    assert.equal(await track.getAttribute('aria-pressed'),'false','A refreshed character snapshot does not reactivate tracking');
+    assert.equal(await track.evaluate(el=>el===document.activeElement),true,'Snapshots preserve journal focus');
+    for(const width of [320,390,1280]){
+      await page.setViewportSize({width,height:844});
+      assert.ok(await page.locator('.quest-journal').evaluate(el=>el.scrollWidth<=el.clientWidth),'Journal fits narrow windows');
+      assert.ok(await track.evaluate(el=>{
+        const rect=el.getBoundingClientRect();
+        return rect.left>=0&&rect.right<=innerWidth&&el.scrollWidth<=el.clientWidth;
+      }),'Tracking control stays readable');
+    }
+    await page.setViewportSize({width:1280,height:800});
+    await page.keyboard.press('Escape');
+    await page.locator('#quest-tracker').waitFor({state:'hidden'});
+    assert.equal(await page.locator('#quest-objective-marker').isVisible(),false);
+    await page.keyboard.press('m');
+    await page.locator('.zone-map-chart').waitFor();
+    assert.equal(await page.locator('.zone-map-poi-quest').count(),0);
+    await page.locator('.zone-map-chart').click({position:{x:90,y:90}});
+    await page.locator('.zone-map-waypoint').waitFor();
+    await page.keyboard.press('Escape');
+    await page.locator('#waypoint-objective-marker').waitFor();
+    await journal();
+    await track.click();
+    await page.keyboard.press('Escape');
+    await page.locator('#quest-tracker').waitFor();
+    await page.locator('#quest-objective-marker').waitFor();
+    assert.equal(await page.locator('#waypoint-objective-marker').isVisible(),true,'Quest guidance does not replace personal destinations');
+    await page.keyboard.press('m');
+    await page.locator('.zone-map-poi-quest').waitFor();
+    assert.equal(await page.locator('.zone-map-waypoint').isVisible(),true);
+    const objectivePosition=await page.locator('.zone-map-poi-quest').evaluate(el=>({x:el.style.left,z:el.style.top}));
+    await page.locator('.zone-map-poi-quest').click();
+    await page.waitForFunction(expected=>{
+      const pin=document.querySelector('.zone-map-waypoint');
+      return pin.style.left===expected.x&&pin.style.top===expected.z;
+    },objectivePosition);
+    await page.keyboard.press('Escape');
+    await journal();
+    await untrack.click();
+    await prepare();
+    await journal();
+    assert.equal(await track.getAttribute('aria-pressed'),'false','Tracking preference survives a reload');
+    assert.equal(await page.locator('[data-quest="welcome"] .quest-objective p').textContent(),'Recoge el distintivo junto al mercado.');
+    await page.evaluate(()=>window.brumaluz.set({welcome:{origin:0,stage:'completed'},shadowQuest:null}));
+    assert.equal(await page.locator('.quest-journal-content [data-quest="shadow"]').count(),1,'The next conversation is not an empty active journal');
+    assert.equal(await untrack.count(),1,'New quests are tracked by default');
+    await page.getByRole('button',{name:'Completadas',exact:true}).click();
+    await page.locator('.quest-completed summary').click();
+    assert.equal(await page.locator('.quest-track-button').count(),0,'Completed quests cannot be tracked');
+    await page.evaluate(()=>window.brumaluz.set({health:80}));
+    assert.equal(await page.getByRole('button',{name:'Completadas',exact:true}).getAttribute('aria-pressed'),'true');
+    assert.equal(await page.locator('.quest-completed').getAttribute('open'),'','Snapshots preserve expanded completed entries');
+    await page.getByRole('button',{name:'Activas',exact:true}).click();
+    await untrack.click();
+    await page.keyboard.press('Escape');
+    await page.locator('#quest-tracker').waitFor({state:'hidden'});
+    await journal();
+    await page.locator('[data-language="en"]').first().dispatchEvent('click');
+    await page.getByRole('button',{name:'Track quest',exact:true}).waitFor();
+    await page.locator('[data-language="es"]').first().dispatchEvent('click');
+    await page.evaluate(()=>window.brumaluz.set({shadowQuest:'returned'}));
+    await page.getByRole('button',{name:'Completadas',exact:true}).click();
+    assert.equal(await page.locator('.quest-completed').count(),2);
+    assert.equal(await page.locator('.quest-track-button').count(),0);
     assert.deepEqual(errors,[]);
   }finally{await context.close();}
 });

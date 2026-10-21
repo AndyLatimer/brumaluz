@@ -129,16 +129,61 @@ al estilo de un constructor de ciudades.
 
 ### Pompelín, Brumaluz y los viajes entre mapas
 
-En el juego, **M** o **Mundo → Mapa** abre el mapa completo de la zona actual,
+La **Brumaluz normal publicada** ocupa **480 × 480 m** (cuatro veces el área
+anterior), con 3.259 objetos, 128 viviendas nuevas, cuatro plazas con edificios
+compuestos de piezas editables, huertas y lomas de hasta 7,39 m. Conserva los
+982 objetos, el terreno y todos los marcadores del casco antiguo, incluida la
+puerta de Isberto y las cinco puertas continentales. Su canal sigue intacto:
+los **transbordadores** junto a las llegadas de las puertas permiten cruzarlo
+con **E** hacia el ensanche y regresar; no son puentes físicos sobre el agua.
+Dos circuitos de paseo, veinte calles transversales y cuatro plazas conectan
+los barrios exteriores, dejando praderas libres para contenido futuro.
+`node --test scripts/test-brumaluz-expansion.mjs` comprueba conservación,
+pendientes, colisiones, recorridos y coincidencia entre borrador y publicación.
+El generador puntual `node tools/expand-brumaluz.mjs` solo acepta el borrador
+original de 240 m y guarda mediante ETag; no regenera ni reemplaza un ensanche editado.
+
+En el juego, **M**, un clic en el minimapa o **Mundo → Mapa** abre el mapa completo de la zona actual,
 con norte arriba y un indicador de tu posición y orientación. **M**, **Esc**,
 la **X** superior derecha o el fondo lo cierran. La ventana se ajusta a la
 pantalla sin scroll. Los NPC visibles aparecen en verde y muestran su nombre
 al pasar el ratón o recibir foco. **+ / −** y la rueda acercan o alejan hasta
-8×; arrastrar desplaza la vista y **Ver zona completa** restaura el encuadre.
+8×; también hay un deslizador, **Centrar en ti** y **Ver zona completa** para restaurar el encuadre.
+Arrastrar desplaza la vista; un clic sin arrastrar coloca o mueve un destino
+personal azul. Se elimina pulsando su bandera o **Quitar destino**. También
+puedes pulsar un icono de NPC, misión, salida, interior o tu posición
+para fijar el destino en sus coordenadas exactas, con ratón o teclado. Con el mapa
+enfocado, **Enter** marca el centro y **Suprimir** lo elimina. Cada zona conserva
+su destino durante la sesión, sin modificar el mapa ni el de otros jugadores.
+La bandera también aparece en el minimapa y tiene indicador de distancia en el
+mundo. Fuera de pantalla, tanto misiones como destinos solo muestran flecha y
+distancia, sin exclamación. Los indicadores se ocultan al abrir ventanas.
 El marco de atlas incluye una rosa de los vientos, leyenda de marcadores y
 una escala en metros/kilómetros que se ajusta al zoom.
+La leyenda distingue jugador, NPC, misión, destino personal, salidas y accesos
+a interiores; los accesos del mapa actual muestran su nombre al pasar el ratón
+o recibir foco.
+El minimapa utiliza esos mismos iconos, colores y puntos, también para salidas e
+interiores. Los accesos cerrados aparecen atenuados en ambos mapas.
+Las salidas y los interiores lejanos no se dibujan en el borde: solo aparecen
+cuando caben en la vista actual del minimapa. Los NPC cercanos llevan una
+insignia de retrato verde de 16 px, con fondo oscuro y contorno fino; fuera de la vista se indican con una flecha verde. Las misiones
+lejanas usan una flecha dorada, y los destinos personales, una azul.
 No permite todavía navegar entre mapas: al viajar cambia al mapa de la nueva zona.
 El minimapa sigue siendo independiente y se oculta o muestra con **º**.
+En **Personaje → Diario**, las pestañas separan las misiones activas de las
+completadas. **Seguir misión / Dejar de seguir misión** activa o desactiva su
+panel, su indicador dorado y sus marcas en ambos mapas, sin abandonar la misión
+ni cambiar progreso o recompensas. La preferencia se guarda localmente por
+personaje y se conserva al recargar; las misiones nuevas se siguen por defecto.
+Las completadas no se pueden seguir. El destino personal azul es independiente.
+Al actualizarse el estado se conservan pestaña, entradas desplegadas, foco y scroll.
+Los nombres de NPC aparecen por proximidad, sin apuntarlos ni pasar el ratón:
+a 10 metros o menos del jugador, el mismo alcance que sus badges de objetivo.
+También respetan la opción de placas de nombre.
+Los portales permanecen bloqueados durante un combate activo: el aviso de
+interacción lo indica y al intentar viajar aparece un mensaje. Alejarse del
+enemigo no termina el encuentro; hay que resolverlo antes de viajar.
 Los menús de personaje y Mundo llevan iconos propios a la derecha de cada
 opción; «Mapa» no muestra la tecla, pero conserva el atajo **M**. La guía de
 misión utiliza una exclamación sobre una pequeña insignia dorada junto a la distancia y mantiene la
@@ -177,7 +222,10 @@ las ediciones. Cambiar de mapa no publica nada.
    guardada se usa como fondo de la pantalla de carga, que muestra el destino.
 3. Coloca un marcador **Llegada** en el destino, fuera del radio de su salida.
    En el mapa de origen coloca un **Portal**, elige **Mapa de destino** y
-   **Llegada**, y selecciona **Al caminar dentro** o **Pulsar E y confirmar**.
+   **Llegada**, y selecciona **Al caminar dentro** o **Pulsar E (sin confirmación)**.
+   El radio guardado es el mismo para el aviso del cliente y la validación del
+   servidor: si amplías el alcance de una puerta, vuelve a publicar y aplicar
+   el SQL. Coloca las llegadas fuera de las colisiones y del disparador automático de regreso.
    **Conectar ida y vuelta** guarda ambos mapas y crea las llegadas y el
    regreso cerca de la aparición del destino; abre ese mapa para moverlos.
    La lista **Abrir** muestra las conexiones de cada mapa.

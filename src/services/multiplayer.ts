@@ -32,6 +32,7 @@ export interface WorldSnapshot {
 export interface CombatEncounter {
   id: 'shadowling';
   status: 'active' | 'defeated' | 'fled' | 'failed';
+  engaged: boolean;
   health: number;
   maxHealth: number;
   x: number;
@@ -59,6 +60,7 @@ export function parseCombatEncounter(value: unknown): CombatEncounter | null {
   const encounter=record(value);
   const health=number(encounter.health),maxHealth=number(encounter.maxHealth);
   const status=encounter.status;
+  if (encounter.engaged !== undefined && typeof encounter.engaged !== 'boolean') throw new Error('Estado de combate no válido.');
   if (encounter.instanceId !== undefined && encounter.instanceId !== null && typeof encounter.instanceId !== 'string') throw new Error('Identidad de cuerpo no válida.');
   const loot: (ItemStack | null)[] = [];
   if (encounter.loot !== undefined) {
@@ -75,7 +77,7 @@ export function parseCombatEncounter(value: unknown): CombatEncounter | null {
     throw new Error('Respuesta de combate no válida.');
   }
   return {
-    id:'shadowling',status,health,maxHealth,
+    id:'shadowling',status,health,maxHealth,engaged:encounter.engaged === undefined ? health < maxHealth : encounter.engaged,
     x:number(encounter.x),z:number(encounter.z),enemyAttackAt:number(encounter.enemyAttackAt),
     instanceId: typeof encounter.instanceId === 'string' ? encounter.instanceId : null,
     loot, looted: encounter.looted === true,

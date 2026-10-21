@@ -3,16 +3,11 @@
 // y se pintan encima el personaje (con la flecha de hacia dónde mira), los NPC y la brújula.
 import { MAP_EXTENT } from '../world/mapCapture';
 import { getLanguage, t } from './i18n';
+import { drawMapIcon, type MapPoint } from './mapIcons';
 
-export interface MinimapMarker {
-  id: string;
-  /** Nombre mostrado al pasar el ratón (no se traduce). */
-  name: string;
-  x: number;
-  z: number;
+export interface MinimapMarker extends MapPoint {
   party?: boolean;
   leader?: boolean;
-  quest?: boolean;
 }
 
 export interface MinimapHooks {
@@ -21,6 +16,7 @@ export interface MinimapHooks {
   markers: () => MinimapMarker[];
   /** Nombre del lugar actual (en español; se traduce). */
   zone: () => string;
+  openMap: () => void;
 }
 
 /** Metros que abarca el diámetro del minimapa en cada nivel de zoom. */
@@ -90,6 +86,7 @@ export function toggleMinimap() {
 function setDirectionLetters() {
   const letters = getLanguage() === 'en' ? { n: 'N', e: 'E', s: 'S', w: 'W' } : { n: 'N', e: 'E', s: 'S', w: 'O' };
   for (const [key, value] of Object.entries(letters)) root().querySelector<HTMLElement>(`.minimap-dir.${key}`)!.textContent = value;
+  canvas().setAttribute('aria-label', t('Abrir mapa de la zona'));
   lastZone = '';
   setMapPlayerCount(playerCount);
 }
@@ -105,6 +102,13 @@ export function initMinimap(h: MinimapHooks) {
   root().querySelector<HTMLButtonElement>('.minimap-zoom-in')!.onclick = () => setZoom(zoom - 1);
   root().querySelector<HTMLButtonElement>('.minimap-zoom-out')!.onclick = () => setZoom(zoom + 1);
   const map = canvas();
+  map.setAttribute('role', 'button');
+  map.tabIndex = 0;
+  map.setAttribute('aria-label', t('Abrir mapa de la zona'));
+  map.addEventListener('click', () => h.openMap());
+  map.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); h.openMap(); }
+  });
   map.addEventListener('wheel', (e) => { e.preventDefault(); setZoom(zoom + (e.deltaY > 0 ? 1 : -1)); }, { passive: false });
   map.addEventListener('pointermove', (e) => {
     const rect = map.getBoundingClientRect();
@@ -161,18 +165,30 @@ export function updateMinimap() {
   ctx.closePath();
   ctx.fill();
 
-  // NPC: punto verde; si quedan fuera del mapa, una flecha en el borde indica su dirección.
+  // Los accesos solo aparecen dentro de la vista; las guías lejanas usan flechas.
   drawn = [];
   for (const marker of hooks.markers()) {
     const dx = (marker.x - player.x) * pxPerMeter, dz = (marker.z - player.z) * pxPerMeter;
     const distance = Math.hypot(dx, dz);
-    const inside = distance < half - 9 * u;
+    const inside = distance < half - 13 * u;
+    const kind = marker.kind ?? 'npc';
+    const color = kind === 'waypoint' ? '#a5edff' : kind === 'quest' ? '#ffe19b' : kind === 'exit' ? '#d1c7ff' : kind === 'interior' ? '#ffc69d' : '#8be07a';
+    if (!inside && (kind === 'exit' || kind === 'interior')) continue;
+    if (!marker.party && inside) {
+      const sx = half + dx, sy = half + dz;
+      drawn.push({ marker, sx, sy, inside });
+      ctx.save();
+      ctx.globalAlpha = marker.closed ? .45 : 1;
+      drawMapIcon(ctx, kind, sx, sy, (kind === 'npc' ? 16 : 22) * u, color);
+      ctx.restore();
+      continue;
+    }
     if (inside) {
       const sx = half + dx, sy = half + dz;
       drawn.push({ marker, sx, sy, inside });
       ctx.beginPath();
       ctx.arc(sx, sy, 5.2 * u, 0, Math.PI * 2);
-      ctx.fillStyle = marker.quest ? '#f8cf68' : marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : '#8be07a';
+      ctx.fillStyle = marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : color;
       ctx.fill();
       ctx.lineWidth = 1.8 * u;
       ctx.strokeStyle = marker.party ? '#17394d' : '#1d3a18';
@@ -193,7 +209,7 @@ export function updateMinimap() {
       ctx.lineTo(-4 * u, 4.2 * u);
       ctx.lineTo(-4 * u, -4.2 * u);
       ctx.closePath();
-      ctx.fillStyle = marker.quest ? '#f8cf68' : marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : 'rgba(139,224,122,.9)';
+      ctx.fillStyle = marker.party ? (marker.leader ? '#ffd470' : '#79d7fa') : color;
       ctx.fill();
       ctx.lineWidth = 1.4 * u;
       ctx.strokeStyle = '#1d3a18';
@@ -203,25 +219,7 @@ export function updateMinimap() {
   }
 
   // Jugador: flecha dorada orientada según hacia dónde mira.
-  ctx.save();
-  ctx.translate(half, half);
-  ctx.rotate(Math.atan2(fx, -fz));
-  ctx.beginPath();
-  ctx.moveTo(0, -9.5 * u);
-  ctx.lineTo(6.6 * u, 7 * u);
-  ctx.lineTo(0, 3.4 * u);
-  ctx.lineTo(-6.6 * u, 7 * u);
-  ctx.closePath();
-  ctx.shadowColor = 'rgba(0,0,0,.55)';
-  ctx.shadowBlur = 4 * u;
-  ctx.fillStyle = '#ffd470';
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 2 * u;
-  ctx.strokeStyle = '#3a2410';
-  ctx.stroke();
-  ctx.restore();
+  drawMapIcon(ctx, 'player', half, half, 23 * u, '#fff2a6', Math.PI - player.facing);
 
   // Viñeta interior para integrar el mapa con el marco.
   const vignette = ctx.createRadialGradient(half, half, half * 0.72, half, half, half);

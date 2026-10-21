@@ -34,7 +34,7 @@ export type MarkerType = typeof MARKER_TYPES[number];
 export const MAP_KINDS = ['world', 'city', 'zone', 'interior'] as const;
 export type MapKind = typeof MAP_KINDS[number];
 export const MAP_KIND_LABELS: Record<MapKind, string> = { world: 'Mundo', city: 'Ciudad', zone: 'Zona exterior', interior: 'Interior' };
-/** `walk`: viaja al pisar la zona. `interact`: hay que pulsar E y confirmar. */
+/** `walk`: viaja al pisar la zona. `interact`: viaja al pulsar E, sin confirmación. */
 export const PORTAL_TRIGGERS = ['walk', 'interact'] as const;
 export type PortalTrigger = typeof PORTAL_TRIGGERS[number];
 export interface PortalTarget { map: string; arrival?: string }

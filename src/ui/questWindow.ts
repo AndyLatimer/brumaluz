@@ -3,6 +3,28 @@ import { ORIGINS, ORIGIN_REPLIES, WELCOME_TITLE, WELCOME_REWARD, SHADOW_TITLE, s
 import { currencyIcon } from '../data/currency';
 import type { Conversation } from './dialog';
 import { t } from './i18n';
+import { currentQuest, type QuestId, type QuestTracking } from './questTracking';
+
+/** ID de la misión de bienvenida (welcome). */
+const WELCOME_QUEST_KEY = 'welcome';
+/** ID de la misión de sombra (shadow). */
+const SHADOW_QUEST_KEY = 'shadow';
+
+function createTrackButton(tracking: QuestTracking, questId: QuestId): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'quest-track-button';
+  button.dataset.questControl = questId;
+  const refresh = () => {
+    const tracked = tracking.isTracked(questId);
+    button.setAttribute('aria-pressed', String(tracked));
+    button.textContent = t(tracked ? 'Dejar de seguir misión' : 'Seguir misión');
+    button.closest('.quest-entry')?.classList.toggle('tracked', tracked);
+  };
+  button.onclick = () => { tracking.toggle(questId); refresh(); };
+  refresh();
+  return button;
+}
 
 export function welcomeConversation(data: CharData, act: (action: WelcomeAction, origin?: number) => Promise<boolean>): Conversation {
   const progress = data.welcome;
@@ -98,10 +120,13 @@ function createQuestRewards(completed: boolean) {
   footer.append(list); return footer;
 }
 
-export function renderQuestJournal(container: HTMLElement, data: CharData) {
+export function renderQuestJournal(container: HTMLElement, data: CharData, tracking: QuestTracking, showCompleted?: boolean) {
   container.replaceChildren();
   const root = document.createElement('div');
   root.className = 'quest-journal';
+  const intro = document.createElement('p');
+  intro.className = 'quest-journal-intro';
+  intro.textContent = t('Elige qué misión seguir. Sus marcas aparecerán en el mundo y en los mapas.');
   const tabs = document.createElement('div');
   tabs.className = 'social-tabs';
   tabs.setAttribute('role', 'group');
@@ -112,7 +137,9 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
   function appendEntry(entry: HTMLElement, completed: boolean) {
     if (!completed) { content.append(entry); return; }
     const details = document.createElement('details'); details.className = `${entry.className} quest-completed`;
+    details.dataset.quest = entry.dataset.quest;
     const summary = document.createElement('summary');
+    summary.dataset.questControl = `completed-${entry.dataset.quest}`;
     const header = entry.querySelector('header')!;
     const mark = document.createElement('span'); mark.className = 'quest-completed-mark'; mark.textContent = '✓'; mark.setAttribute('aria-hidden','true');
     const status = document.createElement('span'); status.className = 'quest-completed-status'; status.textContent = t('Completada');
@@ -125,18 +152,24 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
   function display(completed: boolean) {
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === Number(completed))));
     content.replaceChildren();
-    if (data.shadowQuest && (data.shadowQuest === 'returned') === completed) {
+    if ((data.shadowQuest || data.welcome?.stage === 'completed') && (data.shadowQuest === 'returned') === completed) {
       const shadow = document.createElement('article'); shadow.className = 'quest-entry shadow-quest';
+      shadow.dataset.quest = SHADOW_QUEST_KEY;
+      shadow.classList.toggle('tracked', !completed && tracking.isTracked(SHADOW_QUEST_KEY));
       const header = document.createElement('header');
       const title = document.createElement('h3'); title.textContent = t(SHADOW_TITLE);
       const giver = document.createElement('span'); giver.className = 'quest-giver'; giver.textContent = 'Isberto';
-      header.append(title, giver);
+      const left = document.createElement('div'); left.className = 'quest-header-left';
+      left.append(title, giver);
+      const seal = document.createElement('span'); seal.className = 'quest-seal'; seal.textContent = completed ? '✓' : '!';
+      header.append(left);
+      if (!completed) header.append(createTrackButton(tracking, SHADOW_QUEST_KEY));
       const description = document.createElement('p'); description.textContent = t('Isberto te ha pedido investigar a la criatura que ronda su ganado.');
       const objective = document.createElement('section'); objective.className = 'quest-objective';
       const label = document.createElement('small'); label.textContent = t(completed ? 'Completada' : 'Siguiente paso');
       const text = document.createElement('p'); text.textContent = t(shadowObjective(data.shadowQuest));
       objective.append(label, text);
-      shadow.append(header, description, objective); appendEntry(shadow, completed);
+      shadow.append(seal, header, description, objective); appendEntry(shadow, completed);
     }
     const progress = data.welcome;
     if (!progress || (progress.stage === 'completed') !== completed) {
@@ -146,12 +179,17 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
       content.append(empty); return;
     }
     const article = document.createElement('article'); article.className = 'quest-entry';
+    article.dataset.quest = WELCOME_QUEST_KEY;
+    article.classList.toggle('tracked', !completed && tracking.isTracked(WELCOME_QUEST_KEY));
     const seal = document.createElement('span'); seal.className = 'quest-seal'; seal.textContent = completed ? '✓' : '!';
     const header = document.createElement('header');
     const title = document.createElement('h3'); title.textContent = t(WELCOME_TITLE);
     const giver = document.createElement('span'); giver.className = 'quest-giver';
     giver.textContent = t('Gnomi · Gremio de Ayudantes');
-    header.append(title, giver);
+    const left = document.createElement('div'); left.className = 'quest-header-left';
+    left.append(title, giver);
+    header.append(left);
+    if (!completed) header.append(createTrackButton(tracking, WELCOME_QUEST_KEY));
     const text = document.createElement('p');
     text.textContent = t('Gnomi ha vuelto a perder su distintivo del Gremio de Ayudantes. Ayúdalo a encontrarlo cerca del mercado antes de que se entere David, su jefe.');
     const objective = document.createElement('section'); objective.className = 'quest-objective';
@@ -176,12 +214,13 @@ export function renderQuestJournal(container: HTMLElement, data: CharData) {
   }
   ['Activas', 'Completadas'].forEach((label, i) => {
     const button = document.createElement('button'); button.type = 'button'; button.textContent = t(label);
+    button.dataset.questControl = i === 1 ? 'completed' : 'active';
     button.onclick = () => display(i === 1); tabs.append(button); buttons.push(button);
   });
-  root.append(tabs, content); container.append(root); display(data.shadowQuest ? data.shadowQuest === 'returned' : data.welcome?.stage === 'completed');
+  root.append(intro, tabs, content); container.append(root); display(showCompleted ?? (currentQuest(data) === null && !!data.welcome));
 }
 
-export function createQuestTracker(open: () => void) {
+export function createQuestTracker(open: () => void, tracking: QuestTracking) {
   const root = document.createElement('aside'); root.id = 'quest-tracker'; root.hidden = true;
   root.setAttribute('aria-label', t('Misión seguida'));
   let minimized = localStorage.getItem('brumaluz-quest-tracker:minimized') === 'true';
@@ -214,10 +253,10 @@ export function createQuestTracker(open: () => void) {
   let signature = '';
   return {
     update(data: CharData, visible: boolean) {
-      const shadow = data.welcome?.stage === 'completed' && data.shadowQuest !== 'returned';
-      root.hidden = !visible || !data.welcome || (data.welcome.stage === 'completed' && !shadow);
-      if (root.hidden || !data.welcome) return;
-      const key = `${JSON.stringify(data.welcome)}:${data.shadowQuest}:${t('Diario')}`;
+      const quest = tracking.current(data), shadow = quest === SHADOW_QUEST_KEY;
+      root.hidden = !visible || !quest;
+      if (root.hidden) return;
+      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${t('Diario')}`;
       if (key === signature) return;
       signature = key;
       root.setAttribute('aria-label', t('Misión seguida'));
@@ -226,8 +265,9 @@ export function createQuestTracker(open: () => void) {
       refreshToggle();
       label.textContent = shadow ? data.shadowQuest === 'returning' ? 'Gnomi' : 'Isberto' : t('Bienvenida · Obligatoria');
       title.textContent = t(shadow ? SHADOW_TITLE : WELCOME_TITLE);
-      objective.textContent = t(shadow ? shadowObjective(data.shadowQuest) : welcomeObjective(data.welcome));
-      const step = shadow ? data.shadowQuest === 'returning' ? 3 : data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome.stage === 'found' ? 2 : data.welcome.stage === 'active' ? 1 : 0;
+      if (shadow) objective.textContent = t(shadowObjective(data.shadowQuest));
+      else if (data.welcome) objective.textContent = t(welcomeObjective(data.welcome));
+      const step = shadow ? data.shadowQuest === 'returning' ? 3 : data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome?.stage === 'found' ? 2 : data.welcome?.stage === 'active' ? 1 : 0;
       const total = shadow ? 4 : 3;
       progress.textContent = t('Paso {current} de {total}', { current: step + 1, total });
       progress.style.setProperty('--quest-progress', `${step / (total - 1) * 100}%`);

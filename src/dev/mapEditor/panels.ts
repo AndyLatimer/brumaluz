@@ -160,7 +160,7 @@ function portalProps(marker: MapMarker) {
         ['', 'Aparición principal'], ...arrivals.map(arrival => [arrival.id, arrival.name] as [string, string]),
         ...(marker.target?.arrival && !arrivals.some(arrival => arrival.id === marker.target?.arrival) ? [[marker.target.arrival, `${marker.target.arrival} (no encontrada)`] as [string, string]] : []),
       ], value => apply('Llegada del portal', () => { if (marker.target) marker.target.arrival = value || undefined; }))),
-      field('Activación', choice(marker.trigger ?? 'walk', [['walk', 'Al caminar dentro'], ['interact', 'Pulsar E y confirmar']], value => apply('Activación', () => { marker.trigger = value; }))),
+      field('Activación', choice(marker.trigger ?? 'walk', [['walk', 'Al caminar dentro'], ['interact', 'Pulsar E (sin confirmación)']], value => apply('Activación', () => { marker.trigger = value; }))),
       el('p', { class: 'hint' }, 'El radio marca la zona de salida. Publica también el destino para habilitar el viaje en el juego.'),
       el('button', { type: 'button', disabled: !target?.revision || target.id === state.doc.id, onclick: async () => {
         if (!marker.target) return;

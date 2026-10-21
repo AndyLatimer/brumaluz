@@ -99,9 +99,6 @@ export function renderSkills(
     : points < 1 ? t('Sube de nivel para ganar puntos de habilidad.') : t('Cada mejora cuesta 1 punto. Los puntos no gastados se conservan.'));
   const status = element('p', 'skill-status');
   status.setAttribute('role', 'status');
-  add.onclick = () => {
-    status.textContent = t(assign(skillAction(data.cls)) ? 'Habilidad disponible en la barra rápida.' : 'No hay huecos libres. Arrastra la habilidad al hueco que quieras sustituir.');
-  };
   const confirmation = element('section', 'skill-confirmation');
   confirmation.hidden = true;
   confirmation.setAttribute('role', 'group');

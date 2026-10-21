@@ -8,7 +8,7 @@ import { renderNpcBadge } from './npcBadges';
 import type { NpcType } from '../data/npcBadges';
 
 export type { NpcType } from '../data/npcBadges';
-const TARGET_RANGE = 10;
+export const TARGET_RANGE = 10;
 export interface TargetDetails {
   id: string;
   root: THREE.Object3D;
