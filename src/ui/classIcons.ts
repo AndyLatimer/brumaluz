@@ -113,22 +113,17 @@ const rogue = wrap('ci-r', `<linearGradient id="ci-r-h" x1="0" y1="0" x2="0" y2=
 <circle cx="0" cy="-1.500" r="1" fill="#5ad08a" stroke="#0e3a20" stroke-width=".5"/>
 </g>`);
 
-// Clérigo: sol sagrado con alas protectoras, cruz enjoyada y halo.
+// Clérigo: sol sagrado con cruz enjoyada y halo.
 const cleric = wrap('ci-c', `<radialGradient id="ci-c-c" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#fffbe0"/><stop offset=".7" stop-color="#ffe08a"/><stop offset="1" stop-color="#e8a838"/></radialGradient>
-<linearGradient id="ci-c-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9d4e8"/></linearGradient>
 <radialGradient id="ci-c-j" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#ffe0e0"/><stop offset=".5" stop-color="#e2454a"/><stop offset="1" stop-color="#7a1424"/></radialGradient>`, `
 <g stroke="url(#ci-c-g)" stroke-width="2.600" fill="none">
-<path d="M32 2v7M32 55v7M13 9.500l4.500 5M51 9.500l-4.500 5M13 54.500l4.500-5M51 54.500l-4.500-5"/>
+<path d="M32 2v7M32 55v7M2 32h7M55 32h7M13 9.500l4.500 5M51 9.500l-4.500 5M13 54.500l4.500-5M51 54.500l-4.500-5"/>
 </g>
 <g stroke="#ffe7a0" stroke-width="1.300" fill="none" opacity=".85">
-<path d="M22.500 5.500l1.800 4.500M41.500 5.500l-1.800 4.500M22.500 58.500l1.800-4.500M41.500 58.500l-1.800-4.500"/>
+<path d="M22.500 5.500l1.800 4.500M41.500 5.500l-1.800 4.500M22.500 58.500l1.800-4.500M41.500 58.500l-1.800-4.500M5.500 22.500l4.500 1.800M5.500 41.500l4.500-1.800M58.500 22.500l-4.500 1.800M58.500 41.500l-4.500-1.800"/>
 </g>
 <ellipse cx="32" cy="10.500" rx="9" ry="2.300" fill="none" stroke="#fff3b0" stroke-width="2.200" opacity=".55"/>
 <ellipse cx="32" cy="10.500" rx="9" ry="2.300" fill="none" stroke="url(#ci-c-g)" stroke-width="1.100"/>
-<path d="M18 28C12 22 5 22 2 24c3 1 4 3 4 5-2 0-3 1-3 3 3-1 5 0 6 2-2 1-2 3-1 4 3-2 7-2 11 0Z" fill="url(#ci-c-w)" stroke="#4a5470" stroke-width="1.700"/>
-<path d="M46 28c6-6 13-6 16-4-3 1-4 3-4 5 2 0 3 1 3 3-3-1-5 0-6 2 2 1 2 3 1 4-3-2-7-2-11 0Z" fill="url(#ci-c-w)" stroke="#4a5470" stroke-width="1.700"/>
-<path d="M8 30c3-1 6-1 9 0M6 35c3-.500 6 0 9 1M56 30c-3-1-6-1-9 0M58 35c-3-.500-6 0-9 1" stroke="#8f9ab8" stroke-width="1" fill="none"/>
-<path d="M5.500 25.500c3 .5 7 1.300 11 2.800M58.500 25.500c-3 .5-7 1.300-11 2.800M10 38.500c2-1 4-1.300 6.500-1M54 38.500c-2-1-4-1.300-6.500-1" stroke="#fff" stroke-width=".9" fill="none" opacity=".9"/>
 <circle cx="32" cy="32" r="18" fill="none" stroke="#fff3b0" stroke-width="1.400" opacity=".6"/>
 <circle cx="32" cy="32" r="16.500" fill="url(#ci-c-c)" stroke="#8a5a14" stroke-width="2.400"/>
 <circle cx="32" cy="32" r="13" fill="none" stroke="#fff" stroke-width="1" opacity=".65"/>
@@ -147,7 +142,6 @@ const ranger = wrap('ci-x', `<linearGradient id="ci-x-w" x1="0" y1="0" x2="1" y2
 <path d="M19 5c18 5 27 16 27 27S37 54 19 59" fill="none" stroke="#2a190e" stroke-width="7.200"/>
 <path d="M19 5c18 5 27 16 27 27S37 54 19 59" fill="none" stroke="url(#ci-x-w)" stroke-width="3.800"/>
 <path d="M21 8c13 5 20 13 21.500 21" fill="none" stroke="#eac08a" stroke-width="1.300" opacity=".8"/>
-<path d="M27.500 9.200l-1.600 3.300M37.200 17.600l-2.700 2.400M37.200 46.400l-2.700-2.400M27.500 54.800l-1.600-3.300" stroke="#2a190e" stroke-width="3.200"/><path d="M27.500 9.200l-1.600 3.300M37.200 17.600l-2.700 2.400M37.200 46.400l-2.700-2.400M27.500 54.800l-1.600-3.300" stroke="url(#ci-x-g)" stroke-width="1.700"/>
 <path d="M16.500 3.500l5 1.200-1 3.300-4.400-1.500Z M16.500 60.500l5-1.200-1-3.300-4.400 1.500Z" fill="url(#ci-x-g)" stroke="#2a190e" stroke-width="1.100"/>
 <path d="M42 28.500h5v7h-5Z" fill="#5a3a24" stroke="#2a190e" stroke-width="1.300"/>
 <path d="M42.500 30.500h4M42.500 33.500h4" stroke="#c99a5a" stroke-width=".9"/>
