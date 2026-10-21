@@ -99,6 +99,7 @@ interface Database {
       change_equipment: { Args: { p_character_id: string; p_slot: string; p_bag: number | null; p_expected: Json }; Returns: Json };
       loot_corpse: { Args: { p_character_id: string; p_instance_id: string; p_slot?: number | null }; Returns: Json };
       collect_coin_bag: { Args: { p_character_id: string; p_bag_id: string }; Returns: Json };
+      bank_action: { Args: { p_character_id: string; p_action: string; p_slot?: number | null; p_expected?: Json | null; p_amount?: number | null }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
       party_invite: { Args: { p_username: string }; Returns: undefined };
@@ -269,6 +270,15 @@ const SERVER_ERRORS: Record<string, string> = {
   SKILL_MAX_RANK: 'La habilidad ya tiene el rango máximo.',
   SKILL_LEVEL_REQUIRED: 'Necesitas más nivel para mejorar esta habilidad.',
   SKILL_NO_POINTS: 'No tienes puntos de habilidad suficientes.',
+  // Antes que NOT_ENOUGH_MONEY: los códigos se buscan como subcadena en orden.
+  BANK_NOT_ENOUGH_MONEY: 'No tienes tantos pelines guardados en el banco.',
+  BANK_TOO_FAR: 'Acércate al baúl para usar el banco.',
+  BANK_NOT_PLAYING: 'Solo puedes usar el banco junto al baúl de la casa de Isberto.',
+  BANK_DEAD: 'Debes volver a la vida para usar el banco.',
+  BANK_FULL: 'El banco está lleno.',
+  BANK_CHANGED: 'El banco ha cambiado. Vuelve a intentarlo.',
+  BANK_ITEM_BOUND: 'Los objetos ligados no se pueden guardar en el banco.',
+  BANK_INVALID_ACTION: 'Esa acción del banco no es válida.',
   NOT_ENOUGH_MONEY: 'No tienes suficientes pelines.',
   INVENTORY_FULL: 'Tu mochila está llena.',
   INVENTORY_CHANGED: 'Tu mochila ha cambiado. Vuelve a mover el objeto.',
@@ -379,6 +389,14 @@ export async function lootCorpse(id: string, instanceId: string, slot: number | 
 export async function collectCoinBag(id: string, bagId: string) {
   return asRecord(await serverCall(requireClient().rpc('collect_coin_bag', {
     p_character_id: id, p_bag_id: bagId,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+
+export type BankAction = 'open' | 'deposit' | 'withdraw' | 'deposit_pelines' | 'withdraw_pelines';
+/** Banco de la cuenta: devuelve los datos del personaje y `bank` ({ items, pelines, size }). */
+export async function bankAction(id: string, action: BankAction, slot: number | null = null, expected: ItemStack | null = null, amount: number | null = null) {
+  return asRecord(await serverCall(requireClient().rpc('bank_action', {
+    p_character_id: id, p_action: action, p_slot: slot, p_expected: expected ? { ...expected } : null, p_amount: amount,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 

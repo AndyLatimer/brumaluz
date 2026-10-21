@@ -5,8 +5,11 @@ import {
   signIn, signOut, signUp, updatePassword, type SavedCharacter, type CharacterAction,
   buyFromVendor, sellToVendor, useItem, moveInventoryItem, welcomeAction, sendChatMessage, subscribeChat,
   deleteCharacter as removeCharacter, MAX_CHARACTERS_PER_ACCOUNT,
-  startCombat, combatAction, changeEquipment, lootCorpse, shadowAction, collectCoinBag,
+  startCombat, combatAction, changeEquipment, lootCorpse, shadowAction, collectCoinBag, bankAction, type BankAction,
 } from './services/account';
+import { BANK_INTERACT_RADIUS, BANK_SPOTS, emptyBank, sanitizeBank, simulateBank, type BankState } from './data/bank';
+import type { ItemStack } from './data/inventory';
+import { renderBank } from './ui/bankWindow';
 import { createCoinBags } from './world/coinBags';
 import { captureTopDown } from './world/mapCapture';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
@@ -485,7 +488,7 @@ window.addEventListener('keydown', (e) => {
     if (!e.repeat) focusChat();
     return;
   }
-  if (!e.repeat && !gameMenuOpen && openWindow !== 'vendor' && (e.target as HTMLElement).tagName !== 'INPUT') {
+  if (!e.repeat && !gameMenuOpen && openWindow !== 'vendor' && openWindow !== 'bank' && (e.target as HTMLElement).tagName !== 'INPUT') {
     const win = e.code === 'KeyM' ? 'map' : e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : e.code === 'KeyK' ? 'skills' : null;
     if (win) { e.preventDefault(); setWindow(openWindow === win ? null : win); return; }
     if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
@@ -538,7 +541,10 @@ function nearestInteractable(): Interactable | null {
   const portals = city.portals.filter(portal => portal.trigger === 'interact').map(portal => ({
     id: `portal:${portal.id}`, label: portal.name, position: portal.position, radius: portal.radius,
   }));
-  for (const item of [...portals, ...corpses, ...city.interactables, ...welcomeWorld.interactions(), ...coinBags.interactions()]) {
+  const spot = BANK_SPOTS[city.locationId];
+  const banks: Interactable[] = spot
+    ? [{ id: 'bank:chest', label: 'Abrir el banco', position: new THREE.Vector3(spot.x, city.groundY(spot.x, spot.z), spot.z), radius: BANK_INTERACT_RADIUS }] : [];
+  for (const item of [...portals, ...corpses, ...banks, ...city.interactables, ...welcomeWorld.interactions(), ...coinBags.interactions()]) {
     if (item.id === 'npc:isberto' && !isbertoUnlocked()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -587,6 +593,7 @@ function interact() {
   }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
   if (item?.id === 'corpse:shadowling') { setWindow('loot'); return; }
+  if (item?.id === 'bank:chest') { void openBank(); return; }
   if (item?.id.startsWith('coinbag:')) { void pickUpCoinBag(item.id.slice('coinbag:'.length)); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   if (npcId) { talkTo(npcId); return; }
@@ -1188,6 +1195,34 @@ async function vendorTransaction(call: (id: string, vendorId: string) => Promise
     if (openWindow === 'vendor') setWindow('vendor', false);
   }
 }
+// ---------------- Banco de la cuenta ----------------
+let bankState: BankState | null = null;
+// En ?test no hay servidor: el banco vive en memoria mientras dure la página.
+const testBank = emptyBank();
+const nearBank = () => {
+  const spot = BANK_SPOTS[city.locationId];
+  return !!spot && Math.hypot(holder.position.x - spot.x, holder.position.z - spot.z) <= spot.radius;
+};
+async function bankTransaction(action: BankAction, value: number | null = null, expected: ItemStack | null = null) {
+  const done = await runOnServer(async id => {
+    const data = await bankAction(id, action, action === 'deposit' || action === 'withdraw' ? value : null, expected,
+      action.endsWith('_pelines') ? value : null);
+    bankState = sanitizeBank(data.bank);
+    return data;
+  }, () => {
+    if (action !== 'open') simulateBank(state, testBank, action, value ?? 0);
+    bankState = sanitizeBank(testBank);
+  });
+  if (done && openWindow === 'bank') { updateHud(); setWindow('bank', false); }
+  return done;
+}
+async function openBank() {
+  keys.clear(); moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
+  bankState = null;
+  setWindow('bank');
+  if (!(await bankTransaction('open')) && openWindow === 'bank' && !bankState) setWindow(null);
+}
+
 const buyItem = (item: string) => vendorTransaction((id, v) => buyFromVendor(id, v, item), () => simulateBuy(state, vendor!.id, item), item);
 const sellItem = (slot: number) => vendorTransaction((id, v) => sellToVendor(id, v, slot), () => simulateSell(state, slot));
 
@@ -1609,7 +1644,7 @@ function refreshLanguageDependentUI() {
   renderBuffs(state, !foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'quests' || openWindow === 'skills' || openWindow === 'map' || openWindow === 'collections') setWindow(openWindow, false);
+  if (openWindow === 'sheet' || openWindow === 'vendor' || openWindow === 'bank' || openWindow === 'quests' || openWindow === 'skills' || openWindow === 'map' || openWindow === 'collections') setWindow(openWindow, false);
   if (currentUser) displayCharacters(cachedCharacters);
   $('#auth-submit').textContent = authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -1650,7 +1685,7 @@ function setGameMenuOpen(open: boolean, restoreFocus = true) {
 // ---------------- Menú de personaje (Tab) ----------------
 let playerMenuOpen = false;
 let worldMenuOpen = false;
-type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map';
+type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'bank' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map';
 let openWindow: PlayerWindow | null = null;
 let closeSocial: (() => void) | null = null;
 let updateZoneMap: (() => void) | null = null;
@@ -1725,14 +1760,15 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('skills-window-frame', win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('map-window-frame', win === 'map');
   $('#map-window-close').hidden = win !== 'map';
-  $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor');
+  $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor' || win === 'bank');
   $('#window-confirm').hidden = true;
   keys.clear();
+  if (win !== 'bank') bankState = null;
   if (!win) { vendor = null; return; }
   if (closeMenu) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); }
-  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'map' ? 'Mapa de la zona' : win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : win === 'collections' ? 'Colecciones' : 'Ficha de personaje');
-  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'social' || win === 'skills' || win === 'collections');
-  $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor');
+  $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'bank' ? 'Banco' : win === 'map' ? 'Mapa de la zona' : win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : win === 'collections' ? 'Colecciones' : 'Ficha de personaje');
+  $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'bank' || win === 'social' || win === 'skills' || win === 'collections');
+  $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor' || win === 'bank');
   if (win === 'loot') {
     moveTarget = null; pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
     $('#window-title').textContent = t('Botín de la criatura');
@@ -1768,6 +1804,12 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   }
   else if (win === 'collections') renderCollections(body, state.coinBags);
   else if (win === 'vendor') renderVendor(body, state, vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
+  else if (win === 'bank') renderBank(body, state, bankState, {
+    onDeposit: slot => { const item = state.inventory[slot]; if (item) void bankTransaction('deposit', slot, item); },
+    onWithdraw: slot => { const item = bankState?.items[slot]; if (item) void bankTransaction('withdraw', slot, item); },
+    onDepositPelines: amount => void bankTransaction('deposit_pelines', amount),
+    onWithdrawPelines: amount => void bankTransaction('withdraw_pelines', amount),
+  });
   else if (win === 'social') closeSocial = renderSocial(body, (username) => {
     setWindow(null);
     focusChat(`/w ~${username} `);
@@ -3537,6 +3579,7 @@ renderer.setAnimationLoop(() => {
   updateTargetFrame();
   if (mode === 'play') updateMinimap();
   if (mode === 'play') updateZoneMap?.();
+  if (openWindow === 'bank' && (mode !== 'play' || dead || !nearBank())) setWindow(null);
   try {
     if (TEST) renderer.render(scene, camera); else stage.render();
   } catch (error) {

@@ -659,6 +659,24 @@ body.playing .world-menu { display: block; position: fixed; top: 18px; right: 13
 .vendor-action:disabled { opacity: .45; cursor: not-allowed; }
 .vendor-empty { color: var(--ink-soft); font-style: italic; padding: 28px 16px; text-align: center; border: 1px dashed #b99a6577; border-radius: 12px; background: #fff5df44; }
 @media (max-width: 800px) { .vendor { grid-template-columns: 1fr; } }
+.bank-intro { display: flex; align-items: center; gap: 12px; }
+.bank-chest { display: grid; place-items: center; width: 52px; height: 52px; flex: none; border: 1px solid #ba9459; border-radius: 14px 5px; background: radial-gradient(circle at 50% 30%, #fff4d3, #dec18a); box-shadow: inset 0 0 0 2px #fff5db88; }
+.bank-chest svg { width: 40px; height: 40px; filter: drop-shadow(0 2px 1px #5e332733); }
+.bank { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; }
+.bank .inv-bag-head h3 { margin: 0; }
+.bank-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; max-height: 330px; overflow-y: auto; padding: 2px; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
+.bank-grid.bag { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.bank-grid .inv-slot.filled:not(.equip) svg { width: 36px; }
+.bank-grid .inv-slot i { right: 2px; bottom: 2px; min-width: 14px; font-size: 10px; }
+.bank-grid .inv-slot.bank-blocked { opacity: .5; filter: grayscale(.7); cursor: not-allowed; }
+.bank-money { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #b99a6577; }
+.bank-money-label { color: var(--ink-soft); font: 600 14px 'Alegreya', serif; }
+.bank-balance { cursor: default; }
+.bank-pelines-form { display: flex; align-items: center; gap: 6px; }
+.bank-pelines-form input { width: 86px; padding: 4px 8px; border: 1px solid #b99a65; border-radius: 8px; background: #fff9ea; color: var(--ink); font: 700 14px 'Cinzel', serif; }
+.bank-all, .bank-pelines-form .vendor-action { padding: 5px 12px; font-size: 13px; min-height: 0; }
+.bank-all:disabled, .bank-pelines-form input:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 900px) { .bank { grid-template-columns: 1fr; } .bank-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
 @media (max-width: 400px) { .vendor-col { padding: 9px; } .vendor-row { flex-wrap: wrap; gap: 8px; } .vendor-info { flex-basis: calc(100% - 60px); } .vendor-trade { width: 100%; display: flex; justify-content: space-between; align-items: center; } }
 .wallet { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .currency { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 8px; border: 1px solid rgba(107,74,48,.45); border-radius: 999px; background: rgba(107,74,48,.12); color: var(--ink); cursor: help; }

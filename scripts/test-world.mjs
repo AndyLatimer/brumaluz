@@ -129,6 +129,41 @@ async function openPlayer(world, account, compatible = true, clockTime) {
       if(player)player.encounter=character.data.combatEncounter;
       return fulfill(character.data);
     }
+    if(fn==='bank_action'){
+      world.banks??=new Map();
+      const bank=world.banks.get(key)??{items:Array(50).fill(null),pelines:0,size:50};
+      world.banks.set(key,bank);
+      world.bankCalls?.push({action:args.p_action,slot:args.p_slot,amount:args.p_amount});
+      const inv=Array.from({length:25},(_,i)=>character.data.inventory?.[i]??null);
+      const wallet={...(character.data.wallet??{pelines:0})};
+      const into=(slots,item)=>{
+        const out=slots.map(slot=>slot&&{...slot});let left=item.count;
+        for(const slot of out)if(left>0&&slot&&slot.id===item.id&&!!slot.bound===!!item.bound&&slot.count<50){const room=Math.min(50-slot.count,left);slot.count+=room;left-=room;}
+        for(let i=0;i<out.length&&left>0;i++)if(!out[i]){const room=Math.min(50,left);out[i]={id:item.id,count:room,bound:!!item.bound};left-=room;}
+        return left>0?null:out;
+      };
+      const same=(a,b)=>a&&b&&a.id===b.id&&a.count===b.count&&!!a.bound===!!b.bound;
+      if(args.p_action==='deposit'){
+        const item=inv[args.p_slot];
+        if(!same(item,args.p_expected))return fulfill({message:'INVENTORY_CHANGED'},400);
+        if(item.bound)return fulfill({message:'BANK_ITEM_BOUND'},400);
+        const next=into(bank.items,item);if(!next)return fulfill({message:'BANK_FULL'},400);
+        bank.items=next;inv[args.p_slot]=null;
+      }else if(args.p_action==='withdraw'){
+        const item=bank.items[args.p_slot];
+        if(!same(item,args.p_expected))return fulfill({message:'BANK_CHANGED'},400);
+        const next=into(inv,item);if(!next)return fulfill({message:'INVENTORY_FULL'},400);
+        next.forEach((slot,i)=>{inv[i]=slot;});bank.items[args.p_slot]=null;
+      }else if(args.p_action==='deposit_pelines'){
+        if(wallet.pelines<args.p_amount)return fulfill({message:'NOT_ENOUGH_MONEY'},400);
+        wallet.pelines-=args.p_amount;bank.pelines+=args.p_amount;
+      }else if(args.p_action==='withdraw_pelines'){
+        if(bank.pelines<args.p_amount)return fulfill({message:'BANK_NOT_ENOUGH_MONEY'},400);
+        wallet.pelines+=args.p_amount;bank.pelines-=args.p_amount;
+      }
+      Object.assign(character.data,{inventory:inv,wallet});
+      return fulfill({...character.data,bank});
+    }
     if(fn==='collect_coin_bag'){
       const taken=character.data.coinBags??[];
       if(args.p_bag_id!=='plaza_pozo')return fulfill({message:'COIN_BAG_INVALID'},400);
@@ -2117,6 +2152,77 @@ test('online portals distinguish a pending mission encounter from engaged combat
       {from:'brumaluz',to:'casa_de_isberto_interior'},{from:'casa_de_isberto_interior',to:'brumaluz'},
       {from:'brumaluz',to:'pompelin'},{from:'pompelin',to:'brumaluz'},
     ]);
+    assert.deepEqual(player.errors,[]);
+  }finally{await player.context.close();}
+});
+
+test('the account bank opens at Isberto\'s chest, stores whole stacks and pelines and blocks bound items', {timeout:120000}, async()=>{
+  const world=backend(),account=fixture('Banquero','humano',24.5);
+  world.bankCalls=[];
+  Object.assign(account.character.data,{
+    position:{x:24.5,z:-48.5,yaw:0},welcome:{origin:0,stage:'completed'},wallet:{pelines:40},
+    inventory:[{id:'pan_duro',count:12},{id:'esencia_sombria',count:2,bound:true},{id:'pocion_vida_minuscula',count:3}],
+  });
+  const maps=Object.fromEntries(['brumaluz','casa_de_isberto_interior'].map(id=>[
+    id,JSON.parse(readFileSync(join(process.cwd(),'src','data','world','maps',`${id}.json`),'utf8')),
+  ]));
+  const player=await openPlayer(world,account),page=player.page;
+  await player.context.route(/\/rest\/v1\/rpc\/world_travel$/,async route=>{
+    const {p_portal}=route.request().postDataJSON();
+    const current=world.players.get(account.user.id);
+    const map=current.data.location??'brumaluz',portal=maps[map].markers.find(marker=>marker.id===p_portal);
+    const arrival=maps[portal.target.map].markers.find(marker=>marker.id===portal.target.arrival);
+    const position={x:arrival.position[0],z:arrival.position[2],yaw:arrival.rotationY};
+    Object.assign(current,{position});
+    Object.assign(current.data,{location:portal.target.map,position});
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      status:'ok',location:portal.target.map,position,players:[],encounter:current.encounter,vitals:current.vitals,
+    })});
+  });
+  const bankSlot=i=>page.locator('.bank-vault .inv-slot').nth(i);
+  const bagSlot=i=>page.locator('.bank-bag .inv-slot').nth(i);
+  try{
+    await player.enter();
+    await page.locator('#interact-label').filter({hasText:/Casa de Isberto/i}).waitFor();
+    await page.keyboard.press('e');
+    await page.waitForFunction(()=>window.brumaluz.city().locationId==='casa_de_isberto_interior');
+    await page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await page.evaluate(()=>window.brumaluz.move(2.25,2.3));
+    await page.locator('#interact-label').filter({hasText:'Abrir el banco'}).waitFor();
+    await page.keyboard.press('e');
+    await page.locator('.bank-vault .inv-slot').first().waitFor();
+    assert.equal(await page.locator('#window-title').textContent(),'Banco');
+    assert.equal(await page.locator('.bank-vault .inv-slot').count(),50);
+    assert.equal(await page.locator('.bank-vault .inv-capacity').textContent(),'0 / 50');
+    assert.equal(await bagSlot(1).evaluate(node=>node.tagName),'DIV','Bound items cannot be clicked into the bank');
+    assert.ok(await bagSlot(1).evaluate(node=>node.classList.contains('bank-blocked')));
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'bank.png')});
+
+    await bagSlot(0).click();
+    await page.waitForFunction(()=>document.querySelector('.bank-vault .inv-capacity')?.textContent==='1 / 50');
+    assert.deepEqual(account.character.data.inventory[0],null);
+    assert.equal(await bankSlot(0).locator('i').textContent(),'12');
+
+    await page.locator('.bank-bag .bank-pelines-form input').fill('25');
+    await page.locator('.bank-bag .bank-pelines-form button[type=submit]').click();
+    await page.locator('.bank-vault .bank-balance b').filter({hasText:'25'}).waitFor();
+    assert.equal(account.character.data.wallet.pelines,15);
+
+    await bankSlot(0).click();
+    await page.waitForFunction(()=>document.querySelector('.bank-vault .inv-capacity')?.textContent==='0 / 50');
+    assert.deepEqual(account.character.data.inventory[0],{id:'pan_duro',count:12,bound:false});
+    await page.locator('.bank-vault .bank-all').click();
+    await page.locator('.bank-vault .bank-pelines-form button[type=submit]').click();
+    await page.locator('.bank-vault .bank-balance b').filter({hasText:/^0$/}).waitFor();
+    assert.equal(account.character.data.wallet.pelines,40);
+    assert.deepEqual(world.bankCalls.map(call=>call.action),['open','deposit','deposit_pelines','withdraw','withdraw_pelines']);
+
+    await page.keyboard.press('Escape');
+    await page.locator('#window-backdrop').waitFor({state:'hidden'});
+    await page.evaluate(()=>window.brumaluz.move(0,-1));
+    await page.keyboard.press('e');
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator('#window-backdrop').isHidden(),true,'The chest cannot be used from across the room');
     assert.deepEqual(player.errors,[]);
   }finally{await player.context.close();}
 });
