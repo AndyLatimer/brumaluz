@@ -3,6 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { mapEditorPlugin } from './map-editor-plugin.mjs';
+import { assetBoxes } from './asset-bounds.mjs';
 
 // Brumaluz agrandada sin perder su forma: el casco antiguo sigue en el centro, sin foso ni muralla propia,
 // y la ciudad crece a su alrededor hasta una muralla hexagonal con las mismas puertas y salidas al continente.
@@ -81,18 +82,32 @@ const PLAZAS = ['Plaza del Levante', 'Plaza de la Fuente', 'Plaza del Olmo', 'Pl
  * (1: anillos 14–16, entre el interior y el central; 2: anillos 18–19, entre el central y la ronda).
  */
 const SPECIAL = [
-  { id: 'telares', sector: 0, half: 0, band: 1, kind: 'hall' },
+  { id: 'telares', sector: 0, half: 0, band: 1, kind: 'guild' },
   { id: 'huertas', sector: 1, half: 0, band: 2, kind: 'farm' },
   { id: 'molino', sector: 1, half: 1, band: 2, kind: 'hill' },
   { id: 'aserradero', sector: 2, half: 1, band: 2, kind: 'yard' },
-  { id: 'canteros', sector: 3, half: 0, band: 1, kind: 'hall' },
+  { id: 'canteros', sector: 3, half: 0, band: 1, kind: 'guild' },
   { id: 'cantera', sector: 3, half: 1, band: 2, kind: 'hill' },
   { id: 'mirador', sector: 4, half: 0, band: 1, kind: 'hill' },
   { id: 'cuartel', sector: 4, half: 0, band: 2, kind: 'yard' },
-  { id: 'lonja', sector: 5, half: 0, band: 1, kind: 'hall' },
-  { id: 'archivo', sector: 5, half: 1, band: 1, kind: 'hall' },
+  { id: 'lonja', sector: 5, half: 0, band: 1, kind: 'guild' },
+  { id: 'archivo', sector: 5, half: 1, band: 1, kind: 'guild' },
 ];
 const HILL_HEIGHT = { molino: 7, cantera: 8, mirador: 7 };
+/** Edificios de una sola pieza (no la muralla ni los hechos a mano) y cuánto se agrandan respecto a su tamaño base. */
+export const BUILDING = /^city\/(home_|tavern|market|blacksmith|church|castle|windmill|watermill|lumbermill|barracks|archeryrange|tower_)|^medieval-builder\/objects\/(house|market|mill|lumbermill|barracks|watchtower|mine|archeryrange)$/;
+export const BUILDING_SCALE = 1.5;
+/** Piezas de construcción por módulos (muros, puertas, suelos, pilares…): la ciudad no monta edificios con ellas. */
+export const WALL_PIECE = /^dungeon\/objects\/(wall|floor|pillar|column|banner|stairs|ceiling)/;
+/** Distancia máxima (m) del centro de un edificio a su esquina: así no invade la calle vecina. */
+const BUILDING_REACH = 4.9;
+/** Media diagonal en planta de cada modelo sin escalar (de sus medidas en city.glb y la biblioteca). */
+const BUILDING_FOOTPRINT = {
+  'city/home_A': 0.614, 'city/home_B': 0.711, 'city/tavern': 0.92, 'city/market': 1.151, 'city/blacksmith': 0.95,
+  'city/windmill': 0.703, 'city/watermill': 0.999, 'city/lumbermill': 1.002, 'city/barracks': 1.111, 'city/archeryrange': 1.233, 'city/tower_B': 0.914, 'city/church': 0.76,
+  'medieval-builder/objects/house': 1.189, 'medieval-builder/objects/market': 1.174, 'medieval-builder/objects/lumbermill': 1.251,
+  'medieval-builder/objects/barracks': 1.45, 'medieval-builder/objects/watchtower': 1.009,
+};
 /** Calle secundaria de cada sector: sale del centro del lado del anillo interior hacia la ronda. */
 const STREET_Q = 6;
 
@@ -134,6 +149,27 @@ export function streetCells() {
   return cells;
 }
 
+/** Escalera ante la puerta de algunas piezas (medidas del modelo, fachada hacia +Z): centro en X, pie y ancho. */
+const STAIR_FRONT = {
+  'city/home_B': { x: 0.125, foot: 0.57, width: 0.25 },
+  'city/tavern': { x: -0.145, foot: 0.64, width: 0.21 },
+};
+
+/** Separación entre dos cajas giradas en planta (negativa si se pisan), por ejes separadores. */
+export function boxGap(a, b) {
+  const corners = box => [[1, 1], [1, -1], [-1, -1], [-1, 1]].map(([sx, sz]) => {
+    const lx = sx * box.hx, lz = sz * box.hz;
+    return [box.x + lx * box.cos + lz * box.sin, box.z - lx * box.sin + lz * box.cos];
+  });
+  const ca = corners(a), cb = corners(b);
+  let gap = -Infinity;
+  for (const box of [a, b]) for (const [ax, az] of [[box.cos, -box.sin], [box.sin, box.cos]]) {
+    const pa = ca.map(([x, z]) => x * ax + z * az), pb = cb.map(([x, z]) => x * ax + z * az);
+    gap = Math.max(gap, Math.min(...pb) - Math.max(...pa), Math.min(...pa) - Math.max(...pb));
+  }
+  return gap;
+}
+
 /** Restos del recinto viejo que, al desaparecer foso y muralla, separarían el centro del resto de la ciudad. */
 function oldEnclosure(object) {
   if (object.layer === 'edificios' && /^city\/wall_straight(_gate)?$/.test(object.asset)) return true;
@@ -148,7 +184,11 @@ function oldEnclosure(object) {
   });
 }
 
-export function buildBrumaluz(source, maps) {
+/**
+ * `boxes` (medidas de cada recurso, ver tools/asset-bounds.mjs): con ellas se repasa el resultado y se retira o se
+ * ajusta lo que se pisa o invade una calle.
+ */
+export function buildBrumaluz(source, maps, boxes = null) {
   assert.equal(source.id, 'brumaluz');
   const map = structuredClone(source);
   const generated = id => id.startsWith(PREFIX) || id.startsWith(OLD_PREFIX);
@@ -277,7 +317,15 @@ export function buildBrumaluz(source, maps) {
     terrain.heights.set(next);
   }
   const height = (x, z) => maps.sampleHeight(terrain, x + HALF, z + HALF);
-  const waterLevel = Math.max(...[...water].map(k => height(...hexToWorld(...k.split(',').map(Number)))), 0);
+  // Las lagunas quedan un salto por debajo de la desembocadura del río: el agua cae a ellas en cascada.
+  // `riverMouth`: lámina del río (pieza adaptada al terreno, agua a -0,1 de su altura) en sus casillas del borde.
+  const riverMouth = Math.min(...map.objects.filter(object => /^city\/hex_river/.test(object.asset)
+    && hexDist(...worldToHex(object.position[0], object.position[2])) === RINGS.island)
+    .map(object => height(object.position[0], object.position[2]) + object.position[1] - 0.1 * object.scale[1]));
+  const LAGOON_DROP = 1.1;
+  /** Lámina de las lagunas y altura de la pieza de agua (su lámina está a -0,2 de su origen). */
+  const lagoonSurface = rounded(riverMouth - LAGOON_DROP);
+  const waterLevel = rounded(lagoonSurface + 0.2 * S * 0.28);
 
   // Explanadas (se aplican al final, antes de fijar alturas definitivas).
   const pads = [];
@@ -294,8 +342,13 @@ export function buildBrumaluz(source, maps) {
   );
   let serial = 0;
   /** `y` absoluta o `lift` sobre el suelo definitivo (se calcula al final). */
+  /** Escala final de un edificio: más grande que la pieza tal cual, sin salirse de su casilla. */
+  const buildingScale = (asset, base) => Math.min(base * BUILDING_SCALE, BUILDING_REACH / (BUILDING_FOOTPRINT[asset] ?? 0));
+  /** Distancia del centro de un edificio a su esquina, ya escalado. */
+  const reachOf = (asset, base) => (BUILDING_FOOTPRINT[asset] ?? 0.6) * buildingScale(asset, base);
   const add = (asset, x, z, scale = 1, yaw = 0, layer = 'casas', options = {}) => {
     const { y, lift = 0, ...rest } = options;
+    if (layer !== 'muralla' && BUILDING.test(asset) && !Array.isArray(scale)) scale = buildingScale(asset, scale);
     const object = {
       id: `${PREFIX}${(serial++).toString(36).padStart(4, '0')}`, asset, layer: `${PREFIX}${layer}`,
       position: [rounded(x), y ?? lift, rounded(z)], rotation: [0, rounded(yaw), 0],
@@ -338,61 +391,6 @@ export function buildBrumaluz(source, maps) {
     const [name, steps] = roadFor(m || 1);
     tile(name, cell, steps);
   }
-
-  // --- Constructor de edificios hechos a mano -------------------------------------------------
-  const frame = (cx, cz, yaw, y0, layer, name) => {
-    const c = Math.cos(yaw), s = Math.sin(yaw);
-    return (asset, lx, lz, ly = 0, localYaw = 0, scale = 1, extra = {}) => add(asset,
-      cx + lx * c + lz * s, cz - lx * s + lz * c, scale, yaw + localYaw, layer, { y: rounded(y0 + ly), name, ...extra });
-  };
-  /**
-   * Edificio hecho con piezas de mazmorra (módulos de 4 m): suelo, muros con puerta y ventanas, pilares en las
-   * esquinas, cubierta de madera, estandartes y bandera. `open` deja solo pilares (lonja).
-   */
-  const hall = ({ cx, cz, yaw, cols, rows, floors = 1, s = 1, open = false, name, banner = 'red', roof = 'floor_wood_large_dark', layer = 'civico' }) => {
-    const W = cols * 4 * s, D = rows * 4 * s;
-    const y0 = pad(cx, cz, Math.hypot(W, D) / 2 + 0.5, height(cx, cz), 3);
-    const piece = frame(cx, cz, yaw, y0, layer, name);
-    const d = asset => `dungeon/objects/${asset}`;
-    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
-      piece(d('floor_tile_large'), -W / 2 + (2 + 4 * i) * s, -D / 2 + (2 + 4 * j) * s, 0.02, 0, s, { collision: 'none' });
-    }
-    const top = (open ? 4.4 : 4 * floors) * s;
-    if (open) {
-      for (let i = 0; i <= cols; i++) for (const lz of [-D / 2, D / 2]) piece(d('pillar'), -W / 2 + 4 * i * s, lz, 0, 0, [0.5 * s, 1.1 * s, 0.5 * s]);
-      for (let j = 1; j < rows; j++) for (const lx of [-W / 2, W / 2]) piece(d('pillar'), lx, -D / 2 + 4 * j * s, 0, 0, [0.5 * s, 1.1 * s, 0.5 * s]);
-    } else {
-      const middle = Math.floor(cols / 2);
-      for (let f = 0; f < floors; f++) {
-        const ly = 4 * f * s;
-        for (let i = 0; i < cols; i++) {
-          const lx = -W / 2 + (2 + 4 * i) * s;
-          const front = f === 0 && i === middle ? 'wall_doorway' : f === 0 ? 'wall_window_closed' : 'wall_window_open';
-          piece(d(front), lx, D / 2, ly, 0, s);
-          if (f === 0 && i === middle) piece(d('wall_doorway_door'), lx, D / 2, ly, 0, s);
-          piece(d(i % 2 ? 'wall_window_closed' : 'wall'), lx, -D / 2, ly, Math.PI, s);
-        }
-        for (let j = 0; j < rows; j++) {
-          const lz = -D / 2 + (2 + 4 * j) * s, window = (j + f) % 2 ? 'wall_window_open' : 'wall_window_closed';
-          piece(d(window), W / 2, lz, ly, Math.PI / 2, s);
-          piece(d(window), -W / 2, lz, ly, -Math.PI / 2, s);
-        }
-        for (const [lx, lz] of [[-W / 2, -D / 2], [W / 2, -D / 2], [-W / 2, D / 2], [W / 2, D / 2]]) piece(d('pillar'), lx, lz, ly, 0, [0.7 * s, s, 0.7 * s]);
-      }
-      for (let i = 0; i < cols; i++) if (i !== middle) piece(d(`banner_patternA_${banner}`), -W / 2 + (2 + 4 * i) * s, D / 2, 0.3 * s, 0, s, { collision: 'none' });
-    }
-    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
-      piece(d(roof), -W / 2 + (2 + 4 * i) * s, -D / 2 + (2 + 4 * j) * s, top, 0, [1.02 * s, s, 1.02 * s], { collision: open ? 'none' : 'auto', walkable: false });
-    }
-    piece('city/flag_red', 0, 0, top, 0, 6 * s, { collision: 'none' });
-    // Las casillas bajo el edificio quedan ocupadas.
-    const c = Math.cos(yaw), sn = Math.sin(yaw);
-    for (const cell of cells) {
-      const dx = cell.x - cx, dz = cell.z - cz, lx = dx * c - dz * sn, lz = dx * sn + dz * c;
-      if (Math.abs(lx) < W / 2 + 3 && Math.abs(lz) < D / 2 + 3) used.add(cell.k);
-    }
-    return { y0, piece, W, D };
-  };
 
   // --- Muralla hexagonal y puertas -------------------------------------------------------------
   const WALL_SCALE = 3, GATE_SCALE = 4;
@@ -438,8 +436,8 @@ export function buildBrumaluz(source, maps) {
     const outward = facing(...polar(1, 60 * k));
     if (k % 3 === 0) add(k % 2 ? 'city/well' : 'medieval-builder/objects/well', monument.x, monument.z, k % 2 ? 4 : 3, outward, 'atrezo', { y, name: `${PLAZAS[k]} · pozo` });
     else if (k % 3 === 1) {
-      add('dungeon/objects/pillar_decorated', monument.x, monument.z, [0.8, 1.1, 0.8], outward, 'atrezo', { y, name: `${PLAZAS[k]} · columna` });
-      add('city/flag_yellow', monument.x, monument.z, 6, outward, 'atrezo', { y: rounded(y + 4.4), collision: 'none' });
+      add('city/well', monument.x, monument.z, 4, outward, 'atrezo', { y, name: `${PLAZAS[k]} · pozo` });
+      add('city/flag_yellow', monument.x + 2.6, monument.z, 5, outward, 'atrezo', { y, collision: 'none' });
     } else add('city/stage_A', monument.x, monument.z, 4.4, towardCenter(monument.x, monument.z), 'atrezo', { y, name: `${PLAZAS[k]} · tablado` });
     for (let q = 0; q < 3; q++) {
       const [bx, bz] = polar(3.2, 60 * k + 120 * q + 60);
@@ -459,30 +457,6 @@ export function buildBrumaluz(source, maps) {
   }
 
   // --- Manzanas especiales -------------------------------------------------------------------
-  const normalOf = sector => polar(1, 30 + 60 * sector);
-  const halls = [
-    { id: 'telares', name: 'Casa de los Telares', cols: 4, rows: 3, floors: 1, banner: 'blue' },
-    { id: 'canteros', name: 'Casa de los Canteros', cols: 3, rows: 3, floors: 2, banner: 'white' },
-    { id: 'lonja', name: 'Lonja de los Mercaderes', cols: 5, rows: 3, open: true, roof: 'floor_wood_large' },
-    { id: 'archivo', name: 'Archivo de la Capital', cols: 4, rows: 3, floors: 2, banner: 'yellow' },
-  ];
-  for (const spec of halls) {
-    const block = SPECIAL.find(item => item.id === spec.id), list = specialCells(spec.id);
-    const [nx, nz] = normalOf(block.sector), [mx, mz] = centroid(list);
-    // Pegado al anillo interior y mirando a él.
-    const perp = mx * nx + mz * nz, target = RINGS.inner * 8 * COS30 + 4 + spec.rows * 2 + 1;
-    const cx = mx + nx * (target - perp), cz = mz + nz * (target - perp);
-    const built = hall({ ...spec, cx, cz, yaw: facing(-nx, -nz) });
-    marker(`edificio_${spec.id}`, 'note', spec.name, cx, cz, { radius: Math.max(built.W, built.D) / 2, text: 'Edificio compuesto con piezas modulares; se puede retocar pieza a pieza en el editor.' });
-    const { piece } = built;
-    if (spec.id === 'lonja') {
-      for (const lx of [-6, 0, 6]) for (const lz of [-3, 3]) piece('dungeon/objects/table_long_tablecloth_decorated_A', lx, lz, 0, Math.PI / 2, 0.8);
-      for (const [lx, lz] of [[-9, 0], [9, 0], [-3, 0], [3, 0]]) piece(`restaurant/objects/crate_${pick(['carrots', 'tomatoes', 'potatoes', 'cheese', 'onions'])}`, lx, lz, 0, random() * 6, 0.55);
-    } else {
-      const props = { telares: ['resources/objects/Textiles_Stack_Large_Colored', 1.3], canteros: ['resources/objects/Stone_Bricks_Stack_Large', 1.4], archivo: ['forest/objects/Bush_2_A_Color1', 2.2] }[spec.id];
-      for (const lx of [-built.W / 2 - 1.6, built.W / 2 + 1.6]) piece(props[0], lx, built.D / 2 - 1.5, 0, random() * 0.4, props[1]);
-    }
-  }
   // Colinas: las casillas de la manzana se levantan con el terreno.
   const hill = id => hills.find(item => item.id === id);
   {
@@ -493,7 +467,8 @@ export function buildBrumaluz(source, maps) {
     for (let n = 0; n < 10; n++) {
       if (n === 2) continue;
       const a = n / 10 * Math.PI * 2;
-      add('city/fence_wood_straight', x + Math.cos(a) * 5.6, z + Math.sin(a) * 5.6, 3.2, -a, 'verde');
+      const ring = reachOf('city/windmill', 4.6) + 1;
+      add('city/fence_wood_straight', x + Math.cos(a) * ring, z + Math.sin(a) * ring, 3.2, -a, 'verde');
     }
     for (const [dx, dz, asset] of [[2.2, 2.8, 'city/sack'], [2.8, 2.2, 'city/sack'], [-2.8, 2.2, 'city/wheelbarrow']]) add(asset, x + dx, z + dz, 4, random() * 6, 'atrezo');
     marker('colina_molino', 'note', 'Colina del Molino', x, z, { radius: 10, text: 'Mirador sobre las Huertas del Alba.' });
@@ -539,7 +514,7 @@ export function buildBrumaluz(source, maps) {
       const facingRoad = roadNeighbor(cell);
       if (n < buildings.length && facingRoad !== null) {
         const [asset, scale, name] = buildings[n];
-        add(asset, cell.x, cell.z, scale, facing(...polar(1, dirAngle(facingRoad))), 'civico', { y: pad(cell.x, cell.z, 3.6), name });
+        add(asset, cell.x, cell.z, scale, facing(...polar(1, dirAngle(facingRoad))), 'civico', { y: pad(cell.x, cell.z, Math.min(reachOf(asset, scale) + 0.4, 4.6)), name });
       } else {
         for (let j = 0; j < 2; j++) {
           const [asset, scale] = pick(props);
@@ -548,7 +523,8 @@ export function buildBrumaluz(source, maps) {
       }
     });
   };
-  const ROAD_RANK = { main: 4, plaza: 3, ring: 3, street: 2 };
+  // Las casillas de plaza tienen pozo y puestos: una casa solo mira a ellas si no tiene otra calle al lado.
+  const ROAD_RANK = { main: 4, ring: 3, street: 2, plaza: 1 };
   /** Dirección (0–5) de la casilla de calle vecina más importante, o null. */
   function roadNeighbor(cell) {
     let best = null, rank = 0;
@@ -561,6 +537,27 @@ export function buildBrumaluz(source, maps) {
   yard('aserradero',
     [['medieval-builder/objects/lumbermill', 3.4, 'Aserradero del Olmo'], ['city/lumbermill', 3.6, 'Taller de carpintería']],
     [['resources/objects/Wood_Planks_Stack_Large', 1.4], ['city/resource_lumber', 3.4], ['resources/objects/Wood_Log_A', 2.2]]);
+  // Casas gremiales: un edificio del pack en la casilla de la manzana más cercana a su centro que dé al anillo interior.
+  const guilds = [
+    { id: 'telares', name: 'Casa de los Telares', asset: 'city/market', scale: 3.6, prop: ['resources/objects/Textiles_Stack_Large_Colored', 1.3] },
+    { id: 'canteros', name: 'Casa de los Canteros', asset: 'city/blacksmith', scale: 4, prop: ['resources/objects/Stone_Bricks_Stack_Large', 1.4] },
+    { id: 'lonja', name: 'Lonja de los Mercaderes', asset: 'medieval-builder/objects/market', scale: 3.4, prop: ['restaurant/objects/crate_carrots', 0.6] },
+    { id: 'archivo', name: 'Archivo de la Capital', asset: 'city/tower_B', scale: 4, prop: ['forest/objects/Bush_2_A_Color1', 2.2] },
+  ];
+  for (const guild of guilds) {
+    const block = specialCells(guild.id), [mx, mz] = centroid(block);
+    const cell = block.filter(item => item.d === RINGS.inner + 1 && !used.has(item.k) && roadNeighbor(item) !== null)
+      .sort((a, b) => Math.hypot(a.x - mx, a.z - mz) - Math.hypot(b.x - mx, b.z - mz))[0];
+    used.add(cell.k);
+    const dir = roadNeighbor(cell);
+    const reach = reachOf(guild.asset, guild.scale);
+    add(guild.asset, cell.x, cell.z, guild.scale, facing(...polar(1, dirAngle(dir))), 'civico', { y: pad(cell.x, cell.z, Math.min(reach + 0.4, 4.6)), name: guild.name });
+    for (const side of [-60, 60]) {
+      const [ox, oz] = polar(Math.min(reach + 0.7, 4.3), dirAngle(dir) + 180 + side);
+      add(guild.prop[0], cell.x + ox, cell.z + oz, guild.prop[1], random() * 6, 'atrezo');
+    }
+    marker(`edificio_${guild.id}`, 'note', guild.name, cell.x, cell.z, { radius: 4 });
+  }
   yard('cuartel',
     [['city/barracks', 3.8, 'Cuartel de la Guardia'], ['city/archeryrange', 3.6, 'Campo de tiro'], ['medieval-builder/objects/barracks', 3.2, 'Cuartel · dormitorios']],
     [['city/target', 4], ['city/weaponrack', 4], ['city/tent', 4], ['city/barrel', 4]]);
@@ -583,7 +580,7 @@ export function buildBrumaluz(source, maps) {
     if (shore) {
       used.add(shore.k);
       const [lx, lz] = centroid(west);
-      add('city/watermill', shore.x, shore.z, 3.4, facing(lx - shore.x, lz - shore.z), 'civico', { lift: 0.05, name: 'Molino de la laguna' });
+      add('city/watermill', shore.x, shore.z, 3.4, facing(lx - shore.x, lz - shore.z), 'civico', { y: pad(shore.x, shore.z, 3.4), name: 'Molino de la laguna' });
     }
   }
 
@@ -595,11 +592,9 @@ export function buildBrumaluz(source, maps) {
     tavern: { asset: 'city/tavern', scale: 4 },
     smith: { asset: 'city/blacksmith', scale: 4 },
     shop: { asset: 'city/market', scale: 3.2 },
-    tower: { asset: 'stone' },
   };
   const choose = kind => {
     const roll = random();
-    if (kind !== 'street' && roll < (kind === 'main' ? 0.1 : 0.05)) return HOUSES.tower;
     if (kind === 'main' && roll < 0.24) return pick([HOUSES.tavern, HOUSES.shop, HOUSES.smith]);
     if (roll < 0.06) return pick([HOUSES.shop, HOUSES.smith]);
     if (roll < 0.42) return HOUSES.home_A;
@@ -620,14 +615,11 @@ export function buildBrumaluz(source, maps) {
     const kind = roadKind(cellKey(...step([cell.q, cell.r], dir))), type = choose(kind);
     const district = districtOf(cell), name = `${district} · casa ${(houseCount[district] = (houseCount[district] ?? 0) + 1)}`;
     const yaw = facing(...polar(1, dirAngle(dir)));
-    if (type.asset === 'stone') {
-      hall({ cx: cell.x, cz: cell.z, yaw, cols: 2, rows: 2, floors: 2, s: 0.7, name: name.replace('casa', 'casa torre'), banner: pick(['red', 'blue', 'green', 'yellow']), layer: 'casas' });
-      continue;
-    }
-    add(type.asset, cell.x, cell.z, type.scale, yaw, 'casas', { y: pad(cell.x, cell.z, 3.2), name });
-    // Un detalle en una esquina trasera de la casilla.
-    if (random() < 0.75) {
-      const [prop, scale] = pick(PROPS), [ox, oz] = polar(3, dirAngle(dir) + 180 + (random() < 0.5 ? -50 : 50));
+    const reach = reachOf(type.asset, type.scale);
+    add(type.asset, cell.x, cell.z, type.scale, yaw, 'casas', { y: pad(cell.x, cell.z, Math.min(reach + 0.4, 4.6)), name });
+    // Un detalle junto a la casa, por detrás o a un lado, si cabe en la casilla sin tocarla.
+    if (random() < 0.75 && reach + 0.7 <= 4.3) {
+      const [prop, scale] = pick(PROPS), [ox, oz] = polar(reach + 0.7, dirAngle(dir) + pick([180, 120, 240]));
       add(prop, cell.x + ox, cell.z + oz, scale, random() * 6, 'atrezo');
     }
   }
@@ -674,6 +666,97 @@ export function buildBrumaluz(source, maps) {
     add('builtin/lamppost', x + ox, z + oz, 1, 0, 'atrezo', { name: 'Farol de la calle mayor' });
   }
 
+  if (boxes) tidy();
+  /**
+   * Repaso final con las medidas reales de cada pieza: el atrezo y la vegetación que pisan algo o invaden una calle
+   * se retiran; un edificio que pisa a otro se reduce un poco (o se retira si no cabe). Las piezas de la muralla
+   * se tocan entre sí a propósito, igual que los tramos de una valla.
+   */
+  function tidy() {
+    const plazaCells = new Set([...streets].filter(([, kind]) => kind === 'plaza').map(([k]) => k));
+    // Calles nuevas y las del casco antiguo.
+    const isRoad = k => !!roadKind(k) || (islandTiles.get(k)?.asset.startsWith('city/hex_road') && !retile.has(k));
+    const footprint = object => {
+      const box = boxes.get(object.asset);
+      if (!box || box.isEmpty() || object.collision === 'none' || object.asset.startsWith('city/hex_')) return null;
+      const [sx, , sz] = object.scale, c = Math.cos(object.rotation[1]), s = Math.sin(object.rotation[1]);
+      const hx = (box.max.x - box.min.x) / 2 * sx, hz = (box.max.z - box.min.z) / 2 * sz;
+      if (Math.max(hx, hz) < 0.18) return null; // como el juego: piezas diminutas sin colisión
+      const cx = (box.min.x + box.max.x) / 2 * sx, cz = (box.min.z + box.max.z) / 2 * sz;
+      return { x: object.position[0] + cx * c + cz * s, z: object.position[2] - cx * s + cz * c, hx, hz, cos: c, sin: s };
+    };
+    const rank = object => {
+      if (object.pseudo) return 3.5;
+      if (object.layer === PREFIX + 'muralla') return 4;
+      // Del casco antiguo: sus edificios (agrandados) pueden reducirse si se pisan; pozos, muros y demás quedan fijos.
+      if (!object.id.startsWith(PREFIX)) return object.layer === 'edificios' ? (BUILDING.test(object.asset) && !/well/.test(object.asset) ? 3 : 4) : /^city\/(trees|tree_|hills|mountain)/.test(object.asset) ? 1 : 0;
+      if (BUILDING.test(object.asset)) return 3;
+      return object.layer === PREFIX + 'verde' ? 1 : 0;
+    };
+    const intended = (a, b) => a.owner === b || b.owner === a || (a.layer === b.layer && a.layer === PREFIX + 'muralla')
+      || (a.asset === b.asset && a.asset === 'city/fence_wood_straight');
+    const removed = new Set();
+    const shrinkOrRemove = object => {
+      if (rank(object) === 3 && object.scale[0] > 1) object.scale = object.scale.map(value => rounded(value * 0.93));
+      else removed.add(object);
+    };
+    for (let pass = 0; pass < 8; pass++) {
+      const live = map.objects.filter(object => !removed.has(object)).map(object => ({ object, box: footprint(object) })).filter(item => item.box);
+      // Delante de cada escalera (casas de dos plantas, taberna) tiene que quedar sitio para subir.
+      for (const { object } of [...live]) {
+        const stairs = STAIR_FRONT[object.asset];
+        if (!stairs) continue;
+        const s = object.scale[0], c = Math.cos(object.rotation[1]), sn = Math.sin(object.rotation[1]);
+        const lx = stairs.x * s, lz = stairs.foot * s + 0.8;
+        live.push({ object: { id: object.id + '#escalera', pseudo: true, owner: object, layer: '', asset: '', scale: [1] },
+          box: { x: object.position[0] + lx * c + lz * sn, z: object.position[2] - lx * sn + lz * c, hx: stairs.width * s / 2, hz: 0.8, cos: c, sin: sn } });
+      }
+      const grid = new Map();
+      for (const item of live) {
+        const reach = Math.hypot(item.box.hx, item.box.hz);
+        for (let gx = Math.floor((item.box.x - reach) / 8); gx <= Math.floor((item.box.x + reach) / 8); gx++)
+          for (let gz = Math.floor((item.box.z - reach) / 8); gz <= Math.floor((item.box.z + reach) / 8); gz++) {
+            const key = gx + ',' + gz;
+            if (!grid.has(key)) grid.set(key, []);
+            grid.get(key).push(item);
+          }
+      }
+      let changed = false;
+      const seen = new Set();
+      for (const list of grid.values()) for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+        const a = list[i], b = list[j], key = a.object.id < b.object.id ? a.object.id + '|' + b.object.id : b.object.id + '|' + a.object.id;
+        if (seen.has(key) || removed.has(a.object) || removed.has(b.object) || intended(a.object, b.object)) continue;
+        seen.add(key);
+        if (boxGap(a.box, b.box) > -0.1) continue;
+        const low = rank(a.object) <= rank(b.object) ? a.object : b.object;
+        if (rank(low) >= 4) continue; // dos piezas fijas (edificios del casco antiguo, muralla): no se tocan
+        shrinkOrRemove(low); changed = true;
+      }
+      // Calles despejadas (salvo las casillas de plaza, que tienen su pozo y sus puestos): el eje de cada calle,
+      // con 1,2 m de margen a cada lado, no puede tener nada encima. En el casco antiguo solo se retira atrezo.
+      for (const item of live) {
+        const { object, box } = item;
+        if (object.pseudo || removed.has(object) || rank(object) >= 4 || (!object.id.startsWith(PREFIX) && rank(object) >= 3)) continue;
+        const [q0, r0] = worldToHex(box.x, box.z);
+        let blocked = false;
+        for (let d = -1; d < 6 && !blocked; d++) {
+          const q = q0 + (d < 0 ? 0 : DIRS[d][0]), r = r0 + (d < 0 ? 0 : DIRS[d][1]), k = cellKey(q, r);
+          if (!isRoad(k) || plazaCells.has(k)) continue;
+          const [tx, tz] = hexToWorld(q, r);
+          const points = [[tx, tz]];
+          for (const [dq, dr] of DIRS) if (isRoad(cellKey(q + dq, r + dr))) {
+            const [ex, ez] = hexToWorld(dq, dr);
+            for (const t of [0.2, 0.4]) points.push([tx + ex * t, tz + ez * t]);
+          }
+          blocked = points.some(([px, pz]) => boxGap(box, { x: px, z: pz, hx: 1.2, hz: 1.2, cos: 1, sin: 0 }) < 0);
+        }
+        if (blocked) { shrinkOrRemove(object); changed = true; }
+      }
+      if (!changed) break;
+    }
+    map.objects = map.objects.filter(object => !removed.has(object));
+  }
+
   // --- Terreno definitivo: explanadas, agua y pintura bajo las casillas ------------------------
   for (const item of pads) {
     const reach = item.radius + item.falloff;
@@ -689,10 +772,14 @@ export function buildBrumaluz(source, maps) {
     const i = index(x, z);
     if (distance[i] === 0) continue;
     const k = cellKey(...worldToHex(x, z));
-    if (water.has(k)) terrain.heights[i] = Math.min(terrain.heights[i], waterLevel - 1.4);
+    if (water.has(k)) {
+      // Fondo de la laguna: a ras de la lámina en la orilla y hasta 1,8 m de hondo en el centro (se ve a través del agua).
+      const [wx, wz] = hexToWorld(...worldToHex(x, z)), core = 1 - smooth((Math.hypot(x - wx, z - wz) - 1.5) / 2.6);
+      terrain.heights[i] = Math.min(terrain.heights[i], lagoonSurface - 0.15 - 1.65 * core);
+    }
     // La pintura apenas asoma bajo las casillas; la hierba suelta sí se ve sobre las de hierba.
     const road = !!roadKind(k);
-    terrain.paint[i] = mat(road ? 'cobble' : 'grass');
+    terrain.paint[i] = mat(road ? 'cobble' : water.has(k) ? (terrain.heights[i] < lagoonSurface - 0.9 ? 'mud' : 'sand') : 'grass');
     terrain.grass[i] = road || water.has(k) || used.has(k) ? 0 : hexRadius(x, z) > WALL_RADIUS + 5 ? 70 : 40;
   }
   map.terrain = maps.encodeTerrain(terrain);
@@ -720,6 +807,8 @@ export function buildBrumaluz(source, maps) {
   }
   for (const item of map.markers) if (item.id.startsWith(PREFIX)) item.position[1] = rounded(height(item.position[0], item.position[2]));
   map.description = `Brumaluz, capital de Pompelín · ${HALF * 2} × ${HALF * 2} m. El casco antiguo, ya sin foso ni muralla propia, es el corazón de una ciudad hexagonal de casillas con seis barrios, calles mayores, plazas, colinas, lagunas y casas gremiales; las puertas de su muralla llevan al continente.`;
+  // Sin foso ni mar: la lámina general de agua (la del foso antiguo) quedaría flotando sobre las lagunas rebajadas.
+  map.settings.water.enabled = false;
   delete map.preview;
   return maps.validateMap(map);
 }
@@ -749,7 +838,7 @@ async function main() {
   try {
     const maps = await server.ssrLoadModule('/src/data/maps.ts');
     const before = await api(port, 'brumaluz');
-    const built = buildBrumaluz(before.value, maps);
+    const built = buildBrumaluz(before.value, maps, await assetBoxes());
     if (out) await writeFile(out, JSON.stringify(built));
     if (apply) {
       assert.ok(before.etag, 'Sin revisión no se guarda (protección frente a cambios simultáneos).');
@@ -760,7 +849,7 @@ async function main() {
     console.log(JSON.stringify({
       objects: built.objects.length, tiles: built.objects.filter(object => object.asset.startsWith('city/hex_')).length,
       houses: built.objects.filter(object => / · casa \d/.test(object.name ?? '')).length,
-      towerHouses: new Set(built.objects.filter(object => / · casa torre \d/.test(object.name ?? '')).map(object => object.name)).size,
+      wallPieces: built.objects.filter(object => object.id.startsWith(PREFIX) && WALL_PIECE.test(object.asset)).length,
     }, null, 2));
   } finally { await server.close(); }
 }

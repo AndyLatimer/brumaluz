@@ -7,7 +7,7 @@ export const NPC_CLOTHING_SLOTS = {
   cape: 'Capa', back: 'Complemento de espalda',
 } as const;
 export type NpcClothingSlot = keyof typeof NPC_CLOTHING_SLOTS;
-export type ClothingSource = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian' | 'Ranger' | 'Rogue_Hooded' | 'helpers';
+export type ClothingSource = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian' | 'Ranger' | 'Rogue_Hooded' | 'helpers' | 'medieval';
 export interface ClothingPiece {
   id: string;
   label: string;
@@ -43,6 +43,13 @@ export const NPC_CLOTHING: readonly ClothingPiece[] = [
   { id: 'helpers.overlay', label: 'Peto de Ayudantes', slot: 'overlay', source: 'helpers', nodes: ['helpers-overalls'] },
   { id: 'helpers.footwear', label: 'Botas de Ayudantes', slot: 'footwear', source: 'helpers', nodes: ['helpers-boot-l', 'helpers-boot-r'] },
   { id: 'helpers.head', label: 'Gorra de Ayudantes', slot: 'head', source: 'helpers', nodes: ['helpers-soft-cap'], hairFit: 'cap' },
+  { id: 'medieval.torso', label: 'Túnica medieval', slot: 'torso', source: 'medieval', nodes: ['medieval-tunic'] },
+  { id: 'medieval.leftArm', label: 'Manga medieval (izq)', slot: 'leftArm', source: 'medieval', nodes: ['medieval-sleeve-l', 'anatomy-hand-left'] },
+  { id: 'medieval.rightArm', label: 'Manga medieval (der)', slot: 'rightArm', source: 'medieval', nodes: ['medieval-sleeve-r', 'anatomy-hand-right'] },
+  { id: 'medieval.leftLeg', label: 'Calzas medievales (izq)', slot: 'leftLeg', source: 'medieval', nodes: ['medieval-trouser-l'] },
+  { id: 'medieval.rightLeg', label: 'Calzas medievales (der)', slot: 'rightLeg', source: 'medieval', nodes: ['medieval-trouser-r'] },
+  { id: 'medieval.footwear', label: 'Botines medievales', slot: 'footwear', source: 'medieval', nodes: ['medieval-boot-l', 'medieval-boot-r'] },
+  { id: 'medieval.head', label: 'Gorro medieval con pluma', slot: 'head', source: 'medieval', nodes: ['medieval-hat'], hairFit: 'cap' },
 ];
 export function clothingPiece(id: string) {
   const piece = NPC_CLOTHING.find(piece => piece.id === id);

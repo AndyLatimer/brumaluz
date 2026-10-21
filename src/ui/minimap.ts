@@ -4,6 +4,7 @@
 import { MAP_EXTENT } from '../world/mapCapture';
 import { getLanguage, t } from './i18n';
 import { drawMapIcon, type MapPoint } from './mapIcons';
+import { formatWorldTime, worldHour } from '../data/worldClock';
 
 export interface MinimapMarker extends MapPoint {
   party?: boolean;
@@ -30,7 +31,7 @@ let mapBounds = { x: 0, z: 0, extent: MAP_EXTENT };
 let zoom = 1;
 let off = false;
 let lastZone = '';
-let lastCoords = '';
+let lastTime = '';
 let playerCount: number | null = null;
 let drawn: { marker: MinimapMarker; sx: number; sy: number; inside: boolean }[] = [];
 let mouse: { x: number; y: number } | null = null;
@@ -121,8 +122,25 @@ export function initMinimap(h: MinimapHooks) {
 }
 
 /** Pinta un fotograma. Se llama en cada frame mientras se juega. */
+/** Placa bajo el minimapa: lugar y reloj (se ve también con el minimapa oculto). */
+function updatePlate(hooks: MinimapHooks) {
+  const zone = t(hooks.zone());
+  if (zone !== lastZone) { root().querySelector('.minimap-zone')!.textContent = zone; lastZone = zone; }
+  // Reloj con la hora del mundo (la del servidor).
+  const hour = worldHour(), time = formatWorldTime(hour);
+  if (time !== lastTime) {
+    const clock = root().querySelector<HTMLElement>('.minimap-clock')!;
+    clock.querySelector('time')!.textContent = time;
+    clock.classList.toggle('night', hour < 6 || hour >= 20.5);
+    clock.setAttribute('aria-label', `${t('Hora del mundo')}: ${time}`);
+    lastTime = time;
+  }
+}
+
 export function updateMinimap() {
-  if (!hooks || off) return;
+  if (!hooks) return;
+  updatePlate(hooks);
+  if (off) return;
   const el = canvas();
   const css = el.clientWidth;
   if (!css) return;
@@ -228,11 +246,6 @@ export function updateMinimap() {
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, size, size);
   ctx.restore();
-
-  const zone = t(hooks.zone());
-  const coords = `${Math.round(player.x)}, ${Math.round(-player.z)}`; // este, norte (el norte es -Z)
-  if (zone !== lastZone) { root().querySelector('.minimap-zone')!.textContent = zone; lastZone = zone; }
-  if (coords !== lastCoords) { root().querySelector('.minimap-coords')!.textContent = coords; lastCoords = coords; }
 
   // Nombre del NPC bajo el ratón.
   const tip = root().querySelector<HTMLElement>('.minimap-tip')!;

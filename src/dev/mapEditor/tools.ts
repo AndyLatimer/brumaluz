@@ -121,11 +121,11 @@ export function renderToolOptions() {
 export function renderToolbar() {
   const box = $('tools');
   box.replaceChildren();
-  const order: ToolId[] = ['select', 'place', 'scatter', 'erase', 'sculpt', 'paint', 'grass', 'collider', 'marker'];
+  const order: ToolId[] = ['select', 'place', 'scatter', 'erase', 'sculpt', 'paint', 'water', 'grass', 'collider', 'marker'];
   order.forEach((id, i) => {
     const tool = tools.get(id);
     if (!tool) return;
-    if (i === 4 || i === 7) box.append(el('hr'));
+    if (i === 4 || i === 8) box.append(el('hr'));
     box.append(el('button', { type: 'button', 'data-tool': id, title: `${tool.label} (${tool.shortcut.toUpperCase()})`, 'aria-pressed': String(state.tool === id), onclick: () => setTool(id) }, tool.icon, el('small', {}, tool.shortcut.toUpperCase())));
   });
 }

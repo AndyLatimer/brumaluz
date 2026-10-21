@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WaterLayer } from '../../world/water';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {
   decodeTerrain, MAP_LIMITS, newMap,
@@ -67,7 +68,7 @@ export const npcModels: NpcModelSource = { model: async () => null };
 export const markerLayer = new MarkerLayer(labels, npcId => npcModels.model(npcId));
 scene.add(environment.root, grass.root, objectLayer.root, colliderLayer.root, markerLayer.root, collisionOverlay.root);
 
-export type ToolId = 'select' | 'place' | 'scatter' | 'erase' | 'sculpt' | 'paint' | 'grass' | 'collider' | 'marker';
+export type ToolId = 'select' | 'place' | 'scatter' | 'erase' | 'sculpt' | 'paint' | 'water' | 'grass' | 'collider' | 'marker';
 export type EntityKind = 'o' | 'c' | 'm';
 export type Entity =
   | { kind: 'o'; key: string; data: MapObject }
@@ -179,6 +180,7 @@ export function setTerrain(data: TerrainData) {
     && data.cell === state.field.cell && data.origin[0] === state.field.minX && data.origin[1] === state.field.minZ;
   if (sameSize && state.surface) {
     state.field.data.heights.set(data.heights); state.field.data.paint.set(data.paint); state.field.data.grass.set(data.grass);
+    state.field.data.water = data.water?.slice();
     state.surface.update();
   } else {
     if (state.surface) { state.surface.mesh.removeFromParent(); state.surface.dispose(); }
@@ -189,9 +191,14 @@ export function setTerrain(data: TerrainData) {
   }
   measureTerrain();
   environment.apply(state.doc.settings, state.field);
+  if (!waterLayer) { waterLayer = new WaterLayer(state.doc, state.field, state.surface!, { tiles: false }); scene.add(waterLayer.root); }
+  else waterLayer.bind(state.field, state.surface!);
   rebuildGrass();
 }
 export function rebuildGrass() { grass.rebuild(state.field, environment.waterLevel); }
+/** Agua pintada con la herramienta «Agua» (la misma que se ve en el juego). Las casillas de agua se ven como en el pack. */
+export let waterLayer: WaterLayer | null = null;
+export function rebuildWater() { waterLayer?.rebuildPainted(); }
 const tmpBox = new THREE.Box3(), tmpPoint = new THREE.Vector3();
 /** Intersección del rayo con el campo de alturas (marcha + bisección). */
 export function rayTerrain(ray: THREE.Ray, out = new THREE.Vector3()): THREE.Vector3 | null {

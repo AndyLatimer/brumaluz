@@ -1218,10 +1218,11 @@ test('graphics controls stay clear of account information and map population fit
       const fits = await player.page.locator('.minimap-plate').evaluate((plate) => {
         const badge = plate.querySelector('.minimap-players').getBoundingClientRect();
         const bounds = plate.getBoundingClientRect();
-        const coords = plate.querySelector('.minimap-coords').getBoundingClientRect();
+        const clock = plate.querySelector('.minimap-clock').getBoundingClientRect();
         const zone = plate.querySelector('.minimap-zone').getBoundingClientRect();
         return plate.scrollWidth <= plate.clientWidth && badge.left >= bounds.left && badge.right <= bounds.right && bounds.right <= innerWidth
-          && coords.top >= Math.max(zone.bottom,badge.bottom) && bounds.left>=0
+          && clock.top >= Math.max(zone.bottom,badge.bottom) && bounds.left>=0
+          && /^\d\d:\d\d$/.test(plate.querySelector('.minimap-time').textContent)
           && plate.querySelector('.minimap-location-icon') !== null && bounds.width <= 140 && bounds.height <= 42;
       });
       assert.equal(fits, true);

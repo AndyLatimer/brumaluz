@@ -19,7 +19,9 @@ insert into public.server_config (key, value) values
   ('max_speed', '9'::jsonb),                    -- m/s tolerados al guardar la posición (correr real: 6.2)
   ('combat_enabled', 'false'::jsonb),           -- combate personal todavía no activado en el mundo público
   ('combat_site', '{"x": 0, "z": -62.35}'::jsonb),
-  ('staff_titles', '{"rey_de_pompelin": ["manuelperezardanuy@gmail.com"]}'::jsonb) -- títulos reservados: título -> emails autorizados
+  ('staff_titles', '{"rey_de_pompelin": ["manuelperezardanuy@gmail.com"]}'::jsonb), -- títulos reservados: título -> emails autorizados
+  -- Hora del mundo: son las `start_hour` en el instante `epoch` (1 ene 2026, UTC) y pasa una hora cada `seconds_per_hour` s reales.
+  ('world_clock', '{"epoch": 1767225600, "start_hour": 8, "seconds_per_hour": 600}'::jsonb)
 on conflict (key) do nothing;
 
 update public.server_config
@@ -30,6 +32,25 @@ set value = jsonb_set(value, '{reina_de_pompelin}', (
   ) as emails(email)
 ))
 where key = 'staff_titles';
+
+-- ---------- Hora del mundo ----------
+-- La misma para todos: sale del reloj del servidor. src/data/worldClock.ts repite la fórmula por si no hay conexión.
+create or replace function public.world_clock()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'hour', mod(mod((cfg ->> 'start_hour')::numeric
+      + (extract(epoch from now()) - (cfg ->> 'epoch')::numeric) / (cfg ->> 'seconds_per_hour')::numeric, 24) + 24, 24),
+    'secondsPerHour', (cfg ->> 'seconds_per_hour')::numeric)
+  from (select coalesce((select value from public.server_config where key = 'world_clock'),
+    '{"epoch": 1767225600, "start_hour": 8, "seconds_per_hour": 600}'::jsonb) as cfg) as config;
+$$;
+revoke all on function public.world_clock() from public;
+grant execute on function public.world_clock() to anon, authenticated;
 
 -- ---------- Mapas de Pompelín ----------
 -- Cada mapa publicado desde el editor es un lugar (`data.location`). supabase/world.sql, que genera el
@@ -1419,7 +1440,8 @@ begin
   return jsonb_build_object('position', pos, 'status', 'ok', 'players', public.game_world_snapshot(uid),
     'encounter',c.data->'combatEncounter',
     'vitals',public.game_public_vitals(c.data),
-    'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'));
+    'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'),
+    'clock',public.world_clock());
 end;
 $$;
 
@@ -1505,7 +1527,8 @@ begin
   return jsonb_build_object('status', status, 'position', w.position, 'players', public.game_world_snapshot(uid),
     'encounter',c.data->'combatEncounter',
     'vitals',public.game_public_vitals(c.data),
-    'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'));
+    'food',jsonb_build_object('buff',c.data->'foodBuff','revision',c.data->'foodRevision','at',c.data->'food_at'),
+    'clock',public.world_clock());
 end;
 $$;
 
@@ -1583,7 +1606,8 @@ begin
     'players', public.game_world_snapshot(uid),
     'encounter', c.data -> 'combatEncounter',
     'vitals', public.game_public_vitals(c.data),
-    'food', jsonb_build_object('buff', c.data -> 'foodBuff', 'revision', c.data -> 'foodRevision', 'at', c.data -> 'food_at'));
+    'food', jsonb_build_object('buff', c.data -> 'foodBuff', 'revision', c.data -> 'foodRevision', 'at', c.data -> 'food_at'),
+    'clock', public.world_clock());
 end;
 $$;
 revoke all on function public.world_travel(uuid, uuid, text) from public, anon;

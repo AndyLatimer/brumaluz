@@ -1,23 +1,24 @@
 import * as THREE from 'three';
-import { loadEXR } from './load';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import sunsetExr from '@pmndrs/assets/hdri/sunset.exr';
 
 // ---------------------------------------------------------------------------
-// Iluminación de escena y postprocesado: sol de atardecer con sombras suaves,
-// cielo/suelo, luz de contorno, reflejos de un HDRI real (Poly Haven, CC0),
-// oclusión ambiental en pantalla, resplandor y tono cinematográfico.
+// Iluminación de escena y postprocesado: sol con sombras suaves, cielo/suelo, luz de contorno,
+// oclusión ambiental en pantalla, resplandor y tono cinematográfico. El color, la fuerza y la dirección
+// de las luces (y los reflejos del cielo) los cambia el ciclo de día y noche (src/world/dayNight.ts).
 // ---------------------------------------------------------------------------
-
-export const SUN_DIR = new THREE.Vector3(-0.62, 0.7, 0.42).normalize();
 
 export interface Stage {
   composer: EffectComposer | null;
   sun: THREE.DirectionalLight;
+  /** Hacia dónde está el sol (o la luna): lo mueve el ciclo de día y noche. */
+  sunDirection: THREE.Vector3;
+  hemi: THREE.HemisphereLight;
+  rim: THREE.DirectionalLight;
+  fill: THREE.DirectionalLight;
   /** Centra el sol (y sus sombras) en un punto; `wide` para el modo exploración. */
   follow(p: THREE.Vector3, wide: boolean): void;
   resize(w: number, h: number): void;
@@ -33,9 +34,10 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
 
   scene.fog = new THREE.Fog('#e8b090', 45, 170);
 
-  // Sol cálido y bajo, con sombras suaves centradas en el personaje
+  // Sol con sombras suaves centradas en el personaje
+  const sunDirection = new THREE.Vector3(-0.62, 0.7, 0.42).normalize();
   const sun = new THREE.DirectionalLight('#ffd2a0', 3.2);
-  sun.position.copy(SUN_DIR).multiplyScalar(8);
+  sun.position.copy(sunDirection).multiplyScalar(8);
   sun.castShadow = !compatible;
   sun.shadow.mapSize.set(lowEnd ? 1024 : 2048, lowEnd ? 1024 : 2048);
   const sc = sun.shadow.camera;
@@ -46,7 +48,8 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   scene.add(sun, sun.target);
 
   // Luz de cielo y rebote del suelo
-  scene.add(new THREE.HemisphereLight('#b8c4ff', '#8a5a40', 0.35));
+  const hemi = new THREE.HemisphereLight('#b8c4ff', '#8a5a40', 0.35);
+  scene.add(hemi);
   // Contraluz rosado para separar la silueta del fondo
   const rim = new THREE.DirectionalLight('#ffb8c8', 1.4);
   rim.position.set(1.5, 2.2, -3);
@@ -59,21 +62,8 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   fill.target = camera;
   scene.add(camera);
 
-  // Reflejos e iluminación ambiental de un HDRI de atardecer
+  // Reflejos e iluminación ambiental: los pone el ciclo de día y noche a partir del cielo.
   scene.environmentIntensity = 0.4;
-  if (!compatible) {
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    let hdrTexture: THREE.DataTexture | undefined;
-    try {
-      hdrTexture = loadEXR(sunsetExr);
-      scene.environment = pmrem.fromEquirectangular(hdrTexture).texture;
-    } catch (e) {
-      console.warn('Sin HDRI:', e);
-    } finally {
-      hdrTexture?.dispose();
-      pmrem.dispose();
-    }
-  }
 
   // Postprocesado
   const composer = compatible ? null : new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, {
@@ -83,17 +73,19 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   composer?.addPass(new RenderPass(scene, camera));
   let gtao: GTAOPass | null = null;
   if (composer && !lowEnd) {
+    // La oclusión ambiental usa la profundidad que ya deja la pasada principal (y reconstruye las normales a partir
+    // de ella) en vez de volver a dibujar toda la escena: esa segunda pasada costaba más que todo lo demás junto.
+    for (const target of [composer.renderTarget1, composer.renderTarget2]) target.depthTexture = new THREE.DepthTexture(1, 1);
+    // (Se crea sin texturas y se le pasan después: en three r170, setGBuffer falla si se le dan al construirlo.)
     gtao = new GTAOPass(scene, camera, 1, 1);
+    gtao.setGBuffer(composer.renderTarget1.depthTexture ?? undefined);
     gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.5, thickness: 1, scale: 1.2, samples: 12 });
     gtao.blendIntensity = 0.75;
-    // destellos, partículas y piezas transparentes no deben hacer sombra de contacto
-    const g = gtao as unknown as { overrideVisibility(): void; _visibilityCache: Map<THREE.Object3D, boolean> };
-    g.overrideVisibility = () => {
-      scene.traverse((o) => {
-        g._visibilityCache.set(o, o.visible);
-        const mat = (o as THREE.Mesh).material as THREE.Material | undefined;
-        if ((o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite || (mat && !Array.isArray(mat) && mat.transparent)) o.visible = false;
-      });
+    const pass = gtao, render = pass.render.bind(pass);
+    pass.render = (r, writeBuffer, readBuffer, deltaTime, maskActive) => {
+      // La escena se dibuja en el búfer de lectura del compositor, que alterna entre sus dos destinos.
+      if (readBuffer.depthTexture && pass.depthTexture !== readBuffer.depthTexture) pass.setGBuffer(readBuffer.depthTexture);
+      render(r, writeBuffer, readBuffer, deltaTime, maskActive);
     };
     composer.addPass(gtao);
   }
@@ -105,6 +97,10 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   return {
     composer,
     sun,
+    sunDirection,
+    hemi,
+    rim,
+    fill,
     follow(p, wide) {
       const e = wide ? 16 : 9;
       if (sc.right !== e) {
@@ -113,7 +109,7 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
         sc.updateProjectionMatrix();
       }
       sun.target.position.copy(p);
-      sun.position.copy(p).addScaledVector(SUN_DIR, 30);
+      sun.position.copy(p).addScaledVector(sunDirection, 30);
       // ajuste al texel para que las sombras no tiemblen al moverse
       const texel = (2 * e) / sun.shadow.mapSize.x;
       sun.target.position.x = Math.round(sun.target.position.x / texel) * texel;
@@ -131,6 +127,12 @@ export function setupStage(renderer: THREE.WebGLRenderer, scene: THREE.Scene, ca
   };
 }
 
+/**
+ * Profundidad propia para las sombras de las mallas con huesos: si compartieran la de three.js con las mallas fijas,
+ * tendría que cambiar de variante en cada objeto de la pasada de sombras.
+ */
+const SKINNED_DEPTH = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+
 /** Marca sombras: todo lo del personaje proyecta y recibe. */
 export function castShadows(root: THREE.Object3D) {
   root.traverse((o) => {
@@ -140,6 +142,7 @@ export function castShadows(root: THREE.Object3D) {
       if (mat.transparent) return;
       m.castShadow = true;
       m.receiveShadow = true;
+      if ((m as THREE.SkinnedMesh).isSkinnedMesh && !m.customDepthMaterial) m.customDepthMaterial = SKINNED_DEPTH;
     }
   });
 }

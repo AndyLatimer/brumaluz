@@ -26,7 +26,7 @@ export async function loadNpcClothing(clothing: NpcClothing) {
   }));
 }
 function sourceAsset(source: ClothingSource) {
-  if (source === 'helpers') return wardrobeSource();
+  if (source === 'helpers' || source === 'medieval') return wardrobeSource(source);
   if (source === 'Ranger' || source === 'Rogue_Hooded') {
     const asset = loaded.get(source);
     if (!asset) throw new Error(`Primero debe cargarse la ropa de ${source}.`);
@@ -34,7 +34,7 @@ function sourceAsset(source: ClothingSource) {
   }
   return characterKit(source);
 }
-const palette: Record<Exclude<ClothingSource, 'helpers'>, { primary: number[]; secondary: number[] }> = {
+const palette: Record<Exclude<ClothingSource, 'helpers' | 'medieval'>, { primary: number[]; secondary: number[] }> = {
   ...CLOTH_CELLS,
   Rogue_Hooded: { primary: CLOTH_CELLS.Rogue.primary, secondary: [5, 6, 13, 14, 35, 43] },
   Ranger: { primary: [16, 24], secondary: [5, 6, 13, 14, 17, 25, 35, 43] },
@@ -54,10 +54,10 @@ export function npcClothingRenderer(clothing: NpcClothing): NonNullable<BuildOpt
           result = source.clone();
           if (!(result instanceof THREE.MeshStandardMaterial)) throw new Error(`Material no compatible en ${piece.id}.`);
           const primary = CLOTH[selection.primary], secondary = CLOTH[selection.secondary];
-          if (piece.source === 'helpers') {
+          if (piece.source === 'helpers' || piece.source === 'medieval') {
             if (source.name === 'skin') result.color.set(skin);
-            else if (selection.primary >= 0 && ['linen', 'blue', 'red', 'leather'].includes(source.name)) result.color.set(primary);
-            else if (selection.secondary >= 0 && ['trim', 'redTrim', 'sole'].includes(source.name)) result.color.set(secondary);
+            else if (selection.primary >= 0 && ['linen', 'blue', 'red', 'leather', 'tunic', 'trousers'].includes(source.name)) result.color.set(primary);
+            else if (selection.secondary >= 0 && ['trim', 'redTrim', 'sole', 'tunicTrim', 'darkLeather', 'feather'].includes(source.name)) result.color.set(secondary);
           } else {
             if (!result.map) throw new Error(`Falta la paleta de ${piece.id}.`);
             const cells = palette[piece.source];
@@ -74,7 +74,7 @@ export function npcClothingRenderer(clothing: NpcClothing): NonNullable<BuildOpt
           const source = asset.scene.getObjectByName(name);
           if (!source) throw new Error(`Falta la malla ${name} de ${piece.id}.`);
           const copy = mountCharacterPiece(source, model, bones, material, own);
-          if (piece.slot === 'head' && piece.source !== 'helpers') copy.scale.multiplyScalar(1.06);
+          if (piece.slot === 'head' && piece.source !== 'helpers' && piece.source !== 'medieval') copy.scale.multiplyScalar(1.06);
         }
       }
     },

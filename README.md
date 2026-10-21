@@ -114,7 +114,13 @@ al estilo de un constructor de ciudades.
   lo colocado con filtro. **Propiedades**: posición/rotación/escala exactas,
   colisión automática, caja, círculo o ninguna, transitable, tinte, bloqueo,
   reemplazar el recurso, edición múltiple. **Mapa**: nombre, cielo, niebla,
-  nubes, agua, tamaño y resolución del terreno, rellenos globales.
+  nubes, luciérnagas (por defecto sí, salvo en los interiores), agua, tamaño y resolución del terreno, rellenos globales.
+- **Colisión automática**: la altura es la del objeto, pero la planta sale solo de lo que hay a ras de suelo (el 30 %
+  de abajo), sin aleros, tejados, copas ni toldos (`footprintOf` en `src/world/mapAssetsCore.ts`). Los faroles y
+  postes son un poste fino; los toldos abiertos, solo sus cuatro postes; los arbustos se rodean y no se pisan; las
+  plantas altas se atraviesan; las escaleras de las casas siguen con su rellano y peldaños.
+- **Faroles**: todos dan luz real. Hay una reserva fija de 10 luces que pasan a los faroles (y marcadores de luz) más
+  cercanos al jugador; un marcador de luz junto a un farol fija el color y alcance de su luz.
 - **Colisiones** (`K`): naranja las automáticas de cada objeto, azul las
   dibujadas y verde las plataformas. **▶ Pasear** (`J`) baja con un personaje
   al mapa para probar escala y colisiones (WASD, Mayús, Espacio, Esc).
@@ -138,10 +144,15 @@ casco antiguo: hierba, calles de piezas `hex_road_*` encajadas según sus vecina
 el río y, fuera de la muralla, lomas y arboledas. El casco antiguo conserva sus
 casillas, edificios y marcadores (incluida la puerta de Isberto), pero ya no tiene
 foso ni muralla propia: sus seis puertas viejas se prolongan en calles mayores
-hasta las puertas nuevas. Alrededor hay seis barrios con unas 260 viviendas (una
-por casilla, mirando a su calle), anillos de calles, seis plazas, casas gremiales
-y casas torre hechas con piezas modulares, tres colinas (molino, cantera y
-mirador), huertas, aserradero y cuartel.
+hasta las puertas nuevas. Alrededor hay seis barrios con unas 270 viviendas (una
+por casilla, mirando a su calle), anillos de calles, seis plazas, casas gremiales,
+tres colinas (molino, cantera y mirador), huertas, aserradero y cuartel. Todos los
+edificios son modelos ya construidos del pack: ninguno se monta con muros y puertas.
+El generador termina con un repaso que, con las medidas reales de cada pieza, retira
+el atrezo que se pisa con algo o invade una calle, encoge un poco los edificios que
+se pisan y deja libre el acceso a las escaleras. `node tools/audit-map.mjs [mapa]`
+hace la misma revisión sobre cualquier mapa (solapes, calles invadidas y edificios
+sobre mucha pendiente).
 `npm run test:brumaluz` comprueba que el suelo está completo, que cada salida de
 camino conecta con su casilla vecina, los recorridos, puertas, portales y colinas,
 y la coincidencia entre borrador y publicación. El generador
@@ -156,6 +167,53 @@ de miles). Además hay un campo de visión: los objetos se agrupan en celdas de 
 y solo se dibujan las que quedan dentro de la niebla (más un margen para la
 cámara); los pequeños (barriles, bancos, flores…) se dejan de dibujar a 75 m. El
 minimapa y el editor siguen viendo el mapa completo.
+
+Otras medidas para los 60 fps (de ~22 a 75 fps en la ciudad, con todos los efectos):
+- Los objetos fijos del mapa no recalculan su matriz, y sus originales agrupados salen del grafo de escena
+  (three.js recorría miles de objetos ocultos dos veces por fotograma).
+- La oclusión ambiental (GTAO) usa la profundidad de la pasada principal en vez de volver a dibujar la escena.
+- Lotes, personajes y sombras usan materiales propios, para que three.js no revise sus shaders cada fotograma.
+- `window.brumaluz.debug()` da acceso al renderer, la escena y el escenario para medir rendimiento.
+
+**Escaleras de las casas.** Las casas con escalera ante la puerta (`home_B` y la taberna de city.glb) ya no
+tienen una sola caja de colisión: el cuerpo bloquea, pero los peldaños son una rampa y el rellano una superficie,
+así que se puede subir hasta la puerta. Los edificios de Brumaluz son ×1,5 su tamaño base (`BUILDING_SCALE`),
+sin pasar de 4,9 m del centro a la esquina para no invadir la calle; en el casco antiguo, los pocos que taparían
+una calle o el sitio de un tendero crecen menos y el castillo conserva su tamaño.
+
+**Agua.** El agua ya no es un muro. En las casillas de agua (las lagunas) y donde la lámina general del mapa
+cubre más de 1,1 m se nada: el personaje flota con la cabeza y los hombros fuera, avanza a brazadas (el clip
+`Crawling`, tumbado a flor de agua) a mitad de velocidad y no puede saltar. Los ríos del pack y el agua poco
+profunda se vadean, algo más despacio. Al entrar salpica y, mientras está en el agua, deja ondas a su alrededor
+(`src/world/waterFx.ts`); los demás jugadores también nadan y dejan ondas. El agua de las casillas tiene oleaje
+animado con destellos, y la cámara nunca baja de la superficie.
+En el juego, `src/world/water.ts` sustituye la lámina opaca de las casillas por agua semitransparente: oleaje con
+reflejos del cielo y destello del sol, color de turquesa a azul hondo según la profundidad real del fondo (la del
+mapa de alturas), cáusticas en lo somero, espuma en las orillas y, en los ríos, ondas y franjas que siguen la
+corriente cuesta abajo. Donde dos aguas vecinas están a distinta altura hay una cascada (cortina opaca que cae con
+espuma al pie, ondas y salpicaduras); un río de casillas solo cae por los extremos de su cauce, nunca por sus orillas.
+Una cascada se baja, pero no se remonta. En el juego el agua refleja el cielo del ciclo de día y noche y se oscurece
+de noche, igual que sus ondas y salpicaduras. En Brumaluz las lagunas quedan 1,1 m por debajo de la desembocadura del río, con
+fondo de arena visible; a ellas uno se puede tirar desde cualquier altura y se sale trepando a la orilla. El
+editor sigue mostrando la casilla de agua del pack.
+
+**Herramienta «Agua» del editor (`L`).** Pinta agua sobre el terreno con el mismo aspecto y comportamiento que en
+el juego (se guarda en `terrain.water`: la altura de la lámina en cada vértice; los mapas sin agua no cambian).
+- **Lago o laguna**: lámina plana al nivel del primer clic (o del agua que se toca, para ampliarla) o a una altura
+  fija; Alt+clic toma el nivel. Con «Excavar el fondo» abre un vaso de la profundidad elegida con orilla suave.
+- **Río**: arrastrando, el agua sigue al terreno un poco por debajo de las orillas y se excava el cauce; donde el
+  terreno da un salto, el agua cae en cascada. Un río que llega a otra agua se une a ella sin cambiarla.
+- **Secar**: quita el agua (el fondo excavado se queda).
+- Pinta el fondo (arena en la orilla, barro donde cubre) y quita la hierba bajo el agua.
+Donde dos vértices de agua vecinos difieren más de 35 cm hay cascada; a partir de 1,1 m de hondo se nada y, si no,
+se vadea. `npm run test:water` comprueba el formato, las colisiones y las cascadas. `waterAt(x, z)` del mapa da la altura del agua
+y si es profunda. `node tools/prepare-ambient-animations.mjs` regenera las animaciones extra (incluida la de nado).
+
+**Cámara sin estorbos en interiores.** En los mapas de tipo interior, las paredes que se interponen
+entre la cámara y el personaje se vuelven casi transparentes y recuperan su aspecto cuando dejan de
+tapar. Se comprueban los pies, el pecho, la cabeza y los lados del personaje y un anillo a ras de
+suelo a 2,2 m, así que la pared delantera deja ver la habitación. Nada más se atenúa: ni los muebles
+ni, fuera, las casas o los árboles.
 
 En el juego, **M**, un clic en el minimapa o **Mundo → Mapa** abre el mapa completo de la zona actual,
 con norte arriba y un indicador de tu posición y orientación. **M**, **Esc**,
@@ -355,7 +413,7 @@ La clave publishable es para el navegador y está protegida por las políticas R
   sombreros y armas se combinan sobre un esqueleto común con 21 animaciones.
 - Colores de piel, pelo y ropa repintando la paleta de las texturas; orejas, colas y crestas
   propias para elfos, Lagto' y Pelso.
-- Escenario con materiales PBR, HDRI de atardecer y relieve CC0 de Poly Haven (vía `@pmndrs/assets`).
+- Escenario con materiales PBR, cielo HDRI del ciclo de día y noche y relieve CC0 de Poly Haven (vía `@pmndrs/assets`).
 
 ## Créditos
 
@@ -406,7 +464,8 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
 - Entrar/volver al selector muestra un indicador de carga si tarda más de 180 ms, ampliado tras 1,5 s; desaparece también ante errores o cancelaciones y no bloquea los controles para salir. El aviso de interacción con E se sitúa por encima de la fila de buffs, tomando como referencia la altura real de la barra rápida.
 - HUD del jugador (vida, maná/estamina, experiencia): las fórmulas son editables en
   `src/data/stats.ts` y están documentadas en [docs/STATS.md](docs/STATS.md).
-- Minimapa (abajo a la izquierda, `src/ui/minimap.ts`): la ciudad se captura una sola vez desde arriba (`src/world/mapCapture.ts`) y el mapa no gira (norte arriba). Muestra tu personaje con una flecha y cono de visión, los NPC (punto verde, flecha en el borde si quedan fuera), brújula N/E/S/O, lugar y coordenadas. Zoom con +/− o la rueda; `º` lo oculta.
+- Minimapa (abajo a la izquierda, `src/ui/minimap.ts`): la ciudad se captura una sola vez desde arriba (`src/world/mapCapture.ts`) y el mapa no gira (norte arriba). Muestra tu personaje con una flecha y cono de visión, los NPC (punto verde, flecha en el borde si quedan fuera), brújula N/E/S/O, lugar y reloj con la hora del mundo. Zoom con +/− o la rueda; `º` lo oculta.
+- Ciclo de día y noche (`src/world/dayNight.ts`): cada 10 minutos reales pasa una hora del mundo (un día dura 4 horas reales). La hora la marca el servidor (`public.world_clock()` y `server_config.world_clock` en `supabase/server.sql`) y llega con cada sincronización del mundo, así que todos ven la misma; `src/data/worldClock.ts` la deja correr entre respuestas y, sin conexión, la calcula con la misma fórmula. El cielo mezcla los HDRI de noche, alba, amanecer y día de `@pmndrs/assets` (solo su parte de cielo, girada con el sol); el sol sale a las 6:00 por el este y se pone a las 20:00 por el oeste, y de noche la luna da la luz y las sombras. Luces, niebla, exposición y reflejos (el propio cielo, prefiltrado cada pocos minutos del mundo) siguen a la hora; faroles y luciérnagas brillan de noche y los pájaros se recogen. Los menús y los interiores usan siempre la luz del atardecer dorado (18:30). Para cambiar el ritmo o la hora de inicio, edita `world_clock` en la base de datos (y `SECONDS_PER_WORLD_HOUR`, `EPOCH` y `START_HOUR` para el modo sin conexión). Pruebas: `npm run test:daynight`.
 - Habla: al enviar un mensaje público (General/Zona) sale un bocadillo con tu nombre sobre tu personaje y mueve la boca; los NPC (diálogos y comentarios) solo mueven la boca, sin bocadillo. La boca se anima en `src/character/head.ts` (`mouth`) y `Character.speak()`.
 - Chat (esquina inferior derecha, `src/ui/chatWindow.ts`): ventana redimensionable (asa arriba-izquierda, se recuerda el tamaño) y minimizable, con filtros General (todo el servidor) / Zona (tu mapa) / Susurros / Sistema / NPC; el botón junto al campo de texto (o /g, /z) elige el canal de escritura. `Enter` escribe, `Esc` sale. Comandos: `/w ~cuenta mensaje` (susurro a una CUENTA; el `~` distingue el nombre de cuenta del de personaje), `/r` (responder), `/ignore` y `/unignore ~cuenta`, `/clear`, `/ayuda`. Clic en un nombre para susurrar a su cuenta. Solo los comentarios espontáneos cercanos de los NPC (`barks` en `NpcDef`) salen en el canal NPC; los diálogos de interacción y las respuestas del jugador no se registran en el chat. El servidor valida y reparte los mensajes (`chat_send`, tablas `chat_messages` y `chat_mutes` en `supabase/server.sql`; límite 200 caracteres y 5 mensajes/10 s). Para silenciar a alguien: `insert into chat_mutes (user_id, until) values ('<uuid>', now() + interval '1 day')`. Requiere ejecutar `server.sql` y tener Realtime activo en la tabla `chat_messages`.
 - Cada entrada al mundo inicia un chat limpio: se reciben mensajes nuevos por Realtime, sin cargar mensajes anteriores ni los enviados mientras estabas fuera. Al salir se borran mensajes, borradores y destinatario de respuesta. Se conservan las preferencias del chat y las cuentas silenciadas; los avisos de sistema de la nueva conexión siguen mostrándose.
@@ -439,7 +498,7 @@ npm run build   # genera dist/index.html (un único archivo)
 ### Compatibilidad gráfica
 
 - Si la interfaz funciona pero el mundo o el creador aparecen vacíos, abre `https://brumaluz.vercel.app/?graphics=compatible`. El botón «Gráficos» en la pantalla de acceso y el creador permite alternar y recarga la página; guarda el personaje antes de cambiar de modo.
-- El modo compatible conserva la ciudad y los personajes, pero no usa HDRI, sombras ni posprocesado (oclusión ambiental y resplandor). Limita la resolución a 1920 × 1080 y reduce la captura del minimapa. Se activa automáticamente si falta `EXT_color_buffer_float`; no depende del modelo de tarjeta gráfica.
+- El modo compatible conserva la ciudad, los personajes y el ciclo de día y noche, pero no usa reflejos del cielo, sombras ni posprocesado (oclusión ambiental y resplandor). Limita la resolución a 1920 × 1080 y reduce la captura del minimapa. Se activa automáticamente si falta `EXT_color_buffer_float`; no depende del modelo de tarjeta gráfica.
 - El modo normal conserva los efectos, pero limita el renderizado a 2560 × 1440 para no multiplicar innecesariamente los buffers en pantallas de alta densidad.
 - Si Chrome rechaza los atributos al crear WebGL 2, el arranque reintenta sin antialiasing y, si es necesario, con la selección de GPU predeterminada del navegador. Esto no activa el modo compatible ni desactiva los efectos normales. Los reintentos se registran en la consola; solo se muestra el error si ninguno permite crear el contexto. Cuando el contexto no usa antialiasing, tampoco se fuerza MSAA en los buffers del posprocesado o los retratos.
 - Una pérdida del contexto WebGL o un fallo de shaders muestra un aviso con opciones de recarga, en lugar de dejar solo el mundo vacío. Si WebGL 2 no está disponible, el aviso indica comprobar la aceleración gráfica del navegador y el controlador; el modo compatible también necesita WebGL 2.
@@ -447,7 +506,7 @@ npm run build   # genera dist/index.html (un único archivo)
 
 ### Mundo multijugador
 
-- El distintivo de ubicación bajo el minimapa muestra un pin y el nombre de la zona, un contador separado con icono de jugadores (incluido el tuyo) y una fila de coordenadas con separador; no hay un mensaje superior permanente. Al perder la conexión, el contador muestra un guion y el aviso de reconexión está disponible en su descripción y en el chat. El botón de gráficos está en la esquina inferior derecha fuera del juego, separado de los datos de cuenta.
+- El distintivo de ubicación bajo el minimapa muestra un pin y el nombre de la zona, un contador separado con icono de jugadores (incluido el tuyo) y una fila con el reloj del mundo; no hay un mensaje superior permanente. Al perder la conexión, el contador muestra un guion y el aviso de reconexión está disponible en su descripción y en el chat. El botón de gráficos está en la esquina inferior derecha fuera del juego, separado de los datos de cuenta.
 - Las cuentas que entran en Brumaluz se ven en la misma ciudad, con su aspecto, nombre, título, movimiento interpolado, orientación, saludo, salto y estado de caída. Los mensajes públicos de jugadores presentes también aparecen sobre su personaje. La opción de mostrar nombres afecta tanto a NPCs como a jugadores.
 - Al pasar el cursor por un personaje se muestra su detalle arriba, centrado. La zona del cursor cubre el cuerpo con un margen de 8 px, sin depender de las animaciones ni de acertar entre sus triángulos. Si el cursor no señala a nadie, la dirección horizontal de la cámara selecciona personajes delante del jugador en un cono de 10°, independientemente de la inclinación de la cámara o la altura del modelo, siempre que estén en pantalla. Un pequeño margen angular al mantener el objetivo evita cambios nerviosos entre personajes próximos. Tanto cursor como cámara solo muestran personajes a 10 m como máximo desde el personaje local (no desde la cámara), y la tarjeta se oculta al superar ese límite. Se comprueba la visibilidad de torso/cabeza para no mostrar a través del escenario; no cambia la interacción con E ni selecciona permanentemente un objetivo. Se oculta con menús, conversaciones, muerte o salida del mundo y no depende de la opción de nombres flotantes.
 - El panel es compacto y usa la tipografía del HUD propio: nombre, nivel en texto dorado sin insignia, título equipado debajo, clase en el icono y `~usuario`. Las barras solo muestran cifras de vida y maná o estamina; sus etiquetas siguen disponibles para lectores de pantalla. Las cifras y máximos vienen del servidor, incluidos los atributos asignados sin revelar esos atributos. Los títulos reservados conservan su fénix.

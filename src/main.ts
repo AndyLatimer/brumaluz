@@ -12,6 +12,7 @@ import type { ItemStack } from './data/inventory';
 import { renderBank } from './ui/bankWindow';
 import { createCoinBags } from './world/coinBags';
 import { captureTopDown } from './world/mapCapture';
+import { WaterFx } from './world/waterFx';
 import { initMinimap, updateMinimap, setMinimapImage, setMapPlayerCount, toggleMinimap } from './ui/minimap';
 import { renderZoneMap } from './ui/mapWindow';
 import { createDestinationIndicator } from './ui/destinationIndicator';
@@ -23,6 +24,8 @@ import type { User } from '@supabase/supabase-js';
 import { applyLanguage, getLanguage, setLanguage, t, raceText, classText } from './ui/i18n';
 import { world } from './world/paint';
 import { buildEnv } from './world/env';
+import { buildDayNight, GOLDEN_HOUR } from './world/dayNight';
+import { worldHour } from './data/worldClock';
 import { Character, loadKits } from './character/character';
 import { createNpc } from './character/npc';
 import { loadWorldNpcs } from './data/worldNpcs';
@@ -105,6 +108,8 @@ const renderer = graphics.renderer;
 graphics.resize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
+// La escena no se mueve: si recalculara su matriz cada fotograma, three.js recalcularía también la de todo lo que contiene.
+scene.matrixAutoUpdate = false;
 const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 900);
 const env = buildEnv(scene);
 const lowEnd = graphics.compatible || window.innerWidth <= 760 || /Mobi|Android/i.test(navigator.userAgent);
@@ -116,6 +121,14 @@ const stage = (() => {
     throw error;
   }
 })();
+// Cielo y luces según la hora del mundo (en los menús, siempre al atardecer; en los interiores, luz fija).
+const dayNight = buildDayNight(renderer, scene, stage, !graphics.compatible);
+let skyLocation = '', skyIndoor = false;
+
+// Ondas y salpicaduras al nadar o vadear (las del jugador y las de los demás).
+const waterFx = new WaterFx();
+let fallTimer = 0;
+scene.add(waterFx.root);
 
 const holder = new THREE.Group();
 holder.rotation.y = -0.3;
@@ -287,7 +300,7 @@ function updateConversationCamera(dt: number) {
         // Las ciudades del editor agrupan sus piezas en «map-objects» (por celdas del campo de visión):
         // se evalúan una a una para ignorar las baldosas.
         .flatMap(object => object.name === 'map-objects'
-          ? object.children.flatMap(chunk => chunk.userData.mapChunk ? chunk.children : [chunk]).filter(piece => !String(piece.userData.mapAsset ?? '').startsWith('city/hex_'))
+          ? object.children.flatMap(chunk => chunk.userData.mapChunk ? [...chunk.children, ...(chunk.userData.originals ?? [])] : [chunk]).filter(piece => !String(piece.userData.mapAsset ?? '').startsWith('city/hex_'))
           : [object])
         .filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_') && object.name !== 'map-environment'),
       ...npcActors.filter(npc => npc.character.root !== actor).map(npc => npc.character.root),
@@ -352,6 +365,9 @@ function updatePlayCamera(dt: number) {
   const off = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(followDist);
   camPos.copy(camTarget).add(off);
   camPos.y = Math.max(camPos.y, city.groundY(camPos.x, camPos.z) + 0.6);
+  // Ni bajo el agua: la cámara se queda siempre por encima de la superficie.
+  const cameraWater = city.waterAt?.(camPos.x, camPos.z);
+  if (cameraWater) camPos.y = Math.max(camPos.y, cameraWater.surface + 0.5);
   if (returningFromConversation) {
     const blend = 1 - Math.exp(-dt * 8);
     camera.position.lerp(camPos, blend);
@@ -364,6 +380,26 @@ function updatePlayCamera(dt: number) {
     }
   } else camera.position.copy(camPos);
   camera.lookAt(camTarget);
+}
+
+const OCCLUSION_RING = 6, OCCLUSION_RING_RADIUS = 2.2;
+const occlusionPoints = Array.from({ length: 5 + OCCLUSION_RING }, () => new THREE.Vector3());
+/**
+ * Pies, pecho, cabeza y ambos lados del pecho del personaje, más un anillo a ras de suelo a su alrededor:
+ * si algo tapa cualquiera de ellos, se atenúa (así también se ve dónde pisa, p. ej. tras una pared).
+ */
+function occlusionTargets() {
+  const [feet, chest, head, left, right] = occlusionPoints;
+  const p = holder.position;
+  feet.set(p.x, p.y + .35, p.z); chest.set(p.x, p.y + 1, p.z); head.set(p.x, p.y + 1.7, p.z);
+  const sideX = camera.position.z - p.z, sideZ = p.x - camera.position.x, length = Math.hypot(sideX, sideZ) || 1;
+  left.set(p.x + sideX / length * .45, p.y + 1, p.z + sideZ / length * .45);
+  right.set(p.x - sideX / length * .45, p.y + 1, p.z - sideZ / length * .45);
+  for (let i = 0; i < OCCLUSION_RING; i++) {
+    const angle = i / OCCLUSION_RING * Math.PI * 2, x = p.x + Math.cos(angle) * OCCLUSION_RING_RADIUS, z = p.z + Math.sin(angle) * OCCLUSION_RING_RADIUS;
+    occlusionPoints[5 + i].set(x, city.groundY(x, z) + .6, z);
+  }
+  return occlusionPoints;
 }
 
 function updateCamera(dt: number) {
@@ -425,7 +461,10 @@ let jumpElapsed = 0;
 let jumpHeight = 0;
 let waveSequence = 0;
 let groundHeight = 0;
+/** Altura de la superficie elevada que pisaba el personaje en el fotograma anterior (null: el suelo). */
+let lastPlatformY: number | null = null;
 function startJump() {
+  if (char.isSwimming) return; // nadando no se salta
   if (jumpDuration > 0 && jumpElapsed < jumpDuration) return;
   jumpDuration = char.jump();
   if (jumpDuration <= 0) return;
@@ -728,7 +767,10 @@ function updatePlay(dt: number) {
   }
 
   // aceleración y frenada suaves
-  const maxSpeed = dir.lengthSq() ? (running ? 6.2 : 2.4) : 0;
+  // En el agua se va más despacio: vadeando un poco, nadando bastante (sin «correr»).
+  const water = mode === 'play' ? city.waterAt?.(holder.position.x, holder.position.z) ?? null : null;
+  const waterPace = water?.deep ? 0.5 : water ? 0.75 : 1;
+  const maxSpeed = dir.lengthSq() ? (running ? 6.2 : 2.4) * waterPace : 0;
   const wantVel = dir.clone().multiplyScalar(maxSpeed);
   playerVel.lerp(wantVel, 1 - Math.exp(-dt * (maxSpeed > 0 ? 9 : 11)));
   const speed = playerVel.length();
@@ -760,8 +802,17 @@ function updatePlay(dt: number) {
   }
   const platform = city.platformY(holder.position.x, holder.position.z);
   let supportY = city.groundY(holder.position.x, holder.position.z);
-  if (platform !== null && Math.abs(platform - groundHeight) < 0.22) supportY = platform;
-  groundHeight += (supportY - groundHeight) * (1 - Math.exp(-dt * 12));
+  // Nadando, el personaje queda a la altura de la superficie (la postura lo hunde hasta los hombros).
+  const swimming = !!water?.deep && !dead;
+  char.setSwimming(swimming);
+  if (swimming) supportY = Math.max(supportY, water!.surface);
+  waterFx.track('me', holder.position, water, playerVel.length(), dt);
+  // Se sube a una superficie cercana a los pies, y se sigue sobre ella mientras no dé un salto brusco (rampas, escaleras).
+  const onPlatform = platform !== null && (Math.abs(platform - groundHeight) < 0.22 || (lastPlatformY !== null && Math.abs(platform - lastPlatformY) < 0.35));
+  if (onPlatform) supportY = platform;
+  if (onPlatform && lastPlatformY !== null) groundHeight = supportY;
+  else groundHeight += (supportY - groundHeight) * (1 - Math.exp(-dt * 12));
+  lastPlatformY = onPlatform ? platform : null;
   if (wasJumping && jumpHeight < previousJumpHeight && platform !== null
     && previousFootY >= platform && groundHeight + jumpHeight <= platform) {
     groundHeight = platform;
@@ -1060,7 +1111,7 @@ async function respawn() {
   document.body.classList.remove('dead');
   holder.position.copy(city.spawn);
   holder.rotation.y = city.spawnYaw + Math.PI;
-  groundHeight = city.spawn.y;
+  groundHeight = city.spawn.y; lastPlatformY = null;
   jumpElapsed = jumpDuration;
   jumpHeight = 0;
   yaw = city.spawnYaw;
@@ -1446,7 +1497,7 @@ function enterPlay() {
     yaw = state.position.yaw;
   } else holder.position.copy(city.spawn);
   running = true;
-  groundHeight = holder.position.y;
+  groundHeight = holder.position.y; lastPlatformY = null;
   jumpElapsed = jumpDuration;
   jumpHeight = 0;
   camera.fov = 50;
@@ -1511,7 +1562,7 @@ function exitPlay() {
   marker.visible = false;
   holder.position.copy(city.spawn);
   running = true;
-  groundHeight = city.spawn.y;
+  groundHeight = city.spawn.y; lastPlatformY = null;
   jumpElapsed = jumpDuration;
   jumpHeight = 0;
   holder.rotation.y = city.spawnYaw - 0.3;
@@ -2562,7 +2613,7 @@ async function loadWorldState() {
   }
 }
 
-const remotePlayers = new RemotePlayers(scene, (x, z) => city.groundY(x, z), (x, z) => city.platformY(x, z));
+const remotePlayers = new RemotePlayers(scene, (x, z) => city.groundY(x, z), (x, z) => city.platformY(x, z), (x, z) => city.waterAt?.(x, z) ?? null, waterFx);
 let worldConnection: WorldConnection | null = null;
 let worldRetrying = false;
 
@@ -2586,7 +2637,7 @@ function receiveWorld(value: WorldSnapshot) {
   if (value.status === 'corrected') {
     const correctedY = city.platformY(value.position.x, value.position.z) ?? city.groundY(value.position.x, value.position.z);
     holder.position.set(value.position.x, correctedY, value.position.z);
-    groundHeight = holder.position.y;
+    groundHeight = holder.position.y; lastPlatformY = null;
     playerVel.set(0, 0, 0);
     moveTarget = null;
     marker.visible = false;
@@ -3217,7 +3268,7 @@ async function switchGameMap(id: string) {
 function placeAfterTravel(position: { x: number; z: number; yaw: number }) {
   holder.position.set(position.x, city.groundY(position.x, position.z), position.z);
   yaw = position.yaw; holder.rotation.y = yaw + Math.PI;
-  groundHeight = holder.position.y;
+  groundHeight = holder.position.y; lastPlatformY = null;
   jumpElapsed = jumpDuration; jumpHeight = 0;
   playerVel.set(0, 0, 0); moveTarget = null; marker.visible = false;
   camTarget.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0));
@@ -3569,9 +3620,29 @@ renderer.setAnimationLoop(() => {
     npc.character.update(t);
   }
   city.update(t, mode === 'play' ? holder.position : undefined);
+  waterFx.update(dt);
+  // Salpicaduras y ondas al pie de las cascadas cercanas.
+  fallTimer -= dt;
+  if (fallTimer <= 0 && city.waterFalls?.length) {
+    fallTimer = 0.18;
+    for (const fall of city.waterFalls) {
+      if (Math.hypot(fall.x - holder.position.x, fall.z - holder.position.z) > 45) continue;
+      const along = (Math.random() - 0.5) * fall.width * 0.8;
+      waterFx.ripple(fall.x + along * 0.3, fall.y, fall.z + along * 0.3, 1 + fall.drop * 0.6, 1.2);
+      if (Math.random() < 0.35) waterFx.splash(fall.x, fall.y, fall.z, 0.3 + fall.drop * 0.15);
+    }
+  }
+  if (city.locationId !== skyLocation) {
+    skyLocation = city.locationId; skyIndoor = publishedMaps()[skyLocation]?.kind === 'interior';
+    env.setFireflies(city.fireflies ?? true);
+  }
+  dayNight.update(mode === 'play' ? worldHour() : GOLDEN_HOUR, skyIndoor);
+  env.update(t);
   stage.follow(holder.position, mode === 'play');
   updateCamera(dt);
-  env.follow(camera.position);
+  // Cámara sin estorbos: en los interiores, las paredes entre la cámara y el personaje se vuelven transparentes.
+  city.fadeOccluders?.(camera.position, mode === 'play' ? occlusionTargets() : [], dt);
+  dayNight.follow(camera.position);
   if (openWindow === 'loot') positionLootWindow();
   updateWelcome(dt, t);
   updatePersonalWaypoint();
@@ -3613,7 +3684,7 @@ if (TEST) {
   spin(a: number) { holder.rotation.y = a; spinVel = 0; },
   move(x: number, z: number) {
     holder.position.set(x, city ? city.groundY(x, z) : 0, z);
-    groundHeight = holder.position.y;
+    groundHeight = holder.position.y; lastPlatformY = null;
     playerVel.set(0, 0, 0);
     moveTarget = null;
     marker.visible = false;
@@ -3625,6 +3696,8 @@ if (TEST) {
   char: () => char,
   camera: () => camera,
   city: () => city,
+  /** Para medir el rendimiento desde las pruebas. */
+  debug: () => ({ renderer, scene, stage, camera }),
   players: () => remotePlayers.list(),
   time() { const t0 = performance.now(); rebuildNow(); return performance.now() - t0; },
 };

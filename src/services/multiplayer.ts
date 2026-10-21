@@ -3,6 +3,7 @@ import { joinWorld, leaveWorld, syncWorld, travelWorld } from './account';
 import type { Vitals } from '../data/stats';
 import { parseFoodBuff, type FoodBuff } from '../data/food';
 import type { ItemStack } from '../data/inventory';
+import { parseWorldClock, syncWorldClock } from '../data/worldClock';
 
 export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'>;
 
@@ -105,6 +106,9 @@ function snapshot(value: unknown): WorldSnapshot {
   }
   const selfVitals = data.vitals === undefined ? undefined : parsePublicVitals(data.vitals);
   const encounter = data.encounter === undefined ? undefined : parseCombatEncounter(data.encounter);
+  // Toda respuesta del mundo (entrar, sincronizar, viajar) trae la hora del servidor.
+  const clock = parseWorldClock(data.clock);
+  if (clock) syncWorldClock(clock);
   return {
     status: data.status, position: position(data.position),
     food, selfVitals, encounter,

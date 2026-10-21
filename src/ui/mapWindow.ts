@@ -178,7 +178,7 @@ export function renderZoneMap(body: HTMLElement, zone: string, player: () => { x
   const key = document.createElement('div');
   key.className = 'zone-map-key';
   for (const [symbol, label, className] of [
-    [mapIcon('player'), 'Tu posición', 'player'], [mapIcon('npc'), 'NPC (bolita)', 'npc'],
+    [mapIcon('player'), 'Tu posición', 'player'], [mapIcon('npc'), 'NPC', 'npc'],
     [mapIcon('quest'), 'Objetivo de misión', 'quest'], [mapIcon('waypoint'), 'Destino personal', 'waypoint'],
     [mapIcon('exit'), 'Salida de zona', 'exit'], [mapIcon('interior'), 'Acceso a interior', 'interior'],
   ]) {

@@ -30,6 +30,9 @@ export function characterKit(kit: Kit) {
   return kits[kit];
 }
 let ambientAnimations: THREE.AnimationClip[] = [];
+/** Cuánto se hunde el modelo bajo la superficie del agua: flotando de pie (hasta los hombros) y nadando (tumbado). */
+const SWIM_TREAD_DEPTH = -0.62;
+const SWIM_STROKE_DEPTH = -0.3;
 let creatorParts: CreatorParts;
 
 const heads = {} as Record<HeadKit, HeadSource>;
@@ -649,8 +652,24 @@ export class Character {
   private interruptible = false;
   private nextIdleAt = Infinity;
   private gaitAction(gait = this.gait) {
+    // Nadando: brazadas (el gateo, tumbado a ras de agua) al avanzar y reposo flotando al estar quieto.
+    if (this.swimming) return gait === 'idle' ? this.idle : this.actions.get('Crawling') ?? this.idle;
     return gait === 'idle' ? this.idle : this.actions.get(gait === 'walk' ? 'Walking_A' : 'Running_A') ?? this.idle;
   }
+  private swimming = false;
+  /** 0 en tierra, 1 del todo en el agua: suaviza la entrada y la salida. */
+  private swimBlend = 0;
+  /** Entra o sale del agua profunda. El personaje queda con la superficie en `root` y el cuerpo hundido hasta los hombros. */
+  setSwimming(on: boolean) {
+    if (on === this.swimming) return;
+    const from = this.oneShot ?? this.gaitAction();
+    this.swimming = on;
+    if (this.dead) return;
+    this.oneShot = null;
+    this.interruptible = false;
+    this.playGait(from);
+  }
+  get isSwimming() { return this.swimming; }
   private playGait(from?: THREE.AnimationAction) {
     const action = this.gaitAction();
     action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
@@ -772,9 +791,12 @@ export class Character {
       this.root.scale.setScalar((this.opts.scale ?? 1) * (p >= 1 ? 1 : 1 + Math.sin(p * Math.PI) * 0.035));
       if (p >= 1) this.healT = -1;
     }
+    // El gateo nadando va más lento que en tierra: brazadas largas.
+    this.actions.get('Crawling')?.setEffectiveTimeScale(0.75);
     this.mixer.update(dt);
     // Animation tracks reset bone scales, so reapply the chosen proportions afterward.
     this.applyBodyShape();
+    this.applySwim(t, dt);
     if (this.tail) this.tail.forEach((g, i) => { g.rotation.y = Math.sin(t * 1.6 - i * 0.6) * 0.16; g.rotation.x = Math.sin(t * 1.1 - i * 0.5) * 0.05; });
     this.ears.forEach((e, i) => { e.rotation.x = (e.userData.rx ??= e.rotation.x) - Math.max(0, Math.sin(t * 0.7 + i * 0.4) - 0.97) * 8; });
     if (this.glow) this.glow.scale.setScalar(0.45 + Math.sin(t * 3) * 0.05);
@@ -794,6 +816,20 @@ export class Character {
       this.mouth.open.visible = talking;
       if (talking) this.mouth.open.scale.y = this.mouth.sy * (0.25 + 0.75 * Math.abs(Math.sin(t * 11) * Math.sin(t * 4.3 + 1)));
     }
+  }
+
+  /**
+   * Postura en el agua: quieto, de pie y hundido hasta los hombros, meciéndose; nadando, tumbado (el gateo) con la
+   * espalda a flor de agua. `root` está a la altura de la superficie.
+   */
+  private applySwim(t: number, dt: number) {
+    this.swimBlend += ((this.swimming ? 1 : 0) - this.swimBlend) * (1 - Math.exp(-dt * 6));
+    if (this.swimBlend < 0.001) return;
+    const stroking = this.swimming && this.gait !== 'idle' && !this.oneShot;
+    const bob = Math.sin(t * 2.2) * 0.04;
+    this.model.position.y += this.swimBlend * ((stroking ? SWIM_STROKE_DEPTH : SWIM_TREAD_DEPTH) + bob);
+    // Al flotar quieto, una leve inclinación que va y viene, como al bracear para mantenerse.
+    this.model.rotation.x = stroking ? 0 : this.swimBlend * Math.sin(t * 1.3) * 0.06;
   }
 
   private applyBodyShape() {

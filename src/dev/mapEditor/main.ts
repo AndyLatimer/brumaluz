@@ -9,7 +9,7 @@ import { loadMapAssetIndex } from '../../world/mapAssets';
 import {
   $, camera, collisionOverlay, commit, controls, entity, environment, events, grass, history, markerLayer, npcModels,
   objectLayer, rebuildCollision, removeEntities, renderer, renderEditorView, restore, scene, selected, setSelection, state, status, syncScene,
-  viewport, type Entity, type ToolId,
+  viewport, waterLayer, type Entity, type ToolId,
 } from './core';
 import {
   duplicateSelection, dropSelection, gizmoState, initPointer, pasteEntities, pointer, renderToolOptions, renderToolbar,
@@ -276,6 +276,7 @@ function loop() {
   if (!walk.active) toolFrame(dt);
   updateGrid();
   markerLayer.updateLabels(camera, viewport.clientWidth, viewport.clientHeight, state.view.markers && !walk.active);
+  if (waterLayer) { waterLayer.setSky(state.doc.settings); waterLayer.update(t); }
   renderEditorView();
   frames++;
   fpsTime += dt;

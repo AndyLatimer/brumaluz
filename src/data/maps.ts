@@ -96,6 +96,8 @@ export interface MapSettings {
   fog: number;
   water: { enabled: boolean; level: number; color: string; opacity: number };
   clouds: boolean;
+  /** Luciérnagas y polen flotando; si no se indica, solo fuera de los interiores (ver `mapFireflies`). */
+  fireflies?: boolean;
   /** Impide salir de los límites del terreno al pasear. */
   bounded: boolean;
   kind?: MapKind;
@@ -119,6 +121,11 @@ export interface MapTerrain {
   paint: string;
   /** Uint8 con la densidad de hierba (0-255), base64. */
   grass: string;
+  /**
+   * Agua pintada con el editor: Int16 little-endian en centímetros con la altura de la lámina en cada vértice
+   * (`NO_WATER`: seco), base64. Sin el campo, el mapa no tiene agua propia.
+   */
+  water?: string;
 }
 
 export interface MapDocument {
@@ -149,7 +156,12 @@ export interface MapSummary {
 export interface TerrainData {
   columns: number; rows: number; cell: number; origin: [number, number];
   heights: Float32Array; paint: Uint8Array; grass: Uint8Array;
+  /** Altura de la lámina de agua en cada vértice; NaN donde no hay agua. Ausente si el mapa no tiene agua. */
+  water?: Float32Array;
 }
+
+/** Valor reservado del agua codificada: vértice seco. */
+export const NO_WATER = -32768;
 
 export class MapValidationError extends Error {}
 const fail = (path: string, message: string): never => { throw new MapValidationError(`${path}: ${message}`); };
@@ -227,7 +239,7 @@ function validateTerrain(value: unknown): MapTerrain {
   if (!Array.isArray(terrain.origin) || terrain.origin.length !== 2) fail('terrain.origin', 'debe tener dos números');
   const origin = (terrain.origin as unknown[]).map((item, index) => num(item, `terrain.origin[${index}]`, -100_000, 100_000)) as [number, number];
   const count = columns * rows;
-  const encoded = (key: 'heights' | 'paint' | 'grass', bytes: number) => {
+  const encoded = (key: 'heights' | 'paint' | 'grass' | 'water', bytes: number) => {
     const result = terrain[key];
     if (typeof result !== 'string' || result.length !== base64Length(bytes) || !/^[A-Za-z0-9+/]*={0,2}$/.test(result)) {
       return fail(`terrain.${key}`, `debe contener ${bytes} bytes en base64`);
@@ -239,7 +251,12 @@ function validateTerrain(value: unknown): MapTerrain {
   if (paintBytes.length !== count) fail('terrain.paint', 'tamaño incorrecto');
   if (paintBytes.some(index => index >= GROUND_MATERIALS.length)) fail('terrain.paint', 'contiene materiales desconocidos');
   if (base64Bytes(heights).length !== count * 2 || base64Bytes(grass).length !== count) fail('terrain', 'tamaño de datos incorrecto');
-  return { columns, rows, cell, origin, heights, paint, grass };
+  const result: MapTerrain = { columns, rows, cell, origin, heights, paint, grass };
+  if (terrain.water !== undefined) {
+    result.water = encoded('water', count * 2);
+    if (base64Bytes(result.water).length !== count * 2) fail('terrain.water', 'tamaño incorrecto');
+  }
+  return result;
 }
 
 export function validateMap(value: unknown): MapDocument {
@@ -261,6 +278,7 @@ export function validateMap(value: unknown): MapDocument {
     clouds: bool(settingsValue.clouds, 'settings.clouds')!,
     bounded: bool(settingsValue.bounded, 'settings.bounded')!,
   };
+  if (settingsValue.fireflies !== undefined) settings.fireflies = bool(settingsValue.fireflies, 'settings.fireflies')!;
   if (settingsValue.kind !== undefined) {
     if (!MAP_KINDS.includes(settingsValue.kind as MapKind)) fail('settings.kind', 'tipo de mapa desconocido');
     settings.kind = settingsValue.kind as MapKind;
@@ -379,10 +397,20 @@ export function decodeTerrain(terrain: MapTerrain): TerrainData {
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const heights = new Float32Array(count);
   for (let i = 0; i < count; i++) heights[i] = view.getInt16(i * 2, true) / 100;
-  return {
+  const data: TerrainData = {
     columns: terrain.columns, rows: terrain.rows, cell: terrain.cell, origin: [...terrain.origin],
     heights, paint: base64Bytes(terrain.paint), grass: base64Bytes(terrain.grass),
   };
+  if (terrain.water) {
+    const rawWater = base64Bytes(terrain.water);
+    const waterView = new DataView(rawWater.buffer, rawWater.byteOffset, rawWater.byteLength);
+    data.water = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      const value = waterView.getInt16(i * 2, true);
+      data.water[i] = value === NO_WATER ? NaN : value / 100;
+    }
+  }
+  return data;
 }
 
 export function encodeTerrain(data: TerrainData): MapTerrain {
@@ -390,10 +418,21 @@ export function encodeTerrain(data: TerrainData): MapTerrain {
   const raw = new Uint8Array(count * 2);
   const view = new DataView(raw.buffer);
   for (let i = 0; i < count; i++) view.setInt16(i * 2, Math.max(-32768, Math.min(32767, Math.round(data.heights[i] * 100))), true);
-  return {
+  const terrain: MapTerrain = {
     columns: data.columns, rows: data.rows, cell: data.cell, origin: [...data.origin],
     heights: bytesBase64(raw), paint: bytesBase64(data.paint), grass: bytesBase64(data.grass),
   };
+  // El agua solo se guarda si hay alguna: los mapas sin ella no cambian de tamaño.
+  if (data.water?.some(Number.isFinite)) {
+    const rawWater = new Uint8Array(count * 2);
+    const waterView = new DataView(rawWater.buffer);
+    for (let i = 0; i < count; i++) {
+      const level = data.water[i];
+      waterView.setInt16(i * 2, Number.isFinite(level) ? Math.max(-32767, Math.min(32767, Math.round(level * 100))) : NO_WATER, true);
+    }
+    terrain.water = bytesBase64(rawWater);
+  }
+  return terrain;
 }
 
 export function createTerrain(width: number, depth: number, cell: number, height = 0, paint = 0, grass = 0): TerrainData {
@@ -421,8 +460,37 @@ export function resampleTerrain(source: TerrainData, width: number, depth: numbe
     const nearest = Math.round(fz) * source.columns + Math.round(fx);
     target.paint[index] = source.paint[nearest];
     target.grass[index] = source.grass[nearest];
+    if (source.water) (target.water ??= new Float32Array(target.columns * target.rows).fill(NaN))[index] = source.water[nearest];
   }
   return target;
+}
+
+/**
+ * Agua pintada en coordenadas de rejilla: la lámina (media de los vértices mojados de la celda, ponderada como una
+ * bilineal) si los vértices mojados pesan al menos la mitad; si no, null (seco). La orilla queda a mitad de celda.
+ */
+/** Diferencia de altura entre aguas vecinas a partir de la cual hay cascada y no pendiente. */
+export const FALL_STEP = 0.35;
+
+export function sampleWater(data: TerrainData, fx: number, fz: number): number | null {
+  const water = data.water;
+  if (!water) return null;
+  const i0 = Math.max(0, Math.min(data.columns - 2, Math.floor(fx))), j0 = Math.max(0, Math.min(data.rows - 2, Math.floor(fz)));
+  const tx = Math.max(0, Math.min(1, fx - i0)), tz = Math.max(0, Math.min(1, fz - j0));
+  const corners = [
+    [j0 * data.columns + i0, (1 - tx) * (1 - tz)], [j0 * data.columns + i0 + 1, tx * (1 - tz)],
+    [(j0 + 1) * data.columns + i0, (1 - tx) * tz], [(j0 + 1) * data.columns + i0 + 1, tx * tz],
+  ];
+  let wet = 0, nearest = NaN, nearestWeight = -1;
+  for (const [index, w] of corners) if (Number.isFinite(water[index])) {
+    wet += w;
+    if (w > nearestWeight) { nearestWeight = w; nearest = water[index]; }
+  }
+  if (wet < 0.5) return null;
+  // En una celda con cascada el agua no hace rampa: cada lado del salto tiene su nivel (como se dibuja).
+  let weight = 0, level = 0;
+  for (const [index, w] of corners) if (Number.isFinite(water[index]) && Math.abs(water[index] - nearest) <= FALL_STEP) { weight += w; level += water[index] * w; }
+  return level / weight;
 }
 
 /** Altura bilineal en coordenadas de rejilla (columna, fila). */
@@ -468,6 +536,8 @@ export function mapSummary(map: MapDocument, revision: string): MapSummary {
 }
 
 export const mapKind = (map: Pick<MapDocument, 'settings'>): MapKind => map.settings.kind ?? 'zone';
+/** Si el mapa lleva luciérnagas: lo que diga su ajuste, o sí salvo en los interiores. */
+export const mapFireflies = (settings: Pick<MapSettings, 'fireflies' | 'kind'>) => settings.fireflies ?? settings.kind !== 'interior';
 export const portalTrigger = (marker: MapMarker): PortalTrigger => marker.trigger ?? 'walk';
 
 /** Una llegada nombrada nunca se sustituye por otra silenciosamente. */

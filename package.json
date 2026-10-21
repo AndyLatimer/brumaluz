@@ -14,7 +14,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "db:apply": "node scripts/apply-sql.mjs",
-    "art:build": "node scripts/build-wardrobe.mjs",
+    "art:build": "node scripts/build-wardrobe.mjs && node scripts/build-medieval-wardrobe.mjs",
+    "art:build:medieval": "node scripts/build-medieval-wardrobe.mjs",
     "art:check": "node --test scripts/test-wardrobe.mjs",
     "assets:import": "node tools/import-kaykit.mjs",
     "assets:check": "node --test scripts/test-assets.mjs",
@@ -26,7 +27,9 @@
     "test:combat": "node --test scripts/test-combat.mjs",
     "test:npcs": "node --test scripts/test-npcs.mjs",
     "test:maps": "node --test scripts/test-maps.mjs",
-    "test:brumaluz": "node --test scripts/test-brumaluz-city.mjs"
+    "test:brumaluz": "node --test scripts/test-brumaluz-city.mjs",
+    "test:water": "node --test scripts/test-water.mjs",
+    "test:daynight": "node --test scripts/test-daynight.mjs"
   },
   "keywords": [],
   "author": "",

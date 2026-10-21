@@ -13,7 +13,7 @@ import { dropSelection, duplicateSelection, updateGizmo } from './tools';
 import { entityLabel, renderLayers } from './catalog';
 import { thumbnail } from './thumbnails';
 import { listMaps, loadMap, saveMap } from './store';
-import { mapSummary, newMap, type MapSummary } from '../../data/maps';
+import { mapFireflies, mapSummary, newMap, type MapSummary } from '../../data/maps';
 import { brumaluzGateMarkers } from '../../data/pompelin';
 
 // Panel derecho: propiedades de la selección y ajustes generales del mapa.
@@ -301,6 +301,7 @@ export function renderMapSettings() {
     field('Cielo', choice(s.sky, SKY_PRESETS.map(sky => [sky, SKY_LABELS[sky]] as const), value => { s.sky = value; settingsChanged('Cielo'); })),
     field('Niebla', (() => { const input = el('input', { type: 'range', min: 0, max: 1, step: 0.05, value: String(s.fog) }); input.addEventListener('input', () => { s.fog = Number(input.value); environment.apply(s, state.field); }); input.addEventListener('change', () => commit('Niebla')); return input; })()),
     field('Nubes', check(s.clouds, value => { s.clouds = value; settingsChanged('Nubes'); })),
+    field('Luciérnagas', check(mapFireflies(s), value => { s.fireflies = value; commit('Luciérnagas'); })),
     field('Bordes cerrados', check(s.bounded, value => { s.bounded = value; settingsChanged('Bordes'); })),
     el('h3', {}, 'Agua'),
     field('Agua', check(s.water.enabled, value => { s.water.enabled = value; settingsChanged('Agua', true); renderMapSettings(); })),

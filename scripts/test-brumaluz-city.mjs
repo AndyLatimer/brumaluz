@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { createServer } from 'vite';
 import { assetBoxes } from '../tools/asset-bounds.mjs';
 import {
-  buildBrumaluz, DIRS, DISTRICTS, GATES, HALF, PREFIX, RINGS, WALL_RADIUS,
+  buildBrumaluz, DIRS, DISTRICTS, GATES, HALF, PREFIX, RINGS, WALL_PIECE, WALL_RADIUS,
   hexDist, hexToWorld, polar, tileRoadMask, worldToHex,
 } from '../tools/build-brumaluz.mjs';
 
@@ -14,16 +14,17 @@ import {
 // en memoria a partir del borrador actual, sin guardarla.
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const dryRun = process.env.BRUMALUZ_CITY_DRY_RUN === '1';
-let server, maps, runtime, map, terrain, collision, tiles;
+let server, maps, runtime, map, terrain, collision, tiles, boxes;
 
 before(async () => {
   server = await createServer({ configFile: false, logLevel: 'error', server: { middlewareMode: true } });
   maps = await server.ssrLoadModule('/src/data/maps.ts');
   runtime = await server.ssrLoadModule('/src/world/mapRuntime.ts');
   const draft = await json('src/data/maps/brumaluz.json');
-  map = maps.validateMap(dryRun ? buildBrumaluz(draft, maps) : draft);
+  map = maps.validateMap(dryRun ? buildBrumaluz(draft, maps, await assetBoxes()) : draft);
   terrain = maps.decodeTerrain(map.terrain);
-  const boxes = await assetBoxes();
+  // Las mismas cajas de colisión que el juego (planta a ras de suelo).
+  boxes = await assetBoxes({ footprint: true, only: new Set(map.objects.map(object => object.asset)) });
   for (const object of map.objects) assert.ok(boxes.has(object.asset), `Recurso conocido: ${object.asset}`);
   collision = runtime.buildCollision(map, new runtime.TerrainField(terrain), boxes);
   tiles = new Map();
@@ -109,11 +110,11 @@ test('seis barrios con casas en sus casillas, casas gremiales, colinas y muralla
     const [q, r] = worldToHex(house.position[0], house.position[2]), [x, z] = hexToWorld(q, r);
     assert.ok(Math.hypot(house.position[0] - x, house.position[2] - z) < 0.01, `${house.name} en el centro de su casilla`);
   }
+  // Edificios ya construidos del pack: ninguno hecho a mano con piezas de muro y puerta.
   for (const name of ['Casa de los Telares', 'Casa de los Canteros', 'Lonja de los Mercaderes', 'Archivo de la Capital']) {
-    assert.ok(generated.filter(object => object.name === name && object.asset.startsWith('dungeon/')).length >= 20, name);
+    assert.equal(generated.filter(object => object.name === name).length, 1, name);
   }
-  const towers = new Set(generated.filter(object => / · casa torre \d+$/.test(object.name ?? '')).map(object => object.name));
-  assert.ok(towers.size >= 3, `${towers.size} casas torre compuestas`);
+  assert.ok(!generated.some(object => WALL_PIECE.test(object.asset)), 'Sin edificios montados con muros, puertas o suelos');
   for (const id of ['colina_molino', 'colina_cantera', 'colina_mirador']) {
     const [x, , z] = map.markers.find(marker => marker.id === `${PREFIX}${id}`).position, r = Math.hypot(x, z);
     const around = Math.min(...[-1, 1].map(side => heightAt(x / r * (r + side * 14), z / r * (r + side * 14))));
@@ -145,6 +146,62 @@ test('calles mayores, anillos, calles de barrio y puertas viejas tienen paso lib
     samples += walk(centers([start, end]), `Calle de barrio ${k}`);
   }
   assert.ok(samples > 8000, `${samples} muestras de paso`);
+});
+
+test('las escaleras de las casas llevan hasta el rellano de la puerta', () => {
+  // Medidas del modelo (fachada hacia +Z): centro de la escalera en X, pie, punto ante la puerta (a un radio del muro)
+  // y altura del zócalo.
+  const STAIRS = { 'city/home_B': { x: 0.125, foot: 0.57, top: 0.36, height: 0.21 }, 'city/tavern': { x: -0.145, foot: 0.64, top: 0.46, height: 0.21 } };
+  let checked = 0;
+  for (const object of map.objects) {
+    const stairs = STAIRS[object.asset];
+    if (!stairs || !object.id.startsWith(PREFIX)) continue;
+    const [x, , z] = object.position, s = object.scale[0], c = Math.cos(object.rotation[1]), sn = Math.sin(object.rotation[1]);
+    const at = lz => [x + stairs.x * s * c + lz * s * sn, z - stairs.x * s * sn + lz * s * c];
+    const path = [at(stairs.foot + 0.25), at(stairs.top)];
+    walk(path, `Escalera de ${object.name}`);
+    // Al subir, la superficie crece sin saltos (como la sigue el juego) y acaba en el rellano.
+    let previous = collision.groundY(...path[0]);
+    for (let t = 0; t <= 1; t += 0.02) {
+      const [px, pz] = [path[0][0] + (path[1][0] - path[0][0]) * t, path[0][1] + (path[1][1] - path[0][1]) * t];
+      const y = collision.platformY(px, pz) ?? collision.groundY(px, pz);
+      assert.ok(Math.abs(y - previous) < 0.35, `${object.name}: escalón brusco (${(y - previous).toFixed(2)} m)`);
+      previous = y;
+    }
+    const base = object.position[1];
+    assert.ok(previous - base > stairs.height * object.scale[1] * 0.75, `${object.name}: se sube casi hasta la altura de la puerta (${(previous - base).toFixed(2)} m)`);
+    checked++;
+  }
+  assert.ok(checked >= 20, `${checked} escaleras comprobadas`);
+});
+
+test('el agua se cruza: las lagunas se nadan y el río se vadea', () => {
+  const lagoons = map.objects.filter(object => object.asset === 'city/hex_water');
+  for (const lagoon of lagoons) {
+    const [x, , z] = lagoon.position, water = collision.waterAt(x, z);
+    assert.ok(water?.deep, `Laguna en ${x},${z}: se nada`);
+    assert.ok(Math.abs(water.surface - (lagoon.position[1] - 0.2 * lagoon.scale[1])) < 0.01, 'Superficie a la altura de la lámina');
+  }
+  const river = map.objects.find(object => object.asset === 'city/hex_river_A');
+  const shallow = collision.waterAt(river.position[0], river.position[2] + 0.2);
+  assert.ok(shallow && !shallow.deep, 'El río del casco se vadea');
+  assert.equal(collision.waterAt(0, 0), null, 'La plaza está en seco');
+  // De la orilla a la laguna y de vuelta, sin que nada lo impida.
+  const [lx, , lz] = lagoons.find(object => object.position[0] > 0).position;
+  walk([[lx - 9, lz], [lx, lz], [lx - 9, lz]], 'Entrar y salir de la laguna');
+  // Y se cruza el río de orilla a orilla.
+  walk([[river.position[0] + 2, river.position[2] - 5], [river.position[0] + 2, river.position[2] + 5]], 'Vadear el río');
+});
+
+test('faroles, toldos y arbustos chocan como lo que son', () => {
+  const field = new runtime.TerrainField(terrain);
+  const shapesOf = asset => map.objects.filter(object => object.asset === asset && object.collision === 'auto')
+    .map(object => runtime.objectCollision(object, boxes.get(asset), field));
+  const lamps = shapesOf('builtin/lamppost');
+  assert.ok(lamps.length > 20);
+  for (const { shapes } of lamps) assert.ok(shapes.length === 1 && shapes[0].r > 0 && shapes[0].r <= 0.15, 'Cada farol es un poste fino');
+  for (const { shapes } of shapesOf('city/tent')) assert.ok(shapes.length === 4 && shapes.every(shape => shape.r <= 0.15), 'Bajo un toldo se pasa: solo chocan sus postes');
+  for (const { shapes, platforms } of shapesOf('forest/objects/Bush_4_A_Color1')) assert.ok(shapes.length === 1 && !platforms.length, 'Los arbustos se rodean, no se pisan');
 });
 
 test('las puertas al continente llevan a Pompelín y sus llegadas están despejadas', () => {

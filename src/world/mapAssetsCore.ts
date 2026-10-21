@@ -51,6 +51,36 @@ export const boxOf = (object: THREE.Object3D, skip?: RegExp) => {
   return box;
 };
 
+/** Parte de abajo del objeto (en fracción de su altura) que cuenta para la planta de su colisión. */
+export const FOOTPRINT_HEIGHT = 0.3;
+
+/**
+ * Caja de colisión: la altura del objeto entero, pero la planta solo de lo que hay a ras de suelo (el 30 % de abajo).
+ * Así no cuentan aleros, tejados, copas, toldos ni los brazos de un farol, y uno se puede arrimar a las paredes.
+ */
+export const footprintOf = (object: THREE.Object3D, skip?: RegExp) => {
+  const box = boxOf(object, skip);
+  if (box.isEmpty()) return box;
+  const cut = box.min.y + (box.max.y - box.min.y) * FOOTPRINT_HEIGHT;
+  const foot = new THREE.Box3(), point = new THREE.Vector3();
+  object.traverse(part => {
+    const mesh = part as THREE.Mesh;
+    if (!mesh.isMesh || skip?.test(mesh.name)) return;
+    const positions = mesh.geometry.getAttribute('position');
+    if (!positions) return;
+    for (let i = 0; i < positions.count; i++) {
+      point.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld);
+      if (point.y <= cut) foot.expandByPoint(point);
+    }
+  });
+  if (foot.isEmpty()) return box;
+  box.min.x = foot.min.x; box.max.x = foot.max.x; box.min.z = foot.min.z; box.max.z = foot.max.z;
+  return box;
+};
+
+/** Cristal de los faroles básicos: el ciclo de día y noche lo enciende y lo apaga. */
+export const LAMPPOST_GLASS = new THREE.MeshStandardMaterial({ color: '#ffd88a', emissive: '#ffb24a', emissiveIntensity: 2.2 });
+
 /** Proveedor de plantillas compartidas; `library` resuelve los recursos de la biblioteca. */
 export function createMapAssetProvider(library: (id: string) => Promise<THREE.Object3D>): MapAssetProvider & {
   instantiate(id: string): Promise<THREE.Object3D>;
@@ -82,8 +112,8 @@ export function createMapAssetProvider(library: (id: string) => Promise<THREE.Ob
       });
       return copy;
     },
-    /** Caja de colisión local (sin aspas de molino ni rueda de agua). */
-    async collisionBox(id: string) { return boxOf(await template(id), /windmill_top_fan|watermill_wheel/); },
+    /** Caja de colisión local (sin aspas de molino ni rueda de agua): ver `footprintOf`. */
+    async collisionBox(id: string) { return footprintOf(await template(id), /windmill_top_fan|watermill_wheel/); },
   };
 }
 
@@ -104,7 +134,7 @@ function builtin(name: string): THREE.Object3D {
   }
   if (name === 'lamppost') {
     const iron = new THREE.MeshStandardMaterial({ color: '#3a3533', roughness: 0.5, metalness: 0.6 });
-    const glass = new THREE.MeshStandardMaterial({ color: '#ffd88a', emissive: '#ffb24a', emissiveIntensity: 2.2 });
+    const glass = LAMPPOST_GLASS;
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.6, 8), iron); pole.position.y = 1.3;
     const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.36, 0.28), glass); lamp.position.y = LAMPPOST_FLAME_Y;
     const cap = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.22, 4), iron); cap.position.y = 3.04; cap.rotation.y = Math.PI / 4;

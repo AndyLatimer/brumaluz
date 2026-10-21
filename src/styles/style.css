@@ -1161,7 +1161,9 @@ body.window-open .minimap { z-index: 61; }
 .minimap-players { display: inline-flex; justify-content: center; align-items: center; gap: 3px; min-width: 26px; padding: 1px 3px; border: 1px solid #d2ab6355; border-radius: 5px; background: #140d0980; color: #f4dfb6; font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; box-shadow: inset 0 1px #fff0c411; }
 .minimap-players svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .minimap-players.error { color: #ffb7a0; }
-.minimap-coords { grid-column: 1 / -1; padding-top: 2px; border-top: 1px solid #d2ab6333; text-align: center; color: #d6c2a1; font-size: 10px; line-height: 1; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.minimap-clock { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 3px; padding-top: 2px; border-top: 1px solid #d2ab6333; color: #f4dfb6; font-size: 10px; line-height: 1; letter-spacing: .05em; font-variant-numeric: tabular-nums; }
+.minimap-clock-icon { width: 10px; height: 10px; fill: none; stroke: #dfbb76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.minimap-clock.night .minimap-clock-icon { stroke: #a9bdff; }
 .minimap-tip { position: absolute; transform: translate(-50%, -150%); padding: 2px 7px; border-radius: 6px; background: rgba(20,12,6,.92); border: 1px solid #8be07a; color: #c9f5c0; font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 2; }
 .minimap.off .minimap-frame, .minimap.off .minimap-zoom { display: none; }
 .minimap.off .minimap-plate { margin-top: 0; }

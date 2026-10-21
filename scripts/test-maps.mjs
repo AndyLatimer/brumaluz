@@ -47,7 +47,7 @@ test('minimap uses the atlas icons and tracking preferences stay isolated by cha
         <button class="minimap-zoom-in"></button><button class="minimap-zoom-out"></button>
         <span class="minimap-players"><span class="minimap-player-count"></span></span>
         <span class="minimap-dir n"></span><span class="minimap-dir e"></span><span class="minimap-dir s"></span><span class="minimap-dir w"></span>
-        <span class="minimap-zone"></span><span class="minimap-coords"></span><span class="minimap-tip" hidden></span></div>`;
+        <span class="minimap-zone"></span><span class="minimap-clock"><time class="minimap-time"></time></span><span class="minimap-tip" hidden></span></div>`;
       const kinds=['npc','quest','waypoint','exit','interior'];
       const markers=kinds.map((kind,i)=>({id:kind,name:kind,x:Math.cos(i*Math.PI*2/5)*12,z:Math.sin(i*Math.PI*2/5)*12,kind}));
       let opened=0;
@@ -367,7 +367,7 @@ test('game crosses walk and E portals with loading screens and without arrival b
     await page.locator('.zone-map-player').waitFor();
     assert.ok(await page.locator('.zone-map-north svg').isVisible());
     assert.equal(await page.locator('.zone-map-key > span').count(),6);
-    assert.match(await page.locator('.zone-map-key-npc').evaluate(icon=>icon.parentElement.innerText),/NPC \(bolita\)/);
+    assert.match(await page.locator('.zone-map-key-npc').evaluate(icon=>icon.parentElement.innerText),/NPC/);
     assert.ok(await page.locator('.zone-map-poi-exit').isVisible());
     const initialScale=await page.locator('.zone-map-scale').textContent();
     assert.match(initialScale,/^\d+(?:\.\d+)? (?:m|km)$/);

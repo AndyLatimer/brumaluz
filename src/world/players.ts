@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { WaterFx } from './waterFx';
 import { Character } from '../character/character';
 import { TITLES, isReservedTitle, PHOENIX_ICON } from '../data/titles';
 import { t } from '../ui/i18n';
@@ -25,6 +26,8 @@ export class RemotePlayers {
     private scene: THREE.Scene,
     private groundY: (x: number, z: number) => number,
     private platformY: (x: number, z: number) => number | null,
+    private waterAt: (x: number, z: number) => { surface: number; deep: boolean } | null = () => null,
+    private waterFx?: WaterFx,
   ) {}
 
   receive(players: WorldPlayer[]) {
@@ -43,7 +46,9 @@ export class RemotePlayers {
       }
       const floor = this.groundY(player.position.x, player.position.z);
       const platform = this.platformY(player.position.x, player.position.z);
-      const target = new THREE.Vector3(player.position.x, Math.max(floor + player.jump, platform ?? -Infinity), player.position.z);
+      // En agua profunda nada: queda a la altura de la superficie (el modelo se hunde por su cuenta).
+      const water = this.waterAt(player.position.x, player.position.z);
+      const target = new THREE.Vector3(player.position.x, water?.deep ? water.surface : Math.max(floor + player.jump, platform ?? -Infinity), player.position.z);
       if (!actor) {
         const character = new Character(player.data, { outfit: false });
         character.root.position.copy(target);
@@ -74,6 +79,8 @@ export class RemotePlayers {
         const seconds = Math.max((now - actor.receivedAt) / 1000, 0.01);
         const speed = Math.hypot(target.x - actor.target.x, target.z - actor.target.z) / seconds;
         actor.character.setGait(player.dead || speed < 0.35 ? 'idle' : speed > 4 ? 'run' : 'walk');
+        actor.character.setSwimming(!!water?.deep && !player.dead);
+        this.waterFx?.track(player.id, target, water, speed, seconds);
         if (player.wave !== actor.player.wave) actor.character.wave();
         if (player.jump > actor.player.jump + 0.2) actor.character.jump();
         actor.from.copy(actor.character.root.position);

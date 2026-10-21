@@ -21,6 +21,7 @@
       <label>Vestuario
         <select id="wardrobe">
           <option value="helpers">Gremio de Ayudantes</option>
+          <option value="medieval">Clásico medieval</option>
           <option value="villager">Ropa inicial (comparación)</option>
         </select>
       </label>
@@ -39,7 +40,8 @@
       <label>Giro <input id="turn" type="range" min="-180" max="180" value="0"></label>
       <label>Elevación <input id="elevation" type="range" min="-75" max="65" value="5"></label>
       <p id="status" role="status">Cargando recursos…</p>
-      <a href="./src/assets/models/wardrobe/helpers.glb" download>Descargar GLB para Blender</a>
+      <a href="./src/assets/models/wardrobe/helpers.glb" download>Descargar GLB Ayudantes para Blender</a>
+      <a href="./src/assets/models/wardrobe/medieval.glb" download>Descargar GLB Medieval para Blender</a>
     </main>
     <canvas aria-label="Vista previa 3D del vestuario"></canvas>
     <script type="module" src="/src/dev/wardrobePreview.ts"></script>

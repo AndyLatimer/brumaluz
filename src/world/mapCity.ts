@@ -1,12 +1,14 @@
 import * as THREE from 'three';
-import { validateMap, type MapDocument, type MapKind } from '../data/maps';
+import { mapFireflies, validateMap, type MapDocument, type MapKind } from '../data/maps';
 import { isWorldNpcId } from '../data/npcs';
 import { LOCATIONS } from '../data/data';
 import { PUBLISHED_WORLD } from '../data/world/published';
 import { loadGLB } from './load';
 import { softDot } from './paint';
+import { daylight } from './dayNight';
 import { loadMapWorld } from './mapRuntime';
-import { boxOf, createMapAssetProvider, LAMPPOST_FLAME_Y } from './mapAssetsCore';
+import { WaterLayer } from './water';
+import { boxOf, createMapAssetProvider, LAMPPOST_FLAME_Y, LAMPPOST_GLASS } from './mapAssetsCore';
 import { cityLinks, type City, type CityVendorSpot, type Interactable, type NpcSite } from './city';
 
 // Mapas del juego publicados desde el editor (`/maps.html`): el mundo de Pompelín, Brumaluz y el resto de lugares.
@@ -27,9 +29,17 @@ export interface PublishedMap extends PublishedMapMeta { load(): Promise<Publish
 export type PublishedWorld = Record<string, PublishedMap>;
 
 const VENDOR_ROLES = new Set<CityVendorSpot['role']>(['merchant', 'innkeeper', 'healer', 'smith', 'miller', 'lumber']);
-const MAX_LIGHTS = 12;
+/**
+ * Luces de faroles a la vez: siempre las mismas (cambiar cuántas hay obliga a recompilar los materiales); se
+ * reparten entre los faroles más cercanos al jugador.
+ */
+const LAMP_LIGHTS = 10;
+/** Más allá de esta distancia un farol no tiene luz propia (su llama sigue viéndose). */
+const LAMP_REACH = 34;
 /** Campo de visión: margen sobre el final de la niebla y distancia a la que se dejan de dibujar los detalles pequeños. */
 const VIEW_MARGIN = 30;
+/** Piezas que cuentan como pared en los interiores (se vuelven transparentes si tapan al personaje). */
+const INTERIOR_WALL = /(^|\/)wall/;
 const DETAIL_DISTANCE = 75;
 
 // En desarrollo, «Publicar en el juego» del editor recarga las pestañas del juego.
@@ -64,7 +74,8 @@ async function sinkTerrainUnderTiles(world: Awaited<ReturnType<typeof loadMapWor
   const { field, surface } = world;
   const { columns, rows, cell, minX, minZ } = field;
   const visibleLayers = new Set(doc.layers.filter(layer => layer.visible).map(layer => layer.id));
-  const tiles = doc.objects.filter(object => object.asset.startsWith('city/hex_') && !object.hidden && visibleLayers.has(object.layer));
+  // Bajo las lagunas no: su fondo se ve a través del agua.
+  const tiles = doc.objects.filter(object => object.asset.startsWith('city/hex_') && object.asset !== 'city/hex_water' && !object.hidden && visibleLayers.has(object.layer));
   if (!tiles.length) return;
   const boxes = new Map<string, THREE.Box3 | null>();
   for (const asset of new Set(tiles.map(tile => tile.asset))) {
@@ -117,14 +128,23 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     if (!url) throw new Error(`El mapa publicado no incluye ${id}.`);
     return (await loadGLB(url)).scene;
   });
-  const world = await loadMapWorld(doc, scene, provider, { lighting: false, batch: true });
+  // El agua de las casillas la pinta WaterLayer (semitransparente, con oleaje y cascadas): la pieza opaca no se dibuja.
+  const world = await loadMapWorld(doc, scene, provider, { lighting: false, batch: true, hide: asset => asset === 'city/hex_water' });
+  world.materials.setWaterBed(true);
   const { collision, field } = world;
   const root = world.root;
+  // La raíz del mapa no se mueve (ver ObjectLayer.batch): así three.js no recalcula cada fotograma las piezas fijas.
+  root.matrixAutoUpdate = false;
   root.name = `city:${doc.id}`;
   // Los nombres siguen las convenciones de city.ts: el suelo y la hierba no tapan la cámara de las conversaciones.
   world.surface.mesh.name = 'hex_terrain';
   world.grass.root.name = 'grass_tufts';
   await sinkTerrainUnderTiles(world, doc, provider);
+  const water = new WaterLayer(doc, world.field, world.surface);
+  // En el juego el agua refleja el cielo del ciclo de día y noche y se apaga de noche.
+  water.useSky(daylight.water);
+  water.styleWaterPlane(world.environment.waterMesh, doc.settings);
+  world.root.add(water.root);
   // Las nubes no deben salir en el minimapa.
   const clouds = world.environment.clouds;
   clouds.userData.hideFromMinimap = true;
@@ -156,9 +176,10 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
       : { id: `map:${marker.id}`, position: onGround(marker.position), radius: Math.max(1, marker.radius), label: marker.name || 'Examinar', text: text || undefined });
   }
 
-  // Faroles: llama en cada farol básico y luz real en los marcadores de luz.
+  // Faroles: llama en cada farol básico; luz real en cada farol y en cada marcador de luz (los más cercanos).
   const flameTexture = softDot('rgba(255,210,120,1)', 'rgba(255,120,40,0)');
   const flames: THREE.Sprite[] = [];
+  const sources: { position: THREE.Vector3; color: string; distance: number }[] = [];
   for (const object of doc.objects) {
     if (object.asset !== 'builtin/lamppost' || object.hidden || !visibleLayers.has(object.layer)) continue;
     const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTexture, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
@@ -168,12 +189,24 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     flame.raycast = () => {};
     root.add(flame);
     flames.push(flame);
+    sources.push({ position: flame.position.clone().setY(flame.position.y + 0.1), color: '#ffb24a', distance: 7 * 1.6 });
   }
-  for (const marker of markers.filter(marker => marker.type === 'light').slice(0, MAX_LIGHTS)) {
-    const light = new THREE.PointLight(marker.color ?? '#ffb24a', 6, Math.max(1, marker.radius) * 1.6, 1.6);
-    light.position.set(...marker.position);
+  // Un marcador de luz junto a un farol es la luz de ese farol (con su color y alcance).
+  for (const marker of markers) {
+    if (marker.type !== 'light') continue;
+    const position = new THREE.Vector3(...marker.position);
+    const own = sources.findIndex(source => Math.hypot(source.position.x - position.x, source.position.z - position.z) < 1.5);
+    const source = { position, color: marker.color ?? '#ffb24a', distance: Math.max(1, marker.radius) * 1.6 };
+    if (own >= 0) sources[own] = source; else sources.push(source);
+  }
+  const lights: THREE.PointLight[] = [];
+  for (let i = 0; i < Math.min(LAMP_LIGHTS, sources.length); i++) {
+    const light = new THREE.PointLight('#ffb24a', 0, 10, 1.6);
     root.add(light);
+    lights.push(light);
   }
+  const nearest: { source: typeof sources[number]; d: number }[] = [];
+  let lampTimer = 0;
 
   const spawnMarker = markers.find(marker => marker.type === 'spawn');
   return {
@@ -189,11 +222,49 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     spawn: spawnMarker ? onGround(spawnMarker.position) : world.spawn,
     spawnYaw: spawnMarker?.rotationY ?? 0,
     ...cityLinks(markers, (x, z) => field.heightAt(x, z)),
+    // Solo en interiores, y solo sus paredes: muebles, casas de la ciudad o árboles no se atenúan.
+    waterAt: collision.waterAt,
+    waterFalls: water.falls,
+    fireflies: mapFireflies(doc.settings),
+    fadeOccluders: doc.settings.kind === 'interior' ? (eye, targets, dt) => world.objects.fadeOccluders(eye, targets, dt, INTERIOR_WALL) : undefined,
     update(t: number, playerPosition?: THREE.Vector3) {
       // Campo de visión: lo que queda tras la niebla no se dibuja (con margen para la cámara, detrás del jugador).
       const fog = scene.fog instanceof THREE.Fog ? scene.fog.far : Infinity;
+      water.update(t);
       world.update(t, playerPosition ?? world.spawn, { distance: fog + VIEW_MARGIN, detail: Math.min(fog + VIEW_MARGIN, DETAIL_DISTANCE) });
-      flames.forEach((flame, i) => flame.scale.setScalar(flame.userData.size * (0.96 + Math.sin(t * 9 + i * 2) * 0.06 + Math.sin(t * 23 + i) * 0.04)));
+      // Faroles: tenues de día, encendidos de noche (en los interiores la luz es siempre la misma).
+      const night = doc.settings.kind === 'interior' ? 0.75 : daylight.night;
+      flames.forEach((flame, i) => {
+        flame.scale.setScalar(flame.userData.size * (0.96 + Math.sin(t * 9 + i * 2) * 0.06 + Math.sin(t * 23 + i) * 0.04));
+        flame.material.opacity = 0.4 + 0.6 * night;
+      });
+      LAMPPOST_GLASS.emissiveIntensity = 0.5 + 1.7 * night;
+      // Cada 15 fotogramas, las luces pasan a los faroles más cercanos; se apagan poco a poco al alejarse.
+      const focus = playerPosition ?? world.spawn;
+      if ((lampTimer -= 1) <= 0 && lights.length) {
+        lampTimer = 15;
+        nearest.length = 0;
+        for (const source of sources) {
+          const d = Math.hypot(source.position.x - focus.x, source.position.z - focus.z);
+          if (d < LAMP_REACH) nearest.push({ source, d });
+        }
+        nearest.sort((a, b) => a.d - b.d);
+        lights.forEach((light, i) => {
+          const pick = nearest[i];
+          light.userData.fade = pick ? 1 - THREE.MathUtils.smoothstep(pick.d, LAMP_REACH * 0.6, LAMP_REACH) : 0;
+          if (!pick) return;
+          light.position.copy(pick.source.position);
+          light.color.set(pick.source.color);
+          light.distance = pick.source.distance;
+        });
+      }
+      for (const light of lights) light.intensity = 6 * (0.35 + 0.85 * night) * (light.userData.fade ?? 0);
+      // Las nubes brillan con el sol, no de noche (comparten un único material).
+      const cloud = clouds.children[0]?.getObjectByProperty('isMesh', true) as THREE.Mesh | undefined;
+      if (cloud?.material instanceof THREE.MeshStandardMaterial) {
+        cloud.material.emissiveIntensity = 0.25 * (1 - daylight.night);
+        cloud.material.color.setScalar(1 - 0.55 * daylight.night);
+      }
     },
   };
 }

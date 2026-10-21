@@ -126,6 +126,14 @@ export interface City {
   /** Datos de construcción para convertir Brumaluz en un mapa editable. */
   layout?: CityLayout;
   update(t: number, playerPosition?: THREE.Vector3): void;
+  /** Luciérnagas y polen flotando (los interiores no las llevan). */
+  fireflies?: boolean;
+  /** Interiores: vuelve casi transparentes las paredes que tapan los puntos `targets` vistos desde `eye` (sin puntos, todo se restaura). */
+  fadeOccluders?(eye: THREE.Vector3, targets: readonly THREE.Vector3[], dt: number): void;
+  /** Agua en un punto: superficie y si es profunda (se nada) o somera (se vadea); null en seco. */
+  waterAt?(x: number, z: number): { surface: number; deep: boolean } | null;
+  /** Cascadas (pie de cada una, ancho y altura de la caída), para sus salpicaduras. */
+  waterFalls?: readonly { x: number; y: number; z: number; width: number; drop: number }[];
 }
 
 export interface CityLayout {

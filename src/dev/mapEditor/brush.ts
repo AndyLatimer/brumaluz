@@ -4,7 +4,7 @@ import type { TerrainRegion } from '../../world/mapRuntime';
 import { defaultScale } from '../../world/mapAssets';
 import {
   checkLimits, commit, el, environment, layerFor, markerLayer, measureTerrain, objectLayer, pickable, rebuildGrass,
-  reindex, removeEntities, scheduleCollision, state, status, syncScene, uid,
+  rebuildWater, reindex, removeEntities, scheduleCollision, state, status, syncScene, uid,
 } from './core';
 import { checkOption, pointer, rangeOption, registerTool, renderToolOptions, selectOption, setTool } from './tools';
 import { placement, placementEvents } from './place';
@@ -171,6 +171,119 @@ registerTool({
 });
 
 // ---------------------------------------------------------------------------
+// Agua: lagos, lagunas y ríos (la misma agua que se ve y se nada en el juego)
+// ---------------------------------------------------------------------------
+
+type WaterMode = 'lake' | 'river' | 'dry';
+export const waterBrush = {
+  mode: 'lake' as WaterMode,
+  /** Nivel del lago: el del primer clic (o el del agua que se toca) o uno fijo. */
+  levelFrom: 'click' as 'click' | 'fixed',
+  level: 0,
+  /** Profundidad máxima del vaso o del cauce bajo la lámina. */
+  depth: 1.6,
+  dig: true,
+  paintBed: true,
+};
+const WATER_MODES: [WaterMode, string][] = [['lake', '◍ Lago o laguna'], ['river', '〰 Río'], ['dry', '☀ Secar']];
+/** Peso de pincel a partir del cual un vértice queda dentro del agua (el borde se difumina a mitad de celda). */
+const WET = 0.3;
+/** Las orillas de un río quedan este tanto por encima de su lámina. */
+const RIVER_BANK = 0.25;
+let waterStroke: { heights: Float32Array; level: number } | null = null;
+let waterRebuild = 0;
+const SAND = GROUND_MATERIALS.findIndex(material => material.id === 'sand');
+const MUD = GROUND_MATERIALS.findIndex(material => material.id === 'mud');
+
+function applyWater() {
+  const hit = pointer.ground;
+  if (!hit || !waterStroke) return;
+  const field = state.field, data = field.data;
+  const water = data.water ??= new Float32Array(data.heights.length).fill(NaN);
+  const original = waterStroke.heights, heights = data.heights;
+  const region = field.forEachInRadius(hit.x, hit.z, brush.radius, brush.hardness, (index, weight) => {
+    if (waterBrush.mode === 'dry') {
+      if (weight >= WET) water[index] = NaN;
+      return;
+    }
+    // Lago: lámina plana. Río: un poco por debajo del terreno original, así baja con él (y salta donde salta él).
+    const level = waterBrush.mode === 'lake' ? waterStroke!.level : original[index] - RIVER_BANK;
+    if (weight >= WET) {
+      // Un río que entra en agua que ya existía se une a ella sin cambiarla; un lago la pone a su nivel.
+      if (waterBrush.mode === 'river' && Number.isFinite(water[index])) return;
+      water[index] = level;
+      // Fondo: arena en la orilla y barro donde cubre (así el agua honda se ve más oscura).
+      if (waterBrush.paintBed) { data.paint[index] = weight > 0.7 && waterBrush.dig ? MUD : SAND; data.grass[index] = 0; }
+    }
+    if (waterBrush.dig) {
+      // Vaso o cauce con perfil suave: hondo en el centro y a ras de la lámina en el borde del pincel.
+      // Bajo el agua, el vaso; en la orilla (fuera del agua), el terreno baja en rampa hasta asomar 5 cm sobre ella.
+      const target = weight >= WET
+        ? level - 0.12 - (waterBrush.depth - 0.12) * weight
+        : level + 0.05 + (original[index] - level - 0.05) * (1 - weight / WET);
+      heights[index] = Math.min(heights[index], Math.round(Math.min(original[index], target) * 100) / 100);
+      if (heights[index] < state.terrainMin) state.terrainMin = heights[index];
+    }
+  });
+  touch(region);
+  // Vista previa del agua mientras se pinta, sin rehacerla en cada fotograma.
+  const now = performance.now();
+  if (now - waterRebuild > 120) { waterRebuild = now; rebuildWater(); }
+}
+
+registerTool({
+  id: 'water', icon: '≈', shortcut: 'l', label: 'Agua: lagos, lagunas y ríos',
+  brush: () => ({ radius: brush.radius, color: waterBrush.mode === 'dry' ? '#e8c27a' : '#5fc3e8' }),
+  down() {
+    const hit = pointer.ground;
+    if (!hit) return;
+    const field = state.field;
+    if (pointer.alt) {
+      // Alt+clic: toma el nivel del agua que hay ahí o, en seco, la altura del suelo.
+      waterBrush.level = Math.round((field.waterAt(hit.x, hit.z) ?? hit.y) * 100) / 100;
+      waterBrush.levelFrom = 'fixed';
+      renderToolOptions();
+      status(`Nivel del agua: ${waterBrush.level.toFixed(2)} m`);
+      pointer.down = false;
+      return;
+    }
+    // Un lago que empieza sobre agua existente se une a ella a su nivel; en seco, al nivel del suelo del clic.
+    const level = waterBrush.levelFrom === 'fixed' ? waterBrush.level : Math.round((field.waterAt(hit.x, hit.z) ?? hit.y) * 100) / 100;
+    waterStroke = { heights: field.data.heights.slice(), level };
+    if (waterBrush.mode === 'lake' && waterBrush.levelFrom === 'click') { waterBrush.level = level; renderToolOptions(); }
+    applyWater();
+  },
+  move: () => { if (pointer.down) applyWater(); },
+  up() {
+    if (!waterStroke) return;
+    waterStroke = null;
+    rebuildWater();
+    endTerrainStroke(waterBrush.mode === 'dry' ? 'Secar agua' : waterBrush.mode === 'lake' ? 'Lago' : 'Río');
+  },
+  options: () => [
+    el('div', { class: 'swatches' }, ...WATER_MODES.map(([mode, label]) => el('button', {
+      type: 'button', class: waterBrush.mode === mode ? 'active' : '', onclick: () => { waterBrush.mode = mode; renderToolOptions(); },
+    }, label))),
+    ...(waterBrush.mode === 'lake' ? [
+      selectOption('Nivel', waterBrush.levelFrom, [['click', 'El del primer clic'], ['fixed', 'Fijo']] as const, value => { waterBrush.levelFrom = value; renderToolOptions(); }),
+      ...(waterBrush.levelFrom === 'fixed' ? [rangeOption('Altura', waterBrush.level, -40, 80, 0.05, value => { waterBrush.level = value; }, v => `${v} m`)] : []),
+    ] : []),
+    ...(waterBrush.mode !== 'dry' ? [
+      checkOption(waterBrush.mode === 'river' ? 'Excavar el cauce' : 'Excavar el fondo', waterBrush.dig, value => { waterBrush.dig = value; renderToolOptions(); }),
+      ...(waterBrush.dig ? [rangeOption('Profundidad', waterBrush.depth, 0.3, 6, 0.1, value => { waterBrush.depth = value; }, v => `${v} m`)] : []),
+      checkOption('Pintar el fondo (arena y barro)', waterBrush.paintBed, value => { waterBrush.paintBed = value; }),
+    ] : []),
+    rangeOption('Tamaño', brush.radius, 0.5, 60, 0.5, value => { brush.radius = value; }, v => `${v} m`),
+    rangeOption('Dureza', brush.hardness, 0, 0.95, 0.05, value => { brush.hardness = value; }, v => `${Math.round(v * 100)}%`),
+    el('span', { class: 'hint' }, waterBrush.mode === 'river'
+      ? 'Arrastra a lo largo del río: el agua baja con el terreno y donde este da un salto hay cascada · Alt+clic toma el nivel'
+      : waterBrush.mode === 'lake'
+        ? 'Un lago a otra altura que el agua vecina forma una cascada · Alt+clic toma el nivel · más de 1,1 m se nada'
+        : 'Quita el agua (el fondo excavado se queda)'),
+  ],
+});
+
+// ---------------------------------------------------------------------------
 // Hierba
 // ---------------------------------------------------------------------------
 
@@ -233,7 +346,7 @@ function applyScatter() {
     const x = hit.x + Math.cos(a) * d, z = hit.z + Math.sin(a) * d;
     if (!state.field.contains(x, z)) continue;
     const y = state.field.heightAt(x, z);
-    if (scatter.avoidWater && water !== null && y < water + 0.05) continue;
+    if (scatter.avoidWater && ((water !== null && y < water + 0.05) || state.field.waterAt(x, z) !== null)) continue;
     if (nearby.some(object => Math.hypot(object.position[0] - x, object.position[2] - z) < scatter.spacing)) continue;
     const limit = checkLimits({ objects: 1 });
     if (limit) { status(limit, 'error'); break; }

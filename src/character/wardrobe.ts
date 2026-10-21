@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { loadGLB } from '../world/load';
 import helpersUrl from '../assets/models/wardrobe/helpers.glb?url';
+import medievalUrl from '../assets/models/wardrobe/medieval.glb?url';
 import type { HeadOptions } from './head';
 
 type BodyRegion = 'torso' | 'arms' | 'legs';
@@ -33,16 +34,38 @@ export const WARDROBES = {
       { node: 'helpers-soft-cap', attachment: 'head' },
     ],
   },
+  medieval: {
+    hairFit: 'cap',
+    pieces: [
+      { node: 'medieval-tunic', replaces: ['torso'] },
+      { node: 'medieval-sleeve-l', replaces: ['arms'] },
+      { node: 'medieval-sleeve-r' },
+      { node: 'anatomy-hand-left' },
+      { node: 'anatomy-hand-right' },
+      { node: 'medieval-trouser-l', replaces: ['legs'] },
+      { node: 'medieval-trouser-r' },
+      { node: 'medieval-boot-l' },
+      { node: 'medieval-boot-r' },
+      { node: 'medieval-hat', attachment: 'head' },
+    ],
+  },
 } as const satisfies Record<string, WardrobeSet>;
 export type WardrobeId = keyof typeof WARDROBES;
-let asset: GLTF;
-export function wardrobeSource() {
-  if (!asset) throw new Error('El vestuario debe cargarse antes de crear personajes.');
+const assets = new Map<WardrobeId, GLTF>();
+
+export function wardrobeSource(id: WardrobeId = 'helpers') {
+  const asset = assets.get(id);
+  if (!asset) throw new Error(`El vestuario «${id}» debe cargarse antes de crear personajes.`);
   return asset;
 }
 
 export async function loadWardrobe() {
-  asset = await loadGLB(helpersUrl);
+  const [helpers, medieval] = await Promise.all([
+    loadGLB(helpersUrl),
+    loadGLB(medievalUrl),
+  ]);
+  assets.set('helpers', helpers);
+  assets.set('medieval', medieval);
 }
 
 export function wardrobeRegions(id: WardrobeId): ReadonlySet<BodyRegion> {
@@ -87,7 +110,8 @@ export function mountWardrobe(
   skinColor: string, own: (resource: { dispose(): void }) => void,
   hat = true,
 ) {
-  if (!asset) throw new Error('El vestuario debe cargarse antes de crear personajes.');
+  const asset = assets.get(id);
+  if (!asset) throw new Error(`El vestuario «${id}» debe cargarse antes de crear personajes.`);
   const set: WardrobeSet = WARDROBES[id];
   const materials = new Map<THREE.Material, THREE.Material>();
   const material = (source: THREE.Material) => {

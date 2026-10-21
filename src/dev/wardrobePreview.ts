@@ -46,7 +46,7 @@ function rebuild() {
     ...(isGnomi ? { face: 0, hair: 0, hairColor: 6, beard: 1, eyeShape: 4, eyeColor: 2, nose: 5, detail: 1, height: .25, build: .7 } : {}),
   }, {
     outfit: false,
-    wardrobe: wardrobe.value === 'helpers' ? 'helpers' : undefined,
+    wardrobe: wardrobe.value === 'helpers' ? 'helpers' : wardrobe.value === 'medieval' ? 'medieval' : undefined,
     proportions: isGnomi ? { width: 1.06, height: .92 } : undefined,
   });
   holder.scale.setScalar(isGnomi ? .48 : 1);
