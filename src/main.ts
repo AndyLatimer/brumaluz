@@ -56,6 +56,7 @@ import { renderSkills, skillAction } from './ui/skillsWindow';
 import { renderCollections } from './ui/collectionsWindow';
 import { skillIcon } from './ui/skillIcons';
 import { classIcon } from './ui/classIcons';
+import { raceIcon } from './ui/raceIcons';
 import { initTooltips } from './ui/tooltip';
 import { renderControls } from './ui/controls';
 import { loadSettings, saveSettings } from './services/settings';
@@ -1488,7 +1489,7 @@ $('#combat-auto').addEventListener('click',()=>{
   else lockCombatTarget();
 });
 $('#respawn').addEventListener('click', respawn);
-const RACE_ICONS: Record<Race, string> = { humano: '🛡️', elfo: '🌿', lagto: '🦎', pelso: '🐱' };
+const RACE_ICONS: Record<Race, string> = { humano: raceIcon('humano'), elfo: raceIcon('elfo'), lagto: raceIcon('lagto'), pelso: raceIcon('pelso') };
 const CLASS_ICONS: Record<ClassId, string> = { guerrero: classIcon('guerrero'), mago: classIcon('mago'), picaro: classIcon('picaro'), clerigo: classIcon('clerigo'), explorador: classIcon('explorador') };
 
 applyLanguage(document);

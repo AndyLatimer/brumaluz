@@ -1031,6 +1031,10 @@ test('world transitions show delayed loading, clear on success and errors, and l
   world.rpcDelay.set('character_enter', 1900);
   const player = await openPlayer(world, account), page = player.page;
   try {
+    const badge = await page.locator('.character-card .character-class-icon').first().boundingBox();
+    const name = await page.locator('.character-card strong').first().boundingBox();
+    assert.ok(badge.width >= 70 && badge.height >= 70);
+    assert.ok(name.x + name.width <= badge.x);
     await page.locator('.character-card .btn.gold').first().click();
     const loading = page.locator('#transition-loading');
     await loading.waitFor({ state: 'visible' });
