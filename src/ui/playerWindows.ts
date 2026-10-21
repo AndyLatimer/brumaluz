@@ -2,6 +2,7 @@
 import type * as THREE from 'three';
 import { ATTRIBUTES, ATTRIBUTE_MAX_VALUE, MAX_LEVEL, unspentAttributePoints, type AttributeId, type CharData } from '../data/data';
 import { classIcon } from './classIcons';
+import { raceIcon } from './raceIcons';
 import { CURRENCIES, CURRENCY_ORDER, currencyIcon } from '../data/currency';
 import { EQUIPMENT_SLOTS, INVENTORY_UNLOCKED, type EquipmentSlot } from '../data/inventory';
 import { itemDef, itemIcon, itemLabel } from '../data/items';
@@ -291,6 +292,13 @@ const ATTRIBUTE_ART: Record<AttributeId, string> = {
   percepcion: '<path d="M2 12S6 5 12 5s10 7 10 7-4 7-10 7S2 12 2 12Z" fill="#ad9b78"/><circle cx="12" cy="12" r="4" fill="#71968e"/><circle cx="12" cy="12" r="1.7" fill="#3d514d"/><circle cx="13" cy="10.5" r="1" fill="#fff1ce"/>',
 };
 
+const BAR_GLYPH: Record<string, string> = {
+  hp: 'M12 20.5s-8-4.8-8-10.7A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.8c0 5.9-8 10.7-8 10.7Z',
+  mana: 'M12 3s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11Z',
+  stamina: 'M13.5 2 5 13.5h6L10 22l8.5-11.5h-6Z',
+  xp: 'm12 3 2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5l-5.3 2.9 1.2-6-4.5-4.1 6-.7Z',
+};
+
 const sheetArt = (art: string) => `<svg viewBox="0 0 24 24" aria-hidden="true">${art}</svg>`;
 
 export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onTitleChange?: (title: TitleId) => void, points?: PointEditor) {
@@ -316,8 +324,18 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
   const sexIcon = el('span', `sex-icon ${d.sex === 1 ? 'female' : 'male'}`);
   sexIcon.innerHTML = SEX_ICON[d.sex];
   sexIcon.title = t(d.sex === 1 ? 'Mujer' : 'Hombre');
+  const chip = (cls: string, icon: string, text: string) => {
+    const node = el('span', `sheet-chip ${cls}`);
+    node.insertAdjacentHTML('beforeend', icon);
+    node.append(el('span', undefined, text));
+    return node;
+  };
   const detail = el('div', 'sheet-detail');
-  detail.append(sexIcon, el('span', undefined, `${raceText(d)} · ${classText(d)}`));
+  detail.append(
+    chip('race', raceIcon(d.race, 'sheetchip'), raceText(d)),
+    chip('class', classIcon(d.cls, 'sheetchip'), classText(d)),
+    sexIcon,
+  );
   title.append(nameRow, detail);
   const v = vitalsOf(d);
   const vitals = el('section', 'sheet-panel sheet-vitals');
@@ -336,7 +354,10 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
     track.setAttribute('aria-valuemax', String(max));
     track.setAttribute('aria-valuenow', String(value));
     track.append(fill, el('span', undefined, text));
-    row.append(el('span', 'sheet-bar-label', t(label)), track);
+    const name = el('span', 'sheet-bar-label');
+    name.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${BAR_GLYPH[cls]}"/></svg>`;
+    name.append(t(label));
+    row.append(name, track);
     return row;
   };
   bars.append(
@@ -378,7 +399,13 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
     const info = el('div', 'sheet-attr-info');
     const name = el('div', 'sheet-attr-name');
     name.append(el('span', undefined, t(ATTRIBUTES[id].label)), value);
-    info.append(name, el('p', 'sheet-attr-description', t(ATTRIBUTES[id].desc)));
+    const meter = el('div', 'sheet-attr-meter');
+    meter.setAttribute('aria-hidden', 'true');
+    const base = el('i', 'base'), pending = el('i', 'pending');
+    base.style.width = `${Math.min(100, ((total - extra) / ATTRIBUTE_MAX_VALUE) * 100)}%`;
+    pending.style.width = `${Math.min(100, (extra / ATTRIBUTE_MAX_VALUE) * 100)}%`;
+    meter.append(base, pending);
+    info.append(name, meter, el('p', 'sheet-attr-description', t(ATTRIBUTES[id].desc)));
     if (extra > 0) info.append(el('small', 'sheet-draft', t('+{n} sin confirmar', { n: extra })));
     row.append(icon, info);
     if (owed > 0 && points) {

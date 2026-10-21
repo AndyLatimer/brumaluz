@@ -34,6 +34,7 @@ import { RemotePlayers } from './world/players';
 import { renderSocial } from './ui/socialWindow';
 import { startFriendNotifications } from './ui/friendNotifications';
 import { createPlayerInteractions } from './ui/playerInteractions';
+import { animateVisibility, initUiMotion } from './ui/uiMotion';
 import { createTradeWindow } from './ui/tradeWindow';
 import { createTargetFrame, TARGET_RANGE, type NpcType, type TargetDetails } from './ui/targetFrame';
 import { getParty, observeParty, startParty, stopParty, partySelf, isPartyLeader } from './services/party';
@@ -530,6 +531,9 @@ window.addEventListener('keyup', (e) => keys.delete(e.code));
 
 // ---------------- Interacción (tecla E) ----------------
 const playerInteractions = createPlayerInteractions((target) => tradeWindow.invite(target));
+initUiMotion();
+animateVisibility(...['window-backdrop', 'options-backdrop', 'delete-dialog-backdrop', 'game-menu-panel', 'player-menu-panel', 'world-menu-panel',
+  'dialog', 'interact-prompt', 'combat-controls', 'death-screen', 'player-interactions'].map(id => document.getElementById(id)));
 const INTERACTIONS: Record<string, () => DialogLine[]> = {
   well: () => [{ speaker: state.name, text: '(Te asomas al pozo, es realmente profundo)' }],
 };
@@ -1543,6 +1547,7 @@ const tradeWindow = createTradeWindow({
   },
   notify(text) { chatSystem(text); },
 });
+animateVisibility(document.querySelector<HTMLElement>('.trade-backdrop'));
 window.setInterval(()=>{
   tradeWindow.setCharacter(mode==='play' && !TEST && !dead ? activeCharacterId : null);
 },250);
@@ -1747,12 +1752,16 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   refreshOverlayHud();
   document.body.classList.toggle('window-open', !!win && win !== 'loot');
   document.body.classList.toggle('window-full', !!win && win !== 'loot');
+  document.body.classList.toggle('skills-open', win === 'skills');
+  $('#window-backdrop').hidden = !win;
+  $('#window-confirm').hidden = true;
+  keys.clear();
+  if (win !== 'bank') bankState = null;
+  if (!win) { vendor = null; return; }
   $('#window-backdrop').classList.toggle('loot-overlay', win === 'loot');
   $('#window-backdrop').classList.toggle('quest-overlay', win === 'quests');
   $('#window-backdrop .game-window').classList.toggle('loot-window-frame', win === 'loot');
   $('#window-backdrop .game-window').setAttribute('aria-modal', String(win !== 'loot'));
-  document.body.classList.toggle('skills-open', win === 'skills');
-  $('#window-backdrop').hidden = !win;
   $('#window-backdrop .game-window').classList.toggle('social-window-frame', win === 'social');
   $('#window-backdrop .game-window').classList.toggle('quest-window-frame', win === 'quests');
   $('#window-backdrop .game-window').classList.toggle('inventory-window-frame', win === 'inventory');
@@ -1761,10 +1770,6 @@ function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('map-window-frame', win === 'map');
   $('#map-window-close').hidden = win !== 'map';
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor' || win === 'bank');
-  $('#window-confirm').hidden = true;
-  keys.clear();
-  if (win !== 'bank') bankState = null;
-  if (!win) { vendor = null; return; }
   if (closeMenu) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); }
   $('#window-title').textContent = win === 'vendor' ? vendor!.name : t(win === 'bank' ? 'Banco' : win === 'map' ? 'Mapa de la zona' : win === 'skills' ? 'Habilidades' : win === 'quests' ? 'Diario de misiones' : win === 'inventory' ? 'Inventario' : win === 'social' ? 'Social' : win === 'collections' ? 'Colecciones' : 'Ficha de personaje');
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'bank' || win === 'social' || win === 'skills' || win === 'collections');
