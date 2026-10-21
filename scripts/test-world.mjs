@@ -3080,6 +3080,8 @@ test('chat minimizes into a bottom tab, restores size, and corner preview stays 
     await revealChat(player.page);
     await player.page.waitForFunction(()=>getComputedStyle(document.querySelector('#chat')).opacity==='1');
     assert.equal(await player.page.locator('.chat-log').isVisible(),true);
+    const revealed=await player.page.locator('#chat').boundingBox();
+    assert.equal(Math.round(revealed.y+revealed.height),788,'Chat revealed over an open window keeps its normal bottom position');
     await player.page.locator('.chat-input').fill('Draft');
     await player.page.mouse.move(5,5);
     assert.equal(await player.page.locator('#chat').evaluate(el=>getComputedStyle(el).opacity),'1');
