@@ -1,4 +1,4 @@
-// Shared construction fixes, plus small details that survive the game's camera distance.
+// Legacy finishing, kept for reference. Current generation uses tailored-outfit-pattern.mjs.
 export const finishOutfit = `
 // A real pelvic lining bridges both legs: short jackets must never expose empty space.
 mesh('suit-foundation',[

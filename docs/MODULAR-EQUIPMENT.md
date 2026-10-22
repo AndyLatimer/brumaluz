@@ -1,13 +1,15 @@
 # Equipo por piezas y accesorios
 
+> Patronaje actual: versión 3, con atlas de color, normales y superficie, tocados alrededor del cráneo completo y faldones articulados por paños. Véase [dirección artística vigente](EQUIPMENT-ART-DIRECTION.md) para los encajes y límites del ajuste durante animaciones.
+
 ## Catálogo
 
 - 88 armas existentes.
-- 250 piezas de armadura: 50 conjuntos × cabeza, pecho, manos, piernas y pies.
-- 30 accesorios universales: 10 colgantes, 10 anillos, 10 abalorios.
-- 368 objetos equipables en total. Se conservan los IDs anteriores como pecheras.
+- 275 piezas de armadura: 55 conjuntos × cabeza, pecho, manos, piernas y pies.
+- 33 accesorios universales: 11 colgantes, 11 anillos, 11 abalorios.
+- 396 objetos equipables en total. Se conservan los IDs anteriores como pecheras.
 
-Las diez colecciones mantienen sus colores y símbolos: Caminante, Ámbar, Sello Violeta, Aurora, Fuego Primigenio, Alba, Eclipse, Roble, Marea y Forja. Los accesorios son pequeños objetos físicos con cadenas, engastes, aros y emblemas propios; se sujetan al pecho, mano izquierda o cinturón y siguen los huesos correspondientes. Sus iconos usan los modelos reales y el marco compartido del juego.
+Las once colecciones mantienen sus colores y símbolos: Principiante, Caminante, Ámbar, Sello Violeta, Aurora, Fuego Primigenio, Alba, Eclipse, Roble, Marea y Forja. Los accesorios son pequeños objetos físicos con cadenas, engastes, aros y emblemas propios; se sujetan al pecho, mano izquierda o cinturón y siguen los huesos correspondientes. Sus iconos usan los modelos reales y el marco compartido del juego.
 
 ## Ranuras y aspecto
 
@@ -45,8 +47,8 @@ Las copias de datos están en `equipment_modular_migrations`; los modelos comple
 - `src/data/outfits.json`: patrones originales; `outfits.ts`: piezas, precios y reparto de guardia.
 - `src/data/accessories.json`: accesorios y reservas máximas.
 - `tools/build-modular-armor.mjs`: partición de mallas y exportación de GLB individuales.
-- `tools/build-accessories.mjs` y `equipment-motifs.mjs`: joyería y heráldica.
-- `tools/build-weapon-icons.mjs`: iconos de los 368 equipables, con encuadre de mallas animadas.
+- `tools/build-accessories.mjs` y `tailored-accessories.mjs`: joyería y heráldica.
+- `tools/build-weapon-icons.mjs`: iconos de los 396 equipables, con encuadre de mallas animadas.
 - `equipment_manifest.json`: modelos, IDs y estadísticas compartidos.
 
 `npm run art:outfits` reconstruye patrones, partes modulares, accesorios, iconos y SQL. Después se aplica el SQL con `node scripts/apply-sql.mjs`. La compilación normal regenera los iconos nuevos o modificados. Los modelos de `classes/modular/` y `items/accessories/` son GLB independientes con sus materiales y rig; el juego reutiliza los patrones completos en caché para montar solo las piezas seleccionadas.

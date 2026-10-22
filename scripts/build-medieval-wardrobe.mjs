@@ -395,4 +395,6 @@ await mkdir(fileURLToPath(new URL('wardrobe/', models)), { recursive: true });
 const targetGlb = fileURLToPath(new URL('wardrobe/medieval.glb', models));
 await io.write(targetGlb, document);
 console.log(`Successfully built medieval.glb: ${targetGlb}`);
+// Finish with the current continuous panels and modular-compatible skirt.
+await import('../tools/build-base-tunic.mjs');
 

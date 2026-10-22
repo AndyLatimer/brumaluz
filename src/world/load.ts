@@ -23,6 +23,15 @@ function bufferToDataUrl(buf: ArrayBuffer | Uint8Array, mime: string) {
   return `data:${mime};base64,${btoa(s)}`;
 }
 
+// Portable GLBs repeat their embedded atlases. Decode each identical image once,
+// while giving the parser independent textures for sampler and color-space setup.
+const inlineImages=new Map<string,Promise<HTMLImageElement>>();
+async function inlineImage(src:string){
+  let pending=inlineImages.get(src);
+  if(!pending){pending=new THREE.ImageLoader().loadAsync(src);inlineImages.set(src,pending);pending.catch(()=>inlineImages.delete(src))}
+  return pending;
+}
+
 export async function loadGLB(url: string): Promise<GLTF> {
   const loader = new GLTFLoader();
   // texturas internas: <img src="data:..."> en lugar de fetch(blob:)
@@ -37,7 +46,8 @@ export async function loadGLB(url: string): Promise<GLTF> {
     p.loadImageSource = async (index: number) => {
       const img = p.json.images[index];
       const src = img.uri ?? bufferToDataUrl(await p.getDependency('bufferView', img.bufferView!), img.mimeType ?? 'image/png');
-      const tex = await new THREE.TextureLoader().loadAsync(src);
+      const tex = new THREE.Texture(await inlineImage(src));
+      tex.needsUpdate = true;
       tex.flipY = false;
       tex.userData.mimeType = img.mimeType;
       return tex;

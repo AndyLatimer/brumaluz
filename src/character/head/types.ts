@@ -34,6 +34,8 @@ export interface HeadResult {
   /** Puntos de anclaje en el espacio de la malla original (pasar por toBone). */
   anchors: { ear: (s: number) => THREE.Vector3; top: (s: number) => THREE.Vector3; crest: { p: THREE.Vector3; n: THREE.Vector3 }[]; surf: (dir: THREE.Vector3, sink?: number) => { p: THREE.Vector3; n: THREE.Vector3 } };
   toBone: THREE.Matrix4;
+  /** Bare skull envelope in bind coordinates, independent of hair and headwear. */
+  skullSurface: (direction: THREE.Vector3) => THREE.Vector3;
   /** Grupos de los ojos (para parpadear escalando en Y). */
   eyes: THREE.Object3D[];
   /** Ojos cerrados de alegría (^ ^), ocultos hasta que el personaje saluda. */

@@ -919,6 +919,7 @@ export const translations: Record<string, string> = {
 const weaponNames = { sword: 'Sword', shield: 'Shield', staff: 'Staff', dagger: 'Dagger', wand: 'Wand', book: 'Grimoire', crossbow: 'Crossbow' };
 const outfitNames = { guerrero: 'Armour', mago: 'Arcane Robe', picaro: 'Stalker Leathers', clerigo: 'Sacred Vestments', explorador: 'Ranger Outfit' };
 const outfitSets: Record<string,string> = { artesano: 'of the Wayfarer', ambar: 'of Amber', violeta: 'of the Violet Seal', aurora: 'of the Dawn', fuego: 'of Primordial Fire', alba: 'of the Dawn Guard', eclipse: 'of the Eclipse', roble: 'of the Wandering Oak', marea: 'of the Royal Tide', forja: 'of the Stellar Forge' };
+outfitSets.novicio='of the Novice';
 for (const outfit of Object.values(OUTFITS)) translations[outfit.label] = `${outfitNames[outfit.cls]} ${outfitSets[outfit.collection]}`;
 const armorNames={head:'Headwear',chest:'Chest Armour',hands:'Gloves',legs:'Leggings',feet:'Boots'};
 for(const item of Object.values(ARMOR))translations[item.label]=`${armorNames[item.slot]} · ${outfitNames[item.cls]} ${outfitSets[item.collection]}`;

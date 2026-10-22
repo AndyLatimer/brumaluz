@@ -2,6 +2,30 @@
 
 MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 
+## Equipo modular y trajes de clase
+
+El catálogo contiene **396 equipables**: 88 armas, 275 piezas de 55 conjuntos
+y 33 accesorios. La progresión va de gris (principiante) a verde, azul, morado,
+dorado y naranja. Cada conjunto tiene cabeza, pecho, manos, piernas y pies;
+colgantes, anillos y abalorios se equipan por separado.
+
+Los trajes usan cortes por clase, texturas incrustadas de color, normales y
+superficie, faldones articulados y ajuste del tocado al cráneo. La túnica
+medieval personalizable comparte las uniones del equipo y su patronaje.
+Con `npm run dev`, `/equipment.html` permite combinar piezas, girar el personaje,
+cambiar de linaje y verlo caminar, correr o usar una habilidad.
+
+- [Catálogo de trajes y generación](docs/CLASS-OUTFITS.md).
+- [Estadísticas, ranuras y migración](docs/MODULAR-EQUIPMENT.md).
+- [Dirección artística y límites del ajuste](docs/EQUIPMENT-ART-DIRECTION.md).
+- [Vista de frente y espalda](src/assets/models/wardrobe/classes/equipment_tailoring_closeup.png).
+- [Paquete de 275 GLB de armadura](src/assets/models/wardrobe/classes/class_outfits_glb.zip).
+- [Paquete de 308 GLB de armadura y accesorios](src/assets/models/items/modular_equipment_glb.zip).
+
+`npm run art:outfits` regenera modelos, iconos y catálogo SQL. Si cambia el
+catálogo, `npm run db:apply` actualiza el servidor. Los paquetes de exportación
+se actualizan con `tools/package-equipment.ps1` después de generar las vistas.
+
 ## Biblioteca de recursos
 
 Los doce paquetes KayKit y Kenney importados tienen un [catálogo y visor local](./docs/ASSET-LIBRARY.md)

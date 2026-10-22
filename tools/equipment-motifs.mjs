@@ -1,4 +1,4 @@
-// Readable heraldry shared by jewellery and headwear, with a different silhouette per set.
+// Legacy patterns archived for reference. Current equipment uses the tailored-* modules.
 export const motifs = `
 function emblem(x,y,z,s){
  const parts=[],put=(g,m='brass')=>parts.push(piece(g,m));

@@ -1,0 +1,50 @@
+import * as THREE from 'three';
+import {NodeIO} from '@gltf-transform/core';
+import {prune,weld,dedup} from '@gltf-transform/functions';
+import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import {PANEL} from './outfit-textures.mjs';
+export {THREE};
+export const io=new NodeIO();
+export const mix=(a,b,t)=>[[a,1-t],[b,t]].filter(([,v])=>v>0);
+export const smooth=THREE.MathUtils.smoothstep,lerp=THREE.MathUtils.lerp;
+export const torsoWeights=([,y])=>y<.95?mix('hips','spine',smooth(y,.72,.95)):mix('spine','chest',smooth(y,.95,1.15));
+export const legWeights=side=>([,y])=>y>.43?mix('upperleg.'+side,'hips',smooth(y,.44,.66)):mix('lowerleg.'+side,'upperleg.'+side,smooth(y,.24,.36));
+export function surface(rows,cols,point){const p=[],uv=[],idx=[];for(let row=0;row<rows;row++)for(let col=0;col<=cols;col++){p.push(...point(col/cols,row/(rows-1)));uv.push(col/cols,row/(rows-1));if(row<rows-1&&col<cols){const a=row*(cols+1)+col,b=a+cols+1;idx.push(a,a+1,b,a+1,b+1,b)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g}
+export function reverse(g){const a=g.index;for(let i=0;i<a.count;i+=3){const b=a.getX(i);a.setX(i,a.getX(i+1));a.setX(i+1,b)}g.computeVertexNormals();return g}
+export function profileAt(rows,y){if(y>=rows.at(-1)[0])return rows.at(-1).slice();let i=rows.findIndex(p=>p[0]>=y);if(i<=0)return rows[0].slice();const a=rows[i-1],b=rows[i],t=(y-a[0])/(b[0]-a[0]);return a.map((v,k)=>{if(k===0)return y;const prev=rows[Math.max(0,i-2)][k]??0,next=rows[Math.min(rows.length-1,i+1)][k]??0,m0=(b[k]-prev)*.5,m1=(next-v)*.5;return (2*t**3-3*t*t+1)*v+(t**3-2*t*t+t)*m0+(-2*t**3+3*t*t)*b[k]+(t**3-t*t)*m1})}
+export function lathe(rows,cols=32,segments=rows.length*2){return surface(segments,cols,(u,v)=>{const [y,rx,rz,cx=0,cz=0]=profileAt(rows,lerp(rows[0][0],rows.at(-1)[0],v)),a=u*Math.PI*2;return [cx+Math.sin(a)*rx,y,cz+Math.cos(a)*rz]})}
+export function curveRibbon(points,width,offset=.003){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));return surface(Math.max(12,points.length*4),4,(u,v)=>{const p=curve.getPoint(v),t=curve.getTangent(v),side=new THREE.Vector3(-t.y,t.x,0).normalize();return p.addScaledVector(side,(u-.5)*width).add(new THREE.Vector3(0,0,offset)).toArray()})}
+export function roundedPlate(points,depth=.014,bevel=.006){const path=new THREE.Shape();points.forEach(([x,y],i)=>i?path.lineTo(x,y):path.moveTo(x,y));path.closePath();return new THREE.ExtrudeGeometry(path,{depth,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:bevel,bevelThickness:bevel,curveSegments:8})}
+export async function createStudio(config){
+ const document=await io.read('src/assets/models/Mage.glb'),root=document.getRoot(),skin=root.listSkins()[0],rig=root.listNodes().find(n=>n.getName()==='Rig'),buffer=root.listBuffers()[0],anatomy=await io.read('src/assets/models/Mage.glb');
+ for(const n of [...root.listNodes()])if(n.getMesh())n.dispose();for(const a of [...root.listAnimations()])a.dispose();const joints=skin.listJoints().map(n=>n.getName()),q=config.tier;
+ const palette={tunic:config.cloth,tunicTrim:config.trim,plate:config.metal,brass:config.trim,gem:config.gem,leather:'#754d33',darkLeather:'#422e24',trousers:'#625b50',linen:'#e4d7b9',neckSkin:'#f2c8a0',skin:'#f2c8a0',sole:'#302821'};
+ const materials=new Map(Object.entries(palette).map(([name,color])=>[name,document.createMaterial(name).setBaseColorFactor([...new THREE.Color(color).toArray(),1]).setRoughnessFactor(['plate','brass'].includes(name)?.5:.87).setMetallicFactor(['plate','brass'].includes(name)?(q<2?.15:.5):0).setDoubleSided(['tunic','tunicTrim','linen','leather','plate','brass'].includes(name))]));
+ const accessor=(name,array,type)=>document.createAccessor(name).setType(type).setArray(array).setBuffer(buffer);
+ function piece(g,material,weights=torsoWeights,role='plain',uvMap){
+  const p=g.getAttribute('position');if(!g.hasAttribute('normal'))g.computeVertexNormals();let uv=g.getAttribute('uv');if(!uv){uv=new THREE.Float32BufferAttribute(new Float32Array(p.count*2),2);g.setAttribute('uv',uv);uvMap??=([x,y])=>[x+.5,y]}
+  const tile=PANEL[role]??PANEL.plain;for(let i=0;i<p.count;i++){const [u,v]=uvMap?uvMap([p.getX(i),p.getY(i),p.getZ(i)],i):[uv.getX(i),uv.getY(i)];uv.setXY(i,((tile%4)+.035+THREE.MathUtils.clamp(u,0,1)*.93)/4,(Math.floor(tile/4)+.035+THREE.MathUtils.clamp(v,0,1)*.93)/4)}
+  if(!g.hasAttribute('skinWeight')){const ji=[],wv=[];for(let i=0;i<p.count;i++){const list=weights([p.getX(i),p.getY(i),p.getZ(i)],i),a=[0,0,0,0],b=[0,0,0,0];list.forEach(([n,w],k)=>{a[k]=joints.indexOf(n);if(a[k]<0)throw Error('Missing bone '+n);b[k]=w});ji.push(...a);wv.push(...b)}g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(ji,4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(wv,4))}
+  for(const key of Object.keys(g.attributes))if(!['position','normal','uv','skinIndex','skinWeight'].includes(key))g.deleteAttribute(key);return {geometry:g,material};
+ }
+ function mesh(name,parts,extras={}){
+  const output=document.createMesh(name),groups=new Map();for(const p of parts){if(!groups.has(p.material))groups.set(p.material,[]);groups.get(p.material).push(p.geometry)}
+  for(const [material,geometries] of groups){const g=mergeGeometries(geometries.map(g=>g.index?g.toNonIndexed():g)),prim=document.createPrimitive().setMaterial(materials.get(material));for(const [key,semantic,type] of [['position','POSITION','VEC3'],['normal','NORMAL','VEC3'],['uv','TEXCOORD_0','VEC2'],['skinIndex','JOINTS_0','VEC4'],['skinWeight','WEIGHTS_0','VEC4']])prim.setAttribute(semantic,accessor(name+':'+semantic,g.getAttribute(key).array.slice(),type));output.addPrimitive(prim);g.dispose();geometries.forEach(g=>g.dispose())}
+  const n=document.createNode(name).setMesh(output).setSkin(skin).setExtras(extras);rig.addChild(n);return n;
+ }
+ const source=name=>anatomy.getRoot().listNodes().find(n=>n.getName()===name).getMesh().listPrimitives()[0];
+ const sourceNames=anatomy.getRoot().listSkins()[0].listJoints().map(n=>n.getName());
+ function weightsOf(ref,index){const js=ref.getAttribute('JOINTS_0').getElement(index,[]),ws=ref.getAttribute('WEIGHTS_0').getElement(index,[]);return ws.flatMap((w,i)=>w>0?[[sourceNames[js[i]],w]]:[])}
+ function referenceParts(ref,select,role,clip,modify){
+  const pos=ref.getAttribute('POSITION'),normal=ref.getAttribute('NORMAL'),tex=ref.getAttribute('TEXCOORD_0'),idx=ref.getIndices(),groups=new Map();
+  for(let t=0;t<(idx?.getCount()??pos.getCount());t+=3){const ids=[0,1,2].map(k=>idx?idx.getScalar(t+k):t+k),uv=ids.map(i=>tex.getElement(i,[])),c=ids.map(i=>pos.getElement(i,[])),cell=Math.floor(uv.reduce((a,v)=>a+v[0]/3,0)*8)+8*Math.floor(uv.reduce((a,v)=>a+v[1]/3,0)*8),mid=[0,1,2].map(j=>c.reduce((s,p)=>s+p[j]/3,0)),mat=select(cell,mid);if(!mat)continue;
+   let poly=ids.map((i,k)=>({p:c[k],n:normal.getElement(i,[]),w:weightsOf(ref,i)}));
+   if(clip){const out=[];for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],da=clip(a.p),db=clip(b.p);if(da>=0)out.push(a);if((da>=0)!==(db>=0)){const f=da/(da-db),weights=new Map();for(const [bone,w] of a.w)weights.set(bone,w*(1-f));for(const [bone,w] of b.w)weights.set(bone,(weights.get(bone)??0)+w*f);out.push({p:a.p.map((v,j)=>lerp(v,b.p[j],f)),n:a.n.map((v,j)=>lerp(v,b.n[j],f)),w:[...weights].sort((a,b)=>b[1]-a[1]).slice(0,4)})}}poly=out}
+   if(poly.length<3)continue;if(!groups.has(mat))groups.set(mat,[]);for(let i=1;i<poly.length-1;i++)groups.get(mat).push(poly[0],poly[i],poly[i+1]);
+  }
+  return [...groups].map(([mat,vs])=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vs.flatMap(v=>modify?modify(v.p):v.p),3));g.setAttribute('normal',new THREE.Float32BufferAttribute(vs.flatMap(v=>v.n),3));g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(vs.flatMap(v=>[...v.w.map(([n])=>joints.indexOf(n)),0,0,0,0].slice(0,4)),4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(vs.flatMap(v=>{const sum=v.w.reduce((s,[,w])=>s+w,0);return [...v.w.map(([,w])=>w/sum),0,0,0,0].slice(0,4)}),4));return piece(g,mat,undefined,role,([x,y,z])=>role==='sleeve'?[(Math.atan2(z,y-1.105)+Math.PI)/(Math.PI*2),(Math.abs(x)-.18)/.65]:[(Math.atan2(x-(x>=0?.168:-.168),z)+Math.PI)/(Math.PI*2),role==='boots'?y/.235:(y-.235)/.43])});
+ }
+ const armWeights=side=>{const ref=source('Mage_Arm'+(side==='l'?'Left':'Right')),p=ref.getAttribute('POSITION'),idx=ref.getIndices(),tri=[];for(let i=0;i<idx.getCount();i+=3){const ids=[0,1,2].map(k=>idx.getScalar(i+k));tri.push({ids,t:new THREE.Triangle(...ids.map(i=>new THREE.Vector3(...p.getElement(i,[]))))})}return position=>{const pt=new THREE.Vector3(...position),near=new THREE.Vector3();let best,dist=Infinity;for(const c of tri){c.t.closestPointToPoint(pt,near);const d=pt.distanceToSquared(near);if(d<dist){dist=d;best=c}}best.t.closestPointToPoint(pt,near);const b=best.t.getBarycoord(near,new THREE.Vector3()),map=new Map();best.ids.forEach((id,k)=>weightsOf(ref,id).forEach(([n,w])=>map.set(n,(map.get(n)??0)+w*b.getComponent(k))));const result=[...map].sort((a,b)=>b[1]-a[1]).slice(0,4),sum=result.reduce((s,[,w])=>s+w,0);return result.map(([n,w])=>[n,w/sum])}};
+ async function finish(file,textures){for(const [name,maps] of Object.entries(textures)){const mat=materials.get(name);if(!mat)continue;const texture=(kind,bytes)=>document.createTexture(name+' '+kind).setImage(bytes).setMimeType('image/png');mat.setBaseColorTexture(texture('painted atlas',maps.color));mat.setMetallicRoughnessTexture(texture('surface',maps.surface)).setRoughnessFactor(1);mat.setNormalTexture(texture('seams and folds',maps.normal)).setNormalScale(.65);mat.setOcclusionTexture(mat.getMetallicRoughnessTexture()).setOcclusionStrength(.7)}await document.transform(weld(),dedup(),prune());await io.write(file,document)}
+ return {config,document,root,skin,rig,materials,source,piece,mesh,referenceParts,armWeights,finish};
+}

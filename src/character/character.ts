@@ -289,7 +289,7 @@ export class Character {
 
     // Piezas
     if (modular) {
-      mountModularWardrobe(d.cls,d.equipment,this.model,this.bones,skin,{primary:CLOTH[d.clothA],secondary:CLOTH[d.clothB]},r=>this.owned.push(r),this.opts.hat!==false);
+      mountModularWardrobe(d.cls,d.equipment,this.model,this.bones,skin,{primary:CLOTH[d.clothA],secondary:CLOTH[d.clothB]},r=>this.owned.push(r),this.opts.hat!==false,head);
     } else if (this.opts.clothing) {
       this.opts.clothing.mount(this.model, this.bones, skin, resource => this.owned.push(resource));
     } else {

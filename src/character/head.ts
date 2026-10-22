@@ -59,6 +59,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   // ---------- Montaje en el espacio del hueso ----------
   const finish = (m: THREE.Mesh) => { m.geometry.applyMatrix4(toBone); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
+  headMesh.name='character-skull';
   finish(headMesh);
   for (const g of skinParts) finish(new THREE.Mesh(smoothNormals(g, 80), material(o.face)));
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
@@ -125,6 +126,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     eyes,
     happy,
     mouth: { rest, open: openPivot },
+    skullSurface: dir => headAt(dir, 0),
     anchors: {
       ear: (s) => headAt(V(s, -0.2, -0.05), -0.01), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest,
       // punto real de la superficie (pelo o cabeza) en una dirección, hundido hacia dentro

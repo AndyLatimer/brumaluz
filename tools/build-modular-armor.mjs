@@ -26,6 +26,9 @@ const nodes={
 };
 for(const set of sets){
  const file=folder+'/'+set.id+'.glb',doc=await io.read(file),root=doc.getRoot();
+ const authored=root.listNodes().some(n=>n.getName()==='medieval-tunic'&&n.getExtras().patternVersion===3);
+ // Version 3 authors each slot and its shared boundary explicitly.
+ if(!authored){
  // Repeated execution starts from the same named patterns rather than adding duplicates.
  for(const n of [...root.listNodes()])if(/suit-(trousers|boot-trim|upperarm|bracer|glove)-/.test(n.getName()))n.dispose();
  for(const side of ['l','r']){
@@ -40,6 +43,7 @@ for(const set of sets){
   for(const p of source.getMesh().listPrimitives())mesh.addPrimitive(p.clone().setMaterial(root.listMaterials().find(m=>m.getName()==='leather')));
   source.getParentNode().addChild(doc.createNode('suit-glove-'+side).setMesh(mesh).setSkin(source.getSkin()));
  }
+ }
  await io.write(file,doc);
  for(const [slot,keep] of Object.entries(nodes)){
   const part=await io.read(file);
@@ -50,4 +54,4 @@ for(const set of sets){
  }
 }
 await fs.writeFile(folder+'/modular/nodes.json',JSON.stringify(nodes,null,2));
-console.log('Built 250 independently equippable armour models.');
+console.log('Built '+sets.length*5+' independently equippable armour models.');

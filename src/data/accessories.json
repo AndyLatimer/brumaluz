@@ -478,5 +478,53 @@
     "maxHealth": 10,
     "maxResource": 10,
     "value": 2592
+  },
+  {
+    "id": "colgante_novicio",
+    "label": "Colgante de principiante",
+    "collection": "novicio",
+    "tier": 0,
+    "slot": "pendant",
+    "kind": "pendant",
+    "theme": 10,
+    "metal": "#918979",
+    "dark": "#736c61",
+    "gem": "#aaa18c",
+    "cloth": "#8b897d",
+    "maxHealth": 2,
+    "maxResource": 0,
+    "value": 20
+  },
+  {
+    "id": "anillo_novicio",
+    "label": "Anillo de principiante",
+    "collection": "novicio",
+    "tier": 0,
+    "slot": "ring",
+    "kind": "ring",
+    "theme": 10,
+    "metal": "#918979",
+    "dark": "#736c61",
+    "gem": "#aaa18c",
+    "cloth": "#8b897d",
+    "maxHealth": 0,
+    "maxResource": 2,
+    "value": 15
+  },
+  {
+    "id": "abalorio_novicio",
+    "label": "Abalorio de principiante",
+    "collection": "novicio",
+    "tier": 0,
+    "slot": "trinket",
+    "kind": "trinket",
+    "theme": 10,
+    "metal": "#918979",
+    "dark": "#736c61",
+    "gem": "#aaa18c",
+    "cloth": "#8b897d",
+    "maxHealth": 2,
+    "maxResource": 2,
+    "value": 25
   }
 ]

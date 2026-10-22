@@ -56,6 +56,7 @@ export function npcClothingRenderer(clothing: NpcClothing): NonNullable<BuildOpt
           const primary = CLOTH[selection.primary], secondary = CLOTH[selection.secondary];
           if (piece.source === 'helpers' || piece.source === 'medieval') {
             if (source.name === 'skin') result.color.set(skin);
+            else if (source.name === 'neckSkin') result.color.set(skin).convertLinearToSRGB();
             else if (selection.primary >= 0 && ['linen', 'blue', 'red', 'leather', 'tunic', 'trousers'].includes(source.name)) result.color.set(primary);
             else if (selection.secondary >= 0 && ['trim', 'redTrim', 'sole', 'tunicTrim', 'darkLeather'].includes(source.name)) result.color.set(secondary);
           } else {

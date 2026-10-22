@@ -10,6 +10,8 @@ import type { Equipment } from '../data/inventory';
 import { ACCESSORIES } from '../data/accessories';
 import { weaponModel } from './weaponModels';
 import modularNodes from '../assets/models/wardrobe/classes/modular/nodes.json';
+import {seatHeadwear,settleAccessory} from './equipmentFit';
+import type {HeadResult} from './head';
 
 type BodyRegion = 'torso' | 'arms' | 'legs';
 type Attachment = 'head' | 'chest' | 'handslot.l' | 'handslot.r';
@@ -29,8 +31,10 @@ export const WARDROBES: Record<WardrobeId, WardrobeSet> = {
     hairFit: 'none', pieces: [
       { node: 'medieval-tunic', replaces: ['torso'] },
       { node: 'suit-foundation' },
-      { node: 'suit-leg-detail-l' }, { node: 'suit-leg-detail-r' },
-      { node: 'suit-arm-detail-l' }, { node: 'suit-arm-detail-r' },
+      { node: 'suit-trousers-l' }, { node: 'suit-trousers-r' },
+      { node: 'suit-boot-trim-l' }, { node: 'suit-boot-trim-r' },
+      { node: 'suit-upperarm-l' }, { node: 'suit-upperarm-r' },
+      { node: 'suit-bracer-l' }, { node: 'suit-bracer-r' },
       { node: 'medieval-sleeve-l', replaces: ['arms'] }, { node: 'medieval-sleeve-r' },
       { node: 'anatomy-hand-left' }, { node: 'anatomy-hand-right' },
       { node: 'medieval-leg-l', replaces: ['legs'] }, { node: 'medieval-leg-r' },
@@ -61,12 +65,35 @@ export const WARDROBES: Record<WardrobeId, WardrobeSet> = {
       { node: 'medieval-sleeve-r' },
       { node: 'anatomy-hand-left' },
       { node: 'anatomy-hand-right' },
+      { node: 'suit-foundation' },
+      { node: 'suit-trousers-l' }, { node: 'suit-trousers-r' },
+      { node: 'suit-boot-trim-l' }, { node: 'suit-boot-trim-r' },
       { node: 'medieval-leg-l', replaces: ['legs'] },
       { node: 'medieval-leg-r' },
     ],
   },
 };
 const assets = new Map<WardrobeId, GLTF>();
+// All five classes in a collection use the same painted atlases. GLB files are
+// self-contained for export; the game shares decoded maps across their materials.
+const texturePool=new Map<string,THREE.Texture>();
+function shareWardrobeTextures(asset:GLTF){
+ const visited=new Set<THREE.Material>();
+ asset.scene.traverse(node=>{
+  if(!(node instanceof THREE.Mesh))return;
+  for(const material of Array.isArray(node.material)?node.material:[node.material]){
+   if(visited.has(material))continue;visited.add(material);
+   for(const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap'] as const){
+    if(!(material instanceof THREE.MeshStandardMaterial))continue;
+    const texture=material[key];if(!texture)continue;
+    const src=texture.image?.src as string|undefined;if(!src)continue;
+    const id=[texture.colorSpace,texture.flipY,texture.wrapS,texture.wrapT,texture.channel,src].join('|');
+    const shared=texturePool.get(id);if(shared){material[key]=shared;if(shared!==texture)texture.dispose()}else texturePool.set(id,texture);
+   }
+  }
+ });
+ return asset;
+}
 
 export function wardrobeSource(id: WardrobeId = 'helpers') {
   const asset = assets.get(id);
@@ -83,7 +110,7 @@ export async function loadWardrobe() {
   assets.set('helpers', helpers);
   assets.set('medieval', medieval);
   await Promise.all(Object.entries(files).map(async ([file, url]) => {
-    assets.set(file.split('/').at(-1)!.replace('.glb', '') as WardrobeId, await loadGLB(url));
+    assets.set(file.split('/').at(-1)!.replace('.glb', '') as WardrobeId, shareWardrobeTextures(await loadGLB(url)));
   }));
 }
 
@@ -140,6 +167,7 @@ export function mountWardrobe(
       result = source.clone();
       if (result instanceof THREE.MeshStandardMaterial) {
         if (source.name === 'skin') result.color.set(skinColor);
+        else if (source.name === 'neckSkin') result.color.set(skinColor).convertLinearToSRGB();
         else if (colors && source.name === 'tunic') result.color.set(colors.primary);
         else if (colors && ['tunicTrim', 'trousers'].includes(source.name)) result.color.set(colors.secondary);
       }
@@ -157,7 +185,7 @@ export function mountWardrobe(
 }
 
 export function modularHairFit(cls:ClassId,equipment:Equipment):HeadOptions['hat'] {
-  return equippedArmor(cls,equipment,'head') ? cls==='mago'?'wizard':cls==='clerigo'?'none':cls==='guerrero'?'helmet':'cap' : 'none';
+  return equippedArmor(cls,equipment,'head') ? cls==='mago'?'wizard':cls==='clerigo'?'none':'cap' : 'none';
 }
 
 /** Each slot mounts only its own patterns. Empty slots use complete neutral underclothes. */
@@ -165,26 +193,32 @@ export function mountModularWardrobe(
   cls:ClassId,equipment:Equipment,model:THREE.Object3D,bones:ReadonlyMap<string,THREE.Bone>,
   skin:string,colors:{primary:string;secondary:string},own:(resource:{dispose():void})=>void,
   hat=true,
+  head?:HeadResult,
 ) {
   const fallback=wardrobeSource('traje_guerrero_artesano');
-  function mount(asset:GLTF,names:readonly string[],base=false){
+  function mount(asset:GLTF,names:readonly string[],base=false,slot?:string){
     const cache=new Map<THREE.Material,THREE.Material>();
     const material=(source:THREE.Material)=>{
       let result=cache.get(source);if(result)return result;
       result=source.clone();cache.set(source,result);own(result);
       if(result instanceof THREE.MeshStandardMaterial){
         if(source.name==='skin')result.color.set(skin);
+        if(source.name==='neckSkin')result.color.set(skin).convertLinearToSRGB();
         if(base&&source.name==='tunic')result.color.set(colors.primary);
         if(base&&['tunicTrim','trousers'].includes(source.name))result.color.set(colors.secondary);
       }
       return result;
     };
-    for(const name of names){const node=asset.scene.getObjectByName(name);if(!node)throw new Error(`Falta pieza modular: ${name}`);mountCharacterPiece(node,model,bones,material,own)}
+    for(const name of names){
+      const node=asset.scene.getObjectByName(name);if(!node)throw new Error(`Falta pieza modular: ${name}`);
+      const copy=mountCharacterPiece(node,model,bones,material,own);
+      if(slot==='head'&&head)seatHeadwear(copy,head,own);
+    }
   }
   for(const slot of ARMOR_SLOTS){
     if(slot==='head'&&!hat)continue;
     const item=equippedArmor(cls,equipment,slot);
-    if(item){mount(wardrobeSource(item.setId as WardrobeId),modularNodes[slot]);continue}
+    if(item){mount(wardrobeSource(item.setId as WardrobeId),modularNodes[slot],false,slot);continue}
     if(slot==='chest')mount(wardrobeSource('medieval'),['medieval-tunic','medieval-sleeve-l','medieval-sleeve-r'],true);
     else if(slot==='hands')mount(wardrobeSource('medieval'),['anatomy-hand-left','anatomy-hand-right']);
     else if(slot==='legs')mount(fallback,modularNodes.legs,true);
@@ -197,6 +231,10 @@ export function mountEquippedAccessories(equipment:Equipment,model:THREE.Object3
     const stack=equipment[slot],item=stack&&ACCESSORIES[stack.id];
     if(!item||stack?.count!==1||item.slot!==slot)continue;
     const node=weaponModel(item.id)?.getObjectByName(item.id);
-    if(node)mountCharacterPiece(node,model,bones,source=>{const copy=source.clone();own(copy);return copy},own);
+    if(node){
+      const copy=mountCharacterPiece(node,model,bones,source=>{const copy=source.clone();own(copy);return copy},own);
+      const torso=model.getObjectByName('medieval-tunic');
+      if(slot!=='ring'&&torso)settleAccessory(copy,torso,own);
+    }
   }
 }

@@ -58,7 +58,7 @@ function reset() {
   for (const [id, weapon] of Object.entries(WEAPONS)) {
     if (weapon.cls === cls && weapon.tier === Number(tiers.value) && (collection === 'progression' ? !originals.has(id) : collectionIds.has(id))) equipment[weapon.slot] = { id, count: 1, bound: weapon.tier === 0 };
   }
-  const outfitCollection = collection === 'progression' ? ['','artesano','ambar','violeta','aurora','fuego'][Number(tiers.value)] : collection;
+  const outfitCollection = collection === 'progression' ? ['novicio','artesano','ambar','violeta','aurora','fuego'][Number(tiers.value)] : collection;
   const outfit = Object.values(OUTFITS).find(item => item.cls === cls && item.collection === outfitCollection);
   if (element<HTMLInputElement>('class-outfit').checked && outfit) {
     for(const piece of Object.values(ARMOR).filter(item=>item.setId===outfit.id))equipment[piece.slot]={id:piece.id,count:1};
