@@ -1822,10 +1822,11 @@ body.playing #player-hud { display: flex; position: fixed; top: 14px; left: 14px
 @keyframes ui-fade-in { from { opacity: 0; } }
 @keyframes ui-fade-out { to { opacity: 0; } }
 @keyframes ui-window-in { 0% { opacity: 0; transform: translateY(22px) scale(.93); } 55% { opacity: 1; transform: translateY(-3px) scale(1.01); } 100% { opacity: 1; transform: none; } }
-@keyframes ui-window-out { to { opacity: 0; transform: translateY(14px) scale(.95); } }
+@keyframes ui-window-out { 0% { opacity: 1; transform: none; } 40% { opacity: 1; transform: translateY(-3px) scale(1.01); } 100% { opacity: 0; transform: translateY(22px) scale(.93); } }
 @keyframes ui-window-glow { 0% { filter: drop-shadow(0 0 0 rgba(255,214,120,0)); } 35% { filter: drop-shadow(0 0 22px rgba(255,214,120,.6)); } 100% { filter: drop-shadow(0 0 0 rgba(255,214,120,0)); } }
 @keyframes ui-panel-in { from { opacity: 0; transform: translateY(-12px) rotateX(35deg) scale(.92); } }
-@keyframes ui-panel-out { to { opacity: 0; transform: translateY(-10px) scale(.94); } }
+@keyframes ui-panel-out { to { opacity: 0; transform: translateY(-12px) rotateX(35deg) scale(.92); } }
+@keyframes ui-item-out { to { opacity: 0; transform: translateX(14px) scale(.96); } }
 @keyframes ui-item-in { from { opacity: 0; transform: translateX(14px) scale(.96); } }
 @keyframes ui-centered-out { to { opacity: 0; transform: translate(-50%, 12px) scale(.96); } }
 @keyframes ui-centered-in { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } }
@@ -1837,8 +1838,9 @@ body.playing #player-hud { display: flex; position: fixed; top: 14px; left: 14px
 
 .ui-motion .dialog-backdrop.ui-opening:not(.loot-overlay), .ui-motion .trade-backdrop.ui-opening { animation: ui-fade-in .22s ease-out; }
 .ui-motion .dialog-backdrop.ui-opening > *, .ui-motion .trade-backdrop.ui-opening > * { animation: ui-window-in .36s cubic-bezier(.22,.9,.32,1.15) backwards, ui-window-glow .8s ease-out; }
-.ui-motion .dialog-backdrop.ui-closing:not(.loot-overlay), .ui-motion .trade-backdrop.ui-closing { animation: ui-fade-out .19s ease-in forwards; }
-.ui-motion .dialog-backdrop.ui-closing > *, .ui-motion .trade-backdrop.ui-closing > * { animation: ui-window-out .19s ease-in forwards; }
+.ui-motion .dialog-backdrop.ui-closing:not(.loot-overlay), .ui-motion .trade-backdrop.ui-closing { animation: ui-fade-out .22s .08s ease-in forwards; }
+.ui-motion .dialog-backdrop.ui-closing > *, .ui-motion .trade-backdrop.ui-closing > * { animation: ui-window-out .3s cubic-bezier(.55,0,.75,.2) forwards, ui-window-glow .3s ease-out; }
+.ui-motion .dialog-backdrop.ui-closing .options-actions .btn { animation: ui-item-out .14s ease-in forwards; }
 .ui-motion .dialog-backdrop.ui-opening .options-actions .btn { animation: ui-slide-up .3s .12s ease-out backwards; }
 
 .ui-motion .game-menu-panel { transform-origin: top right; }
@@ -1848,7 +1850,12 @@ body.playing #player-hud { display: flex; position: fixed; top: 14px; left: 14px
 .ui-motion .game-menu-panel.ui-opening > :nth-child(4) { animation-delay: .09s; } .ui-motion .game-menu-panel.ui-opening > :nth-child(5) { animation-delay: .12s; }
 .ui-motion .game-menu-panel.ui-opening > :nth-child(6) { animation-delay: .15s; } .ui-motion .game-menu-panel.ui-opening > :nth-child(7) { animation-delay: .18s; }
 .ui-motion .game-menu-panel.ui-opening > :nth-child(8) { animation-delay: .21s; } .ui-motion .game-menu-panel.ui-opening > :nth-child(n+9) { animation-delay: .24s; }
-.ui-motion .game-menu-panel.ui-closing { animation: ui-panel-out .17s ease-in forwards; }
+.ui-motion .game-menu-panel.ui-closing { animation: ui-panel-out .24s .1s cubic-bezier(.55,0,.75,.2) forwards, ui-window-glow .34s ease-out; }
+.ui-motion .game-menu-panel.ui-closing > * { animation: ui-item-out .16s ease-in forwards; }
+.ui-motion .game-menu-panel.ui-closing > :nth-last-child(2) { animation-delay: .02s; } .ui-motion .game-menu-panel.ui-closing > :nth-last-child(3) { animation-delay: .04s; }
+.ui-motion .game-menu-panel.ui-closing > :nth-last-child(4) { animation-delay: .06s; } .ui-motion .game-menu-panel.ui-closing > :nth-last-child(5) { animation-delay: .08s; }
+.ui-motion .game-menu-panel.ui-closing > :nth-last-child(6) { animation-delay: .1s; } .ui-motion .game-menu-panel.ui-closing > :nth-last-child(7) { animation-delay: .12s; }
+.ui-motion .game-menu-panel.ui-closing > :nth-last-child(n+8) { animation-delay: .14s; }
 
 .ui-motion .dialog.ui-closing, .ui-motion .interact-prompt.ui-closing, .ui-motion .player-interactions.ui-closing { animation: ui-centered-out .18s ease-in forwards; }
 .ui-motion body.playing .combat-controls.ui-opening { animation: ui-centered-in .25s ease-out; }

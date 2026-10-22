@@ -3,6 +3,7 @@
 // como oculto al instante, pero se mantiene pintado (inerte y sin eventos) mientras dura la salida.
 
 const CLOSE_MS = 190;
+const MAX_CLOSE_MS = 700;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 // Las pruebas automatizadas comprueban estados al instante; ahí la UI aparece y desaparece en seco.
 export const uiMotionEnabled = () => !navigator.webdriver && !reduceMotion.matches;
@@ -39,7 +40,12 @@ function playClose(el: HTMLElement, observer: MutationObserver) {
   el.style.setProperty('display', display, 'important');
   el.inert = true;
   el.classList.add('ui-closing');
-  closing.set(el, window.setTimeout(() => finishClose(el), CLOSE_MS));
+  // La salida dura lo que la animación más larga del elemento o sus hijos (p. ej. el escalonado de los menús).
+  const longest = el.getAnimations({ subtree: true }).reduce((max, animation) => {
+    const end = Number(animation.effect?.getComputedTiming().endTime);
+    return Number.isFinite(end) ? Math.max(max, end) : max;
+  }, 0);
+  closing.set(el, window.setTimeout(() => finishClose(el), Math.min(MAX_CLOSE_MS, Math.max(CLOSE_MS, longest + 20))));
 }
 
 const observer: MutationObserver = new MutationObserver((records) => {
