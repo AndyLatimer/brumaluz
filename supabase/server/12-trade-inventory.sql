@@ -207,11 +207,12 @@ grant execute on function public.move_inventory_item(uuid,int,int,jsonb,jsonb) t
 create or replace function public.change_equipment(p_character_id uuid,p_slot text,p_bag int,p_expected jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare
-  c public.characters; inv jsonb; equipment jsonb; source jsonb; target jsonb; meta jsonb; free int;
+  c public.characters; inv jsonb; equipment jsonb; source jsonb; target jsonb; meta jsonb; free int; previous_vitals jsonb; changed jsonb;
 begin
   perform pg_catalog.pg_advisory_xact_lock(731029,3);
   c:=public.game_lock_character(p_character_id);
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
+  previous_vitals:=public.game_public_vitals(c.data);
   if p_slot is null or p_slot not in ('head','pendant','chest','hands','ring','weapon','offhand','legs','feet','trinket')
     or (p_bag is not null and p_bag not between 0 and 24) then raise exception 'EQUIPMENT_INVALID'; end if;
   inv:=public.game_inventory(c.data);
@@ -223,7 +224,7 @@ begin
     or coalesce((source->>'bound')::boolean,false) is distinct from coalesce((p_expected->>'bound')::boolean,false)
     then raise exception 'EQUIPMENT_CHANGED'; end if;
   meta:=public.game_equipment_item(source->>'id');
-  if p_bag is not null and (meta is null or meta->>'slot' is distinct from p_slot or meta->>'cls' is distinct from c.data->>'cls'
+  if p_bag is not null and (meta is null or meta->>'slot' is distinct from p_slot or (meta->>'cls' is not null and meta->>'cls' is distinct from c.data->>'cls')
     or source->>'count'<>'1') then raise exception 'EQUIPMENT_INVALID'; end if;
   if p_bag is null then
     select i into free from generate_series(0,24) i where inv->i='null'::jsonb order by i limit 1;
@@ -239,7 +240,11 @@ begin
     offer_a=case when a=c.id then '{"items":[],"pelines":0}'::jsonb else offer_a end,
     offer_b=case when b=c.id then '{"items":[],"pelines":0}'::jsonb else offer_b end
     where status in ('invited','open') and c.id in(a,b);
-  return public.game_store(c.id,c.data||jsonb_build_object('inventory',inv,'equipment',equipment));
+  changed:=c.data||jsonb_build_object('inventory',inv,'equipment',equipment);
+  changed:=changed||jsonb_build_object(
+    'health',least((previous_vitals->>'health')::int,public.game_max_health(changed)),
+    'resource',least((previous_vitals->>'resource')::int,(public.game_public_vitals(changed)->>'maxResource')::int));
+  return public.game_store(c.id,changed);
 end $$;
 revoke all on function public.change_equipment(uuid,text,int,jsonb) from public,anon;
 grant execute on function public.change_equipment(uuid,text,int,jsonb) to authenticated;

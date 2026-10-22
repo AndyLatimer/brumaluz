@@ -3,7 +3,7 @@ import type { Equipment } from './inventory';
 import { ITEM_RARITIES, rarityForTier, type WeaponTier } from './itemRarity';
 import { ADVANCED_WEAPONS } from './weaponProgression';
 import { ORIGINAL_WEAPONS } from './uniqueWeapons';
-import { equippedOutfit } from './outfits';
+import { armorGuard } from './outfits';
 
 export interface WeaponDef {
   cls: ClassId;
@@ -54,7 +54,7 @@ export function equippedWeapon(cls: ClassId, equipment: Equipment, slot: 'weapon
 
 export function guardedDamage(cls: ClassId, equipment: Equipment, incoming: number) {
   if (incoming <= 0) return 0;
-  return Math.max(1, incoming - (equippedWeapon(cls, equipment, 'offhand')?.guard ?? 0) - (equippedOutfit(cls, equipment)?.guard ?? 0));
+  return Math.max(1, incoming - (equippedWeapon(cls, equipment, 'offhand')?.guard ?? 0) - armorGuard(cls,equipment));
 }
 
 export function weaponItemStats(id: string) {

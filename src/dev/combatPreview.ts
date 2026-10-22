@@ -1,7 +1,8 @@
 import { COMBAT_KITS, REGENERATION, regenerateCombat, resolveCombat, basicAttackDamage, skillPower, type CombatState, type CombatCommand } from '../data/combat';
-import { WEAPONS, guardedDamage } from '../data/weapons';
+import { WEAPONS, guardedDamage, equippedWeapon } from '../data/weapons';
 import { ORIGINAL_WEAPONS } from '../data/uniqueWeapons';
-import { OUTFITS } from '../data/outfits';
+import { OUTFITS, ARMOR, armorGuard } from '../data/outfits';
+import { ACCESSORIES } from '../data/accessories';
 import { emptyEquipment } from '../data/inventory';
 import { defaultChar, type ClassId } from '../data/data';
 import { vitalsOf } from '../data/stats';
@@ -57,10 +58,13 @@ function reset() {
   for (const [id, weapon] of Object.entries(WEAPONS)) {
     if (weapon.cls === cls && weapon.tier === Number(tiers.value) && (collection === 'progression' ? !originals.has(id) : collectionIds.has(id))) equipment[weapon.slot] = { id, count: 1, bound: weapon.tier === 0 };
   }
-  const vitals = vitalsOf({ ...defaultChar(), cls });
   const outfitCollection = collection === 'progression' ? ['','artesano','ambar','violeta','aurora','fuego'][Number(tiers.value)] : collection;
   const outfit = Object.values(OUTFITS).find(item => item.cls === cls && item.collection === outfitCollection);
-  if (element<HTMLInputElement>('class-outfit').checked && outfit) equipment.chest = { id: outfit.id, count: 1 };
+  if (element<HTMLInputElement>('class-outfit').checked && outfit) {
+    for(const piece of Object.values(ARMOR).filter(item=>item.setId===outfit.id))equipment[piece.slot]={id:piece.id,count:1};
+    for(const piece of Object.values(ACCESSORIES).filter(item=>item.collection===outfit.collection))equipment[piece.slot]={id:piece.id,count:1};
+  }
+  const vitals = vitalsOf({ ...defaultChar(), cls, equipment });
   state = { health:vitals.maxHealth, maxHealth:vitals.maxHealth, resource:vitals.maxResource, enemyHealth:100, nextAttack:0, nextSkill:0 };
   selected=false;automatic=false;approaching=false;distance=10;nextEnemy=now()+2;
   engaged=false;
@@ -68,7 +72,7 @@ function reset() {
   scene.reset(cls, equipment);
   log.replaceChildren();
   element('equipment').textContent = Object.values(equipment).flatMap(item=>item?[itemLabel(item.id)]:[]).join(' · ');
-  element('weapon-stats').textContent = `Daño base: ${basicAttackDamage(cls,1,equipment)} · ${COMBAT_KITS[cls].skill.label}: ${skillPower(cls,1,equipment)}${cls==='picaro'?' × 2':''} · Guardia: ${8-guardedDamage(cls,equipment,8)}`;
+  element('weapon-stats').textContent = `Daño base: ${basicAttackDamage(cls,1,equipment)} · ${COMBAT_KITS[cls].skill.label}: ${skillPower(cls,1,equipment)}${cls==='picaro'?' × 2':''} · Guardia: ${armorGuard(cls,equipment)+(equippedWeapon(cls,equipment,'offhand')?.guard??0)}`;
   message('Selecciona al rival para empezar.');
   render();
 }

@@ -47,7 +47,7 @@ export function talkGnomi() {
       nodes:{
         intro: session.state.shadowQuest === 'returned'
           ? {text:'¿Qué tal en casa de Isberto? Dicen que su cama cruje, pero que se duerme de maravilla. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.'}
-          : {text:'¡Sigue a Isberto antes de que se arrepienta! Su casa está junto a la granja, al sur. Yo me quedo por la plaza del pozo.'},
+          : {text:'¡Sigue a Isberto antes de que se arrepienta! Su casa está junto a la herrería, al sur. Yo me quedo por la plaza del pozo.'},
       },
     });
     return;

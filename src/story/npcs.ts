@@ -38,7 +38,7 @@ export function isbertoConversation(): Conversation {
   if (session.state.shadowQuest === 'defeated' && !corpseLooted()) return { ...isberto,
     nodes:{ intro:{ text:'Registra lo que quede de esa cosa antes de que se deshaga del todo. Quiero saber qué era.' } } };
   if (session.state.shadowQuest === 'defeated') return { ...isberto, nodes:{
-    intro:{ text:'Ya no se mueve… Bien hecho. El ganado sigue temblando y yo, si te soy sincero, también. He criado animales toda mi vida y nunca había visto nada parecido.', next:gnomiHere ? 'gnomi' : 'isberto' },
+    intro:{ text:'Ya no se mueve… Bien hecho. Todavía me tiemblan las manos, y eso que llevo media vida con el martillo. Exploré medio mundo antes de colgar la capa y nunca había visto nada parecido.', next:gnomiHere ? 'gnomi' : 'isberto' },
     gnomi:{ ...gnomi, text:'Yo tampoco sé qué era. Y mira que en el gremio nos cruzamos con gente y bichos de todas clases… Esto no me suena de nada.', next:'isberto' },
     isberto:{ text:'Pues no vamos a ponerle nombre por inventar. Guarda lo que hayas sacado de sus restos; por ahora no sabemos qué significa.', next:'offer' },
     offer:gnomiHere
@@ -55,13 +55,13 @@ export function isbertoConversation(): Conversation {
     : { ...isberto, nodes:{ intro:{ text:'Mi casa es esa, la de la puerta junto al camino. Vamos, entra.' } } };
   if (session.state.shadowQuest === 'returned') return { ...isberto,
     nodes:{ intro:{ text:'Ponte cómodo. La cama y el cofre de la esquina siguen ahí cuando los necesites. Yo sigo dándole vueltas a esa criatura.' } } };
-  const text = session.state.shadowQuest === 'active' ? 'La criatura sigue junto al ganado, en la granja del sur. Ten cuidado.'
-    : `${gnomiHere ? t('¡Gnomi, menos mal que te encuentro! Y tú…') + ' ' : ''}${t('¿Sabes usar eso que llevas? Hay algo rondando mi ganado, en la granja del sur. No es un lobo ni un zorro. Yo ya tuve bastantes aventuras de joven: necesito a alguien que se atreva a echarle un vistazo.')}`;
+  const text = session.state.shadowQuest === 'active' ? 'La criatura sigue junto a la herrería, al sur. Ten cuidado.'
+    : `${gnomiHere ? t('¡Gnomi, menos mal que te encuentro! Y tú…') + ' ' : ''}${t('¿Sabes usar eso que llevas? Hay algo rondando mi herrería, al sur. No es un lobo ni un zorro. Yo ya tuve bastantes aventuras cuando era explorador; ahora solo quiero mi yunque y mi fragua. Necesito a alguien que se atreva a echarle un vistazo.')}`;
   const offer = !session.state.shadowQuest;
   return {
     ...isberto,
     nodes:{intro:{text,
-      ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Derrota a la criatura que ronda el ganado de Isberto, en la granja del sur.',experience:0,pelines:0}} : {}),
+      ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Derrota a la criatura que ronda la herrería de Isberto, al sur.',experience:0,pelines:0}} : {}),
       ...(offer || (session.state.shadowQuest === 'active' && fight.combatEncounter?.status !== 'active')
         ? {choices:[{text:offer ? 'Aceptar misión' : 'Volver a investigar',action:beginIsbertoEncounter}]} : {}),
     }},

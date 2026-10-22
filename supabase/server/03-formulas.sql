@@ -123,6 +123,12 @@ as $$
   select 5 + public.game_race_bonus(d ->> 'race', p_attr) + coalesce((d -> 'attributePoints' ->> p_attr)::int, 0)
 $$;
 
+-- PL/pgSQL resolves the equipment catalog when called (it is defined later in 05).
+create or replace function public.game_equipment_vital_bonus(d jsonb,p_stat text)
+returns int language plpgsql immutable set search_path='' as $$
+begin return public.game_equipment_stat(d,p_stat); end $$;
+revoke all on function public.game_equipment_vital_bonus(jsonb,text) from public,anon,authenticated;
+
 create or replace function public.game_max_health(d jsonb)
 returns int
 language sql
@@ -132,6 +138,7 @@ as $$
   select floor((60 + (public.game_level(d) - 1) * 12 + public.game_attr_total(d, 'corpulencia') * 8)
     * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int
     + case when d->'foodBuff'->>'itemId'='pan_duro' and (d->'foodBuff'->>'remaining')::numeric>0 then 5 else 0 end
+    + public.game_equipment_vital_bonus(d,'maxHealth')
 $$;
 
 -- Vida actual real: -1 en los datos significa "al máximo".

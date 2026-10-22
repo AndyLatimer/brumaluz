@@ -1,0 +1,29 @@
+{
+  "head": [
+    "suit-head"
+  ],
+  "chest": [
+    "medieval-tunic",
+    "medieval-sleeve-l",
+    "medieval-sleeve-r",
+    "suit-upperarm-l",
+    "suit-upperarm-r"
+  ],
+  "hands": [
+    "suit-glove-left",
+    "suit-glove-right",
+    "suit-bracer-l",
+    "suit-bracer-r"
+  ],
+  "legs": [
+    "suit-foundation",
+    "suit-trousers-l",
+    "suit-trousers-r"
+  ],
+  "feet": [
+    "medieval-leg-l",
+    "medieval-leg-r",
+    "suit-boot-trim-l",
+    "suit-boot-trim-r"
+  ]
+}

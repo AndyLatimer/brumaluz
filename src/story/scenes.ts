@@ -122,7 +122,7 @@ export function playIntro() {
     void finishIntro();
   });
 }
-/** Tras devolver el distintivo: la criatura que ronda el ganado de Isberto. */
+/** Tras devolver el distintivo: la criatura que ronda la herrería de Isberto. */
 export function playMonsterReveal() {
   const generation = play.playGeneration;
   removeMonsterPreview();
@@ -134,7 +134,7 @@ export function playMonsterReveal() {
   const isberto = session.registeredNpcs.isberto.name;
   const look = site.clone().setY(site.y + .7);
   cinematic.play([
-    { duration: 5.2, line: { speaker: isberto, text: 'Hay algo entre mi ganado, en la granja del sur. Una sombra que se arrastra y no les quita ojo a las vacas.' },
+    { duration: 5.2, line: { speaker: isberto, text: 'Hay algo rondando mi herrería, al sur. Una sombra que se arrastra entre los yunques y no se aparta de la fragua.' },
       camera: orbitShot(site, [7.5, 5.2], [3.4, 1.8], [-.9, -.1], .7) },
     { duration: 4.2, blend: .6, line: { speaker: isberto, text: 'No es un lobo ni un zorro. Nunca había visto nada igual… y he visto muchas cosas.' },
       start: () => playShadowEnemyAction(story.monsterPreview, 'attack', clock.getElapsedTime()),

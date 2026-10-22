@@ -67,6 +67,7 @@ begin
     d:=d||jsonb_build_object('welcome',jsonb_build_object('origin',null,'stage','available'),
       'introSeen',false,'position',jsonb_build_object('x',177,'z',0,'yaw',pi()/2));
   end if;
+  d := d || jsonb_build_object('modularEquipmentVersion',1);
   d := d || jsonb_build_object('equipment',
     case p_data->>'cls'
       when 'guerrero' then '{"weapon":{"id":"espada_inicial","count":1,"bound":true},"offhand":{"id":"escudo_inicial","count":1,"bound":true}}'::jsonb

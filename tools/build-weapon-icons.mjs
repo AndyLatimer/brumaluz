@@ -10,13 +10,14 @@ const output = path.join(root, 'src/assets/icons/weapons');
 fs.mkdirSync(output, { recursive: true });
 const cachePath = path.join(output, 'sources.json');
 const cache = fs.existsSync(cachePath) ? JSON.parse(fs.readFileSync(cachePath, 'utf8')) : {};
-const version = 'warm-model-portrait-v1';
-const server = await createServer({ server: { host: '127.0.0.1', port: 4191, strictPort: true }, logLevel: 'error' });
+const version = 'warm-model-portrait-v2-skinned-bounds';
+const server = await createServer({ server: { host: '127.0.0.1', port: 4191, strictPort: true, watch: { ignored: ['**/*.zip', '**/*.blend', '**/.art-sources/**'] } }, logLevel: 'error' });
 let browser;
 try {
   const { WEAPONS } = await server.ssrLoadModule('/src/data/weapons.ts');
-  const { OUTFITS } = await server.ssrLoadModule('/src/data/outfits.ts');
-  const equipment = { ...WEAPONS, ...Object.fromEntries(Object.entries(OUTFITS).map(([id, item]) => [id, { ...item, kind: 'outfit' }])) };
+  const { ARMOR } = await server.ssrLoadModule('/src/data/outfits.ts');
+  const { ACCESSORIES } = await server.ssrLoadModule('/src/data/accessories.ts');
+  const equipment = { ...WEAPONS, ...ACCESSORIES, ...Object.fromEntries(Object.entries(ARMOR).map(([id, item]) => [id, { ...item, kind: item.slot }])) };
   const models = new Map();
   function scan(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -27,6 +28,8 @@ try {
   }
   scan(path.join(root, 'src/assets/models/items'));
   scan(path.join(root, 'src/assets/models/wardrobe/classes'));
+  // Modular pecheras retain the old IDs; prefer their individual models over the old ensemble.
+  scan(path.join(root, 'src/assets/models/wardrobe/classes/modular'));
   const pending = [];
   for (const [id, weapon] of Object.entries(equipment)) {
     const file = models.get(id);
@@ -55,16 +58,18 @@ try {
       camera.position.set(0, 0, 10);
       window.__weaponPortrait = async (url, kind) => {
         const model = (await new GLTFLoader().loadAsync(url)).scene;
-        if (kind === 'outfit') model.rotation.set(0, -.28, 0);
+        if (['outfit','head','chest','hands','legs','feet','pendant','ring','trinket'].includes(kind)) model.rotation.set(0, kind==='ring'?.75:-.28, 0);
         else if (kind === 'book') model.rotation.set(.12, Math.PI / 2 - .35, -.12);
         else if (kind === 'crossbow') model.rotation.set(.85, -.18, -.48);
         else if (kind === 'shield') model.rotation.set(.08, -.30, -.12);
         else model.rotation.set(.06, -.32, -.62);
+        model.updateMatrixWorld(true);
+        model.traverse(object=>{if(object.isSkinnedMesh)object.skeleton.update()});
         const bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
         const scale = 1.96 / Math.max(size.x, size.y);
         model.scale.multiplyScalar(scale);
         model.position.sub(bounds.getCenter(new THREE.Vector3()).multiplyScalar(scale));
-        scene.add(model); renderer.render(scene, camera);
+        scene.add(model);model.updateMatrixWorld(true);model.traverse(object=>{if(object.isSkinnedMesh)object.skeleton.update()});renderer.render(scene, camera);
         const png = renderer.domElement.toDataURL('image/png').split(',')[1];
         scene.remove(model);
         const textures = new Set();

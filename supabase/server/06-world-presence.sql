@@ -48,7 +48,8 @@ as $$
     end as base_amount from resource
   ), boosted as (
     select kind, floor(base_amount * (1 + least(greatest(coalesce((d->>'partyPeers')::int,0),0),3) * 0.015))::int
-      + case when d->'foodBuff'->>'itemId'='pan_duro' and (d->'foodBuff'->>'remaining')::numeric>0 then 3 else 0 end as amount
+      + case when d->'foodBuff'->>'itemId'='pan_duro' and (d->'foodBuff'->>'remaining')::numeric>0 then 3 else 0 end
+      + public.game_equipment_stat(d,'maxResource') as amount
     from maximum
   )
   select jsonb_build_object(
@@ -98,6 +99,7 @@ begin
     else 50+public.game_attr_total(d,'agilidad')*3+public.game_attr_total(d,'corpulencia')*3
   end;
   max_resource := floor(max_resource*(1+least(greatest(coalesce((d->>'partyPeers')::int,0),0),3)*0.015));
+  max_resource := max_resource+public.game_equipment_stat(d,'maxResource');
   if d->'foodBuff'->>'itemId'='pan_duro' and coalesce((d->'foodBuff'->>'remaining')::numeric,0)>0 then
     max_resource := max_resource+3;
   end if;

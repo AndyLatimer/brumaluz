@@ -51,7 +51,7 @@ contenido del juego relacionado.
 - El encuentro ocurre cerca de la entrada y la búsqueda junto a un puesto
   del mercado. Al entregar el distintivo, Gnomi se lo coloca, agradece la
   ayuda y ve llegar a Isberto. Antes de orientarnos hacia los oficios,
-  el granjero nos pide ayuda con la criatura que ronda su ganado.
+  el herrero nos pide ayuda con la criatura que ronda su herrería.
 - Después del distintivo, la bienvenida continúa con una introducción al
   combate y la invitación a casa de Isberto. El incidente siembra un
   hilo para ampliar la historia más adelante, sin definir todavía su origen
@@ -65,15 +65,15 @@ contenido del juego relacionado.
   fuera de la ciudad**. Gnomi acompañará y comentará, pero no combatirá.
   Enseñará paso a paso a seleccionar objetivo, atacar, usar una habilidad
   básica, moverse y gestionar vida y estamina.
-- Una **criatura extraña, que nadie reconoce, ha atacado el ganado de un
-  granjero**. El jugador la mata al derrotarla. Su origen y relación con
+- Una **criatura extraña, que nadie reconoce, ronda la herrería de
+  Isberto**. El jugador la mata al derrotarla. Su origen y relación con
   acontecimientos futuros no están definidos. Isberto presenta el incidente
-  mediante una escena de la criatura entre su ganado.
+  mediante una escena de la criatura junto a su fragua.
 - Este primer combate permite morir y utiliza el sistema normal de muerte
   y reaparición, sin protección especial de tutorial.
 - Tras devolver el distintivo, **Isberto** se acerca al jugador y a Gnomi,
-  antes de la orientación hacia los oficios. El granjero pide ayuda con
-  la criatura que ronda su ganado. Isberto es un explorador retirado, harto de
+  antes de la orientación hacia los oficios. El herrero pide ayuda con
+  la criatura que ronda su herrería. Isberto es herrero y explorador retirado, harto de
   todo. Su aspecto toma como
   referencia el personaje existente de ese nombre indicado por el creador;
   no se copia ni modifica su personaje de jugador. Su pasado como personaje
@@ -136,8 +136,8 @@ contenido del juego relacionado.
 - La recompensa de esta primera misión será de **40 puntos de experiencia
   y 5 pelines**.
 - Justo después de completar la misión de Gnomi se ve a **Isberto** acercarse
-  andando en una breve escena, seguida de un plano de **la criatura entre su
-  ganado**, en la granja del sur; después le pide ayuda al jugador. Derrotarla
+  andando en una breve escena, seguida de un plano de **la criatura junto a su
+  herrería**, al sur; después le pide ayuda al jugador. Derrotarla
   deja un cadáver saqueable con una **Esencia sombría** garantizada. Su
   significado y uso no se conocen todavía.
 - Al registrar los restos, **Isberto vuelve** en otra escena. Gnomi interviene

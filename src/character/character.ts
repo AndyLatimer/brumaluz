@@ -14,7 +14,8 @@ import { paintCell, smoothNormals } from './head/geometry';
 import { softDot } from '../world/paint';
 import { STARTER_MODELS } from '../data/starterItems';
 import { loadWeaponModels, weaponModel } from './weaponModels';
-import { equippedOutfit } from '../data/outfits';
+import { ARMOR_SLOTS, equippedArmor } from '../data/outfits';
+import { mountModularWardrobe, modularHairFit, mountEquippedAccessories } from './wardrobe';
 import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
 
 // ---------------------------------------------------------------------------
@@ -209,8 +210,8 @@ export class Character {
   private build() {
     const d = this.d, R = RACES[d.race];
     const outfit = this.opts.outfit ? OUTFITS[d.cls] : VILLAGER;
-    const armor = !this.opts.clothing && (!this.opts.outfit || this.opts.useEquipment) ? equippedOutfit(d.cls, d.equipment) : undefined;
-    const wardrobe = this.opts.wardrobe ?? (armor ? armor.id as WardrobeId : !this.opts.outfit && !this.opts.clothing ? 'medieval' : undefined);
+    const modular = !this.opts.wardrobe && !this.opts.clothing && (!this.opts.outfit || this.opts.useEquipment) && ARMOR_SLOTS.some(slot=>equippedArmor(d.cls,d.equipment,slot));
+    const wardrobe = this.opts.wardrobe ?? (!modular&&!this.opts.outfit && !this.opts.clothing ? 'medieval' : undefined);
     const baseClothes = wardrobe === 'medieval' && !this.opts.wardrobe;
     const base = kits.Mage;
 
@@ -273,7 +274,7 @@ export class Character {
       if (!m) { m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); flatMats.set(c, m); this.owned.push(m); }
       return m;
     };
-    const hatKind = this.opts.clothing ? this.opts.clothing.hairFit : this.opts.hat === false ? 'none' : wardrobe ? WARDROBES[wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
+    const hatKind = this.opts.clothing ? this.opts.clothing.hairFit : this.opts.hat === false ? 'none' : modular ? modularHairFit(d.cls,d.equipment) : wardrobe ? WARDROBES[wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
@@ -287,7 +288,9 @@ export class Character {
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
 
     // Piezas
-    if (this.opts.clothing) {
+    if (modular) {
+      mountModularWardrobe(d.cls,d.equipment,this.model,this.bones,skin,{primary:CLOTH[d.clothA],secondary:CLOTH[d.clothB]},r=>this.owned.push(r),this.opts.hat!==false);
+    } else if (this.opts.clothing) {
       this.opts.clothing.mount(this.model, this.bones, skin, resource => this.owned.push(resource));
     } else {
       const replaced = wardrobe ? wardrobeRegions(wardrobe) : new Set<string>();
@@ -325,6 +328,7 @@ export class Character {
       if (wardrobe) mountWardrobe(wardrobe, this.model, this.bones, skin, resource => this.owned.push(resource), this.opts.hat !== false,
         baseClothes ? { primary: CLOTH[d.clothA], secondary: CLOTH[d.clothB] } : undefined);
     }
+    if(!this.opts.clothing&&(!this.opts.outfit||this.opts.useEquipment))mountEquippedAccessories(d.equipment,this.model,this.bones,r=>this.owned.push(r));
     const heldItems: { kit: Kit; name: string; id?: string }[] = this.opts.outfit && !this.opts.useEquipment ? outfit.items : [d.equipment.weapon, d.equipment.offhand]
       .flatMap(item => {
         const model = item && STARTER_MODELS[item.id];

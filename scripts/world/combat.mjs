@@ -108,7 +108,7 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
       const actor=window.brumaluz.city().root.parent.getObjectByName('npc:isberto');
       return actor.position.distanceTo(window.brumaluz.char().root.parent.position)<4;
     }),'Isberto appears beside the player instead of requiring a trip to the farm');
-    await page.locator('.dialog-quest-card').filter({hasText:'Una sombra entre el ganado'}).waitFor();
+    await page.locator('.dialog-quest-card').filter({hasText:'Una sombra junto a la fragua'}).waitFor();
     await page.locator('.dialog-choice').first().click();
     await page.waitForFunction(()=>!document.querySelector('#combat-controls').hidden);
     await page.evaluate(()=>{

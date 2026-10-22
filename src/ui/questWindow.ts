@@ -61,7 +61,7 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
       choices: [{ text: 'Completar misión', action: () => act('claim'), next: 'thanks' }],
     };
     conversation.nodes.thanks = {
-      text: '¡Ahora sí, bien sujeto! Gracias de corazón: ¡menuda bienvenida a Brumaluz te he dado, buscando cosas perdidas! Anda, ¿ese que viene corriendo no es Isberto, el granjero?',
+      text: '¡Ahora sí, bien sujeto! Gracias de corazón: ¡menuda bienvenida a Brumaluz te he dado, buscando cosas perdidas! Anda, ¿ese que viene corriendo no es Isberto, el herrero?',
     };
   } else if (progress.stage === 'completed') {
     conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.' };
@@ -165,7 +165,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData, track
       const seal = document.createElement('span'); seal.className = 'quest-seal'; seal.textContent = completed ? '✓' : '!';
       header.append(left);
       if (!completed) header.append(createTrackButton(tracking, SHADOW_QUEST_KEY));
-      const description = document.createElement('p'); description.textContent = t('Isberto te ha pedido ayuda con la criatura que ronda su ganado.');
+      const description = document.createElement('p'); description.textContent = t('Isberto te ha pedido ayuda con la criatura que ronda su herrería.');
       const objective = document.createElement('section'); objective.className = 'quest-objective';
       const label = document.createElement('small'); label.textContent = t(completed ? 'Completada' : 'Siguiente paso');
       const text = document.createElement('p'); text.textContent = t(shadowObjective(data.shadowQuest, looted, data.location));

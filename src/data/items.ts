@@ -6,7 +6,8 @@ import { ADVANCED_WEAPONS } from './weaponProgression';
 import { ITEM_RARITIES, rarityForTier, type ItemRarity } from './itemRarity';
 import { ORIGINAL_WEAPONS, originalWeaponIcon } from './uniqueWeapons';
 import { weaponPortrait, weaponIconFrame } from '../art/weaponIcons';
-import { OUTFITS, outfitItemStats } from './outfits';
+import { ARMOR, outfitItemStats } from './outfits';
+import { ACCESSORIES } from './accessories';
 
 export interface ItemDef {
   id: string;
@@ -193,14 +194,20 @@ for (const item of ORIGINAL_WEAPONS) {
 }
 
 export const DEFAULT_STACK = 50;
-for (const outfit of Object.values(OUTFITS)) {
+for (const outfit of Object.values(ARMOR)) {
   ITEMS[outfit.id] = {
-    id: outfit.id, label: outfit.label, category: 'Traje completo', stack: 1, value: outfit.value,
+    id: outfit.id, label: outfit.label, category: ({head:'Cabeza',chest:'Pecho',hands:'Manos',legs:'Piernas',feet:'Pies'} as const)[outfit.slot], stack: 1, value: outfit.value,
     rarity: rarityForTier(outfit.tier), stats: outfitItemStats(outfit.id),
-    description: 'Un conjunto completo de tu clase. Se equipa en el pecho y sustituye la ropa visible; al retirarlo recuperas tu túnica habitual.',
+    description: 'Una pieza independiente de tu clase. Puedes combinarla con otras colecciones; al retirarla recuperas la ropa básica de esa zona.',
     icon: weaponPortrait(outfit.id) ?? `<path d="m7 3 5 2 5-2 5 5-4 3-1 11H7L6 11 2 8Z" fill="${outfit.cloth}" stroke="${outfit.trim}"/>`,
   };
 }
+for(const item of Object.values(ACCESSORIES))ITEMS[item.id]={
+  id:item.id,label:item.label,category:({pendant:'Colgante',ring:'Anillo',trinket:'Abalorio'} as const)[item.slot],stack:1,value:item.value,
+  rarity:rarityForTier(item.tier),description:'Artesanía de su colección, utilizable por todas las clases. Aumenta tus reservas mientras esté equipada.',
+  stats:[...(item.maxHealth?[{label:'Vida máxima',value:`+${item.maxHealth}`}]:[]),...(item.maxResource?[{label:'Recurso máximo',value:`+${item.maxResource}`}]:[])],
+  icon:weaponPortrait(item.id)??`<circle cx="12" cy="12" r="7" fill="${item.dark}" stroke="${item.metal}"/><path d="m12 6 4 6-4 6-4-6Z" fill="${item.gem}"/>`,
+};
 for (const item of Object.values(ITEMS)) {
   item.rarity ??= WEAPONS[item.id] ? rarityForTier(WEAPONS[item.id].tier) : 'common';
   const source = (item as ItemDef & { starterIcon?: string }).starterIcon;
@@ -212,7 +219,7 @@ export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];
 export const itemLabel = (id: string) => ITEMS[id]?.label ?? id;
 export const itemRarity = (id: string) => ITEMS[id]?.rarity ?? 'common';
-export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || OUTFITS[id] ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon}</svg>` : '');
+export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || ARMOR[id] || ACCESSORIES[id] ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon}</svg>` : '');
 
 /** Lo que paga un vendedor por un objeto. */
 export const sellPrice = (id: string) => Math.max(1, Math.floor((ITEMS[id]?.value ?? 0) / 2));
@@ -224,5 +231,5 @@ export const VENDOR_STOCK: Record<string, string[]> = {
     'daga_secundaria_cazador_t1', 'varita_ambar_t1', 'grimorio_verde_t1', 'ballesta_roble_t1',
     'espada_cobre_t2', 'escudo_roble_t2', 'baston_ambar_t2', 'daga_cazador_t2',
     'daga_secundaria_cazador_t2', 'varita_ambar_t2', 'grimorio_verde_t2', 'ballesta_roble_t2',
-    ...ADVANCED_WEAPONS.map(item => item.id), ...ORIGINAL_WEAPONS.map(item => item.id), ...Object.keys(OUTFITS)],
+    ...ADVANCED_WEAPONS.map(item => item.id), ...ORIGINAL_WEAPONS.map(item => item.id), ...Object.keys(ARMOR), ...Object.keys(ACCESSORIES)],
 };

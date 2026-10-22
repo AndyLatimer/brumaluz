@@ -9,14 +9,14 @@ export type ShadowQuest = 'active' | 'defeated' | 'returning' | 'returned';
 export type ShadowAction = 'report' | 'return';
 /** Plaza del pozo: allí vuelve Gnomi cuando Isberto se lleva al jugador a su casa. */
 export const SHADOW_RETURN = { x: -3.5, z: 0 };
-export const SHADOW_TITLE = 'Una sombra entre el ganado';
+export const SHADOW_TITLE = 'Una sombra junto a la fragua';
 /** `looted`: si ya se registraron los restos de la criatura (solo cuenta tras derrotarla). */
 export function shadowObjective(stage: ShadowQuest | null, looted = true, location = 'brumaluz') {
   return stage === 'returned' ? 'Isberto te ha dado cobijo: usa su cama para descansar y el cofre de la esquina para guardar tus cosas.'
     : stage === 'returning' ? location === ISBERTO_HOUSE ? 'Habla con Isberto para que te enseñe la cama y el cofre.' : 'Sigue a Isberto hasta su casa y entra con él.'
     : stage === 'defeated' ? looted ? 'Habla con Isberto sobre la criatura derrotada.' : 'Registra los restos de la criatura.'
-    : stage === 'active' ? 'Derrota a la criatura que ronda el ganado de Isberto, en la granja del sur.'
-    : 'Habla con Isberto, el granjero de las afueras.';
+    : stage === 'active' ? 'Derrota a la criatura que ronda la herrería de Isberto, al sur.'
+    : 'Habla con Isberto, el herrero de las afueras.';
 }
 // Mantener en sincronía con create_character, welcome_action, shadow_action, world_travel y rest_action (supabase/server/).
 /** Puerta del Este: los personajes nuevos aparecen aquí, entrando a la ciudad (`yaw`: el de la cámara). */
@@ -28,7 +28,7 @@ export const INTRO_GNOMI_FROM = { x: 143.5, z: 2.2 };
 /** Casa de Isberto: mapa interior, su puerta en Brumaluz y lo que hay dentro. */
 export const ISBERTO_HOUSE = 'casa_de_isberto_interior';
 export const ISBERTO_DOOR = { x: 23.5, z: -48.5 };
-/** Camino que sigue Isberto desde la granja hasta su puerta (en el último punto espera al jugador). */
+/** Camino que sigue Isberto desde su herrería hasta su puerta (en el último punto espera al jugador). */
 export const ISBERTO_WAY = [{ x: 10, z: -58 }, { x: 19, z: -54.5 }, { x: 25.5, z: -51.5 }, { x: 25.6, z: -49.9 }];
 export const ISBERTO_INSIDE = { x: .9, z: .55 };
 export const HOUSE_BED = { x: -1.5, z: -2.5 };

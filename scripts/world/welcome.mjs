@@ -263,9 +263,9 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.ok(Math.hypot(arrivalMiddle.position[0]-arrivalStart.position[0],arrivalMiddle.position[2]-arrivalStart.position[2])>.5,'Isberto walks through the world rather than appearing at the player');
     assert.ok(Math.abs(arrivalMiddle.screen[0])<1&&Math.abs(arrivalMiddle.screen[1])<1&&Math.abs(arrivalMiddle.screen[2])<1,'The walking NPC is visible in the cinematic framing');
     assert.equal(await first.page.locator('#window-backdrop').isVisible(),false,'Inventory cannot interrupt the arrival');
-    // Después de llegar, un plano de la criatura entre el ganado antes de que Isberto pida ayuda.
+    // Después de llegar, un plano de la criatura junto a la herrería antes de que Isberto pida ayuda.
     await first.page.locator('#cinematic').waitFor({state:'visible'});
-    await first.page.locator('.cinematic-line').filter({hasText:'granja del sur'}).waitFor();
+    await first.page.locator('.cinematic-line').filter({hasText:'herrería'}).waitFor();
     const reveal=await first.page.evaluate(()=>{
       const monster=window.brumaluz.city().root.parent.getObjectByName('story-shadow-preview');
       const p=monster.position.clone().setY(monster.position.y+.6).project(window.brumaluz.camera());
@@ -278,7 +278,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.equal(await first.page.locator('#cinematic').isVisible(),false);
     assert.equal(await first.page.evaluate(()=>!!window.brumaluz.city().root.parent.getObjectByName('story-shadow-preview')),false,'The preview creature leaves with the cutscene');
     assert.ok(await first.page.evaluate(start=>performance.now()-start>=2000,arrivalStart.time),'The arrival is shown before starting the offer');
-    await first.page.locator('.dialog-quest-card').filter({hasText:'Una sombra entre el ganado'}).waitFor();
+    await first.page.locator('.dialog-quest-card').filter({hasText:'Una sombra junto a la fragua'}).waitFor();
     assert.equal(a.character.data.shadowQuest,undefined,'Opening the automatic offer never accepts it');
     const introPosition=await first.page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').position.toArray());
     assert.ok(Math.hypot(introPosition[0]-a.character.data.isbertoPosition.x,introPosition[2]-a.character.data.isbertoPosition.z)<2);

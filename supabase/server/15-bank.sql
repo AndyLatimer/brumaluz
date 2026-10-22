@@ -109,7 +109,9 @@ begin
     >power((spot->>'radius')::numeric,2) then raise exception 'BANK_TOO_FAR'; end if;
 
   insert into public.account_banks(user_id) values (c.user_id) on conflict (user_id) do nothing;
+  perform public.game_deliver_modular_parts(c.user_id);
   select * into bank from public.account_banks where user_id=c.user_id for update;
+  insert into public.equipment_modular_migrations(scope,owner,original) values('bank',c.user_id,bank.items) on conflict do nothing;
   bank_items:=public.game_bank_items(bank.items,bank.size);
   inv:=public.game_inventory(d);
 

@@ -81,7 +81,8 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   container.append(description);
   if (EQUIPPABLE[id]) {
     const hint = document.createElement('small');
-    hint.textContent = `${t(CLASSES[EQUIPPABLE[id].cls].label)} · ${t('Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.')}`;
+    const cls=EQUIPPABLE[id].cls;
+    hint.textContent = `${cls?t(CLASSES[cls].label):t('Todas las clases')} · ${t('Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.')}`;
     container.append(hint);
   }
   if (item.sellable === false) return;

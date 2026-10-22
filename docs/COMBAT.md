@@ -216,7 +216,7 @@ de ballesta usa provisionalmente `Interact`: el pack no incluye disparo.
 
 En el mundo, completa la bienvenida de Gnomi: Isberto se acerca andando en una
 breve escena y, al llegar junto al jugador, ofrece automáticamente la misión.
-Acéptala y ve al ganado para
+Acéptala y ve a la herrería de Isberto para
 probar el encuentro de la sombra. La escena aislada
 `?test&welcome&graphics=compatible` permite recorrer esa secuencia sin cuenta
 ni persistencia. Los controles son `F` para fijar y atacar, `1–0` para las

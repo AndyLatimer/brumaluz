@@ -4,7 +4,12 @@ import { loadGLB } from '../world/load';
 import helpersUrl from '../assets/models/wardrobe/helpers.glb?url';
 import medievalUrl from '../assets/models/wardrobe/medieval.glb?url';
 import type { HeadOptions } from './head';
-import { OUTFITS } from '../data/outfits';
+import { OUTFITS, equippedArmor, ARMOR_SLOTS } from '../data/outfits';
+import type { ClassId } from '../data/data';
+import type { Equipment } from '../data/inventory';
+import { ACCESSORIES } from '../data/accessories';
+import { weaponModel } from './weaponModels';
+import modularNodes from '../assets/models/wardrobe/classes/modular/nodes.json';
 
 type BodyRegion = 'torso' | 'arms' | 'legs';
 type Attachment = 'head' | 'chest' | 'handslot.l' | 'handslot.r';
@@ -23,6 +28,9 @@ export const WARDROBES: Record<WardrobeId, WardrobeSet> = {
   ...Object.fromEntries(Object.keys(OUTFITS).map(id => [id, {
     hairFit: 'none', pieces: [
       { node: 'medieval-tunic', replaces: ['torso'] },
+      { node: 'suit-foundation' },
+      { node: 'suit-leg-detail-l' }, { node: 'suit-leg-detail-r' },
+      { node: 'suit-arm-detail-l' }, { node: 'suit-arm-detail-r' },
       { node: 'medieval-sleeve-l', replaces: ['arms'] }, { node: 'medieval-sleeve-r' },
       { node: 'anatomy-hand-left' }, { node: 'anatomy-hand-right' },
       { node: 'medieval-leg-l', replaces: ['legs'] }, { node: 'medieval-leg-r' },
@@ -145,5 +153,50 @@ export function mountWardrobe(
     const source = asset.scene.getObjectByName(piece.node);
     if (!source) throw new Error(`Falta la pieza de vestuario: ${piece.node}`);
     mountCharacterPiece(source, model, bones, material, own, piece.attachment);
+  }
+}
+
+export function modularHairFit(cls:ClassId,equipment:Equipment):HeadOptions['hat'] {
+  return equippedArmor(cls,equipment,'head') ? cls==='mago'?'wizard':cls==='clerigo'?'none':cls==='guerrero'?'helmet':'cap' : 'none';
+}
+
+/** Each slot mounts only its own patterns. Empty slots use complete neutral underclothes. */
+export function mountModularWardrobe(
+  cls:ClassId,equipment:Equipment,model:THREE.Object3D,bones:ReadonlyMap<string,THREE.Bone>,
+  skin:string,colors:{primary:string;secondary:string},own:(resource:{dispose():void})=>void,
+  hat=true,
+) {
+  const fallback=wardrobeSource('traje_guerrero_artesano');
+  function mount(asset:GLTF,names:readonly string[],base=false){
+    const cache=new Map<THREE.Material,THREE.Material>();
+    const material=(source:THREE.Material)=>{
+      let result=cache.get(source);if(result)return result;
+      result=source.clone();cache.set(source,result);own(result);
+      if(result instanceof THREE.MeshStandardMaterial){
+        if(source.name==='skin')result.color.set(skin);
+        if(base&&source.name==='tunic')result.color.set(colors.primary);
+        if(base&&['tunicTrim','trousers'].includes(source.name))result.color.set(colors.secondary);
+      }
+      return result;
+    };
+    for(const name of names){const node=asset.scene.getObjectByName(name);if(!node)throw new Error(`Falta pieza modular: ${name}`);mountCharacterPiece(node,model,bones,material,own)}
+  }
+  for(const slot of ARMOR_SLOTS){
+    if(slot==='head'&&!hat)continue;
+    const item=equippedArmor(cls,equipment,slot);
+    if(item){mount(wardrobeSource(item.setId as WardrobeId),modularNodes[slot]);continue}
+    if(slot==='chest')mount(wardrobeSource('medieval'),['medieval-tunic','medieval-sleeve-l','medieval-sleeve-r'],true);
+    else if(slot==='hands')mount(wardrobeSource('medieval'),['anatomy-hand-left','anatomy-hand-right']);
+    else if(slot==='legs')mount(fallback,modularNodes.legs,true);
+    else if(slot==='feet')mount(fallback,modularNodes.feet,true);
+  }
+}
+
+export function mountEquippedAccessories(equipment:Equipment,model:THREE.Object3D,bones:ReadonlyMap<string,THREE.Bone>,own:(resource:{dispose():void})=>void){
+  for(const slot of ['pendant','ring','trinket'] as const){
+    const stack=equipment[slot],item=stack&&ACCESSORIES[stack.id];
+    if(!item||stack?.count!==1||item.slot!==slot)continue;
+    const node=weaponModel(item.id)?.getObjectByName(item.id);
+    if(node)mountCharacterPiece(node,model,bones,source=>{const copy=source.clone();own(copy);return copy},own);
   }
 }

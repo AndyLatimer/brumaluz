@@ -1,5 +1,7 @@
 // Traducciones al inglés: texto original en español → inglés. Las usa t() en src/ui/i18n.ts.
 import { ADVANCED_WEAPONS } from '../data/weaponProgression';
+import { OUTFITS, ARMOR } from '../data/outfits';
+import { ACCESSORIES } from '../data/accessories';
 export const translations: Record<string, string> = {
   'Espada Hoja de Roble': 'Oak Leaf Sword',
   'Escudo del Tronco Errante': 'Wandering Trunk Shield',
@@ -89,7 +91,7 @@ export const translations: Record<string, string> = {
   'Ay, ay, ay… ¿Dónde lo habré dejado? Si David se entera…': 'Oh dear, oh dear… Where could I have left it? If David finds out…',
   '¡Oh! ¡Hola! No te había visto.': 'Oh! Hello! I didn\'t see you there.',
   '¡Eh! ¡Aquí, junto a la puerta!': 'Hey! Over here, by the gate!',
-  'Hay algo entre mi ganado, en la granja del sur. Una sombra que se arrastra y no les quita ojo a las vacas.': 'There is something among my livestock, at the farm to the south. A crawling shadow that won\'t take its eyes off the cows.',
+  'Hay algo rondando mi herrería, al sur. Una sombra que se arrastra entre los yunques y no se aparta de la fragua.': 'There is something prowling around my smithy, to the south. A crawling shadow that slinks between the anvils and won\'t leave the forge.',
   'No es un lobo ni un zorro. Nunca había visto nada igual… y he visto muchas cosas.': 'It is no wolf and no fox. I have never seen anything like it… and I have seen a great many things.',
   'Pasa. Y límpiate las botas, que acabo de barrer.': 'Come in. And wipe your boots, I have just swept.',
   'Esa cama es tuya cuando necesites descansar. Duermes un rato y te levantas como nuevo.': 'That bed is yours whenever you need to rest. Sleep a while and you will wake up good as new.',
@@ -104,10 +106,10 @@ export const translations: Record<string, string> = {
   'Recuperas toda la vida y la energía.': 'You recover all your health and energy.',
   'Misión completada: Isberto te ofrece su cama y su cofre.': 'Quest complete: Isberto offers you his bed and his chest.',
   '¿Qué tal en casa de Isberto? Dicen que su cama cruje, pero que se duerme de maravilla. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.': 'How are things at Isberto\'s? They say his bed creaks, but you sleep like a log. That creature is still a mystery… We will have time to puzzle over it.',
-  '¡Sigue a Isberto antes de que se arrepienta! Su casa está junto a la granja, al sur. Yo me quedo por la plaza del pozo.': 'Follow Isberto before he changes his mind! His house is by the farm, to the south. I will stay around the well square.',
+  '¡Sigue a Isberto antes de que se arrepienta! Su casa está junto a la herrería, al sur. Yo me quedo por la plaza del pozo.': 'Follow Isberto before he changes his mind! His house is by the smithy, to the south. I will stay around the well square.',
   'Seguir a Isberto': 'Follow Isberto',
   'Registra lo que quede de esa cosa antes de que se deshaga del todo. Quiero saber qué era.': 'Search whatever is left of that thing before it falls apart completely. I want to know what it was.',
-  'Ya no se mueve… Bien hecho. El ganado sigue temblando y yo, si te soy sincero, también. He criado animales toda mi vida y nunca había visto nada parecido.': 'It has stopped moving… Well done. The livestock are still trembling and, to be honest, so am I. I have raised animals all my life and never seen anything like it.',
+  'Ya no se mueve… Bien hecho. Todavía me tiemblan las manos, y eso que llevo media vida con el martillo. Exploré medio mundo antes de colgar la capa y nunca había visto nada parecido.': 'It has stopped moving… Well done. My hands are still shaking, and I have spent half my life at the hammer. I explored half the world before hanging up my cloak and never saw anything like it.',
   'Yo tampoco sé qué era. Y mira que en el gremio nos cruzamos con gente y bichos de todas clases… Esto no me suena de nada.': 'I do not know what it was either. And at the guild we meet all sorts of people and critters… This is completely unfamiliar.',
   'Pues no vamos a ponerle nombre por inventar. Guarda lo que hayas sacado de sus restos; por ahora no sabemos qué significa.': 'Then let us not make up a name for it. Keep whatever you took from its remains; for now we do not know what it means.',
   '…Mira. Se está haciendo tarde, y después de esto no pienso dejar que duermas al raso. Tengo una cama libre en casa. No me gustan las visitas, que conste. Pero vente. Antes de que me arrepienta.': '…Look. It is getting late, and after this I am not letting you sleep out in the open. I have a spare bed at home. I do not like visitors, mind you. But come along. Before I change my mind.',
@@ -117,19 +119,19 @@ export const translations: Record<string, string> = {
   'Bah. Descansa, que mañana… ya veremos qué hacemos con lo que encontraste.': 'Bah. Get some rest; tomorrow… we will see what to do with what you found.',
   'Mi casa es esa, la de la puerta junto al camino. Vamos, entra.': 'That is my house, the one with the door by the path. Come on, in you go.',
   'Ponte cómodo. La cama y el cofre de la esquina siguen ahí cuando los necesites. Yo sigo dándole vueltas a esa criatura.': 'Make yourself at home. The bed and the chest in the corner are there whenever you need them. I am still puzzling over that creature.',
-  'La criatura sigue junto al ganado, en la granja del sur. Ten cuidado.': 'The creature is still near the livestock, at the farm to the south. Be careful.',
+  'La criatura sigue junto a la herrería, al sur. Ten cuidado.': 'The creature is still by the smithy, to the south. Be careful.',
   '¡Gnomi, menos mal que te encuentro! Y tú…': 'Gnomi, thank goodness I found you! And you…',
-  '¿Sabes usar eso que llevas? Hay algo rondando mi ganado, en la granja del sur. No es un lobo ni un zorro. Yo ya tuve bastantes aventuras de joven: necesito a alguien que se atreva a echarle un vistazo.': 'Do you know how to use what you are carrying? Something is prowling around my livestock, at the farm to the south. It is no wolf and no fox. I had my share of adventures when I was young: I need someone brave enough to take a look.',
-  'Derrota a la criatura que ronda el ganado de Isberto, en la granja del sur.': 'Defeat the creature prowling around Isberto\'s livestock, at the farm to the south.',
+  '¿Sabes usar eso que llevas? Hay algo rondando mi herrería, al sur. No es un lobo ni un zorro. Yo ya tuve bastantes aventuras cuando era explorador; ahora solo quiero mi yunque y mi fragua. Necesito a alguien que se atreva a echarle un vistazo.': 'Do you know how to use what you are carrying? Something is prowling around my smithy, to the south. It is no wolf and no fox. I had my share of adventures as an explorer; now all I want is my anvil and my forge. I need someone brave enough to take a look.',
+  'Derrota a la criatura que ronda la herrería de Isberto, al sur.': 'Defeat the creature prowling around Isberto\'s livestock, at the farm to the south.',
   'Isberto te ha dado cobijo: usa su cama para descansar y el cofre de la esquina para guardar tus cosas.': 'Isberto has given you shelter: use his bed to rest and the chest in the corner to keep your belongings.',
   'Sigue a Isberto hasta su casa y entra con él.': 'Follow Isberto to his house and go inside with him.',
   'Registra los restos de la criatura.': 'Search the creature\'s remains.',
   'Recoge el distintivo junto al mercado de la plaza del Levante.': 'Pick up the badge by the market in Levante Square.',
-  'Isberto te ha pedido ayuda con la criatura que ronda su ganado.': 'Isberto asked for your help with the creature prowling around his livestock.',
+  'Isberto te ha pedido ayuda con la criatura que ronda su herrería.': 'Isberto asked for your help with the creature prowling around his smithy.',
   'Acompaña a Gnomi al mercado de la plaza del Levante, encuentra su distintivo y devuélveselo.': 'Accompany Gnomi to the market in Levante Square, find his badge and give it back.',
   '¡Te doy la bienvenida a Brumaluz! Perdona, andaba con la cabeza en otra parte. Soy Gnomi, ayudante de bienvenida del Gremio de Ayudantes. ¿Acabas de cruzar la puerta? Cuéntame un poquito: ¿qué te trae por aquí?': 'Welcome to Brumaluz! Sorry, my mind was elsewhere. I\'m Gnomi, welcome helper from the Helpers\' Guild. Did you just come through the gate? Tell me a little: what brings you here?',
   'Estuve junto al mercado de la plaza del Levante. Seguro que sigue allí. Voy contigo… cuatro ojos ven más que dos, aunque dos estén bajo un gorro.': 'I was by the market in Levante Square. I\'m sure it\'s still there. I\'ll come with you… four eyes see more than two, even if two are under a cap.',
-  '¡Ahora sí, bien sujeto! Gracias de corazón: ¡menuda bienvenida a Brumaluz te he dado, buscando cosas perdidas! Anda, ¿ese que viene corriendo no es Isberto, el granjero?': 'There, nice and secure! Thank you from the bottom of my heart: what a welcome to Brumaluz I gave you, hunting for lost things! Oh, isn\'t that Isberto the farmer running this way?',
+  '¡Ahora sí, bien sujeto! Gracias de corazón: ¡menuda bienvenida a Brumaluz te he dado, buscando cosas perdidas! Anda, ¿ese que viene corriendo no es Isberto, el herrero?': 'There, nice and secure! Thank you from the bottom of my heart: what a welcome to Brumaluz I gave you, hunting for lost things! Oh, isn\'t that Isberto the blacksmith running this way?',
   'La puerta de Isberto está cerrada con llave.': 'Isberto\'s door is locked.',
   'Solo puedes descansar en la cama de Isberto cuando te invite a su casa.': 'You can only rest in Isberto\'s bed once he invites you into his house.',
   'Acércate a la cama para descansar.': 'Get closer to the bed to rest.',
@@ -164,10 +166,10 @@ export const translations: Record<string, string> = {
   'Esencia sombría': 'Shadow essence',
   'Objeto desconocido': 'Unknown item',
   'Un resto oscuro dejado por una extraña criatura. No sabes qué es ni para qué sirve.': 'A dark remnant of the creature. You do not know what it is or what it is for.',
-  'Una sombra entre el ganado': 'A shadow among the livestock',
+  'Una sombra junto a la fragua': 'A shadow by the forge',
   'Has recogido una esencia desconocida.': 'You collected an unknown essence.',
   'Abre el cuerpo de la criatura y recoge sus restos.': 'Open the creature’s body and collect its remains.',
-  'Habla con Isberto, el granjero de las afueras.': 'Talk to Isberto, the farmer on the outskirts.',
+  'Habla con Isberto, el herrero de las afueras.': 'Talk to Isberto, the blacksmith on the outskirts.',
   'Investiga a la criatura, derrótala y examina sus restos.': 'Investigate the creature, defeat it and examine its remains.',
   'Has encontrado algo entre sus restos. No sé qué es. Guárdalo por ahora.': 'You found something among its remains. I do not know what it is. Keep it for now.',
   'La criatura ha caído. Mira si ha quedado algo entre sus restos.': 'The creature has fallen. See whether anything is left among its remains.',
@@ -261,7 +263,7 @@ export const translations: Record<string, string> = {
     "There, it's secure at last! Thank you. This badge means I can be useful—and today, you helped me do just that.\r\n\r\nYou said you're looking for your path in Brumaluz. I can help you find a trade; that's what a welcome helper does! First, come with me to see Isberto, a farmer on the outskirts. He's asked me for help with something strange near his livestock.",
   '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Cuando quieras, acompáñame a ver a Isberto, el granjero de las afueras; después te ayudaré a encontrar tu camino por Brumaluz.':
     "My search companion! The badge is still there. I checked. Twice. Whenever you're ready, come with me to see Isberto, the farmer on the outskirts; after that, I'll help you find your path in Brumaluz.",
-  'Granjero · explorador retirado': 'Farmer · retired explorer',
+  'Herrero · explorador retirado': 'Blacksmith · retired explorer',
   'Voy a echar un vistazo.': "I'll take a look.",
   'Una cosa negra y rara se ha metido entre el ganado. No reconozco la criatura, y a estas alturas ya he tenido bastantes aventuras. Si te ves con ganas, échale un ojo. Yo me quedo vigilando el camino.':
     "A strange black thing has got into the livestock. I don't recognize it, and I've had quite enough adventures by now. If you're up for it, take a look. I'll keep watch on the road.",
@@ -915,6 +917,18 @@ export const translations: Record<string, string> = {
 };
 
 const weaponNames = { sword: 'Sword', shield: 'Shield', staff: 'Staff', dagger: 'Dagger', wand: 'Wand', book: 'Grimoire', crossbow: 'Crossbow' };
+const outfitNames = { guerrero: 'Armour', mago: 'Arcane Robe', picaro: 'Stalker Leathers', clerigo: 'Sacred Vestments', explorador: 'Ranger Outfit' };
+const outfitSets: Record<string,string> = { artesano: 'of the Wayfarer', ambar: 'of Amber', violeta: 'of the Violet Seal', aurora: 'of the Dawn', fuego: 'of Primordial Fire', alba: 'of the Dawn Guard', eclipse: 'of the Eclipse', roble: 'of the Wandering Oak', marea: 'of the Royal Tide', forja: 'of the Stellar Forge' };
+for (const outfit of Object.values(OUTFITS)) translations[outfit.label] = `${outfitNames[outfit.cls]} ${outfitSets[outfit.collection]}`;
+const armorNames={head:'Headwear',chest:'Chest Armour',hands:'Gloves',legs:'Leggings',feet:'Boots'};
+for(const item of Object.values(ARMOR))translations[item.label]=`${armorNames[item.slot]} · ${outfitNames[item.cls]} ${outfitSets[item.collection]}`;
+for(const item of Object.values(ACCESSORIES))translations[item.label]=`${({pendant:'Pendant',ring:'Ring',trinket:'Trinket'} as const)[item.slot]} ${outfitSets[item.collection]}`;
+translations['Todas las clases']='All classes';translations['Pecho']='Chest';translations['Recurso máximo']='Maximum Resource';
+translations['Una pieza independiente de tu clase. Puedes combinarla con otras colecciones; al retirarla recuperas la ropa básica de esa zona.']='An individual class piece. Combine collections freely; removing it restores the basic clothing in that region.';
+translations['Artesanía de su colección, utilizable por todas las clases. Aumenta tus reservas mientras esté equipada.']='Collection jewellery usable by every class. Increases your reserves while equipped.';
+translations['Traje completo'] = 'Complete Outfit';
+translations['Un conjunto completo de tu clase. Se equipa en el pecho y sustituye la ropa visible; al retirarlo recuperas tu túnica habitual.'] = 'A complete class outfit. Equip it in the chest slot to replace your visible clothing; removing it restores your everyday tunic.';
+for (let guard=1;guard<=7;guard++) translations[`−${guard} daño cuerpo a cuerpo`] = `−${guard} melee damage taken`;
 const setNames: Record<number, string> = { 3: 'of the Violet Seal', 4: 'of the Dawn', 5: 'of Primordial Fire' };
 for (const item of ADVANCED_WEAPONS) translations[item.label] = `${item.weapon.kind === 'dagger' && item.weapon.slot === 'offhand' ? 'Offhand Dagger' : weaponNames[item.weapon.kind]} ${setNames[item.weapon.tier]}`;
 for (const guard of [4, 5, 6]) translations[`−${guard} daño cuerpo a cuerpo`] = `−${guard} melee damage taken`;

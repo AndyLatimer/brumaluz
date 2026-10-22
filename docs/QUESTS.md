@@ -152,13 +152,13 @@ libre alrededor del punto, se avisa explícitamente y se abre la oferta sin
 atravesar obstáculos. `welcome_action` guarda el punto final en `isbertoPosition`,
 calculado desde la presencia autoritativa; ese punto se conserva al reconectar.
 Los personajes que ya completaron la bienvenida sin este campo mantienen la
-posición original de la granja. El rastreador, el minimapa y la flecha de borde
-señalan al granjero en su posición real. Su tarjeta ofrece
-**Una sombra entre el ganado**: investigar a la criatura, derrotarla y examinar
+posición original de la herrería. El rastreador, el minimapa y la flecha de borde
+señalan al herrero en su posición real. Su tarjeta ofrece
+**Una sombra junto a la fragua**: investigar a la criatura, derrotarla y examinar
 sus restos. Salir del diálogo no acepta la misión ni crea un enemigo.
 Aceptar llama a `combat_start`, que guarda `shadowQuest: active` junto al
-encuentro personal y valida proximidad al punto del granjero. La criatura
-sigue estando junto al ganado; no se traslada a la presentación.
+encuentro personal y valida proximidad al punto del herrero. La criatura
+sigue estando junto a la herrería; no se traslada a la presentación.
 Abrir o cerrar la oferta automática no acepta la misión. No hay recompensas
 ficticias de XP ni pelines en la tarjeta.
 La llegada solo se dispara tras entregar el distintivo en esa sesión; no se
@@ -236,4 +236,4 @@ Saltar con Esc o el botón deja al jugador en (156.5,0), junto a Gnomi.
 `welcome_action(arrive)` guarda `introSeen` en el personaje y actualiza la
 presencia a ese punto fijo. No depende del almacenamiento del navegador.
 Salir durante una escena la cancela sin disparar el diálogo siguiente.
-El viaje de cámara no mueve al jugador hasta la granja ni carga otro mapa.
+El viaje de cámara no mueve al jugador hasta la herrería ni carga otro mapa.
