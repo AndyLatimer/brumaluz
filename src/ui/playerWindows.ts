@@ -3,6 +3,7 @@ import type * as THREE from 'three';
 import { ATTRIBUTES, ATTRIBUTE_MAX_VALUE, MAX_LEVEL, unspentAttributePoints, type AttributeId, type CharData } from '../data/data';
 import { classIcon } from './classIcons';
 import { raceIcon } from './raceIcons';
+import { attributeIcon } from './attributeIcons';
 import { CURRENCIES, CURRENCY_ORDER, currencyIcon } from '../data/currency';
 import { EQUIPMENT_SLOTS, INVENTORY_UNLOCKED, type EquipmentSlot } from '../data/inventory';
 import { itemDef, itemIcon, itemLabel } from '../data/items';
@@ -282,15 +283,6 @@ export interface PointEditor {
   onRemove: (id: AttributeId) => void;
 }
 
-const ATTRIBUTE_ART: Record<AttributeId, string> = {
-  fuerza: '<path d="m17 3 4 1-1 4-9 9-4-4Z" fill="#a5b8b6"/><path d="m18 6-9 9" stroke="#f8efd6"/><path d="m5 11 8 8M8 16l-5 5" stroke="#b08a48" stroke-width="3"/>',
-  intelecto: '<path d="M3 5q5-2 9 1 4-3 9-1v15q-5-2-9 0-4-2-9 0Z" fill="#8e91b4"/><path d="M12 6v14M6 9l3 1M6 13l3 1M15 10l3-1M15 14l3-1" stroke="#efe5c7"/>',
-  corpulencia: '<path d="m12 2 9 4-1 8c-1 4-5 7-8 8-3-1-7-4-8-8L3 6Z" fill="#91a582"/><path d="M12 7v10M7 12h10" stroke="#f2e3b6" stroke-width="3"/>',
-  agilidad: '<path d="M4 19C6 10 11 3 21 3c0 8-5 15-13 15Z" fill="#81a29c"/><path d="M3 22 17 8M8 17l1-6M12 13h5" stroke="#eee3bf"/>',
-  pericia: '<path d="m6 3 4 3 1 5 10 8-3 3-9-11-5-1-2-4 4 1 2-2Z" fill="#be9a69"/><circle cx="18.5" cy="19" r="1" fill="#f6e8c6"/>',
-  presencia: '<path d="m3 7 5 4 4-8 4 8 5-4-3 13H6Z" fill="#c5a05e"/><path d="M7 17h10" stroke="#f7e3ac"/><circle cx="12" cy="12" r="2" fill="#ad7e88"/>',
-  percepcion: '<path d="M2 12S6 5 12 5s10 7 10 7-4 7-10 7S2 12 2 12Z" fill="#ad9b78"/><circle cx="12" cy="12" r="4" fill="#71968e"/><circle cx="12" cy="12" r="1.7" fill="#3d514d"/><circle cx="13" cy="10.5" r="1" fill="#fff1ce"/>',
-};
 
 const BAR_GLYPH: Record<string, string> = {
   hp: 'M12 20.5s-8-4.8-8-10.7A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.8c0 5.9-8 10.7-8 10.7Z',
@@ -299,7 +291,6 @@ const BAR_GLYPH: Record<string, string> = {
   xp: 'm12 3 2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5l-5.3 2.9 1.2-6-4.5-4.1 6-.7Z',
 };
 
-const sheetArt = (art: string) => `<svg viewBox="0 0 24 24" aria-hidden="true">${art}</svg>`;
 
 export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE.WebGLRenderer, onTitleChange?: (title: TitleId) => void, points?: PointEditor) {
   container.replaceChildren();
@@ -392,7 +383,7 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
     row.dataset.attribute = id;
     row.tabIndex = -1;
     const icon = el('div', 'sheet-attr-icon');
-    icon.innerHTML = sheetArt(ATTRIBUTE_ART[id]);
+    icon.innerHTML = attributeIcon(id);
     const extra = draft[id] ?? 0;
     const total = attributeTotal(d, id) + extra;
     const value = el('b', extra ? 'pending' : undefined, String(total));
