@@ -34,6 +34,10 @@ La guardia del conjunto anterior se distribuye entre pecho, guantes y calzas: pe
 - Anillo: `3+2×categoría` de maná o estamina máxima según clase.
 - Abalorio: `2×categoría` de vida máxima y recurso máximo.
 
+Los accesorios grises de principiante tienen valores propios: colgante +2 de vida
+máxima, anillo +2 de recurso máximo y abalorio +2 de ambos. Sus precios son 20,
+15 y 25 pelines, respectivamente; no usan las fórmulas de los escalones superiores.
+
 Los valores se validan por ranura, cantidad y clase en cliente y servidor. Los bonos de equipo se suman después del bonus de grupo y comida. Se aplican a curación, regeneración, consumibles y límites de sobrecuración mediante los máximos compartidos. Cambiar equipo conserva la vida/recurso actual y los limita al nuevo máximo, evitando rellenarlos al reequipar. No hay efectos aleatorios ni bonos de conjunto implícitos; el equilibrio inicial es revisable.
 
 ## Conversión de los objetos antiguos
