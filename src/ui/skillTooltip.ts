@@ -2,9 +2,13 @@ import { COMBAT_KITS, MAX_SKILL_RANK, skillPower, skillRankLevel } from '../data
 import { type ClassId } from '../data/data';
 import { skillIcon } from './skillIcons';
 import { t } from './i18n';
+import type { Equipment } from '../data/inventory';
 
-export function skillEffect(cls: ClassId, rank: number) {
-  const skill = COMBAT_KITS[cls].skill, power = skillPower(cls, rank);
+const equipmentContexts = new WeakMap<HTMLElement, Equipment>();
+export const skillTooltipEquipment = (target: HTMLElement) => equipmentContexts.get(target);
+
+export function skillEffect(cls: ClassId, rank: number, equipment?: Equipment) {
+  const skill = COMBAT_KITS[cls].skill, power = skillPower(cls, rank, equipment);
   return skill.healing ? t('Restaura hasta {n} puntos de vida.', { n: power })
     : t(skill.hits === 1 ? 'Un impacto de {damage} de daño.' : '{hits} impactos de {damage} de daño.', { hits: skill.hits, damage: power });
 }
@@ -17,7 +21,8 @@ export const SKILL_DESCRIPTIONS: Record<ClassId, string> = {
   explorador: 'Apuntas con cuidado y lanzas un disparo certero a larga distancia.',
 };
 
-export function setSkillTooltip(target: HTMLElement, cls: ClassId, rank: number) {
+export function setSkillTooltip(target: HTMLElement, cls: ClassId, rank: number, equipment?: Equipment) {
+  if (equipment) equipmentContexts.set(target, equipment); else equipmentContexts.delete(target);
   target.dataset.skillId = COMBAT_KITS[cls].skill.id;
   target.dataset.skillClass = cls;
   target.dataset.skillRank = String(rank);
@@ -34,7 +39,7 @@ export function skillStats(cls: ClassId) {
   ];
 }
 
-export function renderSkillTooltip(container: HTMLElement, cls: ClassId, rank: number) {
+export function renderSkillTooltip(container: HTMLElement, cls: ClassId, rank: number, equipment?: Equipment) {
   const skill = COMBAT_KITS[cls].skill;
   const header = document.createElement('div');
   header.className = 'item-tip-header';
@@ -61,14 +66,14 @@ export function renderSkillTooltip(container: HTMLElement, cls: ClassId, rank: n
   }
   const effect = document.createElement('section');
   effect.className = 'item-tip-effects';
-  effect.textContent = skillEffect(cls, rank);
+  effect.textContent = skillEffect(cls, rank, equipment);
   const description = document.createElement('p');
   description.className = 'item-tip-description';
   description.textContent = t(SKILL_DESCRIPTIONS[cls]);
   const footer = document.createElement('p');
   footer.className = 'item-tip-footer';
   footer.textContent = rank < MAX_SKILL_RANK
-    ? `${t('Siguiente rango')} · ${t('Nivel {n}', { n: skillRankLevel(rank + 1) })} · ${t('1 punto de habilidad')}. ${skillEffect(cls, rank + 1)}`
+    ? `${t('Siguiente rango')} · ${t('Nivel {n}', { n: skillRankLevel(rank + 1) })} · ${t('1 punto de habilidad')}. ${skillEffect(cls, rank + 1, equipment)}`
     : t('Rango máximo alcanzado.');
   const hint = document.createElement('small');
   hint.textContent = t('Arrastra a la barra rápida · Usa con 1–0');

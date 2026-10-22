@@ -190,3 +190,67 @@ test('shoulders, wrists, crotch and waistband remain joined throughout locomotio
     action.stop();mixer.setTime(0);
   }
 });
+
+test('medieval wardrobe shares the rig, skins cleanly, has no hat and never loses its feet', async () => {
+  const io = new NodeIO();
+  const file = fileURLToPath(new URL('../src/assets/models/wardrobe/medieval.glb', import.meta.url));
+  const document = await io.read(file);
+  const reference = await io.read(fileURLToPath(new URL('../src/assets/models/Mage.glb', import.meta.url)));
+  const root = document.getRoot(), skin = root.listSkins()[0];
+  assert.deepEqual(skin.listJoints().map(j => j.getName()), reference.getRoot().listSkins()[0].listJoints().map(j => j.getName()));
+  assert.equal(root.listAnimations().length, 0, 'Animations belong to the shared character, not each outfit');
+  assert.ok((await readFile(file)).length < 600_000, 'Equipment asset remains small');
+  assert.deepEqual(root.listMeshes().map(m => m.getName()).sort(), [
+    'anatomy-hand-left', 'anatomy-hand-right', 'medieval-leg-l', 'medieval-leg-r',
+    'medieval-sleeve-l', 'medieval-sleeve-r', 'medieval-tunic',
+  ], 'No hat: the hair shows');
+  let triangles = 0;
+  for (const node of root.listNodes().filter(n => n.getMesh())) {
+    assert.equal(node.getSkin(), skin, `${node.getName()} is skinned to the shared rig`);
+    for (const primitive of node.getMesh().listPrimitives()) {
+      const positions = primitive.getAttribute('POSITION');
+      assert.ok(Array.from(positions.getArray()).every(Number.isFinite));
+      triangles += (primitive.getIndices()?.getCount() ?? positions.getCount()) / 3;
+      const weights = primitive.getAttribute('WEIGHTS_0'), joints = primitive.getAttribute('JOINTS_0');
+      for (let i = 0; i < weights.getCount(); i++) {
+        assert.ok(Math.abs(weights.getElement(i, []).reduce((a, b) => a + b, 0) - 1) < .00001, `${node.getName()}: normalized weights`);
+        assert.ok(joints.getElement(i, []).every(index => index >= 0 && index < 41));
+      }
+    }
+  }
+  assert.ok(triangles < 15_000, `Outfit triangle budget: ${triangles}`);
+  const primitives = name => root.listNodes().find(n => n.getName() === name).getMesh().listPrimitives();
+  for (const side of ['l', 'r']) {
+    // Each leg carries its boot, down to a sole on the ground.
+    const sole = primitives(`medieval-leg-${side}`).find(p => p.getMaterial().getName() === 'sole');
+    assert.ok(sole && sole.getAttribute('POSITION').getMin([])[1] < .02, 'The leg ends in a boot sole');
+    // No shoulder pads or bracers: the wool sleeve with the shirt's linen cuff at the wrist.
+    assert.deepEqual(primitives(`medieval-sleeve-${side}`).map(p => p.getMaterial().getName()).sort(), ['linen', 'tunic']);
+  }
+  // Sleeves, hands and legs are cut from the canonical KayKit arm and leg, so they fit them exactly.
+  const canonical = name => reference.getRoot().listNodes().find(n => n.getName() === name).getMesh().listPrimitives()[0].getAttribute('POSITION');
+  const bounds = list => list.map(p => p.getAttribute('POSITION')).reduce(([min, max], a) => [
+    min.map((v, i) => Math.min(v, a.getMin([])[i])), max.map((v, i) => Math.max(v, a.getMax([])[i]))], [[9, 9, 9], [-9, -9, -9]]);
+  for (const [garment, body] of [['medieval-leg-l', 'Mage_LegLeft'], ['medieval-leg-r', 'Mage_LegRight']]) {
+    const [min, max] = bounds(primitives(garment));
+    for (let i = 0; i < 3; i++) {
+      assert.ok(Math.abs(min[i] - canonical(body).getMin([])[i]) < 1e-4 && Math.abs(max[i] - canonical(body).getMax([])[i]) < 1e-4, `${garment} fits ${body}`);
+    }
+  }
+  for (const [side, body] of [['l', 'Mage_ArmLeft'], ['r', 'Mage_ArmRight']]) {
+    const [min, max] = bounds([...primitives(`medieval-sleeve-${side}`), ...primitives(`anatomy-hand-${side === 'l' ? 'left' : 'right'}`)]);
+    for (let i = 0; i < 3; i++) assert.ok(Math.abs(min[i] - canonical(body).getMin([])[i]) < 1e-4 && Math.abs(max[i] - canonical(body).getMax([])[i]) < 1e-4, `Sleeve and hand fit ${body}`);
+  }
+  // Bare hands share their vertices instead of repeating them for every triangle.
+  for (const side of ['left', 'right']) {
+    const [hand] = primitives(`anatomy-hand-${side}`);
+    assert.ok(hand.getIndices(), 'Indexed hand');
+    assert.ok(hand.getAttribute('POSITION').getCount() < hand.getIndices().getCount() / 2, 'Hand vertices are shared');
+  }
+  // A laced neckline on the chest: the linen shirt shows through a narrow slit, crossed by leather laces.
+  const tunic = primitives('medieval-tunic');
+  const [shirt] = tunic.filter(p => p.getMaterial().getName() === 'linen');
+  assert.ok(shirt.getAttribute('POSITION').getMin([])[1] > .9 && shirt.getAttribute('POSITION').getMax([])[2] > .2, 'The shirt shows under the chin');
+  assert.ok(Math.max(Math.abs(shirt.getAttribute('POSITION').getMin([])[0]), shirt.getAttribute('POSITION').getMax([])[0]) < .08, 'A narrow slit, not a chest emblem');
+  assert.ok(tunic.some(p => p.getMaterial().getName() === 'leather' && p.getAttribute('POSITION').getMax([])[1] > 1.1), 'Laces cross the slit');
+});

@@ -1,11 +1,12 @@
 // Ventana de compra y venta con un NPC: mercancía del vendedor (sin su dinero, es infinito) y objetos del jugador.
 import type { CharData } from '../data/data';
 import { currencyIcon } from '../data/currency';
-import { ITEMS, VENDOR_STOCK, itemIcon, itemLabel, sellPrice } from '../data/items';
+import { ITEMS, VENDOR_STOCK, itemIcon, itemLabel, itemRarity, sellPrice } from '../data/items';
 import { INVENTORY_UNLOCKED } from '../data/inventory';
 import { t } from './i18n';
 import { goldLine } from './playerWindows';
 import { setItemTooltip } from './itemTooltip';
+import { ITEM_RARITIES } from '../data/itemRarity';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
   const node = document.createElement(tag);
@@ -38,7 +39,9 @@ function row(item: string, label: string, amount: number, action: string, enable
   button.disabled = !enabled;
   button.onclick = onClick;
   const info = el('div', 'vendor-info');
-  info.append(el('strong', 'vendor-name', t(label)), el('span', 'vendor-effect', t(ITEMS[item].effects?.[0] ?? ITEMS[item].category)));
+  const name = el('strong', 'vendor-name', t(label));
+  name.style.color = ITEM_RARITIES[itemRarity(item)].ink;
+  info.append(name, el('span', 'vendor-effect', `${t(ITEM_RARITIES[itemRarity(item)].label)} · ${t(ITEMS[item].effects?.[0] ?? ITEMS[item].category)}`));
   const trade = el('div', 'vendor-trade');
   trade.append(price(amount), button);
   li.append(icon, info, trade);

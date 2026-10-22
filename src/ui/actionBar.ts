@@ -6,6 +6,7 @@ import { t } from './i18n';
 import { setItemTooltip } from './itemTooltip';
 import { DRAG_SKILL_TYPE } from './skillsWindow';
 import type { ClassId } from '../data/data';
+import type { Equipment } from '../data/inventory';
 import { setSkillTooltip } from './skillTooltip';
 
 export const ACTION_BAR_SIZE = 10;
@@ -20,7 +21,7 @@ export interface ActionBarHooks {
   bound: (item: string) => boolean;
   /** Se pidió usar el objeto del hueco. */
   use: (item: string) => void;
-  skill: () => { id: string; cls: ClassId; rank: number; icon: string; cooldown: number; duration: number; available: boolean };
+  skill: () => { id: string; cls: ClassId; rank: number; equipment?: Equipment; icon: string; cooldown: number; duration: number; available: boolean };
   useSkill: () => void;
 }
 
@@ -81,7 +82,7 @@ export function toggleActionBarPage() {
 export function renderActionBar(force = false) {
   load();
   const skill = hooks.skill();
-  const next = `${page}|${skill.id}:${skill.rank}:${skill.available}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
+  const next = `${page}|${skill.id}:${skill.rank}:${skill.available}:${skill.equipment?.weapon?.id}:${skill.equipment?.offhand?.id}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
   const updateCooldown = () => {
     root().querySelectorAll<HTMLElement>('.ab-slot[data-skill-id]').forEach(slot => {
       const recovering = skill.cooldown > 0;
@@ -130,7 +131,7 @@ function slotElement(id: string | null, index: number) {
     slot.classList.toggle('empty', isSkill ? !skill.available || id !== skill.id : count === 0);
     slot.classList.toggle('on-cooldown', isSkill && skill.cooldown > 0);
     if (isSkill) {
-      setSkillTooltip(slot, skill.cls, skill.rank);
+      setSkillTooltip(slot, skill.cls, skill.rank, skill.equipment);
     } else {
       slot.dataset.itemId = id;
       setItemTooltip(slot, id, hooks.bound(id));

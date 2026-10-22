@@ -5,18 +5,108 @@ import ts from 'typescript';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { chromium } from 'playwright';
+import { fileURLToPath } from 'node:url';
 
 const compile = async path => ts.transpileModule(await readFile(new URL(path,import.meta.url),'utf8'), {
   compilerOptions: { target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022 },
 }).outputText;
 const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
 const inventory = moduleUrl(await compile('../src/data/inventory.ts'));
-const code = (await compile('../src/data/combat.ts')).replace("'./inventory'",JSON.stringify(inventory));
+const weapons = moduleUrl(await compile('../src/data/weapons.ts'));
+const { WEAPONS, guardedDamage, equippedWeapon } = await import(weapons);
+const itemCode = (await compile('../src/data/items.ts')).replace("'./weapons'",JSON.stringify(weapons));
+const { ITEMS, VENDOR_STOCK } = await import(moduleUrl(itemCode));
+const code = (await compile('../src/data/combat.ts')).replace("'./inventory'",JSON.stringify(inventory)).replace("'./weapons'",JSON.stringify(weapons));
 const { COMBAT_KITS, starterEquipment, resolveCombat, regenerateCombat, skillRank, skillPointsAllowed,
   unspentSkillPoints, upgradeSkill, basicAttackDamage, skillPower, isInCombat } = await import(moduleUrl(code));
 const state = () => ({health:60,maxHealth:100,resource:50,enemyHealth:100,nextAttack:0,nextSkill:0});
-const equipmentCode = (await compile('../src/data/equipment.ts')).replace("'./inventory'",JSON.stringify(inventory));
+const equipmentCode = (await compile('../src/data/equipment.ts')).replace("'./inventory'",JSON.stringify(inventory)).replace("'./weapons'",JSON.stringify(weapons));
 const {hasCombatWeapon,transferEquipment} = await import(moduleUrl(equipmentCode));
+
+test('equipment preserves starter attacks and gives a modest tier one improvement to all five classes',()=>{
+  for(const [cls,kit] of Object.entries(COMBAT_KITS)){
+    const starter=starterEquipment(cls), upgraded=structuredClone(starter);
+    for(const [id,w] of Object.entries(WEAPONS)) if(w.cls===cls&&w.tier===1)upgraded[w.slot]={id,count:1};
+    for(const level of [1,10,50])assert.equal(basicAttackDamage(cls,level,starter),basicAttackDamage(cls,level));
+    for(const rank of [1,3,5])assert.equal(skillPower(cls,rank,starter),skillPower(cls,rank));
+    const ratio=basicAttackDamage(cls,1,upgraded)/kit.damage;
+    assert.ok(ratio>1&&ratio<=1.13,`${cls}: modest upgrade`);
+    assert.ok(skillPower(cls,1,upgraded)>skillPower(cls,1,starter));
+    const result=resolveCombat(cls,state(),'skill',10,0,1,1,upgraded);
+    if(kit.skill.healing)assert.equal(result.healing,36);
+    else assert.equal(result.damage[0],skillPower(cls,1,upgraded));
+    assert.equal(result.state.resource,50-kit.skill.cost);
+    assert.equal(result.state.nextSkill,10+kit.skill.cooldown);
+  }
+});
+
+test('guard uses only a valid offhand, preserves zero damage and never grants immunity',()=>{
+  for(const cls of ['guerrero','picaro']){
+    const eq=starterEquipment(cls);
+    assert.equal(guardedDamage(cls,eq,8),7);
+    eq.offhand={id:Object.keys(WEAPONS).find(id=>WEAPONS[id].cls===cls&&WEAPONS[id].tier===1&&WEAPONS[id].slot==='offhand'),count:1};
+    assert.equal(guardedDamage(cls,eq,8),6);
+    assert.equal(guardedDamage(cls,eq,1),1);
+    assert.equal(guardedDamage(cls,eq,0),0);
+    eq.offhand.count=2; assert.equal(guardedDamage(cls,eq,8),8);
+    eq.offhand={id:'escudo_inicial',count:1};
+    if(cls==='picaro')assert.equal(guardedDamage(cls,eq,8),8);
+  }
+  const eq=starterEquipment('mago');eq.weapon={id:'espada_cobre_t1',count:1};
+  assert.equal(equippedWeapon('mago',eq,'weapon'),undefined);
+  assert.equal(basicAttackDamage('mago',1,eq),0);
+  assert.throws(()=>resolveCombat('mago',state(),'attack',10,0,1,1,eq),/equipar/);
+});
+
+test('new weapons equip, swap and unequip through the existing inventory rules',()=>{
+  for(const [id,w] of Object.entries(WEAPONS).filter(([,w])=>w.tier===1)){
+    const data={cls:w.cls,health:-1,equipment:starterEquipment(w.cls),inventory:Array(25).fill(null)};
+    data.inventory[0]={id,count:1}; const previous=structuredClone(data.equipment[w.slot]);
+    transferEquipment(data,w.slot,0,data.inventory[0]);
+    assert.equal(data.equipment[w.slot].id,id);assert.deepEqual(data.inventory[0],previous);
+    transferEquipment(data,w.slot,null,data.equipment[w.slot]);
+    assert.equal(data.inventory[1].id,id);
+  }
+});
+
+test('server weapon catalog is identical to client equipment numbers',async()=>{
+  const sql=await readFile(new URL('../supabase/server/05-weapon-stats.sql',import.meta.url),'utf8');
+  const actual=Object.fromEntries([...sql.matchAll(/when '([^']+)' then '([^']+)'::jsonb/g)].map(([,id,json])=>[id,JSON.parse(json)]));
+  assert.deepEqual(actual,WEAPONS);
+  const catalog=await readFile(new URL('../supabase/server/05-items-vendors.sql',import.meta.url),'utf8');
+  const itemFunction=catalog.split('create or replace function public.game_vendor_stock')[0];
+  const itemRows=Object.fromEntries([...itemFunction.matchAll(/when '([^']+)' then '([^']+)'::jsonb/g)].map(([,id,json])=>[id,JSON.parse(json)]));
+  for(const [id,w] of Object.entries(WEAPONS)){
+    assert.equal(itemRows[id].value,ITEMS[id].value,`${id}: same price`);
+    assert.equal(itemRows[id].stack,1);
+    assert.equal(!!itemRows[id].bound,!!ITEMS[id].bound);
+    assert.ok(ITEMS[id].stats.length>0);
+    assert.ok(ITEMS[id].icon.length>0);
+    if(w.tier===1)assert.ok(VENDOR_STOCK.testiculos.includes(id));
+  }
+  const stock=catalog.match(/when 'testiculos' then array\[([^\]]+)\]/)[1];
+  assert.deepEqual([...stock.matchAll(/'([^']+)'/g)].map(([,id])=>id),VENDOR_STOCK.testiculos);
+});
+
+test('the eight Blender GLBs are self-contained single-mesh items within the triangle budget',async()=>{
+  const { NodeIO } = await import('@gltf-transform/core');
+  for(const [id,w] of Object.entries(WEAPONS).filter(([,w])=>w.tier===1)){
+    const file=new URL(`../src/assets/models/items/tier1/${id}.glb`,import.meta.url);
+    const doc=await new NodeIO().read(fileURLToPath(file));
+    assert.equal(doc.getRoot().listMeshes().length,1,id);
+    assert.equal(doc.getRoot().listMaterials().length,1,`${id}: one material`);
+    assert.equal(doc.getRoot().listTextures().length,1,`${id}: embedded atlas`);
+    assert.ok(doc.getRoot().listTextures()[0].getImage().length>0);
+    assert.equal(doc.getRoot().listMeshes()[0].listPrimitives().length,1,`${id}: one draw call`);
+    let triangles=0;
+    for(const primitive of doc.getRoot().listMeshes()[0].listPrimitives()){
+      triangles+=primitive.getIndices().getCount()/3;
+      assert.ok(primitive.getMaterial());
+      for(const name of ['POSITION','NORMAL','TEXCOORD_0'])assert.ok(Array.from(primitive.getAttribute(name).getArray()).every(Number.isFinite));
+    }
+    assert.ok(triangles>100&&triangles<2000,`${id}: ${triangles} triangles`);
+  }
+});
 
 test('a pending mission enemy is not combat until an engagement occurs',()=>{
   assert.equal(isInCombat(null),false);

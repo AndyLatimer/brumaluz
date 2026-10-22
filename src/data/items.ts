@@ -1,9 +1,16 @@
-// Catálogo de objetos y mercancías de los vendedores. Los precios y efectos REALES viven en supabase/server.sql
+// Catálogo de objetos y mercancías de los vendedores. Los precios y efectos REALES viven en supabase/server/
 // (game_item / game_vendor_stock): estos datos solo sirven para mostrarlos. Si cambias uno, cambia el otro.
 import type { FoodId } from './food';
+import { WEAPONS, weaponItemStats } from './weapons';
+import { ADVANCED_WEAPONS } from './weaponProgression';
+import { ITEM_RARITIES, rarityForTier, type ItemRarity } from './itemRarity';
+import { ORIGINAL_WEAPONS, originalWeaponIcon } from './uniqueWeapons';
+import { weaponPortrait, weaponIconFrame } from '../art/weaponIcons';
+import { OUTFITS, outfitItemStats } from './outfits';
 
 export interface ItemDef {
   id: string;
+  rarity?: ItemRarity;
   bound?: boolean;
   sellable?: boolean;
   label: string; // en español (se traduce con t())
@@ -86,9 +93,40 @@ export const ITEMS: Record<string, ItemDef> = {
     ['libro_inicial', 'Libro de principiante', 'Libro', '<path d="M5 3h13v18H5Z" fill="#7d729e" stroke="#c7ac73"/><path d="M8 3v18M11 8h5M11 11h5" stroke="#e7d8b2"/>'],
     ['ballesta_inicial', 'Ballesta de principiante', 'Ballesta', '<path d="m7 21 8-16M4 7q9-6 16 7M4 7l16 7M11 11l-3 6" fill="none" stroke="#8c623e" stroke-width="2"/>'],
   ].map(([id,label,category,icon]) => [id, {
-    id, label, category, icon, bound: true, sellable: false, stack: 1, value: 0,
+    id, label, category, icon, bound: true, sellable: false, stack: 1, value: 0, stats: weaponItemStats(id),
     description: 'Equipo básico de tu clase, ligado a tu personaje.',
     effects: ['No se puede vender ni intercambiar.'],
+  }])),
+  ...Object.fromEntries([
+    ['espada_cobre_t1', 'Espada de la Hoja de Cobre', 'Espada', 'espada_inicial', 100],
+    ['escudo_roble_t1', 'Escudo de roble reforzado', 'Escudo', 'escudo_inicial', 70],
+    ['baston_ambar_t1', 'Bastón de ámbar', 'Bastón', 'baston_inicial', 110],
+    ['daga_cazador_t1', 'Daga del cazador', 'Daga', 'daga_inicial', 90],
+    ['daga_secundaria_cazador_t1', 'Daga secundaria del cazador', 'Daga', 'daga_secundaria_inicial', 60],
+    ['varita_ambar_t1', 'Varita de ámbar', 'Varita', 'varita_inicial', 100],
+    ['grimorio_verde_t1', 'Grimorio del sello verde', 'Libro', 'libro_inicial', 70],
+    ['ballesta_roble_t1', 'Ballesta de roble reforzada', 'Ballesta', 'ballesta_inicial', 110],
+  ].map(([id, label, category, starter, value]) => [id, {
+    id: String(id), label: String(label), category: String(category), value: Number(value), stack: 1,
+    description: 'Equipo poco común, elaborado con mejores materiales para tus primeras aventuras.',
+    stats: weaponItemStats(String(id)),
+    // Same icon family, with the amber and forest colours of the new models.
+    icon: '',
+    starterIcon: String(starter),
+  }])),
+  ...Object.fromEntries([
+    ['espada_cobre_t2', 'Espada de la Hoja de Cobre labrada', 'Espada', 'espada_inicial', 200],
+    ['escudo_roble_t2', 'Escudo de roble con herrajes', 'Escudo', 'escudo_inicial', 140],
+    ['baston_ambar_t2', 'Bastón de ámbar tallado', 'Bastón', 'baston_inicial', 220],
+    ['daga_cazador_t2', 'Daga del cazador veterano', 'Daga', 'daga_inicial', 180],
+    ['daga_secundaria_cazador_t2', 'Daga secundaria del cazador veterano', 'Daga', 'daga_secundaria_inicial', 120],
+    ['varita_ambar_t2', 'Varita de ámbar tallada', 'Varita', 'varita_inicial', 200],
+    ['grimorio_verde_t2', 'Grimorio del sello de ámbar', 'Libro', 'libro_inicial', 140],
+    ['ballesta_roble_t2', 'Ballesta de roble labrada', 'Ballesta', 'ballesta_inicial', 220],
+  ].map(([id, label, category, starter, value]) => [id, {
+    id: String(id), label: String(label), category: String(category), value: Number(value), stack: 1,
+    description: 'Equipo raro del conjunto de ámbar, una mejora sobre el equipo de artesano.',
+    stats: weaponItemStats(String(id)), icon: '', starterIcon: String(starter),
   }])),
   pan_duro: {
     id: 'pan_duro', label: 'Pan duro', category: 'Comida',
@@ -125,16 +163,66 @@ export const ITEMS: Record<string, ItemDef> = {
   },
 };
 
+for (const item of ADVANCED_WEAPONS) {
+  const source = ITEMS[item.starter];
+  ITEMS[item.id] = {
+    id: item.id, label: item.label, category: source.category, stack: 1, value: item.value,
+    rarity: rarityForTier(item.weapon.tier), stats: weaponItemStats(item.id),
+    description: item.weapon.tier === 5
+      ? 'Un artefacto excepcional del Fuego Primigenio, forjado con un núcleo de poder antiguo.'
+      : item.weapon.tier === 4
+        ? 'Equipo legendario de la Aurora, con metales nobles, engastes y runas de gran maestría.'
+        : 'Equipo épico del Sello Violeta, con metal trabajado y focos rúnicos de poder.',
+    icon: source.icon + `<path d="m19 14 3 4-3 4-3-4Z" fill="${ITEM_RARITIES[rarityForTier(item.weapon.tier)].color}" stroke="#332d36" stroke-width=".7"/>`,
+  };
+}
+
+for (const item of ORIGINAL_WEAPONS) {
+  ITEMS[item.id] = {
+    id: item.id, label: item.label, category: ITEMS[item.starter].category, stack: 1, value: item.value,
+    rarity: rarityForTier(item.weapon.tier), stats: weaponItemStats(item.id),
+    description: ({
+      alba: 'Una pieza de la Guardia del Alba, construida con acero claro, roble y engastes celestes.',
+      eclipse: 'Una reliquia del Eclipse, de formas lunares, metal oscuro y cristales violetas.',
+      roble: 'Artesanía del Roble Errante: madera curtida, hojas de acero y herrajes de caminante.',
+      marea: 'Una pieza legendaria de la Marea Real, con formas de concha, coral y tridente.',
+      forja: 'Un artefacto de la Forja Estelar, ensamblado con metal oscuro y núcleos de luz ámbar.',
+    } as Record<string, string>)[item.collection],
+    icon: originalWeaponIcon(item.weapon.kind, item.collection, item.weapon.slot === 'offhand'),
+  };
+}
+
 export const DEFAULT_STACK = 50;
+for (const outfit of Object.values(OUTFITS)) {
+  ITEMS[outfit.id] = {
+    id: outfit.id, label: outfit.label, category: 'Traje completo', stack: 1, value: outfit.value,
+    rarity: rarityForTier(outfit.tier), stats: outfitItemStats(outfit.id),
+    description: 'Un conjunto completo de tu clase. Se equipa en el pecho y sustituye la ropa visible; al retirarlo recuperas tu túnica habitual.',
+    icon: weaponPortrait(outfit.id) ?? `<path d="m7 3 5 2 5-2 5 5-4 3-1 11H7L6 11 2 8Z" fill="${outfit.cloth}" stroke="${outfit.trim}"/>`,
+  };
+}
+for (const item of Object.values(ITEMS)) {
+  item.rarity ??= WEAPONS[item.id] ? rarityForTier(WEAPONS[item.id].tier) : 'common';
+  const source = (item as ItemDef & { starterIcon?: string }).starterIcon;
+  if (source) item.icon = ITEMS[source].icon + '<path d="m19 16 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#dba75b" stroke="#486d52" stroke-width=".7"/>'
+    + (item.id.endsWith('_t2') ? '<path d="m19 9 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#edb64f" stroke="#714b2a" stroke-width=".7"/>' : '');
+  if (WEAPONS[item.id]) item.icon = weaponPortrait(item.id) ?? item.icon;
+}
 export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];
 export const itemLabel = (id: string) => ITEMS[id]?.label ?? id;
-export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" viewBox="0 0 24 24" aria-hidden="true">${ITEMS[id].icon}</svg>` : '');
+export const itemRarity = (id: string) => ITEMS[id]?.rarity ?? 'common';
+export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || OUTFITS[id] ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon}</svg>` : '');
 
 /** Lo que paga un vendedor por un objeto. */
 export const sellPrice = (id: string) => Math.max(1, Math.floor((ITEMS[id]?.value ?? 0) / 2));
 
 /** Mercancía de cada vendedor (por id de NPC). Los pelines del vendedor son infinitos: no se muestran. */
 export const VENDOR_STOCK: Record<string, string[]> = {
-  testiculos: ['pocion_vida_minuscula', 'pocion_mana_minuscula', 'pocion_estamina_minuscula', 'pan_duro'],
+  testiculos: ['pocion_vida_minuscula', 'pocion_mana_minuscula', 'pocion_estamina_minuscula', 'pan_duro',
+    'espada_cobre_t1', 'escudo_roble_t1', 'baston_ambar_t1', 'daga_cazador_t1',
+    'daga_secundaria_cazador_t1', 'varita_ambar_t1', 'grimorio_verde_t1', 'ballesta_roble_t1',
+    'espada_cobre_t2', 'escudo_roble_t2', 'baston_ambar_t2', 'daga_cazador_t2',
+    'daga_secundaria_cazador_t2', 'varita_ambar_t2', 'grimorio_verde_t2', 'ballesta_roble_t2',
+    ...ADVANCED_WEAPONS.map(item => item.id), ...ORIGINAL_WEAPONS.map(item => item.id), ...Object.keys(OUTFITS)],
 };

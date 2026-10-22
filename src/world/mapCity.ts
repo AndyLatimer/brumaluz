@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mapVariantUrl } from '../art/mapVariants';
 import { mapFireflies, validateMap, type MapDocument, type MapKind } from '../data/maps';
 import { isWorldNpcId } from '../data/npcs';
 import { LOCATIONS } from '../data/data';
@@ -45,10 +46,10 @@ const DETAIL_DISTANCE = 75;
 // En desarrollo, «Publicar en el juego» del editor recarga las pestañas del juego.
 import.meta.hot?.on('brumaluz:city-published', () => location.reload());
 
-/** ¿Usa el juego los mapas publicados? `?ciudad-procedural` (y las pruebas) fuerzan la Brumaluz de siempre. */
+/** Las pruebas ligeras usan una escena vacía; `?test&welcome` permite recorrer la historia en los mapas reales. */
 export function publishedWorldEnabled() {
   const params = new URLSearchParams(location.search);
-  return !params.has('test') && !params.has('ciudad-procedural');
+  return !params.has('ciudad-procedural') && (!params.has('test') || params.has('welcome'));
 }
 
 /** Mapas publicados disponibles en esta partida. */
@@ -124,7 +125,7 @@ async function sinkTerrainUnderTiles(world: Awaited<ReturnType<typeof loadMapWor
 /** Adapta un mapa del editor a la interfaz `City` que usa el juego. */
 export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<string, string>>, scene: THREE.Scene): Promise<City> {
   const provider = createMapAssetProvider(async id => {
-    const url = assets[id];
+    const url = mapVariantUrl(id) ?? assets[id];
     if (!url) throw new Error(`El mapa publicado no incluye ${id}.`);
     return (await loadGLB(url)).scene;
   });
@@ -149,6 +150,36 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
   const clouds = world.environment.clouds;
   clouds.userData.hideFromMinimap = true;
   root.add(clouds);
+
+  // El fondo del interior es negro. Estas superficies quedan en medio del grosor de la pared:
+  // la propia geometría recorta el hueco, incluso en ventanas arqueadas o con travesaños.
+  const skyWindows: THREE.Mesh[] = [];
+  const windowWalls: THREE.Object3D[] = [];
+  if (doc.settings.kind === 'interior') {
+    const layers = new Set(doc.layers.filter(layer => layer.visible).map(layer => layer.id));
+    for (const object of doc.objects) {
+      if (object.hidden || !layers.has(object.layer) || !/window_open(?:_|$)/.test(object.asset)) continue;
+      const wall = world.objects.views.get(object.id)?.container;
+      if (!wall) continue;
+      const box = boxOf(await provider.template(object.asset));
+      if (box.isEmpty()) continue;
+      const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+      // Los módulos de pared tienen el ancho en X y el grosor en Z, antes de su rotación de mapa.
+      const geometry = new THREE.PlaneGeometry(Math.max(0.01, size.x - 0.04), Math.max(0.01, size.y - 0.04));
+      geometry.translate(center.x, center.y, center.z);
+      const material = new THREE.MeshBasicMaterial({ color: '#000000', side: THREE.DoubleSide });
+      material.name = 'window-sky-placeholder';
+      const pane = new THREE.Mesh(geometry, material);
+      pane.name = `window-sky:${object.id}`;
+      pane.applyMatrix4(wall.matrixWorld);
+      pane.matrixAutoUpdate = false;
+      pane.userData.hideFromMinimap = true;
+      pane.raycast = () => {};
+      root.add(pane);
+      skyWindows.push(pane);
+      windowWalls.push(wall);
+    }
+  }
 
   const visibleLayers = new Set(doc.layers.filter(layer => layer.visible).map(layer => layer.id));
   const markers = doc.markers.filter(marker => visibleLayers.has(marker.layer));
@@ -226,7 +257,22 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     waterAt: collision.waterAt,
     waterFalls: water.falls,
     fireflies: mapFireflies(doc.settings),
-    fadeOccluders: doc.settings.kind === 'interior' ? (eye, targets, dt) => world.objects.fadeOccluders(eye, targets, dt, INTERIOR_WALL) : undefined,
+    skyWindows,
+    fadeOccluders: doc.settings.kind === 'interior' ? (eye, targets, dt) => {
+      world.objects.fadeOccluders(eye, targets, dt, INTERIOR_WALL);
+      skyWindows.forEach((pane, i) => {
+        const wall = windowWalls[i];
+        const chunk = wall.parent ?? wall.userData.chunk as THREE.Object3D | undefined;
+        let faded = false;
+        wall.traverse(part => {
+          if (!(part instanceof THREE.Mesh)) return;
+          const materials = Array.isArray(part.material) ? part.material : [part.material];
+          if (materials.some(material => material.opacity < 0.99)) faded = true;
+        });
+        // Si se retira una pared para ver al personaje, tampoco queda un rectángulo de cielo flotando.
+        pane.visible = chunk?.visible !== false && !faded;
+      });
+    } : undefined,
     update(t: number, playerPosition?: THREE.Vector3) {
       // Campo de visión: lo que queda tras la niebla no se dibuja (con margen para la cámara, detrás del jugador).
       const fog = scene.fog instanceof THREE.Fog ? scene.fog.far : Infinity;

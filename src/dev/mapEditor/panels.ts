@@ -312,12 +312,12 @@ export function renderMapSettings() {
     ] : []),
     el('h3', {}, 'Terreno'),
     el('p', { class: 'hint' }, `${width} × ${depth} m · celda ${state.field.cell} m · alturas ${state.terrainMin.toFixed(1)} a ${state.terrainMax.toFixed(1)} m`),
-    field('Ancho, fondo', number(width, value => { size.width = value; updateNote(); }, 8, { min: 8, max: 10000 }), number(depth, value => { size.depth = value; updateNote(); }, 8, { min: 8, max: 10000 })),
+    field('Ancho, fondo', number(width, value => { size.width = value; updateNote(); }, 8, { min: 5, max: 10000 }), number(depth, value => { size.depth = value; updateNote(); }, 8, { min: 5, max: 10000 })),
     field('Celda', choice(String(state.field.cell), [['0.5', '0,5 m'], ['1', '1 m'], ['2', '2 m'], ['4', '4 m'], ['8', '8 m · continente'], ['16', '16 m · gran extensión']] as const, value => { size.cell = Number(value); updateNote(); })),
     resizeNote,
     el('button', { type: 'button', onclick: () => {
       if (vertices() > MAX_TERRAIN_VERTICES) { status('Terreno demasiado grande para esa celda. Usa una celda mayor.', 'error'); return; }
-      const width = THREE.MathUtils.clamp(size.width, 8, 10000), depth = THREE.MathUtils.clamp(size.depth, 8, 10000);
+      const width = THREE.MathUtils.clamp(size.width, 5, 10000), depth = THREE.MathUtils.clamp(size.depth, 5, 10000);
       setTerrain(resampleTerrain(state.field.data, width, depth, size.cell));
       markerLayer.sync(state.doc.markers, state.doc.layers, state.field);
       syncScene(); commit('Redimensionar terreno', true); renderMapSettings();

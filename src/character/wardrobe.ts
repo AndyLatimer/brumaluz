@@ -4,6 +4,7 @@ import { loadGLB } from '../world/load';
 import helpersUrl from '../assets/models/wardrobe/helpers.glb?url';
 import medievalUrl from '../assets/models/wardrobe/medieval.glb?url';
 import type { HeadOptions } from './head';
+import { OUTFITS } from '../data/outfits';
 
 type BodyRegion = 'torso' | 'arms' | 'legs';
 type Attachment = 'head' | 'chest' | 'handslot.l' | 'handslot.r';
@@ -17,7 +18,16 @@ interface WardrobeSet {
   hairFit: HeadOptions['hat'];
 }
 
-export const WARDROBES = {
+export type WardrobeId = 'helpers' | 'medieval' | `traje_${string}`;
+export const WARDROBES: Record<WardrobeId, WardrobeSet> = {
+  ...Object.fromEntries(Object.keys(OUTFITS).map(id => [id, {
+    hairFit: 'none', pieces: [
+      { node: 'medieval-tunic', replaces: ['torso'] },
+      { node: 'medieval-sleeve-l', replaces: ['arms'] }, { node: 'medieval-sleeve-r' },
+      { node: 'anatomy-hand-left' }, { node: 'anatomy-hand-right' },
+      { node: 'medieval-leg-l', replaces: ['legs'] }, { node: 'medieval-leg-r' },
+    ],
+  }])),
   helpers: {
     hairFit: 'cap',
     pieces: [
@@ -34,23 +44,20 @@ export const WARDROBES = {
       { node: 'helpers-soft-cap', attachment: 'head' },
     ],
   },
+  // Sin sombrero: se ve el pelo. Las piernas llevan ya las botas.
   medieval: {
-    hairFit: 'cap',
+    hairFit: 'none',
     pieces: [
       { node: 'medieval-tunic', replaces: ['torso'] },
       { node: 'medieval-sleeve-l', replaces: ['arms'] },
       { node: 'medieval-sleeve-r' },
       { node: 'anatomy-hand-left' },
       { node: 'anatomy-hand-right' },
-      { node: 'medieval-trouser-l', replaces: ['legs'] },
-      { node: 'medieval-trouser-r' },
-      { node: 'medieval-boot-l' },
-      { node: 'medieval-boot-r' },
-      { node: 'medieval-hat', attachment: 'head' },
+      { node: 'medieval-leg-l', replaces: ['legs'] },
+      { node: 'medieval-leg-r' },
     ],
   },
-} as const satisfies Record<string, WardrobeSet>;
-export type WardrobeId = keyof typeof WARDROBES;
+};
 const assets = new Map<WardrobeId, GLTF>();
 
 export function wardrobeSource(id: WardrobeId = 'helpers') {
@@ -60,12 +67,16 @@ export function wardrobeSource(id: WardrobeId = 'helpers') {
 }
 
 export async function loadWardrobe() {
+  const files = import.meta.glob<string>('../assets/models/wardrobe/classes/*.glb', { eager: true, query: '?url', import: 'default' });
   const [helpers, medieval] = await Promise.all([
     loadGLB(helpersUrl),
     loadGLB(medievalUrl),
   ]);
   assets.set('helpers', helpers);
   assets.set('medieval', medieval);
+  await Promise.all(Object.entries(files).map(async ([file, url]) => {
+    assets.set(file.split('/').at(-1)!.replace('.glb', '') as WardrobeId, await loadGLB(url));
+  }));
 }
 
 export function wardrobeRegions(id: WardrobeId): ReadonlySet<BodyRegion> {
@@ -109,6 +120,7 @@ export function mountWardrobe(
   id: WardrobeId, model: THREE.Object3D, bones: ReadonlyMap<string, THREE.Bone>,
   skinColor: string, own: (resource: { dispose(): void }) => void,
   hat = true,
+  colors?: { primary: string; secondary: string },
 ) {
   const asset = assets.get(id);
   if (!asset) throw new Error(`El vestuario «${id}» debe cargarse antes de crear personajes.`);
@@ -118,7 +130,11 @@ export function mountWardrobe(
     let result = materials.get(source);
     if (!result) {
       result = source.clone();
-      if (result instanceof THREE.MeshStandardMaterial && source.name === 'skin') result.color.set(skinColor);
+      if (result instanceof THREE.MeshStandardMaterial) {
+        if (source.name === 'skin') result.color.set(skinColor);
+        else if (colors && source.name === 'tunic') result.color.set(colors.primary);
+        else if (colors && ['tunicTrim', 'trousers'].includes(source.name)) result.color.set(colors.secondary);
+      }
       materials.set(source, result);
       own(result);
     }

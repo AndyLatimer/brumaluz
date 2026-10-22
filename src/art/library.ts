@@ -1,5 +1,6 @@
 import catalog from '../assets/library/catalog.json';
 import { loadGLB } from '../world/load';
+import { mapVariantUrl } from './mapVariants';
 
 export { catalog };
 export type LibraryAsset = typeof catalog.assets[number];
@@ -11,12 +12,12 @@ export function animationLibrariesFor(asset: LibraryAsset) {
 }
 const urls = import.meta.glob<string>('../assets/library/**/*.glb', { query: '?url', import: 'default' });
 
-/** Loads only the requested resource, with its original materials, rig and clips. */
+/** Carga el recurso solicitado; los puentes usan el acabado del juego, con los mismos IDs. */
 export async function loadLibraryAsset(id: string) {
   const asset = catalog.assets.find(entry => entry.id === id);
   if (!asset) throw new Error(`Recurso desconocido: ${id}`);
   const resolve = urls[`../assets/library/${asset.path}`];
   if (!resolve) throw new Error(`Falta el GLB: ${asset.path}`);
-  const url = await resolve();
+  const url = mapVariantUrl(id) ?? await resolve();
   return { asset, url, gltf: await loadGLB(url) };
 }

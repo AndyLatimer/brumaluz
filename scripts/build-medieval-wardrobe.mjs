@@ -5,8 +5,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { fileURLToPath } from 'node:url';
 import { mkdir } from 'node:fs/promises';
 
-// Script to build the classic medieval outfit (Túnica medieval clásica).
-// Preserves all existing models, rigs, and assets without deleting anything.
+// Offline pattern source for the classic medieval outfit (Clásico medieval). The exported GLB is the editable
+// interchange asset, not geometry rebuilt by the game every time a character is created.
 const io = new NodeIO();
 const models = new URL('../src/assets/models/', import.meta.url);
 const document = await io.read(fileURLToPath(new URL('Mage.glb', models)));
@@ -34,7 +34,6 @@ const colors = {
   sole: '#27170e',          // Sturdy boot bottom
   brass: '#d4af37',         // Antique brass buckle & studs
   trousers: '#7c705f',      // Medieval woven wool hose
-  feather: '#d62828',       // Classic crimson feather accent on bycocket
   skin: '#f2c8a0',
 };
 
@@ -202,70 +201,106 @@ function loft(profile, columns = 32, { closeStart = false, closeEnd = false } = 
 }
 
 const piece = (geometry, material) => ({ geometry, material });
-function ellipsoid(x, y, z, rx, ry, rz) {
-  return new THREE.SphereGeometry(1, 18, 12).scale(rx, ry, rz).translate(x, y, z);
-}
 function seam(x, y, z, rx, rz, thickness) {
   return new THREE.TorusGeometry(1, thickness, 8, 36).rotateX(Math.PI / 2).scale(rx, 1, rz).translate(x, y, z);
 }
 
 // ==========================================
-// 1. MEDIEVAL TUNIC & WAISTBELT
+// Classic medieval outfit in the KayKit "starting clothes" spirit: a chunky tunic with a laced linen neckline, a wide
+// leather belt with brass buckle and pouch, and sleeves, hose and boots cut from the canonical arm and leg. No hat.
 // ==========================================
-// Profile of the tunic: starts below the knees/mid-thigh (y = .46), expands smoothly over hips,
-// is pulled inward at the waist belt (y = .80-.83), expands over chest, and closes cleanly at collar.
+const SEGMENTS = 20;
+
+// Cross-sections [y, radiusX, radiusZ]: from the rolled hem (mid-thigh) to the collar.
 const tunicProfile = [
-  [.46, .345, .295],          // Flared hem skirt edge
-  [.52, .335, .285],          // Lower thigh
-  [.62, .310, .260],          // Hips
-  [.74, .298, .250],          // Mid torso
-  [.80, .290, .245],          // Waist belt level
-  [.84, .295, .248],          // Above belt
-  [.96, .305, .255],          // Lower chest
-  [1.08, .300, .248],         // Mid chest
-  [1.16, .265, .218],         // Collarbone
-  [1.22, .175, .155],         // Neck base
-  [1.25, .145, .135],         // High collar
+  [.47, .352, .300],
+  [.53, .338, .288],
+  [.62, .314, .264],
+  [.74, .300, .252],
+  [.80, .294, .248],
+  [.86, .300, .252],
+  [.97, .312, .260],
+  [1.08, .304, .252],
+  [1.16, .268, .222],
+  [1.22, .178, .158],
+  [1.25, .148, .138],
 ];
+function tunicSection(y) {
+  const index = tunicProfile.findIndex(section => section[0] >= y);
+  if (index <= 0) return tunicProfile[Math.max(0, index)];
+  const a = tunicProfile[index - 1], b = tunicProfile[index], t = (y - a[0]) / (b[0] - a[0]);
+  return [y, THREE.MathUtils.lerp(a[1], b[1], t), THREE.MathUtils.lerp(a[2], b[2], t)];
+}
+/** Point on the tunic front at (x, y), pushed `clearance` outwards (for panels lying on the cloth). */
+function onTunic(x, y, clearance) {
+  const [, rx, rz] = tunicSection(y);
+  const z = rz * Math.sqrt(Math.max(0, 1 - (x / rx) ** 2));
+  const normal = new THREE.Vector3(x / (rx * rx), 0, z / (rz * rz)).normalize();
+  return new THREE.Vector3(x, y, z).addScaledVector(normal, clearance);
+}
 
-const tunicHem = [
-  [.455, .348, .298],
-  [.470, .345, .295],
-  [.485, .342, .292],
-];
+/**
+ * Turns a piece so its faces point away from `inside(point)` (where the body is): mirrored and swapped patterns
+ * otherwise end up inside-out and are culled.
+ */
+function faceOutward(geometry, inside) {
+  const position = geometry.getAttribute('position'), index = geometry.index;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), normal = new THREE.Vector3();
+  let score = 0;
+  for (let i = 0; i < index.count; i += 3) {
+    a.fromBufferAttribute(position, index.getX(i)); b.fromBufferAttribute(position, index.getX(i + 1)); c.fromBufferAttribute(position, index.getX(i + 2));
+    normal.subVectors(c, b).cross(new THREE.Vector3().subVectors(a, b));
+    const centroid = a.clone().add(b).add(c).multiplyScalar(1 / 3);
+    score += Math.sign(normal.dot(centroid.sub(inside(centroid))));
+  }
+  if (score < 0) for (let i = 0; i < index.count; i += 3) { const first = index.getX(i); index.setX(i, index.getX(i + 1)); index.setX(i + 1, first); }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+const towardSpine = point => new THREE.Vector3(0, point.y, 0);
 
-// Belt geometry (torus-like band around waist)
-const beltBand = seam(0, 0.815, 0, 0.296, 0.252, 0.024);
+// Laced neckline: a slit down the chest showing the linen shirt, edged with the woven trim and closed with crossed
+// leather laces. The big head hides the neck itself, so the slit starts right under the chin.
+const NECK_TOP = 1.175, NECK_BOTTOM = .965, NECK_HALF = .068;
+const slitEdge = (sign, v) => [sign * NECK_HALF * (1 - v) ** 1.2, THREE.MathUtils.lerp(NECK_TOP, NECK_BOTTOM, v)];
+const shirt = faceOutward(surface(9, 6, (row, t) => {
+  const [edge, y] = slitEdge(1, row / 8);
+  return onTunic(THREE.MathUtils.lerp(-edge - .004, edge + .004, t), y, .005).toArray();
+}), towardSpine);
+const cord = (points, radius) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), Math.max(4, points.length * 3), radius, 6);
+const slitTrim = [1, -1].map(sign => cord(Array.from({ length: 9 }, (_, i) => {
+  const [x, y] = slitEdge(sign, i / 8);
+  return onTunic(x, y, .011);
+}), .0085));
+const laceAt = (sign, v) => { const [x, y] = slitEdge(sign, v); return onTunic(x * 1.05, y, .019); };
+const laces = [];
+for (const [from, to] of [[.08, .3], [.3, .52], [.52, .72]]) {
+  // One X per pair of eyelets: left-to-right and right-to-left.
+  for (const sign of [1, -1]) {
+    const a = laceAt(sign, from), b = laceAt(-sign, to), middle = a.clone().lerp(b, .5).addScaledVector(new THREE.Vector3(0, 0, 1), .004);
+    laces.push(cord([a, middle, b], .0055));
+  }
+}
+// The bow's loose ends hang just below the slit.
+for (const sign of [1, -1]) {
+  const knot = onTunic(0, NECK_BOTTOM + .03, .021);
+  laces.push(cord([knot, onTunic(sign * .02, NECK_BOTTOM - .015, .02), onTunic(sign * .028, NECK_BOTTOM - .06, .018)], .005));
+}
 
-// Brass Buckle at center-front: x = 0, y = 0.815, z = 0.255
-const buckleFrame = new THREE.BoxGeometry(0.08, 0.065, 0.02)
-  .translate(0, 0.815, 0.268);
-const buckleProng = new THREE.CylinderGeometry(0.005, 0.005, 0.05, 8)
-  .translate(0, 0.815, 0.274);
-const buckle = mergeGeometries([buckleFrame, buckleProng]);
+// Wide belt: a short band just outside the waist, a square brass buckle and a leather pouch on the right hip.
+const belt = loft([[.775, .304, .258], [.79, .308, .262], [.835, .308, .262], [.85, .304, .258]], SEGMENTS);
+const buckle = mergeGeometries([
+  new THREE.BoxGeometry(.11, .022, .02).translate(0, .838, .272),
+  new THREE.BoxGeometry(.11, .022, .02).translate(0, .787, .272),
+  new THREE.BoxGeometry(.022, .07, .02).translate(-.044, .8125, .272),
+  new THREE.BoxGeometry(.022, .07, .02).translate(.044, .8125, .272),
+  new THREE.BoxGeometry(.012, .06, .012).translate(0, .8125, .276),
+]);
+const pouchAt = (geometry) => geometry.rotateY(-.85).translate(-.235, .73, .2);
+const pouch = pouchAt(new THREE.BoxGeometry(.12, .1, .06, 2, 2, 1));
+const pouchFlap = pouchAt(new THREE.BoxGeometry(.126, .04, .068).translate(0, .04, .002));
+const hemRoll = seam(0, .47, 0, .352, .3, .022);
 
-// Hanging leather belt strap dangling on the left-front
-const strapProfile = [
-  [0.815, 0.022, 0.006, -0.045, 0.272],
-  [0.760, 0.021, 0.006, -0.052, 0.274],
-  [0.700, 0.020, 0.006, -0.058, 0.276],
-  [0.640, 0.019, 0.006, -0.062, 0.278],
-  [0.580, 0.018, 0.006, -0.065, 0.279],
-];
-const beltStrap = loft(strapProfile, 12, { closeEnd: true });
-
-// Split collar linen underlayer & neck trim
-const collarTrim = seam(0, 1.24, 0, 0.146, 0.136, 0.016);
-const vNotchLinen = surface(6, 8, (row, t) => {
-  const v = row / 5;
-  const y = 1.23 - v * 0.12;
-  const width = (1 - v * 0.7) * 0.045;
-  const x = (t * 2 - 1) * width;
-  return [x, y, 0.218 + v * 0.012];
-});
-
-// Weighting for the tunic: upper body is chest/spine, waist is spine/hips,
-// lower skirt sways gracefully with hips and upper legs
 function medievalTunicWeights([x, y, z]) {
   if (y > 0.64) return torsoWeights([x, y, z]);
   const side = x >= 0 ? 'l' : 'r';
@@ -277,211 +312,78 @@ function medievalTunicWeights([x, y, z]) {
 }
 
 mesh('medieval-tunic', [
-  piece(loft(tunicProfile, 36), 'tunic'),
-  piece(loft(tunicHem, 36), 'tunicTrim'),
-  piece(collarTrim, 'tunicTrim'),
-  piece(vNotchLinen, 'linen'),
-  piece(beltBand, 'leather'),
-  piece(beltStrap, 'leather'),
+  piece(loft(tunicProfile, SEGMENTS), 'tunic'),
+  piece(hemRoll, 'tunicTrim'),
+  piece(seam(0, 1.24, 0, .15, .14, .02), 'tunicTrim'),
+  piece(shirt, 'linen'),
+  piece(mergeGeometries(slitTrim), 'tunicTrim'),
+  piece(mergeGeometries(laces), 'leather'),
+  piece(belt, 'leather'),
   piece(buckle, 'brass'),
+  piece(pouch, 'leather'),
+  piece(pouchFlap, 'darkLeather'),
 ], medievalTunicWeights);
 
-// ==========================================
-// 2. SLEEVES (Tailored wool with linen cuffs)
-// ==========================================
-for (const [side, sign] of [['l', 1], ['r', -1]]) {
-  // Sleeve profiles: start wide at shoulder, taper elegantly towards wrist
-  const sleeveWool = loft([
-    [.08, .142, .142],
-    [.20, .148, .148],
-    [.32, .140, .140],
-    [.44, .132, .132],
-    [.56, .118, .118],
-    [.68, .106, .106],
-    [.78, .098, .098],
-    [.80, .105, .105], // Cuff fold
-  ], 24);
-
-  // Inner linen ruffle extending slightly at wrist
-  const cuffLinen = loft([
-    [.79, .097, .097],
-    [.81, .102, .102],
-  ], 24);
-
-  const mergedSleeves = mergeGeometries([sleeveWool, cuffLinen]);
-  sleeveWool.dispose();
-  cuffLinen.dispose();
-
-  // Position along the arm axis
-  const pos = mergedSleeves.getAttribute('position');
-  const nrm = mergedSleeves.getAttribute('normal');
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), y = pos.getY(i);
-    pos.setXYZ(i, sign * y, 1.107 + x, pos.getZ(i));
-    const nx = nrm.getX(i), ny = nrm.getY(i);
-    nrm.setXYZ(i, sign * ny, nx, nrm.getZ(i));
-  }
-  if (sign > 0) {
-    const idx = mergedSleeves.index;
-    for (let i = 0; i < idx.count; i += 3) {
-      const a = idx.getX(i); idx.setX(i, idx.getX(i + 1)); idx.setX(i + 1, a);
-    }
-  }
-
-  mesh(`medieval-sleeve-${side}`, [
-    piece(mergedSleeves, 'tunic'),
-  ], transferArmWeights(side));
-}
-
-// ==========================================
-// 3. ANATOMY HANDS (From canonical Mage.glb)
-// ==========================================
-for (const side of ['Left', 'Right']) {
-  const source = armSource(side === 'Left' ? 'l' : 'r');
-  const positions = source.getAttribute('POSITION'), uv = source.getAttribute('TEXCOORD_0');
-  const indices = source.getIndices(), values = [], originalVertices = [];
+/**
+ * Re-uses a canonical KayKit body part so the garment fits it exactly and keeps its skin weights. Triangles are split
+ * into materials by their texture-atlas cell (8×8 grid); vertices are shared unless their normals differ (hard edges).
+ */
+const atlasCell = (u, v) => Math.min(7, Math.floor(v * 8)) * 8 + Math.min(7, Math.floor(u * 8));
+function fromSource(source, materialOf) {
+  const positions = source.getAttribute('POSITION'), normals = source.getAttribute('NORMAL'), uv = source.getAttribute('TEXCOORD_0');
+  const indices = source.getIndices(), parts = new Map();
   for (let i = 0; i < (indices?.getCount() ?? positions.getCount()); i += 3) {
-    const triangle = [0,1,2].map(offset => indices ? indices.getScalar(i + offset) : i + offset);
-    if (!triangle.every(index => {
-      const tex = uv.getElement(index, []);
-      return [0,8,39,47].includes(Math.min(7,Math.floor(tex[1]*8))*8+Math.min(7,Math.floor(tex[0]*8)));
-    })) continue;
+    const triangle = [0, 1, 2].map(offset => indices ? indices.getScalar(i + offset) : i + offset);
+    const [u, v] = triangle.reduce((sum, index) => { const t = uv.getElement(index, []); return [sum[0] + t[0] / 3, sum[1] + t[1] / 3]; }, [0, 0]);
+    const y = triangle.reduce((sum, index) => sum + positions.getElement(index, [])[1] / 3, 0);
+    const material = materialOf(atlasCell(u, v), y);
+    if (!material) continue;
+    if (!parts.has(material)) parts.set(material, { remap: new Map(), positions: [], normals: [], original: [], triangles: [] });
+    const part = parts.get(material);
     for (const index of triangle) {
-      values.push(...positions.getElement(index, []));
-      originalVertices.push(index);
+      const normal = normals ? normals.getElement(index, []) : [0, 1, 0];
+      const id = [...positions.getElement(index, []), ...normal].map(value => Math.round(value * 1e4)).join(',');
+      if (!part.remap.has(id)) {
+        part.remap.set(id, part.original.length);
+        part.positions.push(...positions.getElement(index, []));
+        part.normals.push(...normal);
+        part.original.push(index);
+      }
+      part.triangles.push(part.remap.get(id));
     }
   }
-  const geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(values, 3));
-  mesh(`anatomy-hand-${side.toLowerCase()}`, [piece(geometry, 'skin')], (_position, index) => referenceWeights(source, originalVertices[index]));
-}
-
-// ==========================================
-// 4. TROUSERS / MEDIEVAL HOSE (Calzas)
-// ==========================================
-for (const [side, sign] of [['l', 1], ['r', -1]]) {
-  const x = sign * .171;
-  const trouser = surface(9, 32, (row, t) => {
-    const angle = -t * Math.PI * 2, cosine = Math.cos(angle), sine = Math.sin(angle);
-    const lower = [x + sign * cosine * .113, .22, sine * .123];
-    if (row === 0) return [x + sign * cosine * .105, .195, sine * .115];
-    const blend = (row - 1) / 7;
-    const upper = [sign * Math.max(0, cosine) * .30, .62 + Math.min(0, cosine) * .27, sine * .25];
-    return lower.map((value, axis) => THREE.MathUtils.lerp(value, upper[axis], blend));
-  }, true);
-
-  if (sign < 0) {
-    const index = trouser.index;
-    for (let i = 0; i < index.count; i += 3) {
-      const a = index.getX(i); index.setX(i, index.getX(i + 1)); index.setX(i + 1, a);
-    }
-    const normals = trouser.getAttribute('normal');
-    for (let i = 0; i < normals.count; i++) normals.setXYZ(i, -normals.getX(i), -normals.getY(i), -normals.getZ(i));
-  }
-
-  mesh(`medieval-trouser-${side}`, [
-    piece(trouser, 'trousers'),
-  ], (position, index) => {
-    const blend = THREE.MathUtils.smoothstep(Math.floor(index / 33), 2, 8);
-    const weights = legWeights(side)(position);
-    const influences = new Map(weights.map(([bone, weight]) => [bone, weight * (1 - blend)]));
-    influences.set('hips', (influences.get('hips') ?? 0) + blend);
-    return [...influences].filter(([, weight]) => weight > 0);
+  return [...parts].map(([material, part]) => {
+    const geometry = new THREE.BufferGeometry()
+      .setAttribute('position', new THREE.Float32BufferAttribute(part.positions, 3))
+      .setAttribute('normal', new THREE.Float32BufferAttribute(part.normals, 3));
+    geometry.setIndex(part.triangles);
+    return { ...piece(geometry, material), original: part.original };
   });
-
-  // ==========================================
-  // 5. MEDIEVAL CUFFED BOOTS (Turnshoes)
-  // ==========================================
-  // Elegant cuffed ankle boots with folded leather turnover top
-  const bootBody = loft([
-    [.018, .082, .152, x, .06],
-    [.035, .136, .206, x, .065],
-    [.090, .140, .206, x, .065],
-    [.140, .128, .170, x, .045],
-    [.180, .117, .125, x],
-    [.230, .120, .125, x],
-    [.250, .125, .130, x],
-  ], 32, { closeStart: true });
-
-  // Folded turnover leather cuff around the upper boot
-  const bootCuff = loft([
-    [.245, .124, .128, x],
-    [.265, .135, .140, x],
-    [.255, .138, .143, x],
-  ], 32);
-
-  // Closed opaque sole with outward-facing bottom cap at y = .012
-  const bootSole = loft([
-    [.012, .090, .160, x, .065],
-    [.025, .140, .212, x, .065],
-    [.052, .140, .212, x, .065],
-  ], 32, { closeStart: true, closeEnd: true });
-
-  const bootCuffRim = seam(x, .260, 0, .132, .138, .016);
-
-  mesh(`medieval-boot-${side}`, [
-    piece(bootBody, 'leather'),
-    piece(bootSole, 'sole'),
-    piece(bootCuff, 'darkLeather'),
-    piece(bootCuffRim, 'darkLeather'),
-  ], footWeights(side));
+}
+/** Garment node made from `fromSource` parts, skinned exactly like the source body part. */
+function sourcedMesh(name, source, parts) {
+  mesh(name, parts, (_position, index, component) => referenceWeights(source, parts[component].original[index]));
 }
 
-// ==========================================
-// 6. CLASSIC MEDIEVAL BYCOCKET HAT (Gorro medieval con pluma)
-// ==========================================
-// Robin Hood / medieval traveler bycocket: stylish folded brim upturned at the back,
-// sharp forward-pointing brim, resting naturally on head bone (hairFit: 'cap')
-const hatProfile = [
-  [.56, .460, .440, 0, -.015],
-  [.60, .470, .445, 0, -.015],
-  [.68, .465, .440, 0, -.020],
-  [.78, .410, .360, -.010, -.025],
-  [.90, .340, .290, -.025, -.030],
-  [1.02, .260, .220, -.050, -.040],
-  [1.12, .180, .150, -.080, -.045],
-  [1.20, .090, .070, -.120, -.050],
-  [1.24, .010, .010, -.140, -.050],
-];
+// Atlas cells of the KayKit arm and leg (see Mage.glb's texture): sleeve, cuff, hand; trousers, boot shaft, boot foot.
+const HAND_CELLS = [0, 8, 39, 47], CUFF_CELLS = [4, 12];
+const TROUSER_CELLS = [31], BOOT_SHAFT_CELLS = [35];
 
-const hatPath = new THREE.CatmullRomCurve3(hatProfile.map(([y,,,x,z]) => new THREE.Vector3(x, y + 0.08, z)));
-const hatRadius = new THREE.CatmullRomCurve3(hatProfile.map(([,rx,rz]) => new THREE.Vector3(rx, rz, 0)));
-const bycocketCrown = surface(41, 36, (row, fraction) => {
-  const t = row / 40, center = hatPath.getPoint(t), radius = hatRadius.getPoint(t);
-  const tangent = hatPath.getTangent(t);
-  const right = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 0, 1)).normalize();
-  const forward = new THREE.Vector3().crossVectors(right, tangent).normalize();
-  const angle = -fraction * Math.PI * 2;
-  return center.addScaledVector(right, Math.cos(angle) * Math.max(0, radius.x))
-    .addScaledVector(forward, Math.sin(angle) * Math.max(0, radius.y)).toArray();
-}, true);
+// Sleeves: the arm's own sleeve in tunic wool, with the linen shirt cuff showing at the wrist. Hands stay separate.
+for (const [side, Side] of [['l', 'Left'], ['r', 'Right']]) {
+  const source = armSource(side);
+  sourcedMesh(`medieval-sleeve-${side}`, source, fromSource(source, cell => HAND_CELLS.includes(cell) ? null : CUFF_CELLS.includes(cell) ? 'linen' : 'tunic'));
+  sourcedMesh(`anatomy-hand-${Side.toLowerCase()}`, source, fromSource(source, cell => HAND_CELLS.includes(cell) ? 'skin' : null));
+}
 
-// Upturned brim at back & pointed front
-const brimProfile = [
-  [.62, .465, .440, 0, -.015],
-  [.64, .485, .460, 0, -.010],
-  [.68, .490, .480, 0, .020], // extended forward peak
-  [.72, .470, .450, 0, -.010],
-];
-const bycocketBrim = loft(brimProfile, 36);
-
-// Crimson feather on the left brim
-const featherCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(-0.35, 0.70, 0.0),
-  new THREE.Vector3(-0.38, 0.85, -0.08),
-  new THREE.Vector3(-0.39, 1.02, -0.20),
-  new THREE.Vector3(-0.37, 1.15, -0.32),
-]);
-const featherGeometry = new THREE.TubeGeometry(featherCurve, 16, 0.018, 8, false);
-
-// Brass clasp pin securing feather
-const brooch = ellipsoid(-0.35, 0.70, 0.0, 0.035, 0.035, 0.02);
-
-mesh('medieval-hat', [
-  piece(bycocketCrown, 'tunic'),
-  piece(bycocketBrim, 'darkLeather'),
-  piece(featherGeometry, 'feather'),
-  piece(brooch, 'brass'),
-], null, 'head');
+// Legs: wool hose and leather boots in one piece, cut from the canonical leg so the boots sit exactly on the feet.
+const legSource = side => anatomy.getRoot().listNodes()
+  .find(node => node.getName() === `Mage_Leg${side === 'l' ? 'Left' : 'Right'}`).getMesh().listPrimitives()[0];
+for (const side of ['l', 'r']) {
+  const source = legSource(side);
+  sourcedMesh(`medieval-leg-${side}`, source, fromSource(source, (cell, y) => TROUSER_CELLS.includes(cell) ? 'trousers'
+    : y < .03 ? 'sole' : BOOT_SHAFT_CELLS.includes(cell) ? 'leather' : 'darkLeather'));
+}
 
 // Clean up and write GLB
 await document.transform(prune());

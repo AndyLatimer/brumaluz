@@ -1,5 +1,5 @@
 // Simulación local de las acciones del servidor, solo para el modo ?test (sin cuenta ni base de datos).
-// Las reglas reales viven en supabase/server.sql.
+// Las reglas reales viven en supabase/server/.
 import { MAX_LEVEL, unspentAttributePoints, ATTRIBUTE_MAX_VALUE, type CharData, type AttributeId } from '../data/data';
 import { attributeTotal, experienceToNextLevel, maxOverhealOf, vitalsOf } from '../data/stats';
 import { addCurrency, spendCurrency } from '../data/currency';
@@ -7,16 +7,22 @@ import { ITEMS, VENDOR_STOCK, sellPrice, itemStack } from '../data/items';
 import { INVENTORY_UNLOCKED } from '../data/inventory';
 import type { CharacterAction } from './account';
 import { FOOD_EFFECTS } from '../data/food';
-import { WELCOME_REWARD, welcomeComplete, type WelcomeAction } from '../data/quests';
+import { WELCOME_REWARD, INTRO_ENTRY, INTRO_GATE, welcomeComplete, type WelcomeAction } from '../data/quests';
 
 export function simulateWelcome(d: CharData, action: WelcomeAction, origin?: number) {
   const q = d.welcome;
   if (!q) throw new Error('Este personaje no tiene pendiente la bienvenida.');
   if (d.health === 0) throw new Error('Debes volver a la vida para continuar la bienvenida.');
   const invalid = () => { throw new Error('La misión ha cambiado. Revisa su estado antes de continuar.'); };
-  if (action === 'origin') {
+  if (action === 'arrive') {
+    if (d.introSeen) return;
+    if (q.stage !== 'available' || q.origin !== null) invalid();
+    d.introSeen = true;
+    d.position = { ...INTRO_ENTRY, yaw: INTRO_GATE.yaw };
+  } else if (action === 'origin') {
     if (q.stage !== 'available' || q.origin !== null || !Number.isInteger(origin) || origin! < 0 || origin! > 2) invalid();
     q.origin = origin!;
+    d.introSeen = true;
   } else if (action === 'accept') {
     if (q.stage !== 'available' || q.origin === null) invalid();
     q.stage = 'active';

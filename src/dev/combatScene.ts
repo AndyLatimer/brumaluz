@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Character, loadKits } from '../character/character';
 import { defaultChar, type ClassId } from '../data/data';
 import { starterEquipment } from '../data/combat';
+import type { Equipment } from '../data/inventory';
 import { buildShadowEnemy, playShadowEnemyAction, resetShadowEnemy, updateShadowEnemy } from '../world/shadowEnemy';
 
 export async function createCombatScene(canvas: HTMLCanvasElement, manual: () => void, select: () => void) {
@@ -57,9 +58,9 @@ export async function createCombatScene(canvas: HTMLCanvasElement, manual: () =>
     renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);
     camera.aspect=canvas.clientWidth/canvas.clientHeight;camera.updateProjectionMatrix();
   }
-  function reset(cls: ClassId) {
+  function reset(cls: ClassId, equipment: Equipment = starterEquipment(cls)) {
     actor?.dispose();
-    actor=new Character({...defaultChar(),cls,equipment:starterEquipment(cls)},{outfit:false});
+    actor=new Character({...defaultChar(),cls,equipment},{outfit:false});
     actor.root.traverse(object=>{if(object instanceof THREE.Mesh)object.castShadow=true;});
     player.add(actor.root);player.position.set(-5,0,0);player.rotation.y=Math.PI/2;
     enemy.position.set(5,0,0);resetShadowEnemy(enemy,performance.now()/1000);

@@ -29,17 +29,17 @@ function createTrackButton(tracking: QuestTracking, questId: QuestId): HTMLButto
 export function welcomeConversation(data: CharData, act: (action: WelcomeAction, origin?: number) => Promise<boolean>): Conversation {
   const progress = data.welcome;
   const conversation: Conversation = { speaker: 'Gnomi', subtitle: 'Ayudante de bienvenida', start: 'intro', nodes: {} };
-  const offer = 'Trabajo en el Gremio de Ayudantes. Los gnomos nos dedicamos a echar una mano… y yo he vuelto a perder mi distintivo del gremio. ¡Otra vez! Debió de soltarse junto al mercado. Si se entera David, el jefe, esta vez se va a enfadar de verdad…\n\n¿Me ayudas a encontrarlo? Te acompaño. Soy mejor ayudando que sujetando distintivos, te lo prometo.';
+  const offer = 'Trabajo en el Gremio de Ayudantes. Los gnomos nos dedicamos a echar una mano… y yo he vuelto a perder mi distintivo del gremio. ¡Otra vez! Debió de soltarse junto al mercado de la plaza del Levante, aquí al lado. Si se entera David, el jefe, esta vez se va a enfadar de verdad…\n\n¿Me ayudas a encontrarlo? Te acompaño. Soy mejor ayudando que sujetando distintivos, te lo prometo.';
   const quest = {
     title: WELCOME_TITLE,
-    objective: 'Acompaña a Gnomi al mercado, encuentra su distintivo y devuélveselo.',
+    objective: 'Acompaña a Gnomi al mercado de la plaza del Levante, encuentra su distintivo y devuélveselo.',
     ...WELCOME_REWARD,
   };
   if (!progress) {
     conversation.nodes.intro = { text: '¡Buen camino! Si alguien necesita una mano por aquí, procuraré que encuentre dos.' };
   } else if (progress.origin === null) {
     conversation.nodes.intro = {
-      text: '¡Hola! Soy Gnomi, ayudante de bienvenida. ¿Empiezas una nueva etapa en Brumaluz? Cuéntame un poquito.',
+      text: '¡Te doy la bienvenida a Brumaluz! Perdona, andaba con la cabeza en otra parte. Soy Gnomi, ayudante de bienvenida del Gremio de Ayudantes. ¿Acabas de cruzar la puerta? Cuéntame un poquito: ¿qué te trae por aquí?',
       choices: ORIGINS[data.race].map((text, i) => ({ text, action: () => act('origin', i), next: `offer-${i}` })),
     };
     ORIGINS[data.race].forEach((_, i) => {
@@ -53,7 +53,7 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
     conversation.nodes.intro = { text: `${t(ORIGIN_REPLIES[progress.origin])}\n\n${t(offer)}`, quest,
       choices: [{ text: 'Aceptar misión', action: () => act('accept') }] };
   } else if (progress.stage === 'active') {
-    conversation.nodes.intro = { text: 'Estuve junto al mercado. Seguro que sigue allí. Voy contigo… cuatro ojos ven más que dos, aunque dos estén bajo un gorro.' };
+    conversation.nodes.intro = { text: 'Estuve junto al mercado de la plaza del Levante. Seguro que sigue allí. Voy contigo… cuatro ojos ven más que dos, aunque dos estén bajo un gorro.' };
   } else if (progress.stage === 'found') {
     conversation.nodes.intro = {
       text: '¡Mi distintivo del gremio! Menos mal… ¿Me lo devuelves? Esta vez lo voy a sujetar bien. Y, si nos cruzamos con David, tú y yo solo hemos dado un paseo. ¿De acuerdo?',
@@ -61,7 +61,7 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
       choices: [{ text: 'Completar misión', action: () => act('claim'), next: 'thanks' }],
     };
     conversation.nodes.thanks = {
-      text: '¡Ahora sí, bien sujeto! Gracias de corazón. Mira, ahí viene Isberto. Me ha pedido ayuda con algo extraño que ronda su ganado.',
+      text: '¡Ahora sí, bien sujeto! Gracias de corazón: ¡menuda bienvenida a Brumaluz te he dado, buscando cosas perdidas! Anda, ¿ese que viene corriendo no es Isberto, el granjero?',
     };
   } else if (progress.stage === 'completed') {
     conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.' };
@@ -120,7 +120,8 @@ function createQuestRewards(completed: boolean) {
   footer.append(list); return footer;
 }
 
-export function renderQuestJournal(container: HTMLElement, data: CharData, tracking: QuestTracking, showCompleted?: boolean) {
+/** `looted`: si ya se registraron los restos de la criatura (cambia el siguiente paso de Isberto). */
+export function renderQuestJournal(container: HTMLElement, data: CharData, tracking: QuestTracking, showCompleted?: boolean, looted = true) {
   container.replaceChildren();
   const root = document.createElement('div');
   root.className = 'quest-journal';
@@ -164,10 +165,10 @@ export function renderQuestJournal(container: HTMLElement, data: CharData, track
       const seal = document.createElement('span'); seal.className = 'quest-seal'; seal.textContent = completed ? '✓' : '!';
       header.append(left);
       if (!completed) header.append(createTrackButton(tracking, SHADOW_QUEST_KEY));
-      const description = document.createElement('p'); description.textContent = t('Isberto te ha pedido investigar a la criatura que ronda su ganado.');
+      const description = document.createElement('p'); description.textContent = t('Isberto te ha pedido ayuda con la criatura que ronda su ganado.');
       const objective = document.createElement('section'); objective.className = 'quest-objective';
       const label = document.createElement('small'); label.textContent = t(completed ? 'Completada' : 'Siguiente paso');
-      const text = document.createElement('p'); text.textContent = t(shadowObjective(data.shadowQuest));
+      const text = document.createElement('p'); text.textContent = t(shadowObjective(data.shadowQuest, looted, data.location));
       objective.append(label, text);
       shadow.append(seal, header, description, objective); appendEntry(shadow, completed);
     }
@@ -252,20 +253,20 @@ export function createQuestTracker(open: () => void, tracking: QuestTracking) {
   header.append(journal, toggle); root.append(header, button); document.body.append(root);
   let signature = '';
   return {
-    update(data: CharData, visible: boolean) {
+    update(data: CharData, visible: boolean, looted = true) {
       const quest = tracking.current(data), shadow = quest === SHADOW_QUEST_KEY;
       root.hidden = !visible || !quest;
       if (root.hidden) return;
-      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${t('Diario')}`;
+      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${looted}:${data.location}:${t('Diario')}`;
       if (key === signature) return;
       signature = key;
       root.setAttribute('aria-label', t('Misión seguida'));
       heading.textContent = t('Misiones');
       journal.setAttribute('aria-label', t('Abrir diario'));
       refreshToggle();
-      label.textContent = shadow ? data.shadowQuest === 'returning' ? 'Gnomi' : 'Isberto' : t('Bienvenida · Obligatoria');
+      label.textContent = shadow ? 'Isberto' : t('Bienvenida · Obligatoria');
       title.textContent = t(shadow ? SHADOW_TITLE : WELCOME_TITLE);
-      if (shadow) objective.textContent = t(shadowObjective(data.shadowQuest));
+      if (shadow) objective.textContent = t(shadowObjective(data.shadowQuest, looted, data.location));
       else if (data.welcome) objective.textContent = t(welcomeObjective(data.welcome));
       const step = shadow ? data.shadowQuest === 'returning' ? 3 : data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome?.stage === 'found' ? 2 : data.welcome?.stage === 'active' ? 1 : 0;
       const total = shadow ? 4 : 3;

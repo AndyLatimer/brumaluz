@@ -1,6 +1,6 @@
 // Bolsas de pelines repartidas por Brumaluz. Cada personaje recoge cada bolsa una sola vez;
 // la cantidad (aleatoria en un rango) la decide el servidor en collect_coin_bag.
-// Mantener ids y posiciones iguales a game_coin_bag en supabase/server.sql.
+// Mantener ids y posiciones iguales a game_coin_bag en supabase/server/.
 
 export interface CoinBagSpot {
   id: string;

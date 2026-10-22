@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, test } from 'node:test';
 import { createServer } from 'vite';
+import { serverSql } from './server-sql.mjs';
 
 // Hora del mundo: la del servidor manda, el cliente la deja correr y sin conexión calcula la misma.
 let server, clock;
@@ -13,7 +14,7 @@ before(async () => {
 after(async () => { await server?.close(); });
 
 test('el cliente usa el mismo origen y ritmo que server_config.world_clock', () => {
-  const sql = readFileSync('supabase/server.sql', 'utf8');
+  const sql = serverSql();
   const config = JSON.parse(/\('world_clock', '([^']+)'::jsonb\)/.exec(sql)[1]);
   assert.equal(config.seconds_per_hour, clock.SECONDS_PER_WORLD_HOUR);
   assert.equal(clock.localWorldHour(config.epoch * 1000), config.start_hour);

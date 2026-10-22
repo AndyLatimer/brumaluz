@@ -50,7 +50,7 @@ const DAY: Omit<Key, 'hour'> = {
   sky: 'day', gain: 1, tint: '#ffffff', horizon: '#cbd9e3', sun: '#fff3dc', sunIntensity: 2.6,
   hemiSky: '#cfe0ff', hemiGround: '#7c6a50', hemi: 0.42, rim: '#fff0e0', rimIntensity: 0.7, env: 0.42, exposure: 0.86, night: 0,
 };
-/** Atardecer dorado: el aspecto que tenía Brumaluz antes del ciclo (y el de los menús y los interiores). */
+/** Atardecer dorado: el aspecto de los menús. */
 export const GOLDEN_HOUR = 18.5;
 const KEYS: Key[] = [
   { hour: 0, ...NIGHT },
@@ -139,8 +139,10 @@ const fragmentShader = `
   }`;
 
 export interface DayNight {
-  /** Coloca el cielo y las luces a la hora del mundo; `indoor`, luz fija de interior. */
+  /** Sigue la hora del mundo; en interiores deja el vacío negro y reduce la luz exterior. */
   update(hour: number, indoor: boolean): void;
+  /** Aberturas del mapa actual: comparten el cielo exterior sin dibujarlo fuera de la habitación. */
+  setWindows(windows: readonly THREE.Mesh[]): void;
   /** Centra la cúpula del cielo en la cámara. */
   follow(center: THREE.Vector3): void;
 }
@@ -167,6 +169,18 @@ export function buildDayNight(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
   sky.renderOrder = -1;
   sky.raycast = () => {};
   scene.add(sky);
+  const background = scene.background;
+  const darkness = new THREE.Color('#000000');
+  const windowMaterial = new THREE.ShaderMaterial({
+    uniforms, fragmentShader, side: THREE.DoubleSide, fog: false,
+    vertexShader: `varying vec3 vDir;
+      void main(){
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vDir = world.xyz - cameraPosition;
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }`,
+  });
+  windowMaterial.name = 'world-time-window-sky';
 
   // Reflejos: el propio cielo, prefiltrado de vez en cuando (cambia despacio).
   const pmrem = reflections ? new THREE.PMREMGenerator(renderer) : null;
@@ -182,8 +196,18 @@ export function buildDayNight(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
   const mixColor = (target: THREE.Color, a: string, b: string, t: number) => target.set(a).lerp(other.set(b), t);
 
   return {
+    setWindows(windows) {
+      for (const window of windows) {
+        if (window.material === windowMaterial) continue;
+        // Los mapas se conservan en caché: solo se sustituye el material provisional una vez.
+        if (window.material instanceof THREE.Material && window.material.name === 'window-sky-placeholder') window.material.dispose();
+        window.material = windowMaterial;
+      }
+    },
     update(hour, indoor) {
-      if (indoor) hour = GOLDEN_HOUR;
+      hour = ((hour % 24) + 24) % 24;
+      sky.visible = !indoor;
+      scene.background = indoor ? darkness : background;
       let i = 0;
       while (i < KEYS.length - 2 && KEYS[i + 1].hour <= hour) i++;
       const a = KEYS[i], b = KEYS[i + 1];
@@ -218,7 +242,7 @@ export function buildDayNight(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
 
       // Luces, niebla y exposición.
       mixColor(stage.sun.color, a.sun, b.sun, t);
-      stage.sun.intensity = lerp(a.sunIntensity, b.sunIntensity, t) * lift;
+      stage.sun.intensity = lerp(a.sunIntensity, b.sunIntensity, t) * lift * (indoor ? 0.18 : 1);
       mixColor(stage.hemi.color, a.hemiSky, b.hemiSky, t);
       mixColor(stage.hemi.groundColor, a.hemiGround, b.hemiGround, t);
       stage.hemi.intensity = lerp(a.hemi, b.hemi, t);
@@ -226,9 +250,16 @@ export function buildDayNight(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
       stage.rim.intensity = lerp(a.rimIntensity, b.rimIntensity, t);
       const night = lerp(a.night, b.night, t);
       stage.fill.intensity = 0.55 * (1 - 0.55 * night);
-      if (fog) fog.color.copy(uniforms.horizon.value);
+      if (indoor) {
+        // Rebote tenue para leer la habitación; la iluminación principal la aportan sus lámparas.
+        stage.hemi.intensity = 0.22 + 0.1 * (1 - night);
+        stage.hemi.groundColor.set('#30251c');
+        stage.rim.intensity *= 0.12;
+        stage.fill.intensity = 0.3;
+      }
+      if (fog) fog.color.copy(indoor ? darkness : uniforms.horizon.value);
       renderer.toneMappingExposure = lerp(a.exposure, b.exposure, t);
-      scene.environmentIntensity = lerp(a.env, b.env, t);
+      scene.environmentIntensity = lerp(a.env, b.env, t) * (indoor ? 0.15 : 1);
       daylight.night = daylight.uNight.value = night;
       const water = daylight.water;
       mixColor(water.skyColor.value, a.hemiSky, b.hemiSky, t).multiply(uniforms.tint.value).multiplyScalar(0.75);

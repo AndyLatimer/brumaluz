@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import pg from 'pg';
+import { serverSql } from './server-sql.mjs';
 
 if (process.argv.includes('--configured')) {
   for (const file of ['.env.local', '.env']) {
@@ -23,7 +24,7 @@ test('mission encounters allow travel until either side actually attacks', { tim
     await client.query('begin');
     await client.query("set local lock_timeout='5s'; set local statement_timeout='20s'");
     await client.query('select pg_advisory_xact_lock(731029,2)');
-    await client.query(readFileSync(new URL('../supabase/server.sql', import.meta.url), 'utf8'));
+    await client.query(serverSql());
     const uid = randomUUID(), id = randomUUID(), session = randomUUID();
     const destination = `engagement_${randomUUID()}`, portal = randomUUID();
     const site = (await client.query("select value from public.server_config where key='combat_site'")).rows[0].value;

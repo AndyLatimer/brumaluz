@@ -4,7 +4,7 @@
 // para que no salga el tooltip nativo, y se restaura al salir (así i18n sigue funcionando).
 // Para tooltips con título y texto usa "Título|Descripción".
 import { renderItemTooltip } from './itemTooltip';
-import { renderSkillTooltip } from './skillTooltip';
+import { renderSkillTooltip, skillTooltipEquipment } from './skillTooltip';
 import { COMBAT_KITS } from '../data/combat';
 import type { ClassId } from '../data/data';
 
@@ -66,7 +66,7 @@ function show(target: HTMLElement) {
   box.replaceChildren();
   box.classList.toggle('item-tooltip', !!item || !!skillClass);
   box.classList.toggle('skill-tooltip', !!skillClass);
-  if (skillClass) renderSkillTooltip(box, skillClass, Number(target.dataset.skillRank));
+  if (skillClass) renderSkillTooltip(box, skillClass, Number(target.dataset.skillRank), skillTooltipEquipment(target));
   else if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true');
   else {
     const [head, body] = text!.includes('|') ? text!.split('|', 2) : [text!, ''];

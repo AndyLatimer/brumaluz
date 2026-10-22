@@ -50,11 +50,10 @@ contenido del juego relacionado.
   se mantiene como pieza separada que recupera durante la bienvenida.
 - El encuentro ocurre cerca de la entrada y la búsqueda junto a un puesto
   del mercado. Al entregar el distintivo, Gnomi se lo coloca, agradece la
-  ayuda y ofrece orientarnos para encontrar nuestro primer oficio. No se
-  introduce todavía una segunda misión ni un contacto nuevo.
-- Después del distintivo, la bienvenida continuará con una actividad común,
-  manteniendo como premisa la orientación hacia un oficio. Antes de esa
-  orientación habrá una introducción al combate. El incidente siembra un
+  ayuda y ve llegar a Isberto. Antes de orientarnos hacia los oficios,
+  el granjero nos pide ayuda con la criatura que ronda su ganado.
+- Después del distintivo, la bienvenida continúa con una introducción al
+  combate y la invitación a casa de Isberto. El incidente siembra un
   hilo para ampliar la historia más adelante, sin definir todavía su origen
   ni convertirlo en una amenaza general contra la ciudad.
 - Los oficios previstos inicialmente son **Leñador, Minero, Carpintero,
@@ -68,12 +67,12 @@ contenido del juego relacionado.
   básica, moverse y gestionar vida y estamina.
 - Una **criatura extraña, que nadie reconoce, ha atacado el ganado de un
   granjero**. El jugador la mata al derrotarla. Su origen y relación con
-  acontecimientos futuros no están definidos. El aspecto, nombre mostrado,
-  granjero y forma de descubrir el incidente quedan pendientes.
+  acontecimientos futuros no están definidos. Isberto presenta el incidente
+  mediante una escena de la criatura entre su ganado.
 - Este primer combate permite morir y utiliza el sistema normal de muerte
   y reaparición, sin protección especial de tutorial.
-- Tras devolver el distintivo, Gnomi acompaña al jugador a ver a **Isberto**,
-  el granjero, antes de orientarlo hacia los oficios. Isberto pide ayuda con
+- Tras devolver el distintivo, **Isberto** se acerca al jugador y a Gnomi,
+  antes de la orientación hacia los oficios. El granjero pide ayuda con
   la criatura que ronda su ganado. Isberto es un explorador retirado, harto de
   todo. Su aspecto toma como
   referencia el personaje existente de ese nombre indicado por el creador;
@@ -86,8 +85,7 @@ contenido del juego relacionado.
 - El combate será de selección de objetivo, ataque automático al estar
   en alcance y habilidades desde la barra rápida. El arma, ataque y primera
   habilidad dependen de la clase elegida; no se sustituirán por un kit común
-  ni por equipo de práctica prestado. Las habilidades concretas y la forma
-  de obtener el equipo inicial siguen pendientes.
+  ni por equipo de práctica prestado. Los kits iniciales se detallan abajo.
 - Al ordenar un ataque fuera de alcance, el personaje se acercará
   automáticamente. Moverlo manualmente interrumpe esa aproximación.
 - El encuentro es personal: cada jugador tiene su propia criatura y
@@ -127,20 +125,29 @@ contenido del juego relacionado.
 - La primera misión es personal aunque se juegue en grupo: el progreso y
   el objeto no se comparten ni compiten entre jugadores. La búsqueda muestra
   un marcador exacto del objetivo para que la bienvenida sea muy guiada.
-- El distintivo se buscará cerca de un taller o puesto del mercado. Todavía
-  falta concretar su posición y el recorrido sobre el mapa.
+- **Llegada:** el personaje recién creado aparece entrando por la **Puerta
+  del Este**. Primero se ve al personaje cruzar la puerta; después la cámara
+  recorre Brumaluz a vista de pájaro, vuelve a él y muestra a Gnomi caminando, buscando
+  preocupado su distintivo, hasta que se topa con el jugador, le da la
+  bienvenida y se presenta. La escena se ve una vez por personaje y se puede
+  saltar.
+- El distintivo se perdió junto al puesto del mercado de la **plaza del
+  Levante**, a pocos pasos de la puerta.
 - La recompensa de esta primera misión será de **40 puntos de experiencia
   y 5 pelines**.
 - Justo después de completar la misión de Gnomi se ve a **Isberto** acercarse
-  andando en una breve escena; solo cuando llega junto al jugador le habla
-  automáticamente para ofrecerle
-  investigar a la criatura junto al ganado. Derrotarla deja un cadáver
-  saqueable con una **Esencia sombría** garantizada. Su significado y uso no
-  se conocen todavía. Después de vencer hay que hablar con Isberto; Gnomi
-  interviene y ninguno sabe qué era la criatura. El misterio queda abierto
-  para más adelante. Gnomi acompaña al jugador de vuelta a la plaza del pozo;
-  allí se cierra este tramo y se quedan por ahora, sin nuevos encargos,
-  XP ni pelines adicionales. Recoger la esencia no sustituye esa conversación.
+  andando en una breve escena, seguida de un plano de **la criatura entre su
+  ganado**, en la granja del sur; después le pide ayuda al jugador. Derrotarla
+  deja un cadáver saqueable con una **Esencia sombría** garantizada. Su
+  significado y uso no se conocen todavía.
+- Al registrar los restos, **Isberto vuelve** en otra escena. Gnomi interviene
+  y ninguno sabe qué era la criatura; el misterio queda abierto. Isberto,
+  a regañadientes, ofrece al jugador descansar en su casa, y Gnomi vuelve a
+  la plaza del pozo. Isberto guía al jugador hasta su puerta (la **casa de
+  Isberto** está cerrada hasta entonces) y, ya dentro, le enseña que puede
+  usar **la cama para descansar** (vida y recurso al máximo) y **el cofre de
+  la esquina para guardar sus cosas** (el banco de la cuenta). Ahí se cierra
+  este tramo, sin XP ni pelines adicionales.
 - La bienvenida será **solo para personajes nuevos**. Los personajes que
   existían antes de incorporar el sistema no recibirán esta misión ni
   tendrán que repetir su comienzo.

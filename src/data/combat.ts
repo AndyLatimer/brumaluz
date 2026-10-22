@@ -1,5 +1,6 @@
 import type { CharData, ClassId } from './data';
 import { emptyEquipment, type Equipment } from './inventory';
+import { equippedWeapon } from './weapons';
 
 export type SkillId = 'heavy_strike' | 'arcane_discharge' | 'double_slash' | 'healing' | 'precise_shot';
 export const MAX_SKILL_RANK = 5;
@@ -58,14 +59,21 @@ export function upgradeSkill(data: SkillProgress, id: SkillId, expectedRank: num
   data.skillRanks = { ...data.skillRanks, [id]: rank + 1 };
 }
 
-export function skillPower(cls: ClassId, rank = 1) {
+export function skillPower(cls: ClassId, rank = 1, equipment?: Equipment) {
   const kit = COMBAT_KITS[cls];
+  if (equipment) {
+    const main = equippedWeapon(cls, equipment, 'weapon');
+    const offhand = equippedWeapon(cls, equipment, 'offhand');
+    if (kit.skill.healing) return (main?.healing ?? 0) + (offhand?.healing ?? 0) + (rank - 1) * 4;
+    return Math.round((Math.round(kit.damage * kit.skill.power) + (rank - 1) * (cls === 'picaro' ? 1 : 2))
+      * (main?.power ?? 0) / kit.damage);
+  }
   const base = Math.round(kit.damage * kit.skill.power);
   return base + (rank - 1) * (kit.skill.healing ? 4 : cls === 'picaro' ? 1 : 2);
 }
 
-export const basicAttackDamage = (cls: ClassId, level = 1) =>
-  Math.round(COMBAT_KITS[cls].damage * (1 + .05 * (level - 1)));
+export const basicAttackDamage = (cls: ClassId, level = 1, equipment?: Equipment) =>
+  Math.round((equipment ? equippedWeapon(cls, equipment, 'weapon')?.power ?? 0 : COMBAT_KITS[cls].damage) * (1 + .05 * (level - 1)));
 
 export function starterEquipment(cls: ClassId): Equipment {
   const kit = COMBAT_KITS[cls], equipment = emptyEquipment();
@@ -114,7 +122,7 @@ export function regenerateCombat(
 /** Pure prototype resolver. Production must resolve commands on the server. */
 export function resolveCombat(
   cls: ClassId, state: Readonly<CombatState>, command: CombatCommand, now: number, distance: number,
-  level = 1, rank = 1,
+  level = 1, rank = 1, equipment?: Equipment,
 ): CombatResult {
   if (!Number.isFinite(now) || now < 0 || !Number.isFinite(distance) || distance < 0
     || !Object.values(state).every(Number.isFinite) || state.maxHealth <= 0
@@ -122,6 +130,7 @@ export function resolveCombat(
     || state.nextAttack < 0 || state.nextSkill < 0 || !Number.isInteger(level) || level < 1 || level > 50
     || !Number.isInteger(rank) || rank < 1 || rank > MAX_SKILL_RANK || rank > skillPointsAllowed(level) + 1) throw new Error('Estado de combate no válido.');
   if (state.health === 0) throw new Error('Debes volver a la vida para combatir.');
+  if (equipment && !equippedWeapon(cls, equipment, 'weapon')) throw new Error('Debes equipar un arma de tu clase.');
   const kit = COMBAT_KITS[cls], skill = command === 'skill' ? kit.skill : null;
   if (command !== 'attack' && command !== 'skill') throw new Error('Acción de combate no válida.');
   if (!skill?.healing && state.enemyHealth === 0) throw new Error('El objetivo ya está derrotado.');
@@ -137,11 +146,11 @@ export function resolveCombat(
   const damage: number[] = [];
   let healing = 0;
   if (skill?.healing) {
-    healing = Math.min(state.maxHealth-state.health, skillPower(cls, rank));
+    healing = Math.min(state.maxHealth-state.health, skillPower(cls, rank, equipment));
     next.health += healing;
   } else {
     for (let hit=0;hit<(skill?.hits ?? 1);hit++) {
-      const amount = Math.min(next.enemyHealth, skill ? skillPower(cls, rank) : basicAttackDamage(cls, level));
+      const amount = Math.min(next.enemyHealth, skill ? skillPower(cls, rank, equipment) : basicAttackDamage(cls, level, equipment));
       damage.push(amount); next.enemyHealth -= amount;
     }
   }

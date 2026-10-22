@@ -1,5 +1,5 @@
 // Ventana de chat: canales con filtros (general, susurros, sistema, NPC), ventana redimensionable y comandos.
-// Solo es interfaz: los mensajes de jugadores los valida y reparte el servidor (chat_send, supabase/server.sql).
+// Solo es interfaz: los mensajes de jugadores los valida y reparte el servidor (chat_send, supabase/server/).
 import { t } from './i18n';
 import type { ChatMessage } from '../services/account';
 import { isTitleId, isReservedTitle, PHOENIX_ICON } from '../data/titles';

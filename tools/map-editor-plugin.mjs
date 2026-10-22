@@ -48,18 +48,20 @@ async function writeManifest(publishDir, srcDir, metas) {
  */
 async function publishMap(map, { publishDir, libraryDir, srcDir }) {
   const catalog = JSON.parse(await readFile(join(libraryDir, 'catalog.json'), 'utf8'));
-  const paths = new Map(catalog.assets.map(asset => [asset.id, asset.path]));
+  const paths = new Map(catalog.assets.map(asset => [asset.id, join(libraryDir, asset.path)]));
+  const variants = JSON.parse(await readFile(join(srcDir, 'art', 'mapVariants.json'), 'utf8'));
+  for (const [id, file] of Object.entries(variants)) if (paths.has(id)) paths.set(id, join(srcDir, 'assets', file));
   const used = [...new Set(map.objects.map(object => object.asset))]
     .filter(asset => !asset.startsWith('city/') && !asset.startsWith('builtin/')).sort();
   const missing = used.filter(asset => !paths.has(asset));
   if (missing.length) throw Object.assign(new Error(`Recursos que no están en la biblioteca: ${missing.slice(0, 5).join(', ')}`), { status: 422 });
   let bytes = 0;
-  for (const asset of used) bytes += (await stat(join(libraryDir, paths.get(asset)))).size;
+  for (const asset of used) bytes += (await stat(paths.get(asset))).size;
   const mapsDir = join(publishDir, 'maps');
   await mkdir(mapsDir, { recursive: true });
   // La miniatura se conserva: es el fondo de la pantalla de carga.
   await writeAtomic(join(mapsDir, `${map.id}.json`), `${JSON.stringify(map)}\n`);
-  const imports = used.map((asset, index) => `import a${index} from '${importPath(mapsDir, join(libraryDir, paths.get(asset)))}?url';`);
+  const imports = used.map((asset, index) => `import a${index} from '${importPath(mapsDir, paths.get(asset))}?url';`);
   await writeAtomic(join(mapsDir, `${map.id}.ts`), [
     HEADER,
     `import map from './${map.id}.json';`,
@@ -135,7 +137,7 @@ async function writeWorldSql({ publishDir, sqlFile }, { validateMap, arrivalPoin
   };
   const lines = [
     '-- Generado por el editor de mapas al publicar. No lo edites a mano.',
-    '-- Mapas de Pompelín publicados y sus portales. Se aplica después de server.sql con «npm run db:apply».',
+    '-- Mapas de Pompelín publicados y sus portales. Se aplica después del SQL del servidor con «npm run db:apply».',
     'delete from public.world_portals;',
     `delete from public.world_maps where id not in (${[...maps.keys()].map(sqlText).join(', ')});`,
   ];

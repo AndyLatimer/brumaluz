@@ -73,6 +73,7 @@ interface Database {
       create_character: { Args: { p_data: Json }; Returns: string };
       welcome_action: { Args: { p_character_id: string; p_action: string; p_origin?: number }; Returns: Json };
       shadow_action: { Args: { p_character_id: string; p_action: ShadowAction }; Returns: Json };
+      rest_action: { Args: { p_character_id: string }; Returns: Json };
       character_enter: { Args: { p_character_id: string }; Returns: Json };
       respawn_character: { Args: { p_character_id: string }; Returns: Json };
       debug_damage: { Args: { p_character_id: string }; Returns: Json };
@@ -99,7 +100,7 @@ interface Database {
       change_equipment: { Args: { p_character_id: string; p_slot: string; p_bag: number | null; p_expected: Json }; Returns: Json };
       loot_corpse: { Args: { p_character_id: string; p_instance_id: string; p_slot?: number | null }; Returns: Json };
       collect_coin_bag: { Args: { p_character_id: string; p_bag_id: string }; Returns: Json };
-      bank_action: { Args: { p_character_id: string; p_action: string; p_slot?: number | null; p_expected?: Json | null; p_amount?: number | null }; Returns: Json };
+      bank_action: { Args: { p_character_id: string; p_action: string; p_slot?: number | null; p_expected?: Json | null; p_amount?: number | null; p_target?: number | null }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
       party_invite: { Args: { p_username: string }; Returns: undefined };
@@ -227,6 +228,9 @@ const SERVER_ERRORS: Record<string, string> = {
   INVALID_WORLD_STATE: 'El servidor ha rechazado el movimiento del personaje.',
   PORTAL_NOT_FOUND: 'Este camino todavía no lleva a ninguna parte.',
   PORTAL_TOO_FAR: 'Acércate más a la salida para viajar.',
+  PORTAL_LOCKED: 'La puerta de Isberto está cerrada con llave.',
+  REST_UNAVAILABLE: 'Solo puedes descansar en la cama de Isberto cuando te invite a su casa.',
+  REST_TOO_FAR: 'Acércate a la cama para descansar.',
   CHARACTER_DEAD: 'No puedes viajar mientras estás muerto.',
   IN_COMBAT: 'No puedes viajar en mitad de un combate.',
   CHARACTER_LIMIT_REACHED: `Cada cuenta puede tener un máximo de ${MAX_CHARACTERS_PER_ACCOUNT} personajes. Borra uno antes de crear otro.`,
@@ -265,6 +269,7 @@ const SERVER_ERRORS: Record<string, string> = {
   SHADOW_INVALID_STATE: 'No puedes continuar este paso de la misión todavía.',
   SHADOW_INVALID_ACTION: 'Esa acción de misión no es válida.',
   SHADOW_TOO_FAR: 'Acércate al objetivo para continuar la misión.',
+  SHADOW_LOOT_REQUIRED: 'Registra los restos de la criatura y recoge todo el botín antes de hablar con Isberto.',
   SKILL_INVALID: 'Esa habilidad no pertenece a tu clase.',
   SKILL_CHANGED: 'El rango ha cambiado. Revisa la habilidad antes de mejorarla.',
   SKILL_MAX_RANK: 'La habilidad ya tiene el rango máximo.',
@@ -299,14 +304,14 @@ const SERVER_ERRORS: Record<string, string> = {
   CANNOT_WHISPER_SELF: 'No puedes susurrarte a ti mismo.',
 };
 
-/** Llama a una función del servidor (supabase/server.sql) y traduce sus códigos de error. */
+/** Llama a una función del servidor (supabase/server/) y traduce sus códigos de error. */
 async function serverCall<T>(call: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
   const { data, error } = await call;
   if (error) {
     const code = Object.keys(SERVER_ERRORS).find((key) => error.message.includes(key));
     if (code) throw new Error(SERVER_ERRORS[code]);
     if (/could not find the function|schema cache/i.test(error.message)) {
-      throw new Error('El servidor no tiene esta función todavía: ejecuta supabase/server.sql en Supabase.');
+      throw new Error('El servidor no tiene esta función todavía: aplica el SQL del servidor (npm run db:apply).');
     }
     throw error;
   }
@@ -322,6 +327,12 @@ export async function welcomeAction(character: string, action: string, origin?: 
 export async function shadowAction(character: string, action: ShadowAction) {
   return asRecord(await serverCall(requireClient().rpc('shadow_action', {
     p_character_id: character, p_action: action,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+/** Descansa en la cama de Isberto: vida y recurso al máximo. */
+export async function restAction(character: string) {
+  return asRecord(await serverCall(requireClient().rpc('rest_action', {
+    p_character_id: character,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 
@@ -392,11 +403,14 @@ export async function collectCoinBag(id: string, bagId: string) {
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 
-export type BankAction = 'open' | 'deposit' | 'withdraw' | 'deposit_pelines' | 'withdraw_pelines';
-/** Banco de la cuenta: devuelve los datos del personaje y `bank` ({ items, pelines, size }). */
-export async function bankAction(id: string, action: BankAction, slot: number | null = null, expected: ItemStack | null = null, amount: number | null = null) {
+export type BankAction = 'open' | 'deposit' | 'withdraw' | 'move' | 'deposit_pelines' | 'withdraw_pelines';
+/**
+ * Banco de la cuenta: devuelve los datos del personaje y `bank` ({ items, pelines, size }). `target` es el hueco de
+ * destino al arrastrar (del baúl al guardar o mover, de la mochila al retirar); sin él va al primer sitio libre.
+ */
+export async function bankAction(id: string, action: BankAction, slot: number | null = null, expected: ItemStack | null = null, amount: number | null = null, target: number | null = null) {
   return asRecord(await serverCall(requireClient().rpc('bank_action', {
-    p_character_id: id, p_action: action, p_slot: slot, p_expected: expected ? { ...expected } : null, p_amount: amount,
+    p_character_id: id, p_action: action, p_slot: slot, p_expected: expected ? { ...expected } : null, p_amount: amount, p_target: target,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 

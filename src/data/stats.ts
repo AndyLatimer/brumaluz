@@ -41,7 +41,7 @@ export function evaluate(formula: StatFormula, d: CharData) {
   return Math.round(total);
 }
 
-/** Sobrecuración: vida curada por encima del máximo. Tope = fracción de la vida máxima; se pierde decayPerSecond por segundo. Igual que en supabase/server.sql. */
+/** Sobrecuración: vida curada por encima del máximo. Tope = fracción de la vida máxima; se pierde decayPerSecond por segundo. Igual que en supabase/server/. */
 export const OVERHEAL = { maxFraction: 0.3, decayPerSecond: 1 };
 export const maxOverhealOf = (d: CharData) => Math.floor(maxHealthOf(d) * OVERHEAL.maxFraction);
 

@@ -57,7 +57,7 @@ export function npcClothingRenderer(clothing: NpcClothing): NonNullable<BuildOpt
           if (piece.source === 'helpers' || piece.source === 'medieval') {
             if (source.name === 'skin') result.color.set(skin);
             else if (selection.primary >= 0 && ['linen', 'blue', 'red', 'leather', 'tunic', 'trousers'].includes(source.name)) result.color.set(primary);
-            else if (selection.secondary >= 0 && ['trim', 'redTrim', 'sole', 'tunicTrim', 'darkLeather', 'feather'].includes(source.name)) result.color.set(secondary);
+            else if (selection.secondary >= 0 && ['trim', 'redTrim', 'sole', 'tunicTrim', 'darkLeather'].includes(source.name)) result.color.set(secondary);
           } else {
             if (!result.map) throw new Error(`Falta la paleta de ${piece.id}.`);
             const cells = palette[piece.source];

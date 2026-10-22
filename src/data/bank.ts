@@ -1,5 +1,5 @@
 // Banco personal de la cuenta: compartido por todos sus personajes y abierto desde un baúl concreto.
-// Las reglas viven en bank_action (supabase/server.sql); aquí solo se refleja su estado y la simulación de ?test.
+// Las reglas viven en bank_action (supabase/server/); aquí solo se refleja su estado y la simulación de ?test.
 import type { CharData } from './data';
 import { INVENTORY_UNLOCKED, type ItemStack } from './inventory';
 import { ITEMS, itemStack } from './items';
@@ -7,7 +7,7 @@ import { ITEMS, itemStack } from './items';
 export const BANK_SIZE = 50;
 /** Distancia a la que aparece «Abrir el baúl» en el cliente; el servidor admite hasta `radius`. */
 export const BANK_INTERACT_RADIUS = 1.8;
-/** Debe coincidir con game_bank_spot en supabase/server.sql. */
+/** Debe coincidir con game_bank_spot en supabase/server/. */
 export const BANK_SPOTS: Record<string, { x: number; z: number; radius: number }> = {
   casa_de_isberto_interior: { x: 2.25, z: 3.25, radius: 3 },
 };
@@ -61,22 +61,51 @@ export function stackInto(slots: (ItemStack | null)[], item: ItemStack): (ItemSt
   return left > 0 ? null : out;
 }
 
+/**
+ * Igual que game_place_item: deja `item` en el hueco `index`. Libre: lo ocupa; montón igual: lo completa y devuelve
+ * lo que no cabe; otro objeto: se intercambian y devuelve el que había.
+ */
+export function placeItem(slots: (ItemStack | null)[], index: number, item: ItemStack): ItemStack | null {
+  const target = slots[index];
+  if (!target) { slots[index] = { ...item }; return null; }
+  if (target.id === item.id && (target.bound === true) === (item.bound === true)) {
+    const moved = Math.min(Math.max(0, Math.max(1, itemStack(item.id)) - target.count), item.count);
+    slots[index] = { ...target, count: target.count + moved };
+    return item.count > moved ? { ...item, count: item.count - moved } : null;
+  }
+  slots[index] = { ...item };
+  return target;
+}
+
 /** Simulación local (?test) de las acciones del banco. Lanza los mismos mensajes que el servidor. */
-export function simulateBank(d: CharData, bank: BankState, action: 'deposit' | 'withdraw' | 'deposit_pelines' | 'withdraw_pelines', value: number) {
+export function simulateBank(d: CharData, bank: BankState, action: 'deposit' | 'withdraw' | 'move' | 'deposit_pelines' | 'withdraw_pelines', value: number, target: number | null = null) {
   if (action === 'deposit') {
     const item = d.inventory[value];
     if (!item) throw new Error('Tu mochila ha cambiado. Vuelve a mover el objeto.');
     if (!isBankable(item)) throw new Error('Los objetos ligados no se pueden guardar en el banco.');
-    const next = stackInto(bank.items, item);
-    if (!next) throw new Error('El banco está lleno.');
-    bank.items = next; d.inventory[value] = null;
+    if (target === null) {
+      const next = stackInto(bank.items, item);
+      if (!next) throw new Error('El banco está lleno.');
+      bank.items = next; d.inventory[value] = null;
+    } else d.inventory[value] = placeItem(bank.items, target, item);
   } else if (action === 'withdraw') {
     const item = bank.items[value];
     if (!item) throw new Error('El banco ha cambiado. Vuelve a intentarlo.');
-    const next = stackInto(d.inventory.slice(0, INVENTORY_UNLOCKED), item);
-    if (!next) throw new Error('Tu mochila está llena.');
-    next.forEach((slot, i) => { d.inventory[i] = slot; });
+    if (target === null) {
+      const next = stackInto(d.inventory.slice(0, INVENTORY_UNLOCKED), item);
+      if (!next) throw new Error('Tu mochila está llena.');
+      next.forEach((slot, i) => { d.inventory[i] = slot; });
+      bank.items[value] = null;
+    } else {
+      const displaced = d.inventory[target];
+      if (displaced && !isBankable(displaced)) throw new Error('Los objetos ligados no se pueden guardar en el banco.');
+      bank.items[value] = placeItem(d.inventory, target, item);
+    }
+  } else if (action === 'move') {
+    const item = bank.items[value];
+    if (!item || target === null || target === value) throw new Error('El banco ha cambiado. Vuelve a intentarlo.');
     bank.items[value] = null;
+    bank.items[value] = placeItem(bank.items, target, item);
   } else if (action === 'deposit_pelines') {
     if (value <= 0 || d.wallet.pelines < value) throw new Error('No tienes suficientes pelines.');
     d.wallet.pelines -= value; bank.pelines += value;

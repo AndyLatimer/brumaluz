@@ -1,20 +1,13 @@
 import type { CharData, ClassId } from './data';
 import { INVENTORY_UNLOCKED, type EquipmentSlot, type ItemStack } from './inventory';
+import { WEAPONS } from './weapons';
+import { OUTFITS } from './outfits';
 
-export const EQUIPPABLE: Record<string, { slot: EquipmentSlot; cls: ClassId }> = {
-  espada_inicial: { slot: 'weapon', cls: 'guerrero' },
-  escudo_inicial: { slot: 'offhand', cls: 'guerrero' },
-  baston_inicial: { slot: 'weapon', cls: 'mago' },
-  daga_inicial: { slot: 'weapon', cls: 'picaro' },
-  daga_secundaria_inicial: { slot: 'offhand', cls: 'picaro' },
-  varita_inicial: { slot: 'weapon', cls: 'clerigo' },
-  libro_inicial: { slot: 'offhand', cls: 'clerigo' },
-  ballesta_inicial: { slot: 'weapon', cls: 'explorador' },
-};
+export const EQUIPPABLE: Record<string, { slot: EquipmentSlot; cls: ClassId }> = { ...WEAPONS, ...OUTFITS };
 
 export function hasCombatWeapon(data: Pick<CharData, 'cls' | 'equipment'>) {
   const id = data.equipment.weapon?.id;
-  return !!id && EQUIPPABLE[id]?.slot === 'weapon' && EQUIPPABLE[id].cls === data.cls;
+  return !!id && data.equipment.weapon?.count === 1 && EQUIPPABLE[id]?.slot === 'weapon' && EQUIPPABLE[id].cls === data.cls;
 }
 
 export function transferEquipment(data: CharData, slot: EquipmentSlot, bag: number | null, expected: ItemStack) {

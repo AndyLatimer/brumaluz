@@ -41,7 +41,7 @@ export function renderSkills(
   const card = element('button', 'skill-card');
   card.type = 'button'; card.draggable = true;
   card.setAttribute('aria-current', 'true');
-  setSkillTooltip(card, data.cls, rank);
+  setSkillTooltip(card, data.cls, rank, data.equipment);
   const icon = element('div', 'skill-art');
   icon.innerHTML = skillIcon(skill.id);
   const cardText = element('div', 'skill-card-text');
@@ -62,7 +62,7 @@ export function renderSkills(
   const hero = element('header', 'skill-detail-header');
   const art = element('div', 'skill-hero-art');
   art.innerHTML = skillIcon(skill.id);
-  art.draggable = true; art.tabIndex = 0; setSkillTooltip(art, data.cls, rank);
+  art.draggable = true; art.tabIndex = 0; setSkillTooltip(art, data.cls, rank, data.equipment);
   art.addEventListener('dragstart', drag);
   const name = element('div', '');
   const improve = element('button', 'skill-upgrade skill-upgrade-inline', '+');
@@ -85,11 +85,11 @@ export function renderSkills(
   const stats = element('dl', 'skill-stats');
   for (const [label, value] of skillStats(data.cls)) stats.append(element('dt', '', label), element('dd', '', value));
   const effect = element('section', 'skill-effect');
-  effect.append(element('small', 'skills-eyebrow', t('Efecto actual')), element('p', '', skillEffect(data.cls, rank)));
+  effect.append(element('small', 'skills-eyebrow', t('Efecto actual')), element('p', '', skillEffect(data.cls, rank, data.equipment)));
   const compare = element('section', 'skill-next');
   compare.append(element('h5', '', rank < MAX_SKILL_RANK ? t('Siguiente rango') : t('Maestría alcanzada')));
   if (rank < MAX_SKILL_RANK) {
-    compare.append(element('p', 'skill-next-effect', skillEffect(data.cls, rank + 1)),
+    compare.append(element('p', 'skill-next-effect', skillEffect(data.cls, rank + 1, data.equipment)),
       element('small', '', `${t('Nivel {n}', { n: skillRankLevel(rank + 1) })} · ${t('1 punto de habilidad')}`));
   } else compare.append(element('p', '', t('Rango máximo alcanzado.')));
   const actions = element('div', 'skill-actions');

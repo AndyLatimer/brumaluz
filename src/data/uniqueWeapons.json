@@ -1,0 +1,18 @@
+[
+  { "id":"sable_guardia_alba", "label":"Sable de la Guardia del Alba", "collection":"alba", "tier":2, "cls":"guerrero", "slot":"weapon", "kind":"sword", "starter":"espada_inicial", "power":12, "value":200 },
+  { "id":"escudo_bastion_alba", "label":"Escudo Bastión del Alba", "collection":"alba", "tier":2, "cls":"guerrero", "slot":"offhand", "kind":"shield", "starter":"escudo_inicial", "guard":3, "value":140 },
+  { "id":"baston_raiz_celeste", "label":"Bastón de Raíz Celeste", "collection":"alba", "tier":2, "cls":"mago", "slot":"weapon", "kind":"staff", "starter":"baston_inicial", "power":12, "value":220 },
+  { "id":"daga_pluma_azul", "label":"Daga Pluma Azul", "collection":"alba", "tier":2, "cls":"picaro", "slot":"weapon", "kind":"dagger", "starter":"daga_inicial", "power":10, "value":180 },
+  { "id":"daga_garra_alba", "label":"Daga Garra del Alba", "collection":"alba", "tier":2, "cls":"picaro", "slot":"offhand", "kind":"dagger", "starter":"daga_secundaria_inicial", "guard":3, "value":120 },
+  { "id":"varita_lirio_celeste", "label":"Varita del Lirio Celeste", "collection":"alba", "tier":2, "cls":"clerigo", "slot":"weapon", "kind":"wand", "starter":"varita_inicial", "power":13, "healing":36, "value":200 },
+  { "id":"codice_guardian_alba", "label":"Códice del Guardián del Alba", "collection":"alba", "tier":2, "cls":"clerigo", "slot":"offhand", "kind":"book", "starter":"libro_inicial", "healing":4, "value":140 },
+  { "id":"ballesta_martin_pescador", "label":"Ballesta Martín Pescador", "collection":"alba", "tier":2, "cls":"explorador", "slot":"weapon", "kind":"crossbow", "starter":"ballesta_inicial", "power":12, "value":220 },
+  { "id":"espada_filo_eclipse", "label":"Espada Filo del Eclipse", "collection":"eclipse", "tier":3, "cls":"guerrero", "slot":"weapon", "kind":"sword", "starter":"espada_inicial", "power":14, "value":400 },
+  { "id":"escudo_luna_hendida", "label":"Escudo de la Luna Hendida", "collection":"eclipse", "tier":3, "cls":"guerrero", "slot":"offhand", "kind":"shield", "starter":"escudo_inicial", "guard":4, "value":280 },
+  { "id":"baston_media_noche", "label":"Bastón de Medianoche", "collection":"eclipse", "tier":3, "cls":"mago", "slot":"weapon", "kind":"staff", "starter":"baston_inicial", "power":14, "value":440 },
+  { "id":"daga_onda_violeta", "label":"Daga Onda Violeta", "collection":"eclipse", "tier":3, "cls":"picaro", "slot":"weapon", "kind":"dagger", "starter":"daga_inicial", "power":12, "value":360 },
+  { "id":"daga_luna_menguante", "label":"Daga Luna Menguante", "collection":"eclipse", "tier":3, "cls":"picaro", "slot":"offhand", "kind":"dagger", "starter":"daga_secundaria_inicial", "guard":4, "value":240 },
+  { "id":"varita_estrella_cautiva", "label":"Varita de la Estrella Cautiva", "collection":"eclipse", "tier":3, "cls":"clerigo", "slot":"weapon", "kind":"wand", "starter":"varita_inicial", "power":15, "healing":41, "value":400 },
+  { "id":"grimorio_ojo_nocturno", "label":"Grimorio del Ojo Nocturno", "collection":"eclipse", "tier":3, "cls":"clerigo", "slot":"offhand", "kind":"book", "starter":"libro_inicial", "healing":5, "value":280 },
+  { "id":"ballesta_alas_eclipse", "label":"Ballesta Alas del Eclipse", "collection":"eclipse", "tier":3, "cls":"explorador", "slot":"weapon", "kind":"crossbow", "starter":"ballesta_inicial", "power":14, "value":440 }
+]

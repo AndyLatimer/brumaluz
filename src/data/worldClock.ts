@@ -1,4 +1,4 @@
-// Hora del mundo. La marca el servidor (public.world_clock en supabase/server.sql) y llega con cada
+// Hora del mundo. La marca el servidor (public.world_clock en supabase/server/) y llega con cada
 // sincronización; entre una y otra el cliente la deja correr sola. Sin conexión (pruebas, modo local) se
 // calcula con la misma fórmula y el reloj del ordenador, así que coincide con la del servidor.
 

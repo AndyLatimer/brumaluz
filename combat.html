@@ -14,7 +14,25 @@
         <option value="picaro">Pícaro</option><option value="clerigo">Clérigo</option>
         <option value="explorador">Explorador</option>
       </select></label>
+      <label>Colección <select id="weapon-collection">
+        <option value="progression">Progresión existente</option>
+        <option value="alba">Guardia del Alba · Modelos originales</option>
+        <option value="eclipse">Reliquias del Eclipse · Modelos originales</option>
+        <option value="roble">Roble Errante · Modelos originales</option>
+        <option value="marea">Marea Real · Modelos originales</option>
+        <option value="forja">Forja Estelar · Modelos originales</option>
+      </select></label>
+      <label>Equipo <select id="weapon-tier">
+          <option value="0">Común · Gris · Principiante</option>
+          <option value="1">Poco común · Verde</option>
+          <option value="2">Raro · Azul</option>
+          <option value="3">Épico · Morado</option>
+          <option value="4">Legendario · Dorado</option>
+          <option value="5">Artefacto · Naranja especial</option>
+      </select></label>
       <p id="equipment"></p>
+      <label><input id="class-outfit" type="checkbox" checked> Traje de clase a juego</label>
+      <p id="weapon-stats"></p>
       <canvas id="combat-scene" aria-label="Escena de combate 3D"></canvas>
       <section class="arena">
         <article><h2>Tu personaje</h2><label>Vida <meter id="health"></meter><output id="health-value"></output></label>

@@ -1,4 +1,8 @@
-import { COMBAT_KITS, REGENERATION, regenerateCombat, resolveCombat, starterEquipment, type CombatState, type CombatCommand } from '../data/combat';
+import { COMBAT_KITS, REGENERATION, regenerateCombat, resolveCombat, basicAttackDamage, skillPower, type CombatState, type CombatCommand } from '../data/combat';
+import { WEAPONS, guardedDamage } from '../data/weapons';
+import { ORIGINAL_WEAPONS } from '../data/uniqueWeapons';
+import { OUTFITS } from '../data/outfits';
+import { emptyEquipment } from '../data/inventory';
 import { defaultChar, type ClassId } from '../data/data';
 import { vitalsOf } from '../data/stats';
 import { itemLabel } from '../data/items';
@@ -8,6 +12,9 @@ import { createCombatScene } from './combatScene';
 if (!import.meta.env.DEV) throw new Error('El banco de combate solo está disponible en desarrollo.');
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const classes = element<HTMLSelectElement>('class');
+const tiers = element<HTMLSelectElement>('weapon-tier');
+const collections = element<HTMLSelectElement>('weapon-collection');
+let equipment = emptyEquipment();
 const status = element<HTMLParagraphElement>('status');
 const attack = element<HTMLButtonElement>('attack');
 const skill = element<HTMLButtonElement>('skill');
@@ -43,14 +50,25 @@ function reset() {
   const value = classes.value;
   if (!(value in COMBAT_KITS)) throw new Error('Clase no válida.');
   cls = value as ClassId;
+  equipment = emptyEquipment();
+  const collection = collections.value;
+  const originals = new Set(ORIGINAL_WEAPONS.map(item => item.id));
+  const collectionIds = new Set(ORIGINAL_WEAPONS.filter(item => item.collection === collection).map(item => item.id));
+  for (const [id, weapon] of Object.entries(WEAPONS)) {
+    if (weapon.cls === cls && weapon.tier === Number(tiers.value) && (collection === 'progression' ? !originals.has(id) : collectionIds.has(id))) equipment[weapon.slot] = { id, count: 1, bound: weapon.tier === 0 };
+  }
   const vitals = vitalsOf({ ...defaultChar(), cls });
+  const outfitCollection = collection === 'progression' ? ['','artesano','ambar','violeta','aurora','fuego'][Number(tiers.value)] : collection;
+  const outfit = Object.values(OUTFITS).find(item => item.cls === cls && item.collection === outfitCollection);
+  if (element<HTMLInputElement>('class-outfit').checked && outfit) equipment.chest = { id: outfit.id, count: 1 };
   state = { health:vitals.maxHealth, maxHealth:vitals.maxHealth, resource:vitals.maxResource, enemyHealth:100, nextAttack:0, nextSkill:0 };
   selected=false;automatic=false;approaching=false;distance=10;nextEnemy=now()+2;
   engaged=false;
   lastCombat=-Infinity;
-  scene.reset(cls);
+  scene.reset(cls, equipment);
   log.replaceChildren();
-  element('equipment').textContent = Object.values(starterEquipment(cls)).flatMap(item=>item?[itemLabel(item.id)]:[]).join(' · ');
+  element('equipment').textContent = Object.values(equipment).flatMap(item=>item?[itemLabel(item.id)]:[]).join(' · ');
+  element('weapon-stats').textContent = `Daño base: ${basicAttackDamage(cls,1,equipment)} · ${COMBAT_KITS[cls].skill.label}: ${skillPower(cls,1,equipment)}${cls==='picaro'?' × 2':''} · Guardia: ${8-guardedDamage(cls,equipment,8)}`;
   message('Selecciona al rival para empezar.');
   render();
 }
@@ -65,7 +83,7 @@ function command(action: CombatCommand) {
   }
   if (!COMBAT_KITS[cls].skill.healing && !selected) { message('Selecciona un objetivo.'); return; }
   try {
-    const result=resolveCombat(cls,state,action,now(),distance);
+    const result=resolveCombat(cls,state,action,now(),distance,1,1,equipment);
     state=result.state;
     lastCombat=now();
     scene.attack(cls,true,result.healing>0,now());
@@ -92,6 +110,7 @@ function render() {
   element('distance').textContent=`Distancia: ${distance.toFixed(1)} m · Alcance: ${COMBAT_KITS[cls].range} m${approaching?' · Acercándote':''}`;
 }
 target.onclick=()=>{selected=!selected;if(!selected){automatic=false;approaching=false;}render();};
+element<HTMLInputElement>('class-outfit').onchange=reset;
 attack.onclick=()=>command('attack');
 skill.onclick=()=>command('skill');
 element('stop').onclick=()=>{automatic=false;approaching=false;message('Ataque detenido.');};
@@ -106,6 +125,12 @@ respawn.onclick=()=>{
   message('Reaparición simulada: vida completa, sin recompensa.');render();
 };
 classes.onchange=reset;
+tiers.onchange=reset;
+collections.onchange=()=>{
+  tiers.disabled=collections.value!=='progression';
+  if(tiers.disabled)tiers.value=String(ORIGINAL_WEAPONS.find(item=>item.collection===collections.value)?.weapon.tier??2);
+  reset();
+};
 window.addEventListener('keydown',event=>{
   if(event.repeat||event.target instanceof HTMLSelectElement||event.target instanceof HTMLInputElement)return;
   if(event.code==='Digit1'||event.code==='Digit2'){event.preventDefault();command(event.code==='Digit1'?'attack':'skill');}
@@ -119,11 +144,12 @@ const timer=window.setInterval(()=>{
   approaching=automatic&&distance>COMBAT_KITS[cls].range;
   if(automatic&&state.health>0&&state.enemyHealth>0&&distance<=COMBAT_KITS[cls].range&&time>=state.nextAttack){
     approaching=false;
-    const result=resolveCombat(cls,state,'attack',time,distance);
+    const result=resolveCombat(cls,state,'attack',time,distance,1,1,equipment);
     state=result.state;lastCombat=time;scene.attack(cls,false,false,time);message(`Ataque: ${result.damage.join(' + ')} de daño.`);
   }
   if(state.health>0&&state.enemyHealth>0&&distance<=2&&time>=nextEnemy){
-    nextEnemy=time+2;state.health=Math.max(0,state.health-12);lastCombat=time;scene.hit(time);message('El rival causa 12 de daño.');
+    const incoming=guardedDamage(cls,equipment,12);
+    nextEnemy=time+2;state.health=Math.max(0,state.health-incoming);lastCombat=time;scene.hit(time);message(`El rival causa ${incoming} de daño.`);
     if(state.health===0)scene.die();
   }
   if(state.health===0&&automatic){automatic=false;approaching=false;message('Has caído. Puedes reaparecer.');}

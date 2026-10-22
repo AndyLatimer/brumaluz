@@ -788,6 +788,54 @@ test('publishing preserves multiple maps, generates SQL and rejects broken arriv
   for (const id of ['ciudad_test', 'ciudad_rota', 'zona_test']) await rm(join(directory, `${id}.json`));
 });
 
+test('improved bridge variants publish, load in the library and work with existing map IDs', { timeout: 120000 }, async () => {
+  const map = maps.newMap('puentes_test', 'Puentes', { width: 12, depth: 12, cell: 1 });
+  const ids = ['medieval-builder/objects/bridge', 'medieval-builder/objects/bridge_roofed'];
+  map.objects = ids.map((asset, i) => ({ id: `puente_${i}`, asset, layer: map.layers[0].id, position: [i * 3, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], collision: 'auto' }));
+  let page;
+  try {
+    assert.equal((await put(map, { 'If-None-Match': '*' })).status, 201);
+    const response = await fetch(api('__published'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: map.id }) });
+    assert.equal(response.status, 200);
+    const meta = (await response.json()).published;
+    const module = await readFile(join(publishDirectory, 'maps', `${map.id}.ts`), 'utf8');
+    assert.match(module, /models\/props\/medieval-bridge\.glb\?url/);
+    assert.match(module, /models\/props\/medieval-bridge_roofed\.glb\?url/);
+    const bytes = await Promise.all(['medieval-bridge.glb', 'medieval-bridge_roofed.glb'].map(name => readFile(join(process.cwd(), 'src/assets/models/props', name))));
+    assert.equal(meta.bytes, bytes.reduce((sum, data) => sum + data.length, 0));
+    page = await browser.newPage();
+    await page.goto(`${url}/render.html`);
+    const result = await page.evaluate(async ({ map, ids }) => {
+      const { loadLibraryAsset } = await import('/src/art/library.ts');
+      const { buildMapCity } = await import('/src/world/mapCity.ts');
+      const THREE = await import('/node_modules/three/build/three.module.js');
+      const urls = [], textures = [];
+      for (const id of ids) {
+        const { gltf, url } = await loadLibraryAsset(id);
+        urls.push(url);
+        gltf.scene.traverse(part => {
+          if (!part.isMesh) return;
+          for (const material of Array.isArray(part.material) ? part.material : [part.material]) {
+            if (material.normalMap) textures.push(material.normalMap.image.width);
+          }
+        });
+      }
+      // Incluso un mapa publicado antes de la mejora resuelve los mismos IDs a las variantes.
+      const city = await buildMapCity(map, {}, new THREE.Scene());
+      let detailed = false;
+      city.root.traverse(part => { if (part.isMesh && part.material?.normalMap) detailed = true; });
+      return { urls, textures, detailed };
+    }, { map, ids });
+    assert.ok(result.urls.every(url => url.includes('/models/props/medieval-bridge')));
+    assert.ok(result.textures.length >= 2 && result.textures.every(width => width === 256));
+    assert.equal(result.detailed, true);
+  } finally {
+    await page?.close();
+    await fetch(`${api('__published')}/${map.id}`, { method: 'DELETE' });
+    await rm(join(directory, `${map.id}.json`), { force: true });
+  }
+});
+
 test('the game adapter turns the Brumaluz template into a playable capital', { timeout: 240000 }, async () => {
   const page = await browser.newPage();
   const errors = [];

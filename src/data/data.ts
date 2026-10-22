@@ -51,6 +51,7 @@ const noBonuses = (): AttributeBonuses => ({
 });
 
 export interface CharData {
+  introSeen: boolean;
   shadowQuest: ShadowQuest | null;
   isbertoPosition: { x: number; z: number } | null;
   coinBags: string[]; // bolsas de pelines ya recogidas (ver coinBags.ts)
@@ -220,7 +221,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [],
+    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [],
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
@@ -242,6 +243,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.resource = Number.isFinite(Number(out.resource)) ? Math.max(Math.round(Number(out.resource)), -1) : -1;
   out.foodBuff = parseFoodBuff(d.foodBuff);
   out.welcome = parseWelcome(d.welcome);
+  out.introSeen = d.introSeen === true;
   out.shadowQuest = parseShadowQuest(d.shadowQuest);
   const isberto = d.isbertoPosition as { x?: unknown; z?: unknown } | null | undefined;
   if (isberto != null && (typeof isberto.x !== 'number' || !Number.isFinite(isberto.x) || typeof isberto.z !== 'number' || !Number.isFinite(isberto.z)))
@@ -322,7 +324,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [],
+    welcome: null, introSeen: false, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [],
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],

@@ -1,0 +1,17 @@
+{
+  "tiers": [
+    { "tier": 3, "suffix": "del Sello Violeta", "power": 4, "guard": 4, "wandHealing": 41, "bookHealing": 5, "priceMultiplier": 4, "gem": "b478e6", "metal": "becfdf", "dark": "413955" },
+    { "tier": 4, "suffix": "de la Aurora", "power": 7, "guard": 5, "wandHealing": 48, "bookHealing": 6, "priceMultiplier": 12, "gem": "f1d273", "metal": "e2bd69", "dark": "4e4540" },
+    { "tier": 5, "suffix": "del Fuego Primigenio", "power": 11, "guard": 6, "wandHealing": 57, "bookHealing": 7, "priceMultiplier": 36, "gem": "ff983f", "metal": "f2d3a3", "dark": "423b48" }
+  ],
+  "families": [
+    { "stem": "espada_runica", "label": "Espada", "reference": "espada_cobre_t1", "starter": "espada_inicial", "cls": "guerrero", "slot": "weapon", "kind": "sword", "power": 10, "value": 100 },
+    { "stem": "escudo_runico", "label": "Escudo", "reference": "escudo_roble_t1", "starter": "escudo_inicial", "cls": "guerrero", "slot": "offhand", "kind": "shield", "power": 0, "value": 70 },
+    { "stem": "baston_runico", "label": "Bastón", "reference": "baston_ambar_t1", "starter": "baston_inicial", "cls": "mago", "slot": "weapon", "kind": "staff", "power": 10, "value": 110 },
+    { "stem": "daga_runica", "label": "Daga", "reference": "daga_cazador_t1", "starter": "daga_inicial", "cls": "picaro", "slot": "weapon", "kind": "dagger", "power": 8, "value": 90 },
+    { "stem": "daga_secundaria_runica", "label": "Daga secundaria", "reference": "daga_secundaria_cazador_t1", "starter": "daga_secundaria_inicial", "cls": "picaro", "slot": "offhand", "kind": "dagger", "power": 0, "value": 60 },
+    { "stem": "varita_runica", "label": "Varita", "reference": "varita_ambar_t1", "starter": "varita_inicial", "cls": "clerigo", "slot": "weapon", "kind": "wand", "power": 11, "value": 100 },
+    { "stem": "grimorio_runico", "label": "Grimorio", "reference": "grimorio_verde_t1", "starter": "libro_inicial", "cls": "clerigo", "slot": "offhand", "kind": "book", "power": 0, "value": 70 },
+    { "stem": "ballesta_runica", "label": "Ballesta", "reference": "ballesta_roble_t1", "starter": "ballesta_inicial", "cls": "explorador", "slot": "weapon", "kind": "crossbow", "power": 10, "value": 110 }
+  ]
+}

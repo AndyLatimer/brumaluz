@@ -1,0 +1,212 @@
+
+#account-backdrop { display: none; position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+body.auth-visible #account-backdrop,
+body.characters-visible #account-backdrop { display: block; }
+body.auth-visible #account-backdrop {
+  background:
+    radial-gradient(ellipse at 50% 105%, rgba(75,93,128,.45), transparent 52%),
+    radial-gradient(ellipse at 50% 0%, #253c5b 0, #17263f 45%, #111a2c 100%);
+}
+body.characters-visible #account-backdrop {
+  background:
+    radial-gradient(ellipse at 52% 52%, rgba(255,205,132,.68), transparent 30%),
+    linear-gradient(180deg, #edaa83 0%, #e9bd91 44%, #9b8064 72%, #40503d 100%);
+}
+.account-moon {
+  position: absolute; top: 12%; left: 50%; width: clamp(90px, 13vw, 180px); aspect-ratio: 1;
+  border-radius: 50%; transform: translateX(-50%);
+  background: radial-gradient(circle at 38% 35%, #fff3d0, #f7ce8d 62%, #e8ab6c);
+  box-shadow: 0 0 45px rgba(255,221,165,.48), 0 0 150px rgba(255,215,159,.22);
+}
+body.characters-visible .account-moon { top: 8%; left: 76%; opacity: .82; }
+.account-mountains {
+  position: absolute; inset: auto 0 0; height: 53%;
+  background: linear-gradient(150deg, #3a4a65, #222d43 68%);
+  clip-path: polygon(0 63%, 13% 25%, 25% 64%, 43% 5%, 61% 63%, 76% 30%, 100% 69%, 100% 100%, 0 100%);
+}
+.account-mountains::after {
+  content: ''; position: absolute; inset: 22% 0 0;
+  background: linear-gradient(155deg, #293951, #172337 72%);
+  clip-path: polygon(0 50%, 19% 14%, 36% 54%, 57% 20%, 78% 61%, 100% 31%, 100% 100%, 0 100%);
+}
+body.characters-visible .account-mountains { background: linear-gradient(150deg, #a87565, #5d6250 70%); }
+body.characters-visible .account-mountains::after { background: linear-gradient(155deg, #806452, #3c493e 72%); }
+.account-town { position: absolute; inset: auto 0 0; height: 25%; }
+.account-town::before {
+  content: ''; position: absolute; inset: 45% 0 0;
+  background: linear-gradient(180deg, #171f2d, #101722);
+}
+body.characters-visible .account-town::before { background: linear-gradient(180deg, #51453b, #282a28); }
+.account-tower, .account-house {
+  position: absolute; bottom: 0; display: block; background: linear-gradient(90deg, #222a37, #374052 55%, #202838);
+}
+.account-tower { left: 50%; width: clamp(52px, 7vw, 90px); height: 94%; transform: translateX(-50%); }
+.account-tower::before {
+  content: ''; position: absolute; top: -27%; left: -19%; width: 138%; height: 34%;
+  background: #202938; clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.account-tower::after {
+  content: ''; position: absolute; left: 33%; top: 32%; width: 34%; height: 26%;
+  border: 3px solid #111b2a; border-radius: 50% 50% 2px 2px; background: #dba965;
+  box-shadow: 0 47px 0 -2px #dba965;
+}
+.account-house { width: clamp(92px, 12vw, 160px); height: 48%; }
+.account-house::before {
+  content: ''; position: absolute; top: -40%; left: -10%; width: 120%; height: 50%;
+  background: #262d38; clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.account-house::after {
+  content: ''; position: absolute; left: 40%; top: 38%; width: 20%; height: 42%;
+  background: #dca45f; box-shadow: -34px 0 0 -4px #dca45f, 34px 0 0 -4px #dca45f;
+}
+.account-house-one { left: 8%; height: 42%; }
+.account-house-two { right: 8%; height: 46%; }
+.account-house-three { left: 27%; height: 28%; width: clamp(72px, 9vw, 120px); }
+body.characters-visible .account-tower,
+body.characters-visible .account-house { background: linear-gradient(90deg, #4b4038, #71604d 55%, #463c36); }
+body.characters-visible .account-tower::before,
+body.characters-visible .account-house::before { background: #493c35; }
+body.daytime.auth-visible #account-backdrop {
+  background:
+    radial-gradient(ellipse at 52% 52%, rgba(255,205,132,.68), transparent 30%),
+    linear-gradient(180deg, #edaa83 0%, #e9bd91 44%, #9b8064 72%, #40503d 100%);
+}
+body.daytime.auth-visible .account-moon { top: 8%; left: 76%; opacity: .82; }
+body.daytime.auth-visible .account-mountains { background: linear-gradient(150deg, #a87565, #5d6250 70%); }
+body.daytime.auth-visible .account-mountains::after { background: linear-gradient(155deg, #806452, #3c493e 72%); }
+body.daytime.auth-visible .account-town::before { background: linear-gradient(180deg, #51453b, #282a28); }
+body.daytime.auth-visible .account-tower,
+body.daytime.auth-visible .account-house { background: linear-gradient(90deg, #4b4038, #71604d 55%, #463c36); }
+body.daytime.auth-visible .account-tower::before,
+body.daytime.auth-visible .account-house::before { background: #493c35; }
+body.characters-visible:not(.daytime) #account-backdrop {
+  background:
+    radial-gradient(ellipse at 50% 105%, rgba(75,93,128,.45), transparent 52%),
+    radial-gradient(ellipse at 50% 0%, #253c5b 0, #17263f 45%, #111a2c 100%);
+}
+body.characters-visible:not(.daytime) .account-moon { top: 12%; left: 50%; opacity: 1; }
+body.characters-visible:not(.daytime) .account-mountains { background: linear-gradient(150deg, #3a4a65, #222d43 68%); }
+body.characters-visible:not(.daytime) .account-mountains::after { background: linear-gradient(155deg, #293951, #172337 72%); }
+body.characters-visible:not(.daytime) .account-town::before { background: linear-gradient(180deg, #171f2d, #101722); }
+body.characters-visible:not(.daytime) .account-tower,
+body.characters-visible:not(.daytime) .account-house { background: linear-gradient(90deg, #222a37, #374052 55%, #202838); }
+body.characters-visible:not(.daytime) .account-tower::before,
+body.characters-visible:not(.daytime) .account-house::before { background: #202938; }
+
+#account-gate {
+  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px;
+  overflow-y: auto; background: transparent;
+}
+.account-card {
+  position: relative; width: min(460px, 100%); max-height: calc(100vh - 48px); overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; padding: 26px 30px;
+  background:
+    linear-gradient(145deg, rgba(255,250,235,.98), rgba(231,211,172,.97)),
+    var(--parch);
+  backdrop-filter: blur(8px);
+}
+#auth-screen { width: min(440px, 100%); overflow-y: visible; padding-top: 22px; padding-bottom: 22px; }
+#character-screen { width: min(780px, 100%); overflow-y: visible; padding: 32px 38px; }
+.account-brand { position: relative; display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 14px; color: #7c592e; font: 700 13px 'Cinzel', serif; letter-spacing: .15em; text-transform: uppercase; }
+.account-crest { color: #bd8739; font-size: 21px; text-shadow: 0 0 12px rgba(227,180,90,.55); }
+.sign-out-icon {
+  grid-column: 2; grid-row: 1 / span 2; display: grid; place-items: center; width: 32px; height: 32px;
+  border: 1px solid rgba(156,111,42,.55); border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255,246,222,.9), rgba(220,194,148,.78)); color: #79532d;
+  box-shadow: 0 3px 9px rgba(57,37,20,.12), inset 0 1px rgba(255,255,255,.8); cursor: pointer;
+  transition: transform .15s, color .15s, background .15s, box-shadow .15s;
+}
+.sign-out-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.sign-out-icon:hover { transform: scale(1.08); background: linear-gradient(145deg, #fff0cc, #e5bf78); color: #6b2e23; box-shadow: 0 4px 12px rgba(57,37,20,.2); }
+.sign-out-icon:focus-visible { outline: 2px solid #a17438; outline-offset: 3px; }
+.language-switch { display: flex; gap: 5px; }
+.language-switch button { display: grid; place-items: center; width: 42px; height: 32px; padding: 4px 7px; border: 1px solid rgba(156,111,42,.5); border-radius: 8px; background: rgba(255,246,222,.9); cursor: pointer; transition: transform .12s, background .12s, box-shadow .12s; }
+.language-switch svg { display: block; width: 26px; height: 18px; overflow: hidden; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.38); }
+.language-switch button:hover { transform: translateY(-1px); background: #fff0cc; }
+.language-switch button[aria-pressed="true"] { background: linear-gradient(#ffe9b0, #e3b45a); box-shadow: 0 0 0 2px rgba(161,116,56,.35); }
+.language-switch button:focus-visible { outline: 2px solid #a17438; outline-offset: 2px; }
+#account-language-switch { display: none; }
+body.auth-visible #account-language-switch, body.characters-visible #account-language-switch {
+  position: fixed; top: 18px; right: 18px; z-index: 40; display: flex;
+}
+#account-details { display: none; }
+body.characters-visible #account-details {
+  position: fixed; top: 18px; left: 18px; z-index: 40; display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px; align-items: center; column-gap: 10px; row-gap: 2px;
+  width: max-content; max-width: min(350px, calc(100vw - 150px)); padding: 8px 12px;
+  border: 1px solid rgba(156,111,42,.5); border-radius: 9px;
+  background: rgba(255,246,222,.9); box-shadow: 0 3px 10px rgba(57,37,20,.12);
+  backdrop-filter: blur(8px);
+}
+#account-details p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#account-username { color: #79532d; font: 700 14px 'Cinzel', serif; }
+#account-email { color: var(--ink-soft); font-size: 13px; }
+.account-card h2 { margin: 0; color: var(--wood-2); font: 700 25px 'Cinzel Decorative', serif; text-align: center; }
+.account-intro { margin: 8px 0 14px; color: var(--ink-soft); font-size: 16px; text-align: center; }
+.account-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.account-heading h2 { text-align: left; font-size: 29px; }
+.character-count { display: inline-block; margin-left: 4px; color: #a17438; font: 700 15px 'Cinzel', serif; white-space: nowrap; vertical-align: middle; }
+.account-heading .account-intro { margin: 5px 0 0; text-align: left; }
+.account-eyebrow { margin: 0 0 4px; color: #a17438; font: 700 11px 'Cinzel', serif; letter-spacing: .16em; text-transform: uppercase; }
+.auth-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 12px; padding: 4px; border: 1px solid #b9945a; border-radius: 9px; background: rgba(156,111,42,.12); }
+.auth-switch button { border: 0; border-radius: 6px; padding: 9px; background: transparent; color: var(--ink-soft); font: 700 13px 'Cinzel', serif; cursor: pointer; }
+.auth-switch button.active { color: var(--wood-3); background: linear-gradient(#ffe7a8, #e3b45a); }
+#auth-form { display: grid; gap: 8px; }
+#recovery-request-form, #password-update-form { display: grid; gap: 8px; }
+#auth-form label, .recovery-form label { margin-top: 5px; font: 700 12px 'Cinzel', serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+#auth-form input, .recovery-form input { width: 100%; border: 2px solid #b9945a; border-radius: 8px; padding: 11px 12px; background: #fffaf0; color: var(--ink); font: 16px 'Alegreya', serif; user-select: text; }
+#auth-form input:focus, .recovery-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+#auth-form #remember-email-field { display: flex; align-items: center; gap: 8px; margin-top: 3px; font: 15px 'Alegreya', serif; letter-spacing: 0; text-transform: none; cursor: pointer; }
+#auth-form #auth-remember { width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--gold-lo); cursor: pointer; }
+.text-button { justify-self: center; appearance: none; border: 0; padding: 7px 10px; background: transparent; color: #76542f; font: 700 12px 'Cinzel', serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.text-button:hover { color: #9b402c; }
+.text-button:focus-visible { outline: 2px solid #a17438; outline-offset: 2px; border-radius: 4px; }
+.account-message { min-height: 1.4em; margin: 8px 0; color: #356b3b; font-size: 15px; }
+.account-message.error { color: #9f3429; }
+#auth-message:empty, #character-message:empty { display: none; }
+.account-submit { width: 100%; margin-top: 8px; }
+.btn:disabled { cursor: default; opacity: .55; transform: none; filter: none; }
+.character-limit-message { margin: 0 0 8px; font-size: 14px; }
+.character-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-height: min(48vh, 380px); margin: 18px 0; overflow-y: auto; }
+.character-card {
+  position: relative; min-height: 196px; overflow: hidden; padding: 5px;
+  border: 1px solid rgba(156,111,42,.8); border-radius: 14px;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(255,236,180,.55), transparent 55%), linear-gradient(145deg, #fffdf6, #ecd9b0);
+  box-shadow: 0 6px 18px rgba(57,37,20,.18), inset 0 1px rgba(255,255,255,.95), inset 0 0 0 3px rgba(255,255,255,.25);
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.character-card:hover, .character-card:focus-within { border-color: #c9983f; box-shadow: 0 6px 18px rgba(57,37,20,.24), inset 0 1px rgba(255,255,255,.95), inset 0 0 0 3px rgba(255,255,255,.25); }
+.character-card::after { content: ''; position: absolute; z-index: 3; inset: 5px; border: 1px solid rgba(201,152,63,.35); border-radius: 10px; pointer-events: none; }
+.character-info { position: relative; display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: stretch; min-width: 0; overflow: hidden; border-radius: 9px; }
+.character-info::before { content: ''; position: absolute; left: 0; top: 0; z-index: 1; width: 104px; height: 100%; box-shadow: inset 0 0 22px rgba(120,70,20,.38), inset -2px 0 0 rgba(201,152,63,.7); pointer-events: none; }
+.character-portrait { display: block; width: 104px; height: 100%; min-height: 196px; border: 0; border-radius: 0; background: linear-gradient(160deg, #f5dfaa, #c69c5c); object-fit: cover; }
+.character-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; padding: 13px 13px 64px 16px; }
+.character-class-icon { position: absolute; top: 9px; right: 10px; z-index: 2; display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; border: 2px solid #e3b45a; background: radial-gradient(circle at 35% 28%, #7a5136, #2a190e 78%); box-shadow: 0 0 0 3px rgba(255,236,180,.55), 0 3px 8px rgba(57,37,20,.4), inset 0 1px rgba(255,255,255,.25); transition: transform .18s ease; }
+.character-card:hover .character-class-icon { transform: rotate(-6deg) scale(1.06); }
+.character-class-icon .class-icon { width: 58px; height: 58px; }
+.character-actions { position: absolute; right: 14px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.character-actions .btn.ghost, .character-actions .btn.gold { padding: 8px 12px; font-size: 11px; }
+.character-actions .btn { box-shadow: 0 2px 5px rgba(57,37,20,.14); }
+.character-card strong { display: block; max-width: calc(100% - 82px); overflow-wrap: anywhere; font: 700 18px 'Cinzel', serif; color: var(--wood-2); letter-spacing: .02em; }
+.character-card strong::after { content: ''; display: block; width: 38px; height: 2px; margin-top: 5px; border-radius: 2px; background: linear-gradient(90deg, #c9983f, transparent); }
+.character-card .character-detail { display: block; margin-top: 6px; color: var(--ink-soft); font-size: 14px; font-style: italic; }
+.character-card .character-level { display: inline-block; margin-top: 7px; padding: 2px 9px; border-radius: 999px; background: linear-gradient(#f3d98f, #d9aa4c); border: 1px solid rgba(138,90,28,.6); color: #5a3a10; font: 700 11px 'Cinzel', serif; letter-spacing: .04em; box-shadow: inset 0 1px rgba(255,255,255,.55); }
+.character-card .character-location { display: inline-flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%; margin-top: 7px; padding: 5px 10px; overflow-wrap: anywhere; border: 1px solid rgba(156,111,42,.42); border-radius: 999px; background: linear-gradient(135deg, rgba(255,250,240,.95), rgba(237,220,185,.72)); box-shadow: inset 0 1px rgba(255,255,255,.85), 0 1px 3px rgba(57,37,20,.08); color: #684b2c; font: 700 12px 'Cinzel', serif; line-height: 1.25; }
+.character-location svg { flex: 0 0 15px; width: 15px; height: 15px; fill: none; stroke: #9b642b; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.btn.danger { appearance: none; border: 1px solid #7d241c; border-radius: 8px; padding: 8px 12px; background: linear-gradient(#bd5145, #8b3028); color: #fff2df; box-shadow: 0 3px 8px rgba(67,20,16,.28); font: 700 11px 'Cinzel', serif; cursor: pointer; }
+.btn.danger:hover:not(:disabled) { filter: brightness(1.1); }
+.btn.danger:disabled { opacity: .45; cursor: default; }
+.character-list > .account-intro { grid-column: 1 / -1; padding: 22px 12px; border: 1px dashed #b9945a; border-radius: 10px; }
+.dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(13,12,18,.7); backdrop-filter: blur(5px); }
+.delete-dialog { position: relative; width: min(440px, 100%); padding: 26px; }
+.delete-dialog h2 { margin: 0; color: #7d3028; font: 700 23px 'Cinzel Decorative', serif; }
+.delete-dialog .account-eyebrow { color: #a13c31; }
+.delete-dialog .account-intro { margin: 10px 0 16px; text-align: left; }
+.delete-dialog label { display: block; margin-bottom: 7px; color: var(--ink-soft); font: 700 12px 'Cinzel', serif; }
+.delete-dialog input { width: 100%; border: 2px solid #b9945a; border-radius: 8px; padding: 11px 12px; background: #fffaf0; color: var(--ink); font: 16px 'Alegreya', serif; user-select: text; }
+.delete-dialog input:focus { outline: 2px solid #bd5145; outline-offset: 1px; }
+.delete-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; margin-top: 12px; }
+.delete-dialog-actions .btn.ghost { padding: 8px 12px; font-size: 11px; }
+.delete-dialog .account-message:empty { display: none; }
+
+/* ---------- Marco de madera con remates dorados ---------- */

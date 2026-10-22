@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import pg from 'pg';
+import { serverSql } from './server-sql.mjs';
 
 if(process.argv.includes('--configured')) for(const file of ['.env.local','.env']) {
   if(!existsSync(file)) continue;
@@ -49,7 +50,7 @@ test('private atomic trades (all schema, fixtures and mutations roll back)',{tim
   try {
     await db.query('begin');
     await db.query("set local lock_timeout='5s';set local statement_timeout='15s'");
-    await db.query(readFileSync(new URL('../supabase/server.sql',import.meta.url),'utf8'));
+    await db.query(serverSql());
     for(let i=0;i<3;i++) {
       await admin('insert into auth.users(id,raw_user_meta_data) values($1,$2)',[users[i],{username:`trade_${users[i].replaceAll('-','').slice(0,12)}`}]);
       await admin('insert into public.characters(id,user_id,name,data) values($1,$2,$3,$4)',[chars[i],users[i],base(i).name,base(i)]);

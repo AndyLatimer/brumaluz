@@ -1,0 +1,618 @@
+[
+  {
+    "id": "espada_inicial",
+    "sourceFaces": 300,
+    "finishedFaces": 500,
+    "fittings": 10,
+    "model": "tier0/espada_inicial.glb"
+  },
+  {
+    "id": "escudo_inicial",
+    "sourceFaces": 262,
+    "finishedFaces": 754,
+    "fittings": 24,
+    "model": "tier0/escudo_inicial.glb"
+  },
+  {
+    "id": "baston_inicial",
+    "sourceFaces": 440,
+    "finishedFaces": 600,
+    "fittings": 8,
+    "model": "tier0/baston_inicial.glb"
+  },
+  {
+    "id": "daga_inicial",
+    "sourceFaces": 172,
+    "finishedFaces": 372,
+    "fittings": 10,
+    "model": "tier0/daga_inicial.glb"
+  },
+  {
+    "id": "daga_secundaria_inicial",
+    "sourceFaces": 172,
+    "finishedFaces": 372,
+    "fittings": 10,
+    "model": "tier0/daga_secundaria_inicial.glb"
+  },
+  {
+    "id": "varita_inicial",
+    "sourceFaces": 150,
+    "finishedFaces": 320,
+    "fittings": 8,
+    "model": "tier0/varita_inicial.glb"
+  },
+  {
+    "id": "libro_inicial",
+    "sourceFaces": 292,
+    "finishedFaces": 452,
+    "fittings": 8,
+    "model": "tier0/libro_inicial.glb"
+  },
+  {
+    "id": "ballesta_inicial",
+    "sourceFaces": 584,
+    "finishedFaces": 778,
+    "fittings": 8,
+    "model": "tier0/ballesta_inicial.glb"
+  },
+  {
+    "id": "espada_cobre_t1",
+    "sourceFaces": 1312,
+    "finishedFaces": 1512,
+    "fittings": 10,
+    "model": "tier1/espada_cobre_t1.glb"
+  },
+  {
+    "id": "escudo_roble_t1",
+    "sourceFaces": 778,
+    "finishedFaces": 1270,
+    "fittings": 24,
+    "model": "tier1/escudo_roble_t1.glb"
+  },
+  {
+    "id": "baston_ambar_t1",
+    "sourceFaces": 1324,
+    "finishedFaces": 1484,
+    "fittings": 8,
+    "model": "tier1/baston_ambar_t1.glb"
+  },
+  {
+    "id": "daga_cazador_t1",
+    "sourceFaces": 836,
+    "finishedFaces": 1036,
+    "fittings": 10,
+    "model": "tier1/daga_cazador_t1.glb"
+  },
+  {
+    "id": "daga_secundaria_cazador_t1",
+    "sourceFaces": 836,
+    "finishedFaces": 1036,
+    "fittings": 10,
+    "model": "tier1/daga_secundaria_cazador_t1.glb"
+  },
+  {
+    "id": "varita_ambar_t1",
+    "sourceFaces": 698,
+    "finishedFaces": 868,
+    "fittings": 8,
+    "model": "tier1/varita_ambar_t1.glb"
+  },
+  {
+    "id": "grimorio_verde_t1",
+    "sourceFaces": 1559,
+    "finishedFaces": 1719,
+    "fittings": 8,
+    "model": "tier1/grimorio_verde_t1.glb"
+  },
+  {
+    "id": "ballesta_roble_t1",
+    "sourceFaces": 1192,
+    "finishedFaces": 1386,
+    "fittings": 8,
+    "model": "tier1/ballesta_roble_t1.glb"
+  },
+  {
+    "id": "espada_cobre_t2",
+    "sourceFaces": 3132,
+    "finishedFaces": 3332,
+    "fittings": 10,
+    "model": "tier2/espada_cobre_t2.glb"
+  },
+  {
+    "id": "escudo_roble_t2",
+    "sourceFaces": 1080,
+    "finishedFaces": 1574,
+    "fittings": 24,
+    "model": "tier2/escudo_roble_t2.glb"
+  },
+  {
+    "id": "baston_ambar_t2",
+    "sourceFaces": 4704,
+    "finishedFaces": 4864,
+    "fittings": 8,
+    "model": "tier2/baston_ambar_t2.glb"
+  },
+  {
+    "id": "daga_cazador_t2",
+    "sourceFaces": 2244,
+    "finishedFaces": 2444,
+    "fittings": 10,
+    "model": "tier2/daga_cazador_t2.glb"
+  },
+  {
+    "id": "daga_secundaria_cazador_t2",
+    "sourceFaces": 2244,
+    "finishedFaces": 2444,
+    "fittings": 10,
+    "model": "tier2/daga_secundaria_cazador_t2.glb"
+  },
+  {
+    "id": "varita_ambar_t2",
+    "sourceFaces": 3080,
+    "finishedFaces": 3244,
+    "fittings": 8,
+    "model": "tier2/varita_ambar_t2.glb"
+  },
+  {
+    "id": "grimorio_verde_t2",
+    "sourceFaces": 1200,
+    "finishedFaces": 1371,
+    "fittings": 8,
+    "model": "tier2/grimorio_verde_t2.glb"
+  },
+  {
+    "id": "ballesta_roble_t2",
+    "sourceFaces": 1048,
+    "finishedFaces": 1222,
+    "fittings": 8,
+    "model": "tier2/ballesta_roble_t2.glb"
+  },
+  {
+    "id": "espada_runica_t3",
+    "sourceFaces": 1624,
+    "finishedFaces": 1824,
+    "fittings": 10,
+    "model": "tier3/espada_runica_t3.glb"
+  },
+  {
+    "id": "escudo_runico_t3",
+    "sourceFaces": 1482,
+    "finishedFaces": 1974,
+    "fittings": 24,
+    "model": "tier3/escudo_runico_t3.glb"
+  },
+  {
+    "id": "baston_runico_t3",
+    "sourceFaces": 1856,
+    "finishedFaces": 2016,
+    "fittings": 8,
+    "model": "tier3/baston_runico_t3.glb"
+  },
+  {
+    "id": "daga_runica_t3",
+    "sourceFaces": 1240,
+    "finishedFaces": 1440,
+    "fittings": 10,
+    "model": "tier3/daga_runica_t3.glb"
+  },
+  {
+    "id": "daga_secundaria_runica_t3",
+    "sourceFaces": 1240,
+    "finishedFaces": 1440,
+    "fittings": 10,
+    "model": "tier3/daga_secundaria_runica_t3.glb"
+  },
+  {
+    "id": "varita_runica_t3",
+    "sourceFaces": 1190,
+    "finishedFaces": 1340,
+    "fittings": 7,
+    "model": "tier3/varita_runica_t3.glb"
+  },
+  {
+    "id": "grimorio_runico_t3",
+    "sourceFaces": 2451,
+    "finishedFaces": 2611,
+    "fittings": 8,
+    "model": "tier3/grimorio_runico_t3.glb"
+  },
+  {
+    "id": "ballesta_runica_t3",
+    "sourceFaces": 1496,
+    "finishedFaces": 1690,
+    "fittings": 8,
+    "model": "tier3/ballesta_runica_t3.glb"
+  },
+  {
+    "id": "espada_runica_t4",
+    "sourceFaces": 1644,
+    "finishedFaces": 1844,
+    "fittings": 10,
+    "model": "tier4/espada_runica_t4.glb"
+  },
+  {
+    "id": "escudo_runico_t4",
+    "sourceFaces": 1682,
+    "finishedFaces": 2174,
+    "fittings": 24,
+    "model": "tier4/escudo_runico_t4.glb"
+  },
+  {
+    "id": "baston_runico_t4",
+    "sourceFaces": 1936,
+    "finishedFaces": 2096,
+    "fittings": 8,
+    "model": "tier4/baston_runico_t4.glb"
+  },
+  {
+    "id": "daga_runica_t4",
+    "sourceFaces": 1252,
+    "finishedFaces": 1452,
+    "fittings": 10,
+    "model": "tier4/daga_runica_t4.glb"
+  },
+  {
+    "id": "daga_secundaria_runica_t4",
+    "sourceFaces": 1252,
+    "finishedFaces": 1452,
+    "fittings": 10,
+    "model": "tier4/daga_secundaria_runica_t4.glb"
+  },
+  {
+    "id": "varita_runica_t4",
+    "sourceFaces": 1210,
+    "finishedFaces": 1340,
+    "fittings": 6,
+    "model": "tier4/varita_runica_t4.glb"
+  },
+  {
+    "id": "grimorio_runico_t4",
+    "sourceFaces": 2491,
+    "finishedFaces": 2651,
+    "fittings": 8,
+    "model": "tier4/grimorio_runico_t4.glb"
+  },
+  {
+    "id": "ballesta_runica_t4",
+    "sourceFaces": 1592,
+    "finishedFaces": 1786,
+    "fittings": 8,
+    "model": "tier4/ballesta_runica_t4.glb"
+  },
+  {
+    "id": "espada_runica_t5",
+    "sourceFaces": 1652,
+    "finishedFaces": 1852,
+    "fittings": 10,
+    "model": "tier5/espada_runica_t5.glb"
+  },
+  {
+    "id": "escudo_runico_t5",
+    "sourceFaces": 1874,
+    "finishedFaces": 2366,
+    "fittings": 24,
+    "model": "tier5/escudo_runico_t5.glb"
+  },
+  {
+    "id": "baston_runico_t5",
+    "sourceFaces": 1956,
+    "finishedFaces": 2116,
+    "fittings": 8,
+    "model": "tier5/baston_runico_t5.glb"
+  },
+  {
+    "id": "daga_runica_t5",
+    "sourceFaces": 1256,
+    "finishedFaces": 1456,
+    "fittings": 10,
+    "model": "tier5/daga_runica_t5.glb"
+  },
+  {
+    "id": "daga_secundaria_runica_t5",
+    "sourceFaces": 1256,
+    "finishedFaces": 1456,
+    "fittings": 10,
+    "model": "tier5/daga_secundaria_runica_t5.glb"
+  },
+  {
+    "id": "varita_runica_t5",
+    "sourceFaces": 1210,
+    "finishedFaces": 1320,
+    "fittings": 5,
+    "model": "tier5/varita_runica_t5.glb"
+  },
+  {
+    "id": "grimorio_runico_t5",
+    "sourceFaces": 2723,
+    "finishedFaces": 2883,
+    "fittings": 8,
+    "model": "tier5/grimorio_runico_t5.glb"
+  },
+  {
+    "id": "ballesta_runica_t5",
+    "sourceFaces": 1688,
+    "finishedFaces": 1882,
+    "fittings": 8,
+    "model": "tier5/ballesta_runica_t5.glb"
+  },
+  {
+    "id": "sable_guardia_alba",
+    "sourceFaces": 1044,
+    "finishedFaces": 1244,
+    "fittings": 10,
+    "model": "unique/alba/sable_guardia_alba.glb"
+  },
+  {
+    "id": "escudo_bastion_alba",
+    "sourceFaces": 520,
+    "finishedFaces": 1000,
+    "fittings": 24,
+    "model": "unique/alba/escudo_bastion_alba.glb"
+  },
+  {
+    "id": "baston_raiz_celeste",
+    "sourceFaces": 1596,
+    "finishedFaces": 1716,
+    "fittings": 6,
+    "model": "unique/alba/baston_raiz_celeste.glb"
+  },
+  {
+    "id": "daga_pluma_azul",
+    "sourceFaces": 984,
+    "finishedFaces": 1184,
+    "fittings": 10,
+    "model": "unique/alba/daga_pluma_azul.glb"
+  },
+  {
+    "id": "daga_garra_alba",
+    "sourceFaces": 980,
+    "finishedFaces": 1180,
+    "fittings": 10,
+    "model": "unique/alba/daga_garra_alba.glb"
+  },
+  {
+    "id": "varita_lirio_celeste",
+    "sourceFaces": 1256,
+    "finishedFaces": 1416,
+    "fittings": 8,
+    "model": "unique/alba/varita_lirio_celeste.glb"
+  },
+  {
+    "id": "codice_guardian_alba",
+    "sourceFaces": 1060,
+    "finishedFaces": 1220,
+    "fittings": 8,
+    "model": "unique/alba/codice_guardian_alba.glb"
+  },
+  {
+    "id": "ballesta_martin_pescador",
+    "sourceFaces": 1320,
+    "finishedFaces": 1480,
+    "fittings": 8,
+    "model": "unique/alba/ballesta_martin_pescador.glb"
+  },
+  {
+    "id": "espada_filo_eclipse",
+    "sourceFaces": 1152,
+    "finishedFaces": 1352,
+    "fittings": 10,
+    "model": "unique/eclipse/espada_filo_eclipse.glb"
+  },
+  {
+    "id": "escudo_luna_hendida",
+    "sourceFaces": 688,
+    "finishedFaces": 1168,
+    "fittings": 24,
+    "model": "unique/eclipse/escudo_luna_hendida.glb"
+  },
+  {
+    "id": "baston_media_noche",
+    "sourceFaces": 1404,
+    "finishedFaces": 1524,
+    "fittings": 6,
+    "model": "unique/eclipse/baston_media_noche.glb"
+  },
+  {
+    "id": "daga_onda_violeta",
+    "sourceFaces": 988,
+    "finishedFaces": 1188,
+    "fittings": 10,
+    "model": "unique/eclipse/daga_onda_violeta.glb"
+  },
+  {
+    "id": "daga_luna_menguante",
+    "sourceFaces": 940,
+    "finishedFaces": 1140,
+    "fittings": 10,
+    "model": "unique/eclipse/daga_luna_menguante.glb"
+  },
+  {
+    "id": "varita_estrella_cautiva",
+    "sourceFaces": 1432,
+    "finishedFaces": 1592,
+    "fittings": 8,
+    "model": "unique/eclipse/varita_estrella_cautiva.glb"
+  },
+  {
+    "id": "grimorio_ojo_nocturno",
+    "sourceFaces": 1020,
+    "finishedFaces": 1180,
+    "fittings": 8,
+    "model": "unique/eclipse/grimorio_ojo_nocturno.glb"
+  },
+  {
+    "id": "ballesta_alas_eclipse",
+    "sourceFaces": 1672,
+    "finishedFaces": 1832,
+    "fittings": 8,
+    "model": "unique/eclipse/ballesta_alas_eclipse.glb"
+  },
+  {
+    "id": "espada_hoja_roble",
+    "sourceFaces": 964,
+    "finishedFaces": 1164,
+    "fittings": 10,
+    "model": "collections/roble/espada_hoja_roble.glb"
+  },
+  {
+    "id": "escudo_tronco_errante",
+    "sourceFaces": 916,
+    "finishedFaces": 1396,
+    "fittings": 24,
+    "model": "collections/roble/escudo_tronco_errante.glb"
+  },
+  {
+    "id": "baston_brote_viejo",
+    "sourceFaces": 1396,
+    "finishedFaces": 1556,
+    "fittings": 8,
+    "model": "collections/roble/baston_brote_viejo.glb"
+  },
+  {
+    "id": "daga_helecho",
+    "sourceFaces": 968,
+    "finishedFaces": 1168,
+    "fittings": 10,
+    "model": "collections/roble/daga_helecho.glb"
+  },
+  {
+    "id": "daga_espina_roble",
+    "sourceFaces": 960,
+    "finishedFaces": 1160,
+    "fittings": 10,
+    "model": "collections/roble/daga_espina_roble.glb"
+  },
+  {
+    "id": "varita_semilla_viva",
+    "sourceFaces": 1444,
+    "finishedFaces": 1564,
+    "fittings": 6,
+    "model": "collections/roble/varita_semilla_viva.glb"
+  },
+  {
+    "id": "herbario_corteza",
+    "sourceFaces": 888,
+    "finishedFaces": 1048,
+    "fittings": 8,
+    "model": "collections/roble/herbario_corteza.glb"
+  },
+  {
+    "id": "ballesta_tejo_errante",
+    "sourceFaces": 1352,
+    "finishedFaces": 1512,
+    "fittings": 8,
+    "model": "collections/roble/ballesta_tejo_errante.glb"
+  },
+  {
+    "id": "khopesh_marea_real",
+    "sourceFaces": 1012,
+    "finishedFaces": 1212,
+    "fittings": 10,
+    "model": "collections/marea/khopesh_marea_real.glb"
+  },
+  {
+    "id": "escudo_concha_regia",
+    "sourceFaces": 800,
+    "finishedFaces": 1280,
+    "fittings": 24,
+    "model": "collections/marea/escudo_concha_regia.glb"
+  },
+  {
+    "id": "baston_tridente_regio",
+    "sourceFaces": 1468,
+    "finishedFaces": 1628,
+    "fittings": 8,
+    "model": "collections/marea/baston_tridente_regio.glb"
+  },
+  {
+    "id": "daga_aleta_coral",
+    "sourceFaces": 948,
+    "finishedFaces": 1148,
+    "fittings": 10,
+    "model": "collections/marea/daga_aleta_coral.glb"
+  },
+  {
+    "id": "daga_tridente_perla",
+    "sourceFaces": 952,
+    "finishedFaces": 1152,
+    "fittings": 10,
+    "model": "collections/marea/daga_tridente_perla.glb"
+  },
+  {
+    "id": "varita_caracola_real",
+    "sourceFaces": 1620,
+    "finishedFaces": 1740,
+    "fittings": 6,
+    "model": "collections/marea/varita_caracola_real.glb"
+  },
+  {
+    "id": "codice_atlas_mareas",
+    "sourceFaces": 840,
+    "finishedFaces": 1000,
+    "fittings": 8,
+    "model": "collections/marea/codice_atlas_mareas.glb"
+  },
+  {
+    "id": "ballesta_abanico_regio",
+    "sourceFaces": 1460,
+    "finishedFaces": 1620,
+    "fittings": 8,
+    "model": "collections/marea/ballesta_abanico_regio.glb"
+  },
+  {
+    "id": "espada_segmento_estelar",
+    "sourceFaces": 1180,
+    "finishedFaces": 1380,
+    "fittings": 10,
+    "model": "collections/forja/espada_segmento_estelar.glb"
+  },
+  {
+    "id": "escudo_nucleo_forja",
+    "sourceFaces": 412,
+    "finishedFaces": 892,
+    "fittings": 24,
+    "model": "collections/forja/escudo_nucleo_forja.glb"
+  },
+  {
+    "id": "baston_orrery_solar",
+    "sourceFaces": 1816,
+    "finishedFaces": 1976,
+    "fittings": 8,
+    "model": "collections/forja/baston_orrery_solar.glb"
+  },
+  {
+    "id": "daga_pinza_astral",
+    "sourceFaces": 992,
+    "finishedFaces": 1112,
+    "fittings": 6,
+    "model": "collections/forja/daga_pinza_astral.glb"
+  },
+  {
+    "id": "daga_puno_meteoro",
+    "sourceFaces": 1020,
+    "finishedFaces": 1180,
+    "fittings": 8,
+    "model": "collections/forja/daga_puno_meteoro.glb"
+  },
+  {
+    "id": "varita_estrella_forjada",
+    "sourceFaces": 1188,
+    "finishedFaces": 1308,
+    "fittings": 6,
+    "model": "collections/forja/varita_estrella_forjada.glb"
+  },
+  {
+    "id": "grimorio_relicario_estelar",
+    "sourceFaces": 1752,
+    "finishedFaces": 1912,
+    "fittings": 8,
+    "model": "collections/forja/grimorio_relicario_estelar.glb"
+  },
+  {
+    "id": "ballesta_riel_cenital",
+    "sourceFaces": 1404,
+    "finishedFaces": 1564,
+    "fittings": 8,
+    "model": "collections/forja/ballesta_riel_cenital.glb"
+  }
+]

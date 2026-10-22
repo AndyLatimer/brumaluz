@@ -1,16 +1,22 @@
 import { currencyIcon } from '../data/currency';
-import { itemDef, itemIcon, itemLabel, sellPrice } from '../data/items';
+import { itemDef, itemIcon, itemLabel, itemRarity, sellPrice } from '../data/items';
+import { ITEM_RARITIES } from '../data/itemRarity';
 import { getLanguage, t } from './i18n';
 import { EQUIPPABLE } from '../data/equipment';
+import { CLASSES } from '../data/data';
 
 export function setItemTooltip(target: HTMLElement, id: string, bound = false) {
   target.dataset.itemId = id;
   target.dataset.itemBound = String(bound || itemDef(id)?.bound === true);
-  target.setAttribute('aria-label', t(itemLabel(id)));
+  const rarity = itemRarity(id);
+  target.dataset.rarity = rarity;
+  target.style.setProperty('--item-rarity', ITEM_RARITIES[rarity].color);
+  target.setAttribute('aria-label', `${t(itemLabel(id))} · ${t(ITEM_RARITIES[rarity].label)}`);
 }
 
 export function renderItemTooltip(container: HTMLElement, id: string, bound = false) {
   const item = itemDef(id);
+  const rarity = ITEM_RARITIES[itemRarity(id)];
   if (!item) {
     const name = document.createElement('strong');
     name.textContent = id;
@@ -25,10 +31,12 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   const identity = document.createElement('div');
   const category = document.createElement('span');
   category.className = 'item-tip-category';
-  category.textContent = t(item.category);
+  category.textContent = `${t(rarity.label)} · ${t(item.category)}`;
+  category.style.color = rarity.color;
   const name = document.createElement('strong');
   name.className = 'item-tip-name';
   name.textContent = t(item.label);
+  name.style.color = rarity.color;
   identity.append(category, name);
   header.append(icon, identity);
   container.append(header);
@@ -73,7 +81,7 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   container.append(description);
   if (EQUIPPABLE[id]) {
     const hint = document.createElement('small');
-    hint.textContent = t('Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.');
+    hint.textContent = `${t(CLASSES[EQUIPPABLE[id].cls].label)} · ${t('Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.')}`;
     container.append(hint);
   }
   if (item.sellable === false) return;

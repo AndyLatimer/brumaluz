@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import pg from 'pg';
+import { serverSql } from './server-sql.mjs';
 
 if(process.argv.includes('--configured')) for(const file of ['.env.local','.env']) {
   if(!existsSync(file)) continue;
@@ -28,9 +29,9 @@ test('account bank shared between characters (all schema, fixtures and mutations
     await db.query("select set_config('request.jwt.claim.sub',$1,true)",[users[owners[index]]]);
     await db.query('set local role authenticated');
   }
-  async function bank(index,action,slot=null,expected=null,amount=null) {
+  async function bank(index,action,slot=null,expected=null,amount=null,target=null) {
     await as(index);
-    return (await db.query('select public.bank_action($1,$2,$3,$4,$5) v',[chars[index],action,slot,expected,amount])).rows[0].v;
+    return (await db.query('select public.bank_action($1,$2,$3,$4,$5,$6) v',[chars[index],action,slot,expected,amount,target])).rows[0].v;
   }
   async function reject(fn,pattern) {
     await db.query('savepoint rejected');
@@ -50,7 +51,7 @@ test('account bank shared between characters (all schema, fixtures and mutations
     await db.query("set local lock_timeout='5s';set local statement_timeout='15s'");
     // Take the inventory lock before the schema DDL so live RPCs queue behind us instead of deadlocking.
     await db.query('select pg_advisory_xact_lock(731029,3)');
-    await db.query(readFileSync(new URL('../supabase/server.sql',import.meta.url),'utf8'));
+    await db.query(serverSql());
     for(let u=0;u<users.length;u++) await admin('insert into auth.users(id,raw_user_meta_data) values($1,$2)',[users[u],{username:`bank_${users[u].replaceAll('-','').slice(0,12)}`}]);
     for(let i=0;i<3;i++) {
       await admin('insert into public.characters(id,user_id,name,data) values($1,$2,$3,$4)',[chars[i],users[owners[i]],base(i).name,base(i)]);
@@ -126,6 +127,33 @@ test('account bank shared between characters (all schema, fixtures and mutations
       assert.deepEqual(back.inventory[0],{id:'pan_duro',count:50});
       assert.deepEqual(back.inventory[1],{id:'pan_duro',count:40,bound:false});
       assert.equal(back.bank.items[0],null);
+    });
+
+    await t.test('dragging to a slot places, merges, swaps and reorders',async()=>{
+      await reset(); await join(0);
+      // Hueco libre elegido.
+      const placed=await bank(0,'deposit',0,{id:'pan_duro',count:30},null,7);
+      assert.equal(placed.bank.items[7].id,'pan_duro');assert.equal(placed.inventory[0],null);
+      // Mismo objeto: se completa el montón y lo que no cabe se queda en la mochila.
+      await place(0,CHEST,{inventory:[{id:'pan_duro',count:30}]});
+      const merged=await bank(0,'deposit',0,{id:'pan_duro',count:30},null,7);
+      assert.equal(merged.bank.items[7].count,50);assert.equal(merged.inventory[0].count,10);
+      // Otro objeto: se intercambian.
+      await place(0,CHEST,{inventory:[{id:'pocion_vida_minuscula',count:3}]});
+      const swapped=await bank(0,'deposit',0,{id:'pocion_vida_minuscula',count:3},null,7);
+      assert.equal(swapped.bank.items[7].id,'pocion_vida_minuscula');assert.deepEqual(swapped.inventory[0],{id:'pan_duro',count:50,bound:false});
+      // Retirar a un hueco con un objeto ligado: no puede ir al baúl.
+      await place(0,CHEST,{inventory:[null,{id:'espada_inicial',count:1,bound:true}]});
+      await reject(()=>bank(0,'withdraw',7,{id:'pocion_vida_minuscula',count:3,bound:false},null,1),/BANK_ITEM_BOUND/);
+      const out=await bank(0,'withdraw',7,{id:'pocion_vida_minuscula',count:3,bound:false},null,4);
+      assert.equal(out.inventory[4].id,'pocion_vida_minuscula');assert.equal(out.bank.items[7],null);
+      // Reordenar el baúl.
+      await place(0,CHEST,{inventory:[{id:'pan_duro',count:5}]});
+      await bank(0,'deposit',0,{id:'pan_duro',count:5},null,2);
+      const moved=await bank(0,'move',2,{id:'pan_duro',count:5,bound:false},null,9);
+      assert.equal(moved.bank.items[2],null);assert.equal(moved.bank.items[9].count,5);
+      await reject(()=>bank(0,'move',9,{id:'pan_duro',count:5,bound:false},null,9),/INVALID_ITEM/);
+      await reject(()=>bank(0,'deposit',0,{id:'pan_duro',count:5},null,50),/INVALID_ITEM|INVENTORY_CHANGED/);
     });
 
     await t.test('requires being alive, present and next to the chest',async()=>{

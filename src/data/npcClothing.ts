@@ -46,10 +46,8 @@ export const NPC_CLOTHING: readonly ClothingPiece[] = [
   { id: 'medieval.torso', label: 'Túnica medieval', slot: 'torso', source: 'medieval', nodes: ['medieval-tunic'] },
   { id: 'medieval.leftArm', label: 'Manga medieval (izq)', slot: 'leftArm', source: 'medieval', nodes: ['medieval-sleeve-l', 'anatomy-hand-left'] },
   { id: 'medieval.rightArm', label: 'Manga medieval (der)', slot: 'rightArm', source: 'medieval', nodes: ['medieval-sleeve-r', 'anatomy-hand-right'] },
-  { id: 'medieval.leftLeg', label: 'Calzas medievales (izq)', slot: 'leftLeg', source: 'medieval', nodes: ['medieval-trouser-l'] },
-  { id: 'medieval.rightLeg', label: 'Calzas medievales (der)', slot: 'rightLeg', source: 'medieval', nodes: ['medieval-trouser-r'] },
-  { id: 'medieval.footwear', label: 'Botines medievales', slot: 'footwear', source: 'medieval', nodes: ['medieval-boot-l', 'medieval-boot-r'] },
-  { id: 'medieval.head', label: 'Gorro medieval con pluma', slot: 'head', source: 'medieval', nodes: ['medieval-hat'], hairFit: 'cap' },
+  { id: 'medieval.leftLeg', label: 'Calzas y bota medievales (izq)', slot: 'leftLeg', source: 'medieval', nodes: ['medieval-leg-l'] },
+  { id: 'medieval.rightLeg', label: 'Calzas y bota medievales (der)', slot: 'rightLeg', source: 'medieval', nodes: ['medieval-leg-r'] },
 ];
 export function clothingPiece(id: string) {
   const piece = NPC_CLOTHING.find(piece => piece.id === id);

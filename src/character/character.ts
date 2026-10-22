@@ -9,9 +9,12 @@ import barbarianUrl from '../assets/models/Barbarian.glb?url';
 import ambientAnimationsUrl from '../assets/models/ambient-animations.glb?url';
 import creatorPartsUrl from '../assets/models/creator-parts.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
-import { buildHead, paintCell, smoothNormals, HeadSource, HeadKit, FACE_KITS, HeadResult, type CreatorParts, type HeadOptions } from './head';
+import { buildHead, FACE_KITS, type HeadSource, type HeadKit, type HeadResult, type CreatorParts, type HeadOptions } from './head';
+import { paintCell, smoothNormals } from './head/geometry';
 import { softDot } from '../world/paint';
 import { STARTER_MODELS } from '../data/starterItems';
+import { loadWeaponModels, weaponModel } from './weaponModels';
+import { equippedOutfit } from '../data/outfits';
 import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
 
 // ---------------------------------------------------------------------------
@@ -41,6 +44,7 @@ export async function loadKits() {
   await Promise.all([
     ...(Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }),
     loadWardrobe(),
+    loadWeaponModels(),
     loadGLB(ambientAnimationsUrl).then(gltf => { ambientAnimations = gltf.animations; }),
     loadGLB(creatorPartsUrl).then(gltf => {
       const geometry = (name: keyof CreatorParts) => {
@@ -205,6 +209,9 @@ export class Character {
   private build() {
     const d = this.d, R = RACES[d.race];
     const outfit = this.opts.outfit ? OUTFITS[d.cls] : VILLAGER;
+    const armor = !this.opts.clothing && (!this.opts.outfit || this.opts.useEquipment) ? equippedOutfit(d.cls, d.equipment) : undefined;
+    const wardrobe = this.opts.wardrobe ?? (armor ? armor.id as WardrobeId : !this.opts.outfit && !this.opts.clothing ? 'medieval' : undefined);
+    const baseClothes = wardrobe === 'medieval' && !this.opts.wardrobe;
     const base = kits.Mage;
 
     // Esqueleto base (con animaciones): se clona y se le quitan sus mallas
@@ -266,7 +273,7 @@ export class Character {
       if (!m) { m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); flatMats.set(c, m); this.owned.push(m); }
       return m;
     };
-    const hatKind = this.opts.clothing ? this.opts.clothing.hairFit : this.opts.hat === false ? 'none' : this.opts.wardrobe ? WARDROBES[this.opts.wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
+    const hatKind = this.opts.clothing ? this.opts.clothing.hairFit : this.opts.hat === false ? 'none' : wardrobe ? WARDROBES[wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
       mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
@@ -283,7 +290,7 @@ export class Character {
     if (this.opts.clothing) {
       this.opts.clothing.mount(this.model, this.bones, skin, resource => this.owned.push(resource));
     } else {
-      const replaced = this.opts.wardrobe ? wardrobeRegions(this.opts.wardrobe) : new Set<string>();
+      const replaced = wardrobe ? wardrobeRegions(wardrobe) : new Set<string>();
       const covered = (part: string) => replaced.has(part === 'Body' ? 'torso' : part.startsWith('Arm') ? 'arms' : 'legs');
       if (this.opts.outfit) {
         for (const part of ['Body', 'ArmLeft', 'ArmRight', 'LegLeft', 'LegRight']) {
@@ -301,7 +308,7 @@ export class Character {
         // Restaurar esta línea junto con el selector de capa para habilitar capas en ropa diaria:
         // if (d.cape > 0) { const cm = capeMat(kit); this.addRigid(kit, `${kit}_Cape`, cm); this.addMantle(kit, kit, cm); }
       }
-      if (outfit.hat && !this.opts.wardrobe && this.opts.hat !== false) {
+      if (outfit.hat && !wardrobe && this.opts.hat !== false) {
         // el sombrero, un pelín más grande: tapa el pelo sin tener que hundirlo
         // doble cara: el interior del casco/sombrero no debe desaparecer según el ángulo
         const hatMat = mat(outfit.kit, true).clone();
@@ -315,14 +322,29 @@ export class Character {
         this.addRigid(this.opts.cape, `${this.opts.cape}_Cape`, cm);
         this.addMantle(outfit.kit, this.opts.cape, cm);
       }
-      if (this.opts.wardrobe) mountWardrobe(this.opts.wardrobe, this.model, this.bones, skin, resource => this.owned.push(resource), this.opts.hat !== false);
+      if (wardrobe) mountWardrobe(wardrobe, this.model, this.bones, skin, resource => this.owned.push(resource), this.opts.hat !== false,
+        baseClothes ? { primary: CLOTH[d.clothA], secondary: CLOTH[d.clothB] } : undefined);
     }
-    const heldItems = this.opts.outfit && !this.opts.useEquipment ? outfit.items : [d.equipment.weapon, d.equipment.offhand]
+    const heldItems: { kit: Kit; name: string; id?: string }[] = this.opts.outfit && !this.opts.useEquipment ? outfit.items : [d.equipment.weapon, d.equipment.offhand]
       .flatMap(item => {
         const model = item && STARTER_MODELS[item.id];
-        return model ? [{ kit: model.kit, name: model.node }] : [];
+        return model ? [{ kit: model.kit, name: model.node, id: item!.id }] : [];
       });
     for (const it of heldItems) {
+      const custom = it.id && weaponModel(it.id);
+      if (custom) {
+        const reference = kits[it.kit].scene.getObjectByName(it.name)!;
+        const o = custom.clone(true);
+        o.name = it.id!;
+        o.position.copy(reference.position); o.quaternion.copy(reference.quaternion); o.scale.copy(reference.scale);
+        if (it.name === 'Spellbook') {
+          o.quaternion.set(-0.3637, 0.6065, 0.3641, -0.6061).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2));
+          o.position.set(-0.21, 0, 0);
+        }
+        o.traverse(part => { if (part instanceof THREE.Mesh) part.castShadow = true; });
+        (this.model.getObjectByName(reference.parent!.name) ?? this.model).add(o);
+        continue;
+      }
       const o = this.addRigid(it.kit, it.name, mat(it.kit, it.kit === outfit.kit));
       if (it.name === '2H_Staff' && o) this.addGlow(o);
       // el libro cuelga de la mano, agarrado por el canto

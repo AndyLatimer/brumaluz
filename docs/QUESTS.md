@@ -29,6 +29,7 @@ las acciones existentes del personaje.
 
 | Fase | Acción válida | Resultado |
 | --- | --- | --- |
+| `available`, llegada pendiente | `arrive` | Guarda `introSeen` y deja al personaje junto a Gnomi |
 | `available`, sin origen | `origin`, índice 0–2 | Guarda definitivamente el motivo de su raza |
 | `available`, con origen | `accept` | Pasa a `active` y comienza el acompañamiento |
 | `active` | `collect` | Pasa a `found`; guarda la posesión del distintivo |
@@ -130,7 +131,7 @@ quedan bloqueados.
 - Gnomi recorre una estela de posiciones del jugador con colisiones de la
   ciudad y animación sencilla. Sigue durante `active`, `found` y `completed` por toda
   Brumaluz, espera durante diálogos y se reincorpora al volver a entrar.
-  Tras cerrar el encargo de Isberto en la plaza del pozo deja de seguir y
+  Cuando Isberto invita al jugador a su casa deja de seguir y
   permanece allí, también al reconectar.
   Si queda a más de 20 m, reaparece junto al jugador para evitar perderlo
   tras una corrección de posición. Tras el agradecimiento, guía al jugador
@@ -164,33 +165,35 @@ La llegada solo se dispara tras entregar el distintivo en esa sesión; no se
 reproduce de nuevo al reconectar. Salir del mundo o morir cancela la escena,
 limpia el bloqueo y devuelve al NPC a su punto final, sin aceptar la misión.
 
-La victoria cambia la fase a `defeated`; el objetivo pasa a **hablar con
-Isberto**, aunque todavía no se haya recogido el botín. La conversación alterna
-Isberto y Gnomi: ninguno reconoce a la criatura ni explica la esencia.
-Gnomi propone regresar juntos a la plaza del pozo. Confirmarlo llama a
-`shadow_action(report)` y guarda `returning`. Salir antes no avanza el paso.
-El minimapa, la flecha y el rastreador señalan ahora la plaza.
+La victoria guarda `defeated` y pide **registrar los restos**. El cadáver
+contiene una **Esencia sombría**; no se puede avanzar con botín pendiente.
+Al vaciarlo desaparece del mundo y se conserva su registro agotado para
+impedir duplicados. Isberto se acerca mediante una escena junto al lugar
+del combate. Él y Gnomi desconocen qué era la criatura.
 
-Gnomi sigue acompañando al jugador durante el regreso. Al llegar hay que
-hablar con él y elegir **Quedarnos en la plaza**: `shadow_action(return)` guarda
-`returned`, completa la entrada del diario y deja a Gnomi en la plaza. Este es
-el final actual de la historia, sin nuevos encargos ni explicación del misterio.
-Ambas acciones validan propiedad, vida, orden de fases, presencia reciente y
-proximidad autoritativa a Isberto o a la plaza (`x=-3.5, z=0`, radio 4 m).
-No añaden XP, pelines ni objetos.
+Isberto ofrece, a regañadientes, descansar en su casa. Elegir **Seguir a
+Isberto** llama a `shadow_action(report)`: exige presencia reciente en
+Brumaluz, estar a 8 m o menos del cuerpo, victoria y botín agotado.
+Guarda `returning` sin recompensas nuevas. Isberto camina hasta la puerta
+de su casa, respetando colisiones y esperando si el jugador queda atrás.
+Gnomi se despide y vuelve al pozo. Al reconectar, Isberto espera en la puerta.
 
-El cadáver conserva una **Esencia sombría**, un objeto real de mochila cuyo
-significado todavía no conocemos. Recogerla es independiente del cierre
-narrativo: `loot_corpse` no cambia la fase de la misión. Al vaciar el cuerpo
-se cierra la ventana y desaparece el cadáver. Su registro agotado se conserva
-para que no reaparezca ni pueda volver a saquearse al reconectar.
-Las antiguas fases `completed` (que solo indicaban haber recogido la esencia)
-se migran una vez a `defeated`, sin reponer botín, para poder vivir el nuevo
-diálogo. Reaplicar SQL no modifica `returning` ni `returned`.
-No se puede reiniciar un encuentro completado ni sustituir un cadáver con
-botín pendiente. Si el jugador muere, Isberto permite volver a investigar.
-El diario conserva por separado la bienvenida y el encargo de Isberto;
-al completarlos ambos se ocultan el rastreador y su guía de objetivo.
+El portal de la casa permanece cerrado hasta esta invitación, tanto en el
+cliente como en el servidor. Dentro se muestran la cama y el cofre. **Gracias,
+Isberto** llama a `shadow_action(return)`, que exige estar dentro de la casa
+y a menos de 4 m de Isberto. Guarda `returned` y completa el diario. Cerrar
+el diálogo antes de confirmar no completa el paso; se puede retomarlo.
+
+La cama restaura vida y recurso mediante `rest_action`, con presencia
+reciente y distancia máxima de 2,2 m; no revive ni permite descansar en combate.
+El cofre abre el banco de la cuenta existente, con sus mismas reglas de
+depósito, retirada y objetos vinculados. No hay recompensas de XP ni monedas
+en este epílogo. El misterio queda sin explicar.
+
+Las antiguas fases `completed` se migran a `defeated` sin reponer botín.
+Reaplicar SQL no modifica `returning` ni `returned`. No se puede reiniciar
+una victoria ni sustituir un cadáver pendiente. Si el jugador muere, Isberto
+permite volver a investigar. Ambas misiones quedan en el diario completado.
 
 El acompañamiento consume los puntos alcanzados de la estela antes de mover,
 mantiene la animación entre segmentos y gira según el desplazamiento resuelto
@@ -201,6 +204,12 @@ por colisiones. Durante un diálogo Gnomi descansa sin deslizarse.
 No se debe activar la bandera en producción para hacer pruebas.
 
 - `npm run build`
+- `node --test scripts/test-story.mjs` comprueba rutas sin saltos, destinos
+  bloqueados, objetivos por mapa y cancelación de cinemáticas sin continuar
+  la historia.
+- `node --test --test-name-pattern="a new character enters|the opening can be skipped|after looting, Isberto|Gnomi unlocks Isberto" scripts/test-world.mjs`
+  recorre llegada, entrega, combate, botín, invitación, escolta hasta la puerta,
+  reconexión, visita de la casa, descanso y depósito en el banco con RPC simulados.
 - `node --test --test-name-pattern="welcome systems" scripts/test-world.mjs`
   prueba el recorrido completo con RPC simulados, errores, espera asíncrona,
   origen confirmado, acompañante privado, diario adaptable, recarga y entrega.
@@ -209,9 +218,22 @@ No se debe activar la bandera en producción para hacer pruebas.
   creación de personajes, permisos, distancia, estados, persistencia y pago
   único. Requiere autorización para usar la base configurada.
 - `?test&welcome&graphics=compatible` permite ensayar la secuencia de Gnomi e
-  Isberto sin cuenta, en la escena simple de desarrollo. No escribe datos ni
+  Isberto sin cuenta, usando los mapas publicados de la ciudad y su casa. No escribe datos ni
   activa la bienvenida real; no conserva el progreso al recargar.
 
 Las coordenadas de `WELCOME_START` y `WELCOME_BADGE` en `src/data/quests.ts`
 deben coincidir con las comprobaciones de `welcome_action` en
-`supabase/server.sql`. Son posiciones provisionales del mapa actual.
+`supabase/server/`. Son posiciones provisionales del mapa actual.
+
+## Llegada cinematográfica
+
+El personaje nuevo aparece en la Puerta del Este (177,0), mirando hacia la
+ciudad. Primero se ve entrar al personaje; después se recorre Brumaluz desde
+el aire y se vuelve a él. Gnomi llega andando, preocupado por el distintivo,
+y comienza la bienvenida. Los controles quedan bloqueados durante la escena.
+Saltar con Esc o el botón deja al jugador en (156.5,0), junto a Gnomi.
+
+`welcome_action(arrive)` guarda `introSeen` en el personaje y actualiza la
+presencia a ese punto fijo. No depende del almacenamiento del navegador.
+Salir durante una escena la cancela sin disparar el diálogo siguiente.
+El viaje de cámara no mueve al jugador hasta la granja ni carga otro mapa.

@@ -1,5 +1,21 @@
 # Vestuario modular
 
+## Atuendo base de los personajes
+
+La ropa de diario de todas las clases es el conjunto `medieval`: túnica,
+mangas, manos, calzas y botas. Se utiliza en el creador (incluida la pestaña
+**Ropa**), retratos, personaje local y jugadores remotos cuando se muestra
+la ropa base. No hace falta modificar los personajes ya guardados.
+
+`clothA` colorea la túnica y sus mangas; `clothB`, los ribetes y las calzas.
+El lino de cuello y puños, el cuero, las suelas y los herrajes conservan sus
+acabados. Cada personaje recibe materiales propios; cambiar un color no
+recolorea las prendas de otros personajes.
+
+La vista de equipo de clase del creador conserva su atuendo de referencia.
+Los NPC con vestuario explícito conservan sus prendas registradas. La túnica
+es ropa base, sin estadísticas, sin ocupar ranuras y visible al desequiparse.
+
 ## Pelo y complementos del creador
 
 `npm run art:creator` extrae de Adventurers 2.0 tres piezas sin cuerpos,
@@ -81,7 +97,8 @@ no contiene excepciones por nombre de NPC.
 - **Pelo:** `hairFit` configura cómo se adapta la cabeza modular al accesorio.
 - **Recursos:** geometrías del GLB compartidas; materiales y enlaces de
   esqueleto por personaje, liberados al destruirlo. Material `skin` adopta
-  el tono del portador. Las telas conservan sus colores de diseño.
+  el tono del portador. Los conjuntos explícitos conservan sus colores de
+  diseño; la túnica base utiliza los colores guardados en el creador.
 
 Para otro conjunto, añadir su recurso al cargador y su definición al catálogo;
 no añadir condicionales de NPC en `Character`. Los patrones de esta primera

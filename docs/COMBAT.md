@@ -1,5 +1,7 @@
 # Combate: primera base de desarrollo
 
+La iteración de armas de categorías 0 y 1 está descrita en [WEAPONS.md](WEAPONS.md): poder por item, guardia, curación por equipo, modelos propios y selector de categoría en el banco de combate. Sus cambios de SQL están preparados en el repositorio y requieren aplicación antes de publicar el cliente.
+
 ## Estado real
 
 Se han implementado el catálogo de kits iniciales, su entrega desde
@@ -33,8 +35,8 @@ los RPC autoritativos y los latidos para el daño del enemigo. Una derrota del
 jugador cierra el encuentro sin presentarla como victoria sobre el enemigo.
 La bandera `combat_enabled` permanece desactivada por defecto. No hay todavía
 XP de combate ni recompensas monetarias. La victoria deja un cadáver con botín
-y el cierre requiere hablar con Isberto y Gnomi y regresar a la plaza del pozo.
-Recoger la esencia no avanza la historia. Nunca se debe enviar al servidor el
+y el cierre requiere recoger el botín, hablar con Isberto y seguirlo a su casa.
+Recoger la esencia habilita la conversación de regreso. Nunca se debe enviar al servidor el
 resultado calculado por el prototipo como daño o progreso autoritativos.
 
 ## Habilidades y objetivo fijado
@@ -235,7 +237,7 @@ servidor también las calcula desde la concesión de presencia, conserva las
 fracciones y devuelve las estadísticas propias en los latidos del mundo.
 Cuando se habilite el RPC, las acciones autorizadas marcan `combat_at` y
 activan la tasa lenta de vida durante los cinco segundos posteriores al último
-golpe, habilidad o daño recibido. Los cambios de `supabase/server.sql` están
+golpe, habilidad o daño recibido. Los cambios de `supabase/server/` están
 aplicados a Brumaluz; el encuentro sigue protegido por `combat_enabled`.
 
 `npm run test:combat` comprueba los cinco kits, vinculación, impactos,
@@ -249,8 +251,9 @@ o permiso explícito para usar la configurada con rollback.
 ## Trabajo pendiente
 
 El encuentro conectado no concede XP ni pelines; su recompensa material es la
-esencia; el encargo termina al regresar con Gnomi a la plaza del pozo tras
-hablar con Isberto. Ninguno reconoce la criatura y el misterio queda abierto.
+esencia; el encargo termina dentro de la casa de Isberto, donde presenta la
+cama y el cofre del banco. Gnomi vuelve a la plaza del pozo. Ninguno reconoce
+la criatura y el misterio queda abierto.
 Falta el arte definitivo
 de la criatura. Las pruebas SQL ya pasaron en Brumaluz dentro de una transacción
 con rollback antes de aplicar el archivo. No habilitar la bienvenida ni el

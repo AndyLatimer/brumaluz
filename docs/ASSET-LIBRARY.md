@@ -145,8 +145,25 @@ para saltos sobre superficies bajas.
   tienen colision y permiten saltar por encima; las superficies bajas y amplias
   admiten aterrizar como el mobiliario existente. No son nuevos contenedores,
   vendedores o recursos recogibles.
-- `/props.html` permite inspeccionar estos ocho objetos y la bolsa existente;
-  `/wardrobe.html` incorpora botones para probar recoger, consumir y golpes.
+- `/props.html` permite inspeccionar estos ocho objetos, la bolsa existente y el
+  puente de madera; `/wardrobe.html` incorpora botones para probar recoger,
+  consumir y golpes.
+- `scripts/build-wooden-bridge.mjs` (`npm run art:build:props`) genera
+  `src/assets/models/props/wooden-bridge.glb`: puente troceado de 4,0 x 1,6 m
+  con tablero a 0,50 m, barandilla de 0,95 m, dos pilas con cruces de San Andres
+  y estribos de piedra. Va a escala humana frente al maniqui de 1,55 m y sigue
+  el mismo flujo que la bolsa de pelines: el GLB es el asset de intercambio
+  editable en Blender. Es un objeto de biblioteca, todavia no colocado en el
+  mundo.
+- `npm run art:build:bridges` regenera los tres puentes. `scripts/build-medieval-bridges.mjs`
+  deriva `medieval-bridge.glb` y `medieval-bridge_roofed.glb` en `src/assets/models/props/`:
+  sillares con cantos biselados, texturas de piedra, madera y tejas, mapas de normales
+  y rugosidad y remates de cumbrera. Conservan la escala, orientación y silueta de
+  los originales KayKit CC0, que permanecen intactos en la biblioteca.
+  `src/art/mapVariants.json` conecta estos acabados con los mismos IDs del editor,
+  del visor de biblioteca y de los mapas publicados; no hay que sustituir objetos
+  colocados. El publicador importa las variantes y contabiliza su tamaño real.
+  Los tres GLB se pueden inspeccionar y descargar desde `/props.html`.
 - `npm run test:ambient` compila y prueba los clips, transiciones y prioridades
   sobre las cuatro razas, la colocacion real, colisiones, instanciado y el
   presupuesto del bundle. Con las piezas del creador, la pagina compilada pasa

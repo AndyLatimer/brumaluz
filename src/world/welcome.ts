@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { City, Interactable } from './city';
 import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN, type WelcomeProgress } from '../data/quests';
 import type { Character } from '../character/character';
+import { storyPath } from './storyPath';
 
 /** Personal actors: never added to shared world presence or NPC spawn tables. */
 export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() => City), character: Character, name: string) {
@@ -30,6 +31,7 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
   character.attachToChest(badgeMount);
   const badge = part(new THREE.CircleGeometry(.09, 24), '#e4be68', 0, 0, .015, badgeMount);
   badge.name = 'gnomi-worn-badge';
+  badgeMount.visible = false;
   part(new THREE.TorusGeometry(.055, .014, 8, 20), '#cab080', 0, .025, .01, badgeMount);
   const lost = new THREE.Group();
   lost.name = 'gnomi-lost-badge';
@@ -46,6 +48,39 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
   const destination = new THREE.Vector3();
   let gait: 'idle' | 'walk' | 'run' = 'idle';
   let movingUntil = 0;
+  /** Movimiento guionizado (cinemáticas): manda sobre el resto mientras exista. */
+  let script: { target: THREE.Vector3; path: THREE.Vector3[]; speed: number; worried: boolean; leaving: boolean; arrived: boolean; since: number } | null = null;
+  const turnTowards = (angle: number, rate: number) => {
+    root.rotation.y += Math.atan2(Math.sin(angle - root.rotation.y), Math.cos(angle - root.rotation.y)) * Math.min(1, rate);
+  };
+  function scripted(player: THREE.Vector3, dt: number, time: number) {
+    const s = script!;
+    while (s.path.length && Math.hypot(s.path[0].x-root.position.x,s.path[0].z-root.position.z)<.12) s.path.shift();
+    destination.copy(s.path[0] ?? s.target).sub(root.position); destination.y = 0;
+    const distance = destination.length();
+    let moving = false;
+    if (distance > .12 && s.path.length && dt > 0) {
+      destination.multiplyScalar(Math.min(distance, dt * s.speed) / distance).add(root.position);
+      const corrected = city.collide(root.position, destination);
+      moving = corrected.distanceToSquared(root.position) > .000001;
+      // Preocupado: camina mirando a un lado y a otro, buscando por el suelo.
+      if (moving) turnTowards(Math.atan2(corrected.x - root.position.x, corrected.z - root.position.z) + (s.worried ? Math.sin(time * 2.3) * .55 : 0), dt * 8);
+      root.position.copy(corrected);
+    }
+    if (dt > 0) s.arrived = Math.hypot(s.target.x-root.position.x,s.target.z-root.position.z) <= .12;
+    s.since += dt;
+    // Su destino puede quedar al otro lado de la ciudad: solo recolocar fuera de la vista del jugador.
+    if (s.leaving && (s.arrived || root.position.distanceTo(player) > 18)) {
+      root.position.copy(s.target);
+      script = null;
+    }
+    root.position.y = city.groundY(root.position.x, root.position.z);
+    if (s.arrived && !s.leaving) turnTowards(Math.atan2(player.x - root.position.x, player.z - root.position.z), dt * 6);
+    gait = moving ? s.speed > 3 ? 'run' : 'walk' : 'idle';
+    root.userData.gait = gait;
+    character.setGait(gait);
+    character.update(time);
+  }
   function rejoin(player: THREE.Vector3) {
     destination.copy(player).add(new THREE.Vector3(1.25, 0, .65));
     root.position.copy(city.collide(player, destination));
@@ -54,8 +89,10 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
   function update(progress: WelcomeProgress | null, playing: boolean, player: THREE.Vector3, dt: number, time: number, talking = false, returned = false) {
     if (typeof citySource === 'function') city = citySource();
     root.visible = playing;
+    badgeMount.visible = progress?.stage === 'completed';
     lost.visible = root.visible && progress?.stage === 'active';
     if (!root.visible) { lastStage = ''; trail = []; return; }
+    if (script) { scripted(player, dt, time); lastStage = progress?.stage ?? ''; trail = []; sample.copy(player); return; }
     if (!progress) {
       root.position.set(WELCOME_START.x, city.groundY(WELCOME_START.x, WELCOME_START.z), WELCOME_START.z);
       if (player.distanceTo(root.position) < 4) root.rotation.y = Math.atan2(player.x - root.position.x, player.z - root.position.z);
@@ -101,7 +138,8 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
         rejoin(player);
       }
       // Consume reached waypoints without resetting the gait between consecutive trail segments.
-      while (trail.length && root.position.distanceTo(trail[0]) < .35) trail.shift();
+      // El relieve no puede retener un punto que ya se alcanzó en el plano de movimiento.
+      while (trail.length && Math.hypot(root.position.x - trail[0].x, root.position.z - trail[0].z) < .35) trail.shift();
       const target = trail[0];
       if (target && (trail.length > 3 || root.position.distanceTo(player) > 2)) {
         destination.copy(target).sub(root.position); destination.y = 0;
@@ -110,7 +148,7 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
           speed = root.position.distanceTo(player) > 4 ? 5 : 2.6;
           destination.multiplyScalar(Math.min(distance, dt * speed) / distance).add(root.position);
           const corrected = city.collide(root.position, destination);
-          moving = dt > 0 && corrected.distanceToSquared(root.position) > .00001;
+          moving = dt > 0 && Math.hypot(corrected.x - root.position.x, corrected.z - root.position.z) > .003;
           if (moving) {
             const angle = Math.atan2(corrected.x - root.position.x, corrected.z - root.position.z);
             root.rotation.y += Math.atan2(Math.sin(angle - root.rotation.y), Math.cos(angle - root.rotation.y)) * Math.min(1, dt * 12);
@@ -132,6 +170,23 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
     root, lost, update,
     speak: (seconds: number) => character.speak(seconds),
     greet: () => character.wave(),
+    hop: () => character.hop(),
+    /** Coloca a Gnomi en un punto (cinemáticas). */
+    place(position: THREE.Vector3, facing: number) {
+      root.position.set(position.x, city.groundY(position.x, position.z), position.z);
+      root.rotation.y = facing;
+    },
+    /** Lo hace caminar hasta `target`; `worried`, buscando algo por el suelo. */
+    walkTo(target: THREE.Vector3, speed: number, worried = false) {
+      script = { target: target.clone(), path: storyPath(city, root.position, target), speed, worried, leaving: false, arrived: false, since: 0 };
+    },
+    /** Se marcha hacia `target` y, cuando el jugador ya no lo ve, se queda allí. */
+    leave(target: THREE.Vector3) {
+      script = { target: target.clone(), path: storyPath(city, root.position, target), speed: 3.4, worried: false, leaving: true, arrived: false, since: 0 };
+    },
+    get arrived() { return !script || script.arrived; },
+    /** Devuelve a Gnomi a su comportamiento normal (no interrumpe una marcha). */
+    release() { if (script && !script.leaving) script = null; },
     interactions: () => root.visible ? lost.visible ? [interaction, pickup] : [interaction] : [],
     dispose() {
       root.removeFromParent(); lost.removeFromParent();

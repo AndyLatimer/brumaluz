@@ -2,20 +2,39 @@ import type { Race } from './data';
 
 export type WelcomeStage = 'available' | 'active' | 'found' | 'completed';
 export interface WelcomeProgress { origin: number | null; stage: WelcomeStage }
-export type WelcomeAction = 'origin' | 'accept' | 'collect' | 'claim';
+export type WelcomeAction = 'arrive' | 'origin' | 'accept' | 'collect' | 'claim';
 export const WELCOME_TITLE = 'Algo pequeño, algo importante';
 export const WELCOME_REWARD = { experience: 40, pelines: 5 };
 export type ShadowQuest = 'active' | 'defeated' | 'returning' | 'returned';
 export type ShadowAction = 'report' | 'return';
+/** Plaza del pozo: allí vuelve Gnomi cuando Isberto se lleva al jugador a su casa. */
 export const SHADOW_RETURN = { x: -3.5, z: 0 };
 export const SHADOW_TITLE = 'Una sombra entre el ganado';
-export function shadowObjective(stage: ShadowQuest | null) {
-  return stage === 'returned' ? 'Has vuelto con Gnomi a la plaza del pozo. El misterio sigue sin resolver.'
-    : stage === 'returning' ? 'Vuelve con Gnomi a la plaza del pozo y habla con él allí.'
-    : stage === 'defeated' ? 'Habla con Isberto sobre la criatura derrotada.'
-    : stage === 'active' ? 'Investiga y derrota a la criatura junto al ganado.'
+/** `looted`: si ya se registraron los restos de la criatura (solo cuenta tras derrotarla). */
+export function shadowObjective(stage: ShadowQuest | null, looted = true, location = 'brumaluz') {
+  return stage === 'returned' ? 'Isberto te ha dado cobijo: usa su cama para descansar y el cofre de la esquina para guardar tus cosas.'
+    : stage === 'returning' ? location === ISBERTO_HOUSE ? 'Habla con Isberto para que te enseñe la cama y el cofre.' : 'Sigue a Isberto hasta su casa y entra con él.'
+    : stage === 'defeated' ? looted ? 'Habla con Isberto sobre la criatura derrotada.' : 'Registra los restos de la criatura.'
+    : stage === 'active' ? 'Derrota a la criatura que ronda el ganado de Isberto, en la granja del sur.'
     : 'Habla con Isberto, el granjero de las afueras.';
 }
+// Mantener en sincronía con create_character, welcome_action, shadow_action, world_travel y rest_action (supabase/server/).
+/** Puerta del Este: los personajes nuevos aparecen aquí, entrando a la ciudad (`yaw`: el de la cámara). */
+export const INTRO_GATE = { x: 177, z: 0, yaw: Math.PI / 2 };
+/** Hasta dónde camina el personaje al entrar en la cinemática inicial. */
+export const INTRO_ENTRY = { x: 156.5, z: 0 };
+/** De dónde sale Gnomi, buscando su distintivo, en la cinemática inicial. */
+export const INTRO_GNOMI_FROM = { x: 143.5, z: 2.2 };
+/** Casa de Isberto: mapa interior, su puerta en Brumaluz y lo que hay dentro. */
+export const ISBERTO_HOUSE = 'casa_de_isberto_interior';
+export const ISBERTO_DOOR = { x: 23.5, z: -48.5 };
+/** Camino que sigue Isberto desde la granja hasta su puerta (en el último punto espera al jugador). */
+export const ISBERTO_WAY = [{ x: 10, z: -58 }, { x: 19, z: -54.5 }, { x: 25.5, z: -51.5 }, { x: 25.6, z: -49.9 }];
+export const ISBERTO_INSIDE = { x: .9, z: .55 };
+export const HOUSE_BED = { x: -1.5, z: -2.5 };
+export const BED_RADIUS = 2.2;
+export const SHADOW_REPORT_RADIUS = 8;
+export const ISBERTO_TALK_RADIUS = 4;
 export function parseShadowQuest(value: unknown): ShadowQuest | null {
   if (value === undefined || value === null) return null;
   // Earlier releases completed the quest on looting, before its closing conversation existed.
@@ -32,9 +51,13 @@ export function questItems(progress: WelcomeProgress | null) {
     objective: 'Devuélveselo a Gnomi.',
   }] : [];
 }
-// Keep these interaction points in sync with welcome_action in server.sql.
-export const WELCOME_START = { x: -6.4, z: -8.5 };
-export const WELCOME_BADGE = { x: 15.8, z: -5.7 };
+// Keep these interaction points in sync with welcome_action in supabase/server/.
+/** Donde Gnomi se encuentra con el jugador, recién cruzada la Puerta del Este. */
+export const WELCOME_START = { x: 153.5, z: 0 };
+/** El distintivo perdido, junto al mercado de la plaza del Levante. */
+export const WELCOME_BADGE = { x: 138.6, z: -2.6 };
+/** Distancia a Gnomi para presentarse y aceptar su misión. */
+export const WELCOME_TALK_RADIUS = 5;
 export const ORIGINS: Record<Race, readonly [string, string, string]> = {
   humano: ['Soy de Brumaluz y busco mi primer oficio.', 'He venido a probar suerte.', 'Quiero aprender de sus talleres.'],
   elfo: ['Vengo de la Arboleda para aprender.', 'Quiero conocer la vida de la capital.', 'Vivo aquí y busco un nuevo rumbo.'],
@@ -59,6 +82,6 @@ export const welcomeComplete = (progress: WelcomeProgress | null) => progress ==
 export function welcomeObjective(progress: WelcomeProgress) {
   if (progress.stage === 'completed') return 'Has devuelto el distintivo de Gnomi.';
   if (progress.stage === 'found') return 'Habla con Gnomi y devuélvele su distintivo.';
-  if (progress.stage === 'active') return 'Recoge el distintivo junto al mercado.';
+  if (progress.stage === 'active') return 'Recoge el distintivo junto al mercado de la plaza del Levante.';
   return progress.origin === null ? 'Habla con Gnomi y cuéntale qué te trae por aquí.' : 'Habla con Gnomi para comenzar la búsqueda.';
 }

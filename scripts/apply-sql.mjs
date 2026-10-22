@@ -1,9 +1,10 @@
-// Aplica supabase/server.sql (idempotente) y supabase/world.sql (mapas y portales publicados desde el
+// Aplica el SQL del servidor (supabase/server/, idempotente) y supabase/world.sql (mapas y portales publicados desde el
 // editor de mapas) a la base de datos indicada en SUPABASE_DB_URL (.env.local).
-// Uso: npm run db:apply            (server.sql + world.sql)
-//      npm run db:apply -- --schema (schema.sql, server.sql y world.sql)
+// Uso: npm run db:apply            (servidor + world.sql)
+//      npm run db:apply -- --schema (schema.sql, servidor y world.sql)
 import { readFileSync, existsSync } from 'node:fs';
 import pg from 'pg';
+import { serverSql } from './server-sql.mjs';
 
 function loadEnv(file) {
   if (!existsSync(file)) return;
@@ -21,17 +22,21 @@ if (!url) {
   process.exit(1);
 }
 
-const files = [...(process.argv.includes('--schema') ? ['supabase/schema.sql'] : []), 'supabase/server.sql',
-  ...(existsSync('supabase/world.sql') ? ['supabase/world.sql'] : [])];
+// El servidor se ejecuta como un único script (sus archivos unidos en orden), igual que antes de repartirlo.
+const scripts = [
+  ...(process.argv.includes('--schema') ? [['supabase/schema.sql', () => readFileSync('supabase/schema.sql', 'utf8')]] : []),
+  ['supabase/server/', serverSql],
+  ...(existsSync('supabase/world.sql') ? [['supabase/world.sql', () => readFileSync('supabase/world.sql', 'utf8')]] : []),
+];
 const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 let transaction = false;
 try {
   await client.connect();
   await client.query('begin');
   transaction = true;
-  for (const file of files) {
-    await client.query(readFileSync(file, 'utf8'));
-    console.log(`OK  ${file}`);
+  for (const [name, sql] of scripts) {
+    await client.query(sql());
+    console.log(`OK  ${name}`);
   }
   // Recarga la caché de esquema de la API para que las funciones nuevas se vean al momento.
   await client.query("notify pgrst, 'reload schema'");
