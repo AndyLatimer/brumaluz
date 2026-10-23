@@ -13,7 +13,7 @@ export interface ItemStack {
 
 export type InventorySlots = (ItemStack | null)[];
 
-export const EQUIPMENT_SLOTS = ['head', 'pendant', 'chest', 'hands', 'ring', 'weapon', 'offhand', 'legs', 'feet', 'trinket'] as const;
+export const EQUIPMENT_SLOTS = ['head', 'pendant', 'chest', 'hands', 'ring', 'weapon', 'offhand', 'legs', 'trinket'] as const;
 export type EquipmentSlot = (typeof EQUIPMENT_SLOTS)[number];
 export type Equipment = Record<EquipmentSlot, ItemStack | null>;
 

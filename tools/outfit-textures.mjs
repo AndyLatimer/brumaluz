@@ -51,7 +51,7 @@ function sample(material,collection,tier,x,y){
  if(tile===13){const a=(u-.5)*2,b=(v-.5)*2,r=Math.hypot(a,b);const emblem=collection==='roble'?Math.abs(a)<.045&&Math.abs(b)<.55||Math.abs(Math.abs(a)-(.48-Math.abs(b)*.65))<.055&&Math.abs(b)<.5:collection==='eclipse'?Math.abs(Math.hypot(a+.10,b)-.46)<.065&&a<.28:collection==='marea'?Math.abs(b-.14*Math.sin(a*9))<.06&&Math.abs(a)<.55:Math.abs(Math.abs(a)+Math.abs(b)-.54)<.065;if(tier>=2&&emblem){shade+=.17;height+=.10}shade-=gauss(r-.71,.025)*.10}
  if(tier>=3&&(trim||tile===4||tile===9)&&u>.25&&u<.75){const a=Math.abs((u*8)%1-.5),b=Math.abs((v*8)%1-.5);if(Math.abs(a+b-.35)<.035){shade+=.08;height+=.04}}
  if(!metal&&!leather)shade+=((Math.floor(x)%3===0?1:0)-(Math.floor(y)%3===0?1:0))*.006;
- return {shade:clamp(shade,.38,1),height,rough:metal?.36+.18*v:leather?.72:.89,ao:clamp(1-.22*seam-.08*gauss(edge,.035),.6,1)};
+ return {shade:clamp(shade,.38,1),height,rough:metal?.51+.12*v:leather?.76:.89,ao:clamp(1-.22*seam-.08*gauss(edge,.035),.6,1)};
 }
 export function outfitTexture(material,collection,tier=0){return paintedPNG(512,(x,y)=>{const s=Math.round(sample(material,collection,tier,x,y).shade*127)/127;return [Math.round(255*s),Math.round(255*s*(.98+.02*s)),Math.round(255*s*(.96+.04*s))]})}
 export function outfitSurfaceTexture(material,collection='',tier=0){return png(128,(x,y)=>{const s=sample(material,collection,tier,x*4,y*4);return [Math.round(255*s.ao),Math.round(255*s.rough),255]})}

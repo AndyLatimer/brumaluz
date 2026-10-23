@@ -15,7 +15,7 @@ const races=el<HTMLSelectElement>('race'),motion=el<HTMLSelectElement>('motion')
 for(const [id,cls] of Object.entries(CLASSES))classes.add(new Option(cls.label,id));
 for(const [id,race] of Object.entries(RACES))races.add(new Option(race.label,id));
 for(const id of [...new Set(Object.values(OUTFITS).map(x=>x.collection))])sets.add(new Option(id,id));
-const names:Partial<Record<EquipmentSlot,string>>={head:'Cabeza',chest:'Pecho',hands:'Manos',legs:'Piernas',feet:'Pies',pendant:'Colgante',ring:'Anillo',trinket:'Abalorio'};
+const names:Partial<Record<EquipmentSlot,string>>={head:'Cabeza',chest:'Pecho',hands:'Manos',legs:'Piernas y calzado',pendant:'Colgante',ring:'Anillo',trinket:'Abalorio'};
 const slots=[...ARMOR_SLOTS,'pendant','ring','trinket'] as const;
 const data=defaultChar();let actor:Character,yaw=-.3;
 await loadKits();

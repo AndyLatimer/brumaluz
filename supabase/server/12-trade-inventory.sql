@@ -213,7 +213,7 @@ begin
   c:=public.game_lock_character(p_character_id);
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
   previous_vitals:=public.game_public_vitals(c.data);
-  if p_slot is null or p_slot not in ('head','pendant','chest','hands','ring','weapon','offhand','legs','feet','trinket')
+  if p_slot is null or p_slot not in ('head','pendant','chest','hands','ring','weapon','offhand','legs','trinket')
     or (p_bag is not null and p_bag not between 0 and 24) then raise exception 'EQUIPMENT_INVALID'; end if;
   inv:=public.game_inventory(c.data);
   equipment:=coalesce(c.data->'equipment','{}'::jsonb);

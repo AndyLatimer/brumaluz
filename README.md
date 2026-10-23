@@ -4,9 +4,13 @@ MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 
 ## Equipo modular y trajes de clase
 
-El catálogo contiene **396 equipables**: 88 armas, 275 piezas de 55 conjuntos
+El diseño de atributos, encantamientos y bonificaciones se acuerda por pasos en
+[Sistema de armas](docs/WEAPON-SYSTEM-DESIGN.md). La [revisión de sistemas MMORPG](docs/MMORPG-SYSTEMS-REVIEW.md)
+distingue lo implementado de las dependencias que quedan pendientes.
+
+El catálogo contiene **341 equipables**: 88 armas, 220 piezas de 55 conjuntos
 y 33 accesorios. La progresión va de gris (principiante) a verde, azul, morado,
-dorado y naranja. Cada conjunto tiene cabeza, pecho, manos, piernas y pies;
+dorado y naranja. Cada conjunto tiene cabeza, pecho, manos y piernas (incluye calzado);
 colgantes, anillos y abalorios se equipan por separado.
 
 Los trajes usan cortes por clase, texturas incrustadas de color, normales y
@@ -18,11 +22,14 @@ cambiar de linaje y verlo caminar, correr o usar una habilidad.
 - [Catálogo de trajes y generación](docs/CLASS-OUTFITS.md).
 - [Estadísticas, ranuras y migración](docs/MODULAR-EQUIPMENT.md).
 - [Dirección artística y límites del ajuste](docs/EQUIPMENT-ART-DIRECTION.md).
+- [Estudio de referencias y diseños](docs/EQUIPMENT-REFERENCE-STUDY.md).
+- [Tocados editables en Blender](art/equipment/brumaluz-headwear.blend).
 - [Vista de frente y espalda](src/assets/models/wardrobe/classes/equipment_tailoring_closeup.png).
-- [Paquete de 275 GLB de armadura](src/assets/models/wardrobe/classes/class_outfits_glb.zip).
-- [Paquete de 308 GLB de armadura y accesorios](src/assets/models/items/modular_equipment_glb.zip).
+- [Paquete de 220 GLB de armadura](src/assets/models/wardrobe/classes/class_outfits_glb.zip).
+- [Paquete de 253 GLB de armadura y accesorios](src/assets/models/items/modular_equipment_glb.zip).
 
-`npm run art:outfits` regenera modelos, iconos y catálogo SQL. Si cambia el
+`npm run art:headwear:source` reconstruye la fuente Blender de los tocados y
+su caché de geometría. `npm run art:outfits` regenera modelos, iconos y catálogo SQL. Si cambia el
 catálogo, `npm run db:apply` actualiza el servidor. Los paquetes de exportación
 se actualizan con `tools/package-equipment.ps1` después de generar las vistas.
 
@@ -477,7 +484,7 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
 - Niveles y atributos: nivel máximo 50 (`MAX_LEVEL`). Se gana 1 punto de atributo cada 3 niveles (3, 6 … 48; `attributePointsAllowed` en `src/data/data.ts`), que se suma a los 2 de la creación (18 en total; tope 15 por atributo). Los puntos pendientes se calculan (permitidos − gastados) y se reparten con «+» en la ficha de personaje; el botón del menú de personaje muestra un «!» mientras haya puntos.
 - Experiencia: `gainExperience(n)` en `src/main.ts` suma XP con destellos dorados, número flotante y barra brillante; si completa niveles (`experienceToNextLevel`) añade destello de pantalla, estrellas y cartel «¡Subes de nivel!». Se prueba con Testículos («Recibir 200 puntos de experiencia»).
 - Muerte: al llegar la vida a 0 el personaje cae (animación `Death_A`), el mundo se apaga a grises y sale la pantalla «Has caído» con el botón (o `E`) «Reaparecer en la capital», que lleva al punto de inicio de Brumaluz con la vida completa (`die()`/`respawn()` en `src/main.ts`). Daño y curación pasan por `damagePlayer`/`healPlayer`.
-- Menú de personaje (`Tab`, icono a la izquierda del menú del juego): Inventario con paneles de equipo y mochila, y un monedero inferior. La mochila tiene 25 huecos, contador de ocupación y una franja bloqueada para futuras ampliaciones; los objetos muestran su icono ilustrado y cantidad, sin repetir el nombre en cada hueco. Las 10 ranuras de equipo rodean un muñeco giratorio: cabeza, colgante, torso, manos, anillo, arma, mano izquierda, piernas, pies y abalorio (constantes en `src/data/inventory.ts`). En móvil los paneles se apilan. Pulsa una pieza equipada para guardarla en la mochila, o un objeto equipable de la mochila para equiparlo; conserva su tooltip y cambia en el modelo local, retratos y jugadores remotos. La mochila llena impide desequipar sin perder nada. Se mantiene el clic para usar consumibles y el arrastre a la barra rápida. Ficha de personaje e inventario en `src/ui/playerWindows.ts`. Las monedas (Pelines y Lágrimas de fénix, premium) están descritas en [docs/CURRENCY.md](docs/CURRENCY.md).
+- Menú de personaje (`Tab`, icono a la izquierda del menú del juego): Inventario con paneles de equipo y mochila, y un monedero inferior. La mochila tiene 25 huecos, contador de ocupación y una franja bloqueada para futuras ampliaciones; los objetos muestran su icono ilustrado y cantidad, sin repetir el nombre en cada hueco. Las 9 ranuras de equipo rodean un muñeco giratorio: cabeza, colgante, torso, manos, anillo, arma, mano izquierda, piernas (incluye calzado) y abalorio (constantes en `src/data/inventory.ts`). En móvil los paneles se apilan. Pulsa una pieza equipada para guardarla en la mochila, o un objeto equipable de la mochila para equiparlo; conserva su tooltip y cambia en el modelo local, retratos y jugadores remotos. La mochila llena impide desequipar sin perder nada. Se mantiene el clic para usar consumibles y el arrastre a la barra rápida. Ficha de personaje e inventario en `src/ui/playerWindows.ts`. Las monedas (Pelines y Lágrimas de fénix, premium) están descritas en [docs/CURRENCY.md](docs/CURRENCY.md).
 - Tras devolver el distintivo de Gnomi aparece Isberto junto al jugador y abre automáticamente la oferta **Una sombra junto a la fragua**. Acepta, derrota a la criatura y usa `E` junto al cuerpo o pulsa su modelo para abrir un panel de botín compacto sobre el mundo. Otra pulsación de `E`, un clic en el objeto o **Recoger todo** permite recoger una **Esencia sombría**. Al agotarse el botín, el panel se cierra y el cuerpo desaparece sin volver a saquearse al reconectar. La esencia no revela todavía su significado. El diario y el rastreador tienen fondos translúcidos; las misiones completadas se despliegan desde su cabecera. Durante las conversaciones se puede arrastrar para girar la cámara sin alterar la vista de exploración. No hay botón de retirada; `Esc` solo libera el objetivo. El ataque exige arma principal de la clase, salvo Curación. Las habilidades de la barra muestran una recarga radial con cuenta atrás y aviso al quedar listas. Detalles en [docs/COMBAT.md](docs/COMBAT.md) y [docs/QUESTS.md](docs/QUESTS.md).
 - Tooltips de objetos (`src/ui/itemTooltip.ts`): ficha compartida en mochila, equipo, barra rápida y comercio, al pasar el cursor o enfocar el objeto. Muestra icono, nombre, categoría, efectos, descripción y valor de venta, sin indicar apilado ni añadir «por unidad»; las estadísticas se muestran si el objeto las define. Se coloca junto al objeto, preferentemente a la derecha, cambiando de lado si falta espacio y manteniéndose dentro de la pantalla. El catálogo `src/data/items.ts` contiene `category`, `effects` y `stats` para ampliar la ficha sin duplicarla en cada ventana. La poción restaura el 5 % de la vida máxima y se vende por 5 pelines; los precios y efectos reales siguen siendo autoritativos en `supabase/server/`. Los tooltips normales conservan su formato breve.
 - Cierre actual de la historia: tras derrotar a la criatura hay que hablar con Isberto; Gnomi interviene y ninguno sabe qué era. Después se vuelve con Gnomi a la plaza del pozo y se habla con él para quedarse allí. El progreso se conserva al reconectar, Gnomi deja de seguir al terminar y no se ofrecen más misiones. Recoger la esencia es independiente de ese cierre y no resuelve el misterio.

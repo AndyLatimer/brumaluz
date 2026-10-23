@@ -27,7 +27,8 @@ const folder='src/assets/models/wardrobe/classes';
 await fs.mkdir(folder+'/textures',{recursive:true});
 const textureCache=new Map();
 const chosen=process.argv.find(v=>v.startsWith('--only='))?.slice(7);
-for(const item of items.filter(i=>!chosen||i.collection===chosen)){
+const chosenClass=process.argv.find(v=>v.startsWith('--class='))?.slice(8);
+for(const item of items.filter(i=>(!chosen||i.collection===chosen)&&(!chosenClass||i.cls===chosenClass))){
  let textures=textureCache.get(item.collection);
  if(!textures){
   textures={};
@@ -43,4 +44,4 @@ for(const item of items.filter(i=>!chosen||i.collection===chosen)){
  await studio.finish(folder+'/'+item.id+'.glb',textures);
  console.log('Sculpted '+item.id);
 }
-if(!chosen)await import('./build-base-tunic.mjs');
+if(!chosen&&!chosenClass)await import('./build-base-tunic.mjs');

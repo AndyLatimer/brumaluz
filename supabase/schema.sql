@@ -112,7 +112,7 @@ as $$
 begin
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(new.user_id::text, 0));
 
-  if (select count(*) from public.characters where user_id = new.user_id) >= 5 then
+  if (select count(*) from public.characters where user_id = new.user_id) >= 6 then
     raise exception 'CHARACTER_LIMIT_REACHED';
   end if;
 

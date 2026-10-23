@@ -1,0 +1,7 @@
+CC0-1.0
+
+Mobiliario medieval creado para Brumaluz.
+Estilo visual compatible con KayKit (bajo polígono, paleta de tonos cálidos,
+madera, hierro y detalles dorados).
+
+Todos los modelos son originales de Brumaluz y se liberan bajo CC0-1.0.

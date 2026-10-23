@@ -27,3 +27,11 @@ Todo el sistema vive en [`src/data/currency.ts`](../src/data/currency.ts).
 La UI (inventario y ficha, `src/ui/playerWindows.ts`) las dibuja iterando `CURRENCY_ORDER`; las `premium` reciben la clase `.premium` (estilos en `src/styles/style.css`).
 
 > Las lágrimas de fénix no se obtienen todavía de ninguna forma: solo existe el monedero.
+
+## Uso futuro aprobado: energía de recolección
+
+Se prevé recargar energía de recolección con Lágrimas de fénix. Esa energía será compartida entre Minero, Leñador y Recolector y separada de los recursos de combate. Acordado: la compra repone la reserva hasta su máximo, sin aumentar su capacidad máxima ni el dominio del oficio. La compra todavía no está implementada. Precios, cantidades y límites de compra quedan por decidir; no hay una tasa de conversión aprobada.
+
+## Uso futuro aprobado: restauración de herramientas
+
+El usuario aprueba restaurar herramientas a toda su durabilidad original mediante Lágrimas de fénix o un objeto muy raro. Esta restauración recupera el máximo perdido por reparaciones normales y la durabilidad actual. Precio y objeto raro pendientes; no hay conversión aprobada ni implementación. La herramienta deteriorada se conserva para poder restaurarla.

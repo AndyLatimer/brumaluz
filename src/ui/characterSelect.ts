@@ -248,6 +248,8 @@ export async function returnToCharacters() {
     if (play.mode === 'play') {
       const stopped = stopMultiplayer();
       exitPlay();
+      // Al salir, la partida vuelve al modo creador: se tapa ya con la pantalla de personajes mientras el servidor cierra la sesión.
+      showCharacterScreen();
       await stopped;
     }
     if (user && session.currentUser?.id === user.id) await loadCharacterSelection(user);

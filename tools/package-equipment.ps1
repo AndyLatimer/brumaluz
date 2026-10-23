@@ -23,8 +23,11 @@ foreach($package in $packages){
   $entry=$archive.CreateEntry('equipment_manifest.json')
   $writer=[System.IO.StreamWriter]::new($entry.Open(),[System.Text.UTF8Encoding]::new($false))
   try{$writer.Write((ConvertTo-Json -InputObject @($package.Items) -Depth 20))}finally{$writer.Dispose()}
-  foreach($file in @('docs/MODULAR-EQUIPMENT.md','docs/CLASS-OUTFITS.md','docs/EQUIPMENT-ART-DIRECTION.md')){
+  foreach($file in @('docs/MODULAR-EQUIPMENT.md','docs/CLASS-OUTFITS.md','docs/EQUIPMENT-ART-DIRECTION.md','docs/EQUIPMENT-REFERENCE-STUDY.md','docs/WEAPON-SYSTEM-DESIGN.md','docs/MMORPG-SYSTEMS-REVIEW.md')){
    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $projectRoot $file),([System.IO.Path]::GetFileName($file)))|Out-Null
+  }
+  if($package.Items.Count -gt $jewels.Count){
+   [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $projectRoot 'art/equipment/brumaluz-headwear.blend'),'sources/brumaluz-headwear.blend')|Out-Null
   }
   foreach($file in @('wardrobe/classes/equipment_tailoring_closeup.png','wardrobe/classes/equipment_rarity_progression.png','wardrobe/classes/equipment_fit_review.png','wardrobe/classes/equipment_pose_review.png','wardrobe/classes/modular_equipment.png','items/accessories/accessories.png')){
    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $assetRoot $file),([System.IO.Path]::GetFileName($file)))|Out-Null

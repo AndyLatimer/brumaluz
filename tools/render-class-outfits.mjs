@@ -32,7 +32,7 @@ try{
    if(mix){
     for(const item of Object.values(ACCESSORIES).filter(p=>p.collection===outfit.collection))d.equipment[item.slot]={id:item.id,count:1};
     if(i>=5&&i<10){
-     const collectionBySlot={head:'ambar',chest:'eclipse',hands:'forja',legs:'alba',feet:'marea'};
+     const collectionBySlot={head:'ambar',chest:'eclipse',hands:'forja',legs:'alba'};
      for(const [slot,collection] of Object.entries(collectionBySlot)){const item=Object.values(ARMOR).find(p=>p.cls===outfit.cls&&p.slot===slot&&p.collection===collection);d.equipment[slot]={id:item.id,count:1}}
     }
     if(i>=10){d.equipment.head=null;d.equipment.chest=null;d.equipment.hands=null}

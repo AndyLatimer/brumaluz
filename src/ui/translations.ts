@@ -2,7 +2,30 @@
 import { ADVANCED_WEAPONS } from '../data/weaponProgression';
 import { OUTFITS, ARMOR } from '../data/outfits';
 import { ACCESSORIES } from '../data/accessories';
+import { ITEM_DESCRIPTION_TRANSLATIONS } from '../data/itemDescriptions';
 export const translations: Record<string, string> = {
+  ...ITEM_DESCRIPTION_TRANSLATIONS,
+  'Colección': 'Collection',
+  'Arma principal': 'Main hand',
+  'Mano secundaria': 'Off hand',
+  'Intervalo de ataque': 'Attack interval',
+  'No vendible': 'Cannot be sold',
+  'Piernas y calzado': 'Leggings and Footwear',
+  'Principiante': 'Beginner',
+  'Caminante': 'Wayfarer',
+  'Sello Violeta': 'Violet Seal',
+  'Aurora': 'Aurora',
+  'Fuego Primigenio': 'Primal Fire',
+  'Guardia del Alba': 'Dawn Guard',
+  'Eclipse': 'Eclipse',
+  'Roble Errante': 'Wandering Oak',
+  'Marea Real': 'Royal Tide',
+  'Forja Estelar': 'Stellar Forge',
+  'Distintivo de Gnomi, miembro del Gremio de Ayudantes.': 'Gnomi’s badge as a member of the Helpers’ Guild.',
+  'Hogaza de corteza gruesa y miga compacta.': 'A loaf with a thick crust and dense crumb.',
+  'Frasco pequeño de cristal con una dosis de brebaje rojo.': 'A small glass flask containing one dose of red brew.',
+  'Frasco pequeño de cristal con una dosis de brebaje azul.': 'A small glass flask containing one dose of blue brew.',
+  'Frasco pequeño de cristal con una dosis de brebaje verde.': 'A small glass flask containing one dose of green brew.',
   'Espada Hoja de Roble': 'Oak Leaf Sword',
   'Escudo del Tronco Errante': 'Wandering Trunk Shield',
   'Bastón del Brote Viejo': 'Old Sprout Staff',
@@ -921,7 +944,7 @@ const outfitNames = { guerrero: 'Armour', mago: 'Arcane Robe', picaro: 'Stalker 
 const outfitSets: Record<string,string> = { artesano: 'of the Wayfarer', ambar: 'of Amber', violeta: 'of the Violet Seal', aurora: 'of the Dawn', fuego: 'of Primordial Fire', alba: 'of the Dawn Guard', eclipse: 'of the Eclipse', roble: 'of the Wandering Oak', marea: 'of the Royal Tide', forja: 'of the Stellar Forge' };
 outfitSets.novicio='of the Novice';
 for (const outfit of Object.values(OUTFITS)) translations[outfit.label] = `${outfitNames[outfit.cls]} ${outfitSets[outfit.collection]}`;
-const armorNames={head:'Headwear',chest:'Chest Armour',hands:'Gloves',legs:'Leggings',feet:'Boots'};
+const armorNames={head:'Headwear',chest:'Chest Armour',hands:'Gloves',legs:'Leggings and Footwear'};
 for(const item of Object.values(ARMOR))translations[item.label]=`${armorNames[item.slot]} · ${outfitNames[item.cls]} ${outfitSets[item.collection]}`;
 for(const item of Object.values(ACCESSORIES))translations[item.label]=`${({pendant:'Pendant',ring:'Ring',trinket:'Trinket'} as const)[item.slot]} ${outfitSets[item.collection]}`;
 translations['Todas las clases']='All classes';translations['Pecho']='Chest';translations['Recurso máximo']='Maximum Resource';

@@ -8,6 +8,7 @@ import { ORIGINAL_WEAPONS, originalWeaponIcon } from './uniqueWeapons';
 import { weaponPortrait, weaponIconFrame } from '../art/weaponIcons';
 import { ARMOR, outfitItemStats } from './outfits';
 import { ACCESSORIES } from './accessories';
+import { describeWeapon, describeArmor, describeAccessory, weaponCollection, EQUIPMENT_COLLECTIONS } from './itemDescriptions';
 
 export interface ItemDef {
   id: string;
@@ -16,6 +17,8 @@ export interface ItemDef {
   sellable?: boolean;
   label: string; // en español (se traduce con t())
   category: string;
+  /** Visual collection only; it does not imply an active set bonus. */
+  collection?: string;
   description: string;
   effects?: readonly string[];
   stats?: readonly { label: string; value: string }[];
@@ -95,8 +98,7 @@ export const ITEMS: Record<string, ItemDef> = {
     ['ballesta_inicial', 'Ballesta de principiante', 'Ballesta', '<path d="m7 21 8-16M4 7q9-6 16 7M4 7l16 7M11 11l-3 6" fill="none" stroke="#8c623e" stroke-width="2"/>'],
   ].map(([id,label,category,icon]) => [id, {
     id, label, category, icon, bound: true, sellable: false, stack: 1, value: 0, stats: weaponItemStats(id),
-    description: 'Equipo básico de tu clase, ligado a tu personaje.',
-    effects: ['No se puede vender ni intercambiar.'],
+    description: describeWeapon(WEAPONS[id], 'novicio'), collection: EQUIPMENT_COLLECTIONS.novicio,
   }])),
   ...Object.fromEntries([
     ['espada_cobre_t1', 'Espada de la Hoja de Cobre', 'Espada', 'espada_inicial', 100],
@@ -109,7 +111,7 @@ export const ITEMS: Record<string, ItemDef> = {
     ['ballesta_roble_t1', 'Ballesta de roble reforzada', 'Ballesta', 'ballesta_inicial', 110],
   ].map(([id, label, category, starter, value]) => [id, {
     id: String(id), label: String(label), category: String(category), value: Number(value), stack: 1,
-    description: 'Equipo poco común, elaborado con mejores materiales para tus primeras aventuras.',
+    description: describeWeapon(WEAPONS[String(id)], 'artesano'), collection: EQUIPMENT_COLLECTIONS.artesano,
     stats: weaponItemStats(String(id)),
     // Same icon family, with the amber and forest colours of the new models.
     icon: '',
@@ -126,12 +128,12 @@ export const ITEMS: Record<string, ItemDef> = {
     ['ballesta_roble_t2', 'Ballesta de roble labrada', 'Ballesta', 'ballesta_inicial', 220],
   ].map(([id, label, category, starter, value]) => [id, {
     id: String(id), label: String(label), category: String(category), value: Number(value), stack: 1,
-    description: 'Equipo raro del conjunto de ámbar, una mejora sobre el equipo de artesano.',
+    description: describeWeapon(WEAPONS[String(id)], 'ambar'), collection: EQUIPMENT_COLLECTIONS.ambar,
     stats: weaponItemStats(String(id)), icon: '', starterIcon: String(starter),
   }])),
   pan_duro: {
     id: 'pan_duro', label: 'Pan duro', category: 'Comida',
-    description: 'Una hogaza humilde, de corteza firme y miga tenaz. No es un banquete, pero ayuda a seguir adelante.',
+    description: 'Hogaza de corteza gruesa y miga compacta.',
     effects: ['+5 de vida máxima y +3 de maná o estamina máximos durante 15 minutos de conexión.',
       'No cura ni rellena el recurso. Comer otro renueva la duración, sin acumular el efecto.'],
     value: 4, usable: true, food: 'pan_duro',
@@ -141,7 +143,7 @@ export const ITEMS: Record<string, ItemDef> = {
     id: 'pocion_vida_minuscula',
     label: 'Poción de vida minúscula',
     category: 'Consumible',
-    description: 'Un pequeño frasco de cristal con un reconfortante brebaje rojo. Un sorbo de calma para seguir el camino.',
+    description: 'Frasco pequeño de cristal con una dosis de brebaje rojo.',
     effects: ['Restaura un 5 % de tu vida máxima.'],
     value: 10,
     usable: true,
@@ -150,14 +152,14 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   pocion_mana_minuscula: {
     id: 'pocion_mana_minuscula', label: 'Poción de maná minúscula', category: 'Consumible',
-    description: 'Un frasco azul con destellos plateados. Un pequeño respiro para volver a tejer magia.',
+    description: 'Frasco pequeño de cristal con una dosis de brebaje azul.',
     effects: ['Restaura un 5 % de tu maná máximo. Solo para clases que usan maná.'],
     value: 10, usable: true, restore: { kind: 'mana', percent: 5 },
     icon: '<path d="M9 3h6v6l4 6v4l-3 3H8l-3-3v-4l4-6Z" fill="#dfedf4" stroke="#5c5363"/><path d="M6 14h12v5l-2 2H8l-2-2Z" fill="#568bd1" stroke="#426bab"/><path d="m12 14 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#f0e7c9" stroke="none"/><rect x="8" y="2" width="8" height="4" rx="1" fill="#b69765" stroke="#6a4935"/><path d="M8 12 7 15M10 3h3" stroke="#fff7df" fill="none" stroke-linecap="round"/>',
   },
   pocion_estamina_minuscula: {
     id: 'pocion_estamina_minuscula', label: 'Poción de estamina minúscula', category: 'Consumible',
-    description: 'Un brebaje verde de aroma fresco y herbal. Un impulso para continuar la aventura.',
+    description: 'Frasco pequeño de cristal con una dosis de brebaje verde.',
     effects: ['Restaura un 5 % de tu estamina máxima. Solo para clases que usan estamina.'],
     value: 10, usable: true, restore: { kind: 'stamina', percent: 5 },
     icon: '<path d="M9 4h6v5c5 2 6 5 5 9l-3 4H7l-3-4c-1-4 0-7 5-9Z" fill="#e3edda" stroke="#59634b"/><path d="M5 14q7 2 14 0v4l-3 3H8l-3-3Z" fill="#87ad52" stroke="#63833f"/><path d="m13 14-4 4h3l-1 3 5-5h-3Z" fill="#fff0b6" stroke="none"/><rect x="8" y="2" width="8" height="4" rx="1" fill="#b69765" stroke="#6a4935"/><path d="m8 11-2 4M10 3h3" stroke="#fff7df" fill="none" stroke-linecap="round"/>',
@@ -169,11 +171,8 @@ for (const item of ADVANCED_WEAPONS) {
   ITEMS[item.id] = {
     id: item.id, label: item.label, category: source.category, stack: 1, value: item.value,
     rarity: rarityForTier(item.weapon.tier), stats: weaponItemStats(item.id),
-    description: item.weapon.tier === 5
-      ? 'Un artefacto excepcional del Fuego Primigenio, forjado con un núcleo de poder antiguo.'
-      : item.weapon.tier === 4
-        ? 'Equipo legendario de la Aurora, con metales nobles, engastes y runas de gran maestría.'
-        : 'Equipo épico del Sello Violeta, con metal trabajado y focos rúnicos de poder.',
+    description: describeWeapon(item.weapon, weaponCollection(item.id, item.weapon)),
+    collection: EQUIPMENT_COLLECTIONS[weaponCollection(item.id, item.weapon)],
     icon: source.icon + `<path d="m19 14 3 4-3 4-3-4Z" fill="${ITEM_RARITIES[rarityForTier(item.weapon.tier)].color}" stroke="#332d36" stroke-width=".7"/>`,
   };
 }
@@ -182,13 +181,7 @@ for (const item of ORIGINAL_WEAPONS) {
   ITEMS[item.id] = {
     id: item.id, label: item.label, category: ITEMS[item.starter].category, stack: 1, value: item.value,
     rarity: rarityForTier(item.weapon.tier), stats: weaponItemStats(item.id),
-    description: ({
-      alba: 'Una pieza de la Guardia del Alba, construida con acero claro, roble y engastes celestes.',
-      eclipse: 'Una reliquia del Eclipse, de formas lunares, metal oscuro y cristales violetas.',
-      roble: 'Artesanía del Roble Errante: madera curtida, hojas de acero y herrajes de caminante.',
-      marea: 'Una pieza legendaria de la Marea Real, con formas de concha, coral y tridente.',
-      forja: 'Un artefacto de la Forja Estelar, ensamblado con metal oscuro y núcleos de luz ámbar.',
-    } as Record<string, string>)[item.collection],
+    description: describeWeapon(item.weapon, item.collection), collection: EQUIPMENT_COLLECTIONS[item.collection],
     icon: originalWeaponIcon(item.weapon.kind, item.collection, item.weapon.slot === 'offhand'),
   };
 }
@@ -196,15 +189,15 @@ for (const item of ORIGINAL_WEAPONS) {
 export const DEFAULT_STACK = 50;
 for (const outfit of Object.values(ARMOR)) {
   ITEMS[outfit.id] = {
-    id: outfit.id, label: outfit.label, category: ({head:'Cabeza',chest:'Pecho',hands:'Manos',legs:'Piernas',feet:'Pies'} as const)[outfit.slot], stack: 1, value: outfit.value,
+    id: outfit.id, label: outfit.label, category: ({head:'Cabeza',chest:'Pecho',hands:'Manos',legs:'Piernas'} as const)[outfit.slot], stack: 1, value: outfit.value,
     rarity: rarityForTier(outfit.tier), stats: outfitItemStats(outfit.id),
-    description: 'Una pieza independiente de tu clase. Puedes combinarla con otras colecciones; al retirarla recuperas la ropa básica de esa zona.',
+    description: describeArmor(outfit.cls, outfit.slot, outfit.tier, outfit.collection), collection: EQUIPMENT_COLLECTIONS[outfit.collection],
     icon: weaponPortrait(outfit.id) ?? `<path d="m7 3 5 2 5-2 5 5-4 3-1 11H7L6 11 2 8Z" fill="${outfit.cloth}" stroke="${outfit.trim}"/>`,
   };
 }
 for(const item of Object.values(ACCESSORIES))ITEMS[item.id]={
   id:item.id,label:item.label,category:({pendant:'Colgante',ring:'Anillo',trinket:'Abalorio'} as const)[item.slot],stack:1,value:item.value,
-  rarity:rarityForTier(item.tier),description:'Artesanía de su colección, utilizable por todas las clases. Aumenta tus reservas mientras esté equipada.',
+  rarity:rarityForTier(item.tier),description:describeAccessory(item.slot,item.collection),collection:EQUIPMENT_COLLECTIONS[item.collection],
   stats:[...(item.maxHealth?[{label:'Vida máxima',value:`+${item.maxHealth}`}]:[]),...(item.maxResource?[{label:'Recurso máximo',value:`+${item.maxResource}`}]:[])],
   icon:weaponPortrait(item.id)??`<circle cx="12" cy="12" r="7" fill="${item.dark}" stroke="${item.metal}"/><path d="m12 6 4 6-4 6-4-6Z" fill="${item.gem}"/>`,
 };

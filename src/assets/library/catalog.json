@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Kay Lousberg y Kenney",
+  "author": "Kay Lousberg, Kenney y Brumaluz",
   "license": "CC0-1.0",
   "packs": [
     {
@@ -450,6 +450,16 @@
       "count": 72,
       "sourceFiles": 374,
       "license": "kenney-hexagon/LICENSE.txt",
+      "excluded": []
+    },
+    {
+      "id": "medieval-furniture",
+      "label": "Mobiliario medieval (Brumaluz)",
+      "author": "Brumaluz",
+      "directory": "medieval-furniture",
+      "count": 10,
+      "sourceFiles": 10,
+      "license": "medieval-furniture/LICENSE.txt",
       "excluded": []
     }
   ],
@@ -27246,6 +27256,266 @@
           0.5,
           0.10000000149011612,
           0.5773502588272095
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-banquet-table",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-banquet-table",
+      "path": "medieval-furniture/objects/medieval-banquet-table.glb",
+      "source": "medieval-banquet-table.glb",
+      "bytes": 292660,
+      "sha256": "835c55181b16753e37f464afc67655c7478e3d1b98608e8a14e1ff8000a0c4dc",
+      "meshes": 4,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.3200000524520874,
+          -0.005997401662170887,
+          -0.44982919096946716
+        ],
+        "max": [
+          1.3200000524520874,
+          1.2400000095367432,
+          0.41999998688697815
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-barrel",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-barrel",
+      "path": "medieval-furniture/objects/medieval-barrel.glb",
+      "source": "medieval-barrel.glb",
+      "bytes": 368096,
+      "sha256": "3bb8d10f85e300184b7b1f56543db79071b5523ff2e2997dca155285669749c2",
+      "meshes": 4,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5199999809265137,
+          -0.029999999329447746,
+          -0.5199999809265137
+        ],
+        "max": [
+          0.5199999809265137,
+          0.9599999785423279,
+          0.5199999809265137
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-bench",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-bench",
+      "path": "medieval-furniture/objects/medieval-bench.glb",
+      "source": "medieval-bench.glb",
+      "bytes": 290984,
+      "sha256": "948960726b7fe6643cdc3548929d3cff77aa1b693c30c985d6af302045f7a7a5",
+      "meshes": 4,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7655950784683228,
+          -0.006456719245761633,
+          -0.268092542886734
+        ],
+        "max": [
+          0.7655950784683228,
+          0.824999988079071,
+          0.268092542886734
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-cart",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-cart",
+      "path": "medieval-furniture/objects/medieval-cart.glb",
+      "source": "medieval-cart.glb",
+      "bytes": 297000,
+      "sha256": "81cd90f81a55af189bd62ce3ae830834a8cf91604732e3f21f96eec9eeaab717",
+      "meshes": 6,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0700000524520874,
+          0.15000000596046448,
+          -1.149999976158142
+        ],
+        "max": [
+          1.0700000524520874,
+          1.25,
+          0.800000011920929
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-cauldron",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-cauldron",
+      "path": "medieval-furniture/objects/medieval-cauldron.glb",
+      "source": "medieval-cauldron.glb",
+      "bytes": 324580,
+      "sha256": "60a2d0a078e59a53f33fbef2565348632ad8cc7b9049ac531de81c89685bfa53",
+      "meshes": 7,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.699999988079071,
+          0,
+          -0.5649999976158142
+        ],
+        "max": [
+          0.699999988079071,
+          0.5450000166893005,
+          0.5649999976158142
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-chest",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-chest",
+      "path": "medieval-furniture/objects/medieval-chest.glb",
+      "source": "medieval-chest.glb",
+      "bytes": 292500,
+      "sha256": "e83daaebed71b41f16a3e9fd93ac5595f6b8379c82b7a997042fa8c2a7160954",
+      "meshes": 6,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4950000047683716,
+          -0.020000005140900612,
+          -0.3050000071525574
+        ],
+        "max": [
+          0.4950000047683716,
+          0.6299999952316284,
+          0.33000001311302185
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-feeding-trough",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-feeding-trough",
+      "path": "medieval-furniture/objects/medieval-feeding-trough.glb",
+      "source": "medieval-feeding-trough.glb",
+      "bytes": 290292,
+      "sha256": "cb46147004bdbf5ba2f50c35b7c9c7f77e5658d5e62d31517d8ffcb0beccccfe",
+      "meshes": 5,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5600000023841858,
+          5.9604645663569045e-9,
+          -0.2849999964237213
+        ],
+        "max": [
+          0.5600000023841858,
+          0.4749999940395355,
+          0.2849999964237213
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-hay-bale",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-hay-bale",
+      "path": "medieval-furniture/objects/medieval-hay-bale.glb",
+      "source": "medieval-hay-bale.glb",
+      "bytes": 298344,
+      "sha256": "43313d02be5922b9f3cb7718746225594e98ece95450f34dce78588454ce6cbf",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4749999940395355,
+          -0.4872872829437256,
+          -0.5679729580879211
+        ],
+        "max": [
+          0.5385549068450928,
+          0.550000011920929,
+          0.6800000071525574
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-lectern",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-lectern",
+      "path": "medieval-furniture/objects/medieval-lectern.glb",
+      "source": "medieval-lectern.glb",
+      "bytes": 289144,
+      "sha256": "9f88223a09d16b8f9e9775cc4f67f3e77b65aaebc00d7662f5b6e59f689110ce",
+      "meshes": 5,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.2800000011920929,
+          -2.98023217215615e-10,
+          -0.5737065076828003
+        ],
+        "max": [
+          0.2800000011920929,
+          1.2050000429153442,
+          0.25
+        ]
+      }
+    },
+    {
+      "id": "medieval-furniture/objects/medieval-throne",
+      "pack": "medieval-furniture",
+      "kind": "objects",
+      "name": "medieval-throne",
+      "path": "medieval-furniture/objects/medieval-throne.glb",
+      "source": "medieval-throne.glb",
+      "bytes": 294044,
+      "sha256": "7ac63b44fbae73207d10ebef9c9c308298d9fb250e0b9f7dd173c1a51df5cfa1",
+      "meshes": 7,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.41999998688697815,
+          -5.9604645663569045e-9,
+          -0.5
+        ],
+        "max": [
+          0.41999998688697815,
+          1.5499999523162842,
+          0.30000001192092896
         ]
       }
     }

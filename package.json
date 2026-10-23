@@ -14,6 +14,8 @@
     "build": "tsc && vite build",
     "prebuild": "node tools/build-weapon-icons.mjs",
     "art:weapons:icons": "node tools/build-weapon-icons.mjs",
+    "art:headwear:source": "node tools/build-headwear-source.mjs",
+    "art:outfits:review": "node tools/render-tailoring-detail.mjs && node tools/render-equipment-fit.mjs && node tools/render-equipment-fit.mjs --fit && node tools/render-equipment-fit.mjs --poses && node tools/render-class-outfits.mjs && node tools/render-class-outfits.mjs --detail && node tools/render-class-outfits.mjs --mix",
     "art:outfits": "node tools/build-class-outfits.mjs && node tools/build-modular-armor.mjs && node tools/build-accessories.mjs && node tools/build-weapon-icons.mjs && node tools/build-weapon-catalog.mjs",
     "preview": "vite preview",
     "db:apply": "node scripts/apply-sql.mjs",

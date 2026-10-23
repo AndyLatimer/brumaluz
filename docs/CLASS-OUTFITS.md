@@ -1,6 +1,6 @@
 # Trajes modulares de clase
 
-55 conjuntos, cinco clases por once colecciones, divididos en **275 piezas equipables**: cabeza, pecho, manos, piernas y pies. Los GLB independientes están en `src/assets/models/wardrobe/classes/modular/`; los archivos completos de `classes/` son patrones de montaje. Comparten el esqueleto de KayKit Adventurers.
+55 conjuntos, cinco clases por once colecciones, divididos en **220 piezas equipables**: cabeza, pecho, manos y piernas. Piernas incluye también las botas: pantalón y calzado se equipan juntos. Los GLB independientes están en `src/assets/models/wardrobe/classes/modular/`; los archivos completos de `classes/` son patrones de montaje. Comparten el esqueleto de KayKit Adventurers.
 
 ## Colecciones
 
@@ -24,15 +24,16 @@ El patronaje vigente usa petos curvos, hombreras arqueadas, túnicas con paños 
 
 Cada pieza ocupa su ranura y sustituye su región del cuerpo. Las ranuras vacías usan ropa básica completa, con manos del color de piel del personaje. Las piezas se venden por separado en Testículos, son comerciables, no apilables y limitadas a su clase. La ropa inicial continúa siendo una túnica medieval de colores personalizables.
 
-Guardia total: categoría + 2 para guerrero, categoría para mago, categoría + 1 para las otras clases. Se reparte entre pecho, manos y piernas: pecho recibe `ceil(total/2)`, manos `ceil(resto/2)` y piernas el resto. Cabeza añade `2+2×categoría` de vida máxima; botas, el mismo recurso máximo. Se suma la guardia del arma secundaria, con mínimo de 1 de daño recibido. No hay efectos de conjunto implícitos.
+Guardia total: categoría + 2 para guerrero, categoría para mago, categoría + 1 para las otras clases. Se reparte entre pecho, manos y piernas: pecho recibe `ceil(total/2)`, manos `ceil(resto/2)` y piernas el resto. Cabeza añade `2+2×categoría` de vida máxima; piernas, el mismo recurso máximo que antes aportaban las botas. Se suma la guardia del arma secundaria, con mínimo de 1 de daño recibido. Los bonos de 2/4 y 4/4 están acordados como diseño, pendientes de definir e implementar sus efectos.
 
-Valor base de las cuatro piezas originales por categoría 0–5: 90, 180, 360, 720, 2160 y 6480 pelines. Reparto: 50 % pecho, 15 % manos, 20 % piernas, 15 % pies. La cabeza cuesta un 15 % adicional. El vendedor paga la mitad. Esta pasada visual conserva estas estadísticas.
+Valor base por categoría 0–5: 90, 180, 360, 720, 2160 y 6480 pelines. Pecho cuesta 50 %, manos 15 % y piernas suma los precios anteriores de calzas (20 %) y botas (15 %), con sus redondeos originales. Cabeza cuesta un 15 % adicional. El vendedor paga la mitad.
 
 ## Fuentes y mantenimiento
 
 - Catálogo: `src/data/outfits.json` y `outfits.ts`.
 - Geometría, UV y rig: `tools/garment-studio.mjs`.
 - Corte y tocados: `tools/tailored-outfit-pattern.mjs`, `tailored-headwear.mjs`.
+- Fuente de tocados en Blender: `art/equipment/brumaluz-headwear.blend`; generador `tools/blender/model-equipment-headwear.py`. Treinta prototipos con jaulas, UV y modificadores editables, aplicados a las 55 variantes.
 - Atlas PNG editables: `classes/textures/`; generador: `tools/outfit-textures.mjs`.
 - Montaje y ajuste al personaje: `src/character/wardrobe.ts`, `equipmentFit.ts`.
 - Túnica básica compatible: `tools/build-base-tunic.mjs`.
@@ -41,4 +42,4 @@ Valor base de las cuatro piezas originales por categoría 0–5: 90, 180, 360, 7
 - Revisión: `equipment_tailoring_closeup.png`, `equipment_rarity_progression.png`, `equipment_fit_review.png`, `equipment_pose_review.png`, `modular_equipment.png`.
 - Exportación: `class_outfits_glb.zip`, actualizado con `tools/package-equipment.ps1`.
 
-`npm run art:outfits` reconstruye modelos, piezas, accesorios, retratos y catálogo. Los GLB son importables en Blender; los generadores son su fuente editable. Mantener todos los objetos existentes al añadir colecciones. Los IDs de los trajes originales siguen siendo pecheras.
+`npm run art:headwear:source` reconstruye la fuente Blender y la caché de geometría de los tocados. `npm run art:outfits` reconstruye modelos, piezas, accesorios, retratos y catálogo usando esa caché. Los GLB son importables en Blender. El [estudio de referencias](EQUIPMENT-REFERENCE-STUDY.md) explica las decisiones y el proceso de edición. Mantener todos los objetos existentes al añadir colecciones. Los IDs de los trajes originales siguen siendo pecheras.

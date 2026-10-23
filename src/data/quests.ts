@@ -46,7 +46,7 @@ export function questItems(progress: WelcomeProgress | null) {
   return progress?.stage === 'found' ? [{
     id: 'gnomi-guild-badge',
     name: 'Distintivo del Gremio de Ayudantes',
-    description: 'El distintivo de Gnomi. Un poco torcido, pero todavía digno del gremio.',
+    description: 'Distintivo de Gnomi, miembro del Gremio de Ayudantes.',
     quest: WELCOME_TITLE,
     objective: 'Devuélveselo a Gnomi.',
   }] : [];

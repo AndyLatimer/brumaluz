@@ -3,21 +3,21 @@ import type { ClassId } from './data';
 import type { Equipment } from './inventory';
 import { rarityForTier, ITEM_RARITIES, type WeaponTier } from './itemRarity';
 
-export const ARMOR_SLOTS = ['head', 'chest', 'hands', 'legs', 'feet'] as const;
+export const ARMOR_SLOTS = ['head', 'chest', 'hands', 'legs'] as const;
 export type ArmorSlot = typeof ARMOR_SLOTS[number];
 
 export const OUTFITS = Object.fromEntries(source.map(item => [item.id, {
   ...item, cls: item.cls as ClassId, slot: 'chest' as const, tier: item.tier as WeaponTier,
 }]));
-const names: Record<ArmorSlot,string> = {head:'Tocado',chest:'Pechera',hands:'Guantes',legs:'Calzas',feet:'Botas'};
+const names: Record<ArmorSlot,string> = {head:'Tocado',chest:'Pechera',hands:'Guantes',legs:'Piernas y calzado'};
 export const ARMOR = Object.fromEntries(Object.values(OUTFITS).flatMap(set => {
   const chest = Math.ceil(set.guard/2), hands = Math.ceil((set.guard-chest)/2);
-  const guards = {head:0,chest,hands,legs:set.guard-chest-hands,feet:0};
+  const guards = {head:0,chest,hands,legs:set.guard-chest-hands};
   return ARMOR_SLOTS.map(slot => {
     const id=slot==='chest'?set.id:`${set.id}_${slot}`;
     return [id, {...set,id,setId:set.id,slot,label:slot==='chest'?set.label:`${names[slot]} · ${set.label}`,
-      guard:guards[slot],maxHealth:slot==='head'?2+set.tier*2:0,maxResource:slot==='feet'?2+set.tier*2:0,
-      value:Math.max(1,Math.round(set.value*({head:.15,chest:.5,hands:.15,legs:.2,feet:.15}[slot])))}];
+      guard:guards[slot],maxHealth:slot==='head'?2+set.tier*2:0,maxResource:slot==='legs'?2+set.tier*2:0,
+      value:slot==='legs'?Math.max(1,Math.round(set.value*.2))+Math.max(1,Math.round(set.value*.15)):Math.max(1,Math.round(set.value*({head:.15,chest:.5,hands:.15}[slot])))}];
   });
 }));
 export function equippedArmor(cls: ClassId, equipment: Equipment, slot: ArmorSlot) {

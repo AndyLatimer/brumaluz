@@ -222,7 +222,6 @@ export function mountModularWardrobe(
     if(slot==='chest')mount(wardrobeSource('medieval'),['medieval-tunic','medieval-sleeve-l','medieval-sleeve-r'],true);
     else if(slot==='hands')mount(wardrobeSource('medieval'),['anatomy-hand-left','anatomy-hand-right']);
     else if(slot==='legs')mount(fallback,modularNodes.legs,true);
-    else if(slot==='feet')mount(fallback,modularNodes.feet,true);
   }
 }
 

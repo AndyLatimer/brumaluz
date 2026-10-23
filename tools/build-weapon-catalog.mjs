@@ -28,7 +28,7 @@ create or replace function public.game_equipment_stat(d jsonb, p_stat text)
 returns int language sql immutable set search_path='' as $$
   select coalesce(sum(coalesce((meta->>p_stat)::int,0)),0)::int
   from (select public.game_equipment_item(d->'equipment'->slot->>'id') as meta, slot
-    from (values ('head'),('pendant'),('chest'),('hands'),('ring'),('weapon'),('offhand'),('legs'),('feet'),('trinket')) as slots(slot)
+    from (values ('head'),('pendant'),('chest'),('hands'),('ring'),('weapon'),('offhand'),('legs'),('trinket')) as slots(slot)
     where d->'equipment'->slot->>'count'='1') as equipped
   where (meta->>'cls' is null or meta->>'cls'=d->>'cls') and meta->>'slot'=slot
 $$;

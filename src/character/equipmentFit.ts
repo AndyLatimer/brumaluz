@@ -6,7 +6,7 @@ const center=new THREE.Vector3(0,1.66,-.01);
 /** Seat the authored contour on the actual selected skull/hair, in bind coordinates. */
 export function seatHeadwear(object:THREE.Object3D,head:HeadResult,own:Own){
   const data=object.userData;
-  if(data.fitVersion===3){fitSculptedHeadwear(object,head,own);return}
+  if(data.fitVersion===3||data.fitVersion===4){fitSculptedHeadwear(object,head,own);return}
   if(data.fitVersion!==2)return;
   const seat=data.seatY as number,rx=data.seatX as number,rz=data.seatZ as number,cz=data.centerZ as number;
   const inverse=head.toBone.clone().invert(),surfaces:THREE.Mesh[]=[],ray=new THREE.Raycaster();
@@ -69,10 +69,22 @@ function fitSculptedHeadwear(object:THREE.Object3D,head:HeadResult,own:Own){
    const shell=Math.pow(Math.abs(direction.x/radii[0])**2.15+Math.abs(direction.y/radii[1])**2.15+Math.abs(direction.z/radii[2])**2.15,-1/2.15);
    // Keep the hem outside the crown: collapsing both onto one minimum radius
    // caused their surfaces to flicker against each other on helmet sides/backs.
-   const clearance=Math.max(.003,authored-shell+(object.userData.fitOffset??0));
-   point.copy(center).addScaledVector(direction,radial(direction)+clearance);p.setXYZ(i,point.x,point.y,point.z);
+   if(object.userData.fitVersion===4){
+    // Transfer only the difference between skulls. Clamping every folded layer
+    // to the same radius flattened thickness, seams and recessed hat linings.
+    const delta=THREE.MathUtils.clamp(radial(direction)-shell,-.035,.045);
+    point.copy(center).addScaledVector(direction,authored+delta);
+   }else{
+    const clearance=Math.max(.003,authored-shell+(object.userData.fitOffset??0));
+    point.copy(center).addScaledVector(direction,radial(direction)+clearance);
+   }
+   p.setXYZ(i,point.x,point.y,point.z);
   }
-  p.needsUpdate=true;node.geometry.computeVertexNormals();node.geometry.computeBoundingSphere();
+  p.needsUpdate=true;
+  // Keep Blender's corner normals across UV/material seams and soft bevels.
+  // Version 4 only transfers a small skull delta, so these remain a good fit.
+  if(object.userData.fitVersion!==4)node.geometry.computeVertexNormals();
+  node.geometry.computeBoundingBox();node.geometry.computeBoundingSphere();
  });
  // Tuck only hair beneath the occupied part of the hat. Free hair and ponytails
  // below its rim keep their silhouette. Each wearer owns these geometries.

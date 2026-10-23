@@ -22,9 +22,12 @@ function split(document,nodeName,newName,predicate){
 const nodes={
  head:['suit-head'],chest:['medieval-tunic','medieval-sleeve-l','medieval-sleeve-r','suit-upperarm-l','suit-upperarm-r'],
  hands:['suit-glove-left','suit-glove-right','suit-bracer-l','suit-bracer-r'],
- legs:['suit-foundation','suit-trousers-l','suit-trousers-r'],feet:['medieval-leg-l','medieval-leg-r','suit-boot-trim-l','suit-boot-trim-r'],
+ legs:['suit-foundation','suit-trousers-l','suit-trousers-r','medieval-leg-l','medieval-leg-r','suit-boot-trim-l','suit-boot-trim-r'],
 };
-for(const set of sets){
+const chosenClass=process.argv.find(v=>v.startsWith('--class='))?.slice(8);
+const chosenCollection=process.argv.find(v=>v.startsWith('--only='))?.slice(7);
+const selected=sets.filter(set=>(!chosenClass||set.cls===chosenClass)&&(!chosenCollection||set.collection===chosenCollection));
+for(const set of selected){
  const file=folder+'/'+set.id+'.glb',doc=await io.read(file),root=doc.getRoot();
  const authored=root.listNodes().some(n=>n.getName()==='medieval-tunic'&&n.getExtras().patternVersion===3);
  // Version 3 authors each slot and its shared boundary explicitly.
@@ -52,6 +55,8 @@ for(const set of sets){
   const id=slot==='chest'?set.id:`${set.id}_${slot}`;
   await io.write(folder+'/modular/'+id+'.glb',part);
  }
+ // Retire only this set's obsolete independent footwear export.
+ await fs.rm(folder+'/modular/'+set.id+'_feet.glb',{force:true});
 }
 await fs.writeFile(folder+'/modular/nodes.json',JSON.stringify(nodes,null,2));
-console.log('Built '+sets.length*5+' independently equippable armour models.');
+console.log('Built '+selected.length*4+' independently equippable armour models.');

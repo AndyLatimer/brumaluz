@@ -24,7 +24,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
 };
 
 const SLOT_LABEL: Record<EquipmentSlot, string> = {
-  head: 'Cabeza', pendant: 'Colgante', chest: 'Torso', hands: 'Manos', ring: 'Anillo', weapon: 'Arma', offhand: 'Mano izquierda', legs: 'Piernas', feet: 'Pies', trinket: 'Abalorio',
+  head: 'Cabeza', pendant: 'Colgante', chest: 'Torso', hands: 'Manos', ring: 'Anillo', weapon: 'Arma', offhand: 'Mano izquierda', legs: 'Piernas', trinket: 'Abalorio',
 };
 
 // Ilustraciones de las ranuras de equipo (viewBox 24).
@@ -36,8 +36,7 @@ const SLOT_ICON: Record<EquipmentSlot, string> = {
   ring: '<circle cx="12" cy="15" r="6.5" fill="#bf984e"/><circle cx="12" cy="15" r="3.7" fill="#f0dfb7"/><path d="m7 6 5-4 5 4-5 5Z" fill="#71968f"/><path d="m7 6 5 1 5-1M12 7V2" fill="none" stroke="#d6e6cc"/><path d="M7 14a5 5 0 0 1 2-3" fill="none" stroke="#f9e3a6"/>',
   weapon: '<path d="m20 2 1 6-10 10-5-5Z" fill="#b1c2bd"/><path d="M19 5 9 15" stroke="#f3f0d7"/><path d="m5 11 8 8 2-2-8-8Z" fill="#c09b56"/><path d="m7 15 2 2-5 5-2-2Z" fill="#956a4d"/><path d="m3 18 3 3" stroke="#d6b77c"/>',
   offhand: '<path d="m12 2 9 4-1 8c-1 4-4 6-8 8-4-2-7-4-8-8L3 6Z" fill="#b99a5a"/><path d="m12 5 6 3-1 6c-.5 2.5-2.5 4-5 5.5-2.5-1.5-4.5-3-5-5.5L6 8Z" fill="#73938a"/><path d="M12 7v10M8 11h8" fill="none" stroke="#e3d5a2" stroke-width="2"/><circle cx="12" cy="11" r="1.8" fill="#c4a35b"/>',
-  legs: '<path d="M6 3h12l1 18h-5l-2-10-2 10H5Z" fill="#8d9e9f"/><path d="M6 3h12v4H6Z" fill="#a38155"/><path d="M10 4h4v2h-4Z" fill="#dec181"/><path d="m7 14 3 1-1 5H6Zm10 0-3 1 1 5h3Z" fill="#b6c0b2"/><path d="M12 7v4" stroke="#e5ddbf"/>',
-  feet: '<path d="M10 3h8v10l4 3v5H10v-5l2-3Z" fill="#a48056"/><path d="M4 5h8v9l4 3v5H2v-5l3-3Z" fill="#b99668"/><path d="M4 5h8v3H4ZM2 19h14v3H2Z" fill="#795c41"/><path d="M6 10h4M6 13h4M12 18h2" stroke="#e4cc96"/>',
+  legs: '<path d="M6 3h12l1 18h-5l-2-10-2 10H5Z" fill="#8d9e9f"/><path d="M6 3h12v4H6Z" fill="#a38155"/><path d="M10 4h4v2h-4Z" fill="#dec181"/><path d="m7 14 3 1-1 5H6Zm10 0-3 1 1 5h3Z" fill="#b6c0b2"/><path d="M12 7v4" stroke="#e5ddbf"/><path d="M5 17h5v5H2v-3l3-1Zm9 0h5v1l3 1v3h-8Z" fill="#795c41"/>',
   trinket: '<path d="m12 2 3 4 5 1-1 5 2 4-5 2-4 4-4-4-5-2 2-4-1-5 5-1Z" fill="#bb975b"/><circle cx="12" cy="12" r="5.5" fill="#8a80a0"/><path d="m12 7 1.5 3.5L17 12l-3.5 1.5L12 17l-1.5-3.5L7 12l3.5-1.5Z" fill="#efe0b7"/><circle cx="12" cy="12" r="1.4" fill="#c7ac69"/>',
 };
 

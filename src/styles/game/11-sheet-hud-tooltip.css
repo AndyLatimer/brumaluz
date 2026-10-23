@@ -110,6 +110,9 @@ body.playing #player-hud { display: flex; position: fixed; top: 14px; left: 14px
 .game-tooltip.item-tooltip { width: 320px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow-y: auto; padding: 16px; gap: 13px; border-color: #c29b5b; border-radius: 5px 16px; background: radial-gradient(ellipse at top left, #75523266, transparent 65%), linear-gradient(145deg, #38291f, #211b16); }
 .item-tooltip::before { display: none; }
 .item-tip-header { display: flex; align-items: center; gap: 12px; }
+.item-tip-requirements, .item-tip-collection { margin: 0; color: #d4c7ab; font: 13px/1.35 'Alegreya', serif; }
+.item-tip-collection { margin-top: -8px; color: #bca98b; }
+.item-tip-restriction { color: #c2b49c; font: 12px 'Alegreya', serif; }
 [data-item-id][data-rarity] { border-color: var(--item-rarity); }
 [data-item-id][data-rarity="epic"], [data-item-id][data-rarity="legendary"], [data-item-id][data-rarity="artifact"] { box-shadow: inset 0 0 8px color-mix(in srgb, var(--item-rarity) 20%, transparent); }
 .item-tip-icon { display: grid; place-items: center; flex: none; width: 56px; height: 56px; border: 1px solid #b9945a; border-radius: 10px; background: radial-gradient(circle, #f8de9b, #a47a3e); box-shadow: inset 0 0 0 3px #fff3c533, 0 3px 8px #0004; }

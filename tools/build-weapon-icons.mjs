@@ -18,6 +18,12 @@ try {
   const { ARMOR } = await server.ssrLoadModule('/src/data/outfits.ts');
   const { ACCESSORIES } = await server.ssrLoadModule('/src/data/accessories.ts');
   const equipment = { ...WEAPONS, ...ACCESSORIES, ...Object.fromEntries(Object.entries(ARMOR).map(([id, item]) => [id, { ...item, kind: item.slot }])) };
+  // Retire only known class-collection footwear portraits after merging legwear.
+  for (const setId of new Set(Object.values(ARMOR).map(item=>item.setId))) {
+    const retired=`${setId}_feet`;
+    delete cache[retired];
+    fs.rmSync(path.join(output,`${retired}.png`),{force:true});
+  }
   const models = new Map();
   function scan(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -58,7 +64,7 @@ try {
       camera.position.set(0, 0, 10);
       window.__weaponPortrait = async (url, kind) => {
         const model = (await new GLTFLoader().loadAsync(url)).scene;
-        if (['outfit','head','chest','hands','legs','feet','pendant','ring','trinket'].includes(kind)) model.rotation.set(0, kind==='ring'?.75:-.28, 0);
+        if (['outfit','head','chest','hands','legs','pendant','ring','trinket'].includes(kind)) model.rotation.set(0, kind==='ring'?.75:-.28, 0);
         else if (kind === 'book') model.rotation.set(.12, Math.PI / 2 - .35, -.12);
         else if (kind === 'crossbow') model.rotation.set(.85, -.18, -.48);
         else if (kind === 'shield') model.rotation.set(.08, -.30, -.12);

@@ -4,6 +4,14 @@ import { ITEM_RARITIES } from '../data/itemRarity';
 import { getLanguage, t } from './i18n';
 import { EQUIPPABLE } from '../data/equipment';
 import { CLASSES } from '../data/data';
+import { COMBAT_KITS } from '../data/combat';
+import { WEAPONS } from '../data/weapons';
+import type { EquipmentSlot } from '../data/inventory';
+
+const slotLabels: Record<EquipmentSlot, string> = {
+  head: 'Cabeza', pendant: 'Colgante', chest: 'Pecho', hands: 'Manos', ring: 'Anillo',
+  weapon: 'Arma principal', offhand: 'Mano secundaria', legs: 'Piernas', trinket: 'Abalorio',
+};
 
 export function setItemTooltip(target: HTMLElement, id: string, bound = false) {
   target.dataset.itemId = id;
@@ -40,6 +48,22 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   identity.append(category, name);
   header.append(icon, identity);
   container.append(header);
+  const equipment = EQUIPPABLE[id];
+  if (equipment) {
+    const requirements = document.createElement('p');
+    requirements.className = 'item-tip-requirements';
+    requirements.textContent = [
+      slotLabels[equipment.slot] !== item.category ? t(slotLabels[equipment.slot]) : null,
+      t(equipment.cls ? CLASSES[equipment.cls].label : 'Todas las clases'),
+    ].filter(Boolean).join(' · ');
+    container.append(requirements);
+  }
+  if (item.collection) {
+    const collection = document.createElement('p');
+    collection.className = 'item-tip-collection';
+    collection.textContent = `${t('Colección')}: ${t(item.collection)}`;
+    container.append(collection);
+  }
   if (bound || item.bound) {
     const binding = document.createElement('span');
     binding.className = 'item-tip-binding';
@@ -49,10 +73,19 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
     container.append(binding);
   }
 
-  if (item.stats?.length) {
+  // Rarity already has a visible heading. A numeric catalogue tier adds no
+  // information here and must not be presented as a character level requirement.
+  const visibleStats = (item.stats ?? []).filter(stat => stat.label !== 'Rareza' && stat.label !== 'Categoría de equipo');
+  const weapon = WEAPONS[id];
+  if (weapon?.slot === 'weapon') {
+    const kit = COMBAT_KITS[weapon.cls];
+    const number = (value: number) => value.toLocaleString(getLanguage() === 'en' ? 'en-US' : 'es-ES');
+    visibleStats.push({ label: 'Intervalo de ataque', value: `${number(kit.interval)} s` }, { label: 'Alcance', value: `${number(kit.range)} m` });
+  }
+  if (visibleStats.length) {
     const stats = document.createElement('dl');
     stats.className = 'item-tip-stats';
-    for (const stat of item.stats) {
+    for (const stat of visibleStats) {
       const label = document.createElement('dt');
       label.textContent = t(stat.label);
       const value = document.createElement('dd');
@@ -75,17 +108,19 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
     effects.append(label, list);
     container.append(effects);
   }
-  const description = document.createElement('p');
-  description.className = 'item-tip-description';
-  description.textContent = t(item.description);
-  container.append(description);
-  if (EQUIPPABLE[id]) {
-    const hint = document.createElement('small');
-    const cls=EQUIPPABLE[id].cls;
-    hint.textContent = `${cls?t(CLASSES[cls].label):t('Todas las clases')} · ${t('Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.')}`;
-    container.append(hint);
+  if (item.description) {
+    const description = document.createElement('p');
+    description.className = 'item-tip-description';
+    description.textContent = t(item.description);
+    container.append(description);
   }
-  if (item.sellable === false) return;
+  if (item.sellable === false) {
+    const restriction = document.createElement('small');
+    restriction.className = 'item-tip-restriction';
+    restriction.textContent = t('No vendible');
+    container.append(restriction);
+    return;
+  }
 
   const footer = document.createElement('div');
   footer.className = 'item-tip-footer';

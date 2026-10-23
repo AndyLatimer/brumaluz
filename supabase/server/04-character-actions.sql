@@ -67,7 +67,7 @@ begin
     d:=d||jsonb_build_object('welcome',jsonb_build_object('origin',null,'stage','available'),
       'introSeen',false,'position',jsonb_build_object('x',177,'z',0,'yaw',pi()/2));
   end if;
-  d := d || jsonb_build_object('modularEquipmentVersion',1);
+  d := d || jsonb_build_object('modularEquipmentVersion',2);
   d := d || jsonb_build_object('equipment',
     case p_data->>'cls'
       when 'guerrero' then '{"weapon":{"id":"espada_inicial","count":1,"bound":true},"offhand":{"id":"escudo_inicial","count":1,"bound":true}}'::jsonb
@@ -231,3 +231,21 @@ begin
 end;
 $$;
 
+
+-- Máximo de personajes por cuenta (MAX_CHARACTERS_PER_ACCOUNT en src/services/account.ts). El disparador se crea en
+-- schema.sql; aquí se actualiza su función para que el límite cambie también con un `npm run db:apply` normal.
+create or replace function public.enforce_character_limit()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(new.user_id::text, 0));
+
+  if (select count(*) from public.characters where user_id = new.user_id) >= 6 then
+    raise exception 'CHARACTER_LIMIT_REACHED';
+  end if;
+
+  return new;
+end;
+$$;

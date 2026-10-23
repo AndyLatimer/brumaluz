@@ -1,16 +1,18 @@
 # Dirección artística y ajuste del equipo
 
-## Patronaje actual: versión 3
+## Patronaje de prendas: versión 3; tocados: versión 4
 
-55 conjuntos de cinco clases, 275 piezas independientes. Se mantienen los identificadores, estadísticas y rarezas, las 88 armas y los 33 accesorios. Las referencias geométricas son los personajes de KayKit Adventurers que ya contiene el proyecto: sus mangas, manos, piernas, botas y esqueleto. El torso, los faldones, petos, cuellos y tocados se modelan con contornos específicos.
+La pasada de tocados se apoya en el [estudio de referencias](EQUIPMENT-REFERENCE-STUDY.md). La fuente editable está en `art/equipment/brumaluz-headwear.blend`: jaulas de cuadriláteros, bordes cerrados con grosor y modificadores conservados. Sus 30 prototipos se aplican a las 55 combinaciones de clase y colección.
+
+55 conjuntos de cinco clases, 220 piezas independientes: cabeza, pecho, manos y piernas. Piernas incluye el calzado. Sus estadísticas y precio suman los de las dos piezas anteriores; la conversión se documenta en [equipo modular](MODULAR-EQUIPMENT.md). Las referencias geométricas son los personajes de KayKit Adventurers que ya contiene el proyecto: sus mangas, manos, piernas, botas y esqueleto. El torso, los faldones, petos, cuellos y tocados se modelan con contornos específicos.
 
 | Clase | Corte |
 | --- | --- |
 | Guerrero | Gambesón, peto convexo que envuelve las costillas, hombreras arqueadas y casco abierto con borde enrollado |
 | Mago | Túnica entallada con faldones, cuello doblado, botones y sombrero de ala ancha con punta inclinada |
-| Pícaro | Jubón corto, cuello de cuero drapeado y capucha de tela con abertura facial |
+| Pícaro | Jubón de cintura más estrecha, pañuelo asimétrico de tela y capucha profunda con marco vuelto |
 | Clérigo | Vestidura con estola cosida a sus paños y cofia o mitra según rareza |
-| Explorador | Chaqueta con solapas, bolsillo cosido y gorro de copa inclinada con ala vuelta |
+| Explorador | Chaleco entallado con solapas, bolsillo cosido y gorro alargado de ala vuelta |
 
 Los detalles deben tener una función y apoyarse en la prenda. Evitar distribuir cristales, esferas, placas o bolsas para simular riqueza. La heráldica ocupa el lado izquierdo del pecho para dejar libre el espacio central del colgante.
 
@@ -31,7 +33,8 @@ La complejidad depende de `tier`, con variantes de colección del mismo escalón
 
 - `tools/garment-studio.mjs`: superficies curvas, UV por panel, transferencia de pesos del modelo original, recorte preciso de triángulos en uniones y exportación GLB.
 - `tools/tailored-outfit-pattern.mjs`: siluetas por clase, paños de faldón, cuellos, refuerzos y piezas modulares explícitas.
-- `tools/tailored-headwear.mjs`: tocados alrededor del cráneo completo, con margen propio para alas, copas y capuchas.
+- `tools/blender/model-equipment-headwear.py`: modelado reproducible en Blender, fuente editable y caché comprimida con normales y UV.
+- `tools/tailored-headwear.mjs`: importa esa geometría y aplica los materiales, atlas y pesos de cada colección.
 - `tools/outfit-textures.mjs`: atlas de color de 512 px, normales de 256 px y mapa de oclusión/rugosidad/metal de 128 px. Las 16 zonas UV distinguen cuerpo, espalda, faldón, mangas, cuello, cinturón, armadura, sombrero, pantalón, botas y emblema.
 
 El color base se multiplica por el tinte de colección del material. Los atlas incluyen sombras de costura, pliegues amplios, pespuntes, tejido, acolchado, cuero y reflejos pintados de metal. No son ruido genérico repetido en proyección plana. Los tres mapas están incrustados en cada GLB independiente. En el juego se comparten las texturas idénticas entre las cinco clases para evitar multiplicar su memoria.
@@ -42,7 +45,7 @@ Los faldones están divididos en paños izquierdo y derecho con aberturas centra
 
 Pantalones y botas se cortan exactamente en la misma altura, conservando los pesos interpolados del original. Mangas y manos también parten de la anatomía original. Las piezas se pueden combinar entre colecciones sin cambiar estas uniones.
 
-`src/character/equipmentFit.ts` adapta el tocado al contorno del cráneo seleccionado, conservando la distancia modelada de su ala y copa. Recoge el pelo que invade la parte cubierta. Los accesorios se proyectan sobre todas las superficies de la prenda equipada, incluyendo peto, cuello y cinturón; también reciben sus pesos interpolados. Un GLB con varios materiales se trata como un grupo completo.
+`src/character/equipmentFit.ts` adapta el tocado al contorno del cráneo seleccionado. La versión 4 transfiere la diferencia de forma sin colapsar capas al mismo radio: conserva ala, copa, grosor y forro. Recoge el pelo que invade la parte cubierta. Los accesorios se proyectan sobre todas las superficies de la prenda equipada, incluyendo peto, cuello y cinturón; también reciben sus pesos interpolados. Un GLB con varios materiales se trata como un grupo completo.
 
 Esto es ajuste de mallas animadas; no es una simulación física de tela. Las poses extremas y las futuras prendas o animaciones necesitan revisión visual propia.
 
@@ -57,4 +60,4 @@ Esto es ajuste de mallas animadas; no es una simulación física de tela. Las po
 
 Los GLB exportados contienen el patrón neutro y los mapas. La adaptación específica de cráneo y el asiento de accesorios se realiza al equiparlos en el juego. La versión anterior de los generadores queda en `.art-sources/tailoring-v3/`.
 
-Regeneración: `npm run art:outfits`. Si cambian objetos o estadísticas, actualizar también el SQL del catálogo. Para esta pasada de arte no hace falta migrar inventarios ni cambiar estadísticas.
+Regeneración de fuentes Blender: `npm run art:headwear:source` (opcional `BLENDER_PATH`). Regeneración de GLB: `npm run art:outfits`. Si cambian objetos o estadísticas, actualizar también el SQL del catálogo. Para esta pasada de arte no hace falta migrar inventarios ni cambiar estadísticas.

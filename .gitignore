@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .art-sources/
+art/equipment/*.blend1
 # Local diagnostic captures from tools/render-asset.mjs.
 tools/render-*.png
 .DS_Store

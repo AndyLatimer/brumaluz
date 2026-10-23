@@ -4,7 +4,7 @@ import type { SkillId } from '../data/combat';
 import type { EquipmentSlot, ItemStack } from '../data/inventory';
 import type { ShadowAction } from '../data/quests';
 
-export const MAX_CHARACTERS_PER_ACCOUNT = 5;
+export const MAX_CHARACTERS_PER_ACCOUNT = 6;
 
 type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
