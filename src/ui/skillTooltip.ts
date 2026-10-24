@@ -3,12 +3,14 @@ import { type ClassId } from '../data/data';
 import { skillIcon } from './skillIcons';
 import { t } from './i18n';
 import type { Equipment } from '../data/inventory';
+import { session } from '../game/state';
+import { skillCost } from '../data/combat';
 
 const equipmentContexts = new WeakMap<HTMLElement, Equipment>();
 export const skillTooltipEquipment = (target: HTMLElement) => equipmentContexts.get(target);
 
 export function skillEffect(cls: ClassId, rank: number, equipment?: Equipment) {
-  const skill = COMBAT_KITS[cls].skill, power = skillPower(cls, rank, equipment);
+  const skill = COMBAT_KITS[cls].skill, power = Math.round(skillPower(cls, rank, equipment,equipment===session.state.equipment?session.state:undefined)*10)/10;
   return skill.healing ? t('Restaura hasta {n} puntos de vida.', { n: power })
     : t(skill.hits === 1 ? 'Un impacto de {damage} de daño.' : '{hits} impactos de {damage} de daño.', { hits: skill.hits, damage: power });
 }
@@ -17,7 +19,7 @@ export const SKILL_DESCRIPTIONS: Record<ClassId, string> = {
   guerrero: 'Concentras tu fuerza en un golpe certero contra un enemigo cercano.',
   mago: 'Canalizas energía arcana y la liberas en una descarga a distancia.',
   picaro: 'Encadenas dos cortes rápidos sobre el mismo enemigo.',
-  clerigo: 'Reúnes una luz reparadora para recuperar tu propia vida, sin sobrecuración.',
+  clerigo: 'Reúnes una luz reparadora para recuperar tu vida o la de un compañero del grupo a 6 m, sin sobrecuración.',
   explorador: 'Apuntas con cuidado y lanzas un disparo certero a larga distancia.',
 };
 
@@ -32,10 +34,10 @@ export function setSkillTooltip(target: HTMLElement, cls: ClassId, rank: number,
 export function skillStats(cls: ClassId) {
   const kit = COMBAT_KITS[cls], skill = kit.skill;
   return [
-    [t('Coste'), `${skill.cost} ${t(cls === 'mago' || cls === 'clerigo' ? 'Maná' : 'Estamina')}`],
+    [t('Coste'), `${Math.round((session.state.cls===cls?skillCost(session.state):skill.cost)*100)/100} ${t(cls === 'mago' || cls === 'clerigo' ? 'Maná' : 'Estamina')}`],
     [t('Recarga'), `${skill.cooldown} s`],
-    [t('Alcance'), skill.healing ? t('Personal') : `${kit.range} m`],
-    [t('Objetivo'), t(skill.healing ? 'Tú' : 'Un enemigo')],
+    [t('Alcance'), `${kit.range} m`],
+    [t('Objetivo'), t(skill.healing ? 'Tú o un compañero del grupo' : 'Un enemigo')],
   ];
 }
 

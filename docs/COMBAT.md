@@ -1,5 +1,7 @@
 # Combate: primera base de desarrollo
 
+**Actualización del 24 de octubre:** la integración actual de atributos, conjuntos, encantamientos, animaciones y expediciones compartidas está en [RPG-IMPLEMENTATION.md](RPG-IMPLEMENTATION.md). El resto de este documento conserva el historial de la primera base de combate, anterior a esa integración.
+
 La iteración de armas de categorías 0 y 1 está descrita en [WEAPONS.md](WEAPONS.md): poder por item, guardia, curación por equipo, modelos propios y selector de categoría en el banco de combate. Sus cambios de SQL están preparados en el repositorio y requieren aplicación antes de publicar el cliente.
 
 ## Estado real

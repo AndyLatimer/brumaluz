@@ -361,8 +361,10 @@ export function installCharacterSelect() {
       if (!(await loadWorldState())) return;
       view.focus = 'body';
       enterPlay();
-      setTimeout(() => { if (play.mode === 'play') { play.char.wave(); play.waveSequence++; } }, 60);
-      toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: session.state.name });
+      // La llegada ya presenta la ciudad y a Gnomi; un saludo automático rompería el paseo.
+      if (session.state.introSeen || !session.state.welcome) {
+        toast('¡Te damos la bienvenida, {name}!', 'Tu aventura en Brumaluz comienza ahora.', false, { name: session.state.name });
+      }
     } finally {
       finishTransition();
       session.enteringWorld = false;

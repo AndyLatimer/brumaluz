@@ -48,6 +48,20 @@ nuevos, dos cortes rehechos con mechones reales y un pañuelo de viajero
 recoloreable. Véase [Pelo y complementos](./docs/CHARACTER-ART.md#pelo-y-complementos-del-creador).
 Se conservan los IDs guardados y las mecánicas, sin cargar toda la biblioteca.
 
+## Barrio artesanal: edificios, muebles y decoración originales
+
+El pack **Brumaluz · Barrio artesanal** aporta 30 piezas modeladas en Blender:
+seis edificios, doce muebles y doce elementos de decoración. Está disponible
+en el catálogo de `/maps.html`, con nombres en español y escala de un metro
+por unidad. Los edificios son exteriores decorativos.
+
+- [Vista de conjunto](art/hamlet/contact-sheet.png).
+- [Fuente editable en Blender](art/hamlet/brumaluz-hamlet.blend).
+- [Uso, regeneración y validación](docs/HAMLET-ASSETS.md).
+
+`npm run art:hamlet` reconstruye las fuentes, los GLB y el catálogo;
+`npm run test:hamlet` comprueba los modelos y su integración en el editor.
+
 ## Creador de NPCs (desarrollo)
 
 Con `npm run dev`, abrir `/npcs.html` desde el mismo ordenador (localhost).

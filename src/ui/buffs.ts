@@ -29,6 +29,7 @@ export function renderBuffs(d: CharData, paused: boolean) {
     badge.append(document.createElement('span'));
     root.append(badge);
   }
+  if(badge.dataset.foodId!==buff.itemId){badge.innerHTML=itemIcon(buff.itemId);badge.append(document.createElement('span'));badge.dataset.foodId=buff.itemId;}
   const effect = FOOD_EFFECTS[buff.itemId];
   const title = `${t('Bien alimentado')}|${t('Origen: {item}. +{health} de vida máxima y +{resource} de maná o estamina máximos. Dura 15 minutos de conexión; se pausa al desconectarte. Comer otro renueva el tiempo, sin acumularse.', {
     item: t(itemLabel(buff.itemId)), health: effect.maxHealth, resource: effect.maxResource,

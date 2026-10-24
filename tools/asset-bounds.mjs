@@ -1,7 +1,7 @@
 // Medidas (sin escalar) de las piezas de city.glb y de la biblioteca: node tools/asset-bounds.mjs [filtro]
-import { readFile } from 'node:fs/promises';
 import { NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
+import { readLibraryCatalog } from './library-catalog.mjs';
 
 /** Igual que FOOTPRINT_HEIGHT en src/world/mapAssetsCore.ts. */
 const FOOTPRINT_HEIGHT = 0.3;
@@ -44,7 +44,7 @@ export async function assetBoxes({ footprint = false, only } = {}) {
   boxes.set('builtin/lamppost', footprint
     ? new THREE.Box3(new THREE.Vector3(-.09, 0, -.09), new THREE.Vector3(.09, 3.15, .09))
     : new THREE.Box3(new THREE.Vector3(-.14, 0, -.14), new THREE.Vector3(.14, 3.15, .14)));
-  const catalog = JSON.parse(await readFile('src/assets/library/catalog.json', 'utf8'));
+  const catalog = await readLibraryCatalog('src/assets/library');
   for (const asset of catalog.assets) {
     if (footprint && only?.has(asset.id)) {
       const doc = await new NodeIO().read(`src/assets/library/${asset.path}`);

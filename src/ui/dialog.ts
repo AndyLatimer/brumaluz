@@ -27,6 +27,7 @@ export interface DialogNode {
   /** Quién habla; por defecto, el `speaker` de la conversación. */
   speaker?: string;
   subtitle?: string;
+  emblem?: 'guild' | 'anvil';
   text: string;
   quest?: {
     title: string;
@@ -45,6 +46,7 @@ export interface DialogNode {
 export interface Conversation {
   speaker: string;
   subtitle?: string;
+  emblem?: 'guild' | 'anvil';
   start: string;
   nodes: Record<string, DialogNode>;
 }
@@ -93,6 +95,15 @@ function render() {
   const list = el.querySelector<HTMLElement>('.dialog-choices')!;
   const next = el.querySelector<HTMLElement>('.dialog-next')!;
   const subtitle = el.querySelector<HTMLElement>('.dialog-subtitle')!;
+  const emblem = node?.emblem ?? conversation?.emblem;
+  el.dataset.emblem = emblem ?? '';
+  const badge = el.querySelector<HTMLElement>('.dialog-emblem')!;
+  badge.setAttribute('aria-hidden', 'true');
+  badge.innerHTML = emblem === 'guild'
+    ? '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="m12 4 8 4 8-4-2 13H14Z" fill="currentColor" opacity=".5"/><circle cx="20" cy="25" r="12" stroke="currentColor" stroke-width="1.5"/><path d="M14 24c0-4 4-5 6-2 2-3 6-2 6 2 0 4-6 8-6 8s-6-4-6-8Z" fill="currentColor"/></svg>'
+    : emblem === 'anvil'
+      ? '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M6 14h28l-5 7h-7v5l6 5H12l6-5v-5h-6l-6-4Zm15-6 6 3-2 5-6-3Zm-1 4-7 11" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'
+      : '⚜';
   subtitle.textContent = t(node ? node.subtitle ?? (node.speaker && node.speaker !== conversation?.speaker ? '' : conversation?.subtitle ?? '') : lines[index]?.subtitle ?? '');
   subtitle.hidden = !subtitle.textContent;
   el.setAttribute('aria-labelledby', 'dialog-speaker');
@@ -197,6 +208,7 @@ function goTo(id: string) {
   choices = visibleChoices(next);
   selected = 0;
   render();
+  root().scrollTop = 0;
   logger?.(next.speaker ?? conversation!.speaker, next.text);
 }
 

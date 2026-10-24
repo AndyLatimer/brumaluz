@@ -9,7 +9,6 @@ body.playing.ui-menu-open:not(.inventory-open) .action-bar { display: none; }
 .party-banner-crest { display: grid; place-items: center; flex: none; width: 52px; height: 60px; color: #f6d38a; border: 1px solid #b79151; border-radius: 15px 15px 24px 24px; background: radial-gradient(ellipse at top,#587366,#233c32); box-shadow: 0 2px 0 #654823, inset 0 0 0 3px #243c32, inset 0 0 0 4px #d3b57866; }
 .social-group-panel .party-banner-crest svg { width: 35px; height: 39px; }
 .party-banner-text { flex: 1; min-width: 0; }
-.party-eyebrow { display: block; margin-bottom: 5px; color: #80613b; font-size: 11px; font-style: italic; letter-spacing: .5px; }
 .party-banner h3 { padding: 0; font-size: 17px; line-height: 1.4; overflow-wrap: anywhere; }
 .party-banner h3::after { display: none; }
 .party-seats { display: flex; gap: 6px; padding: 8px; border-block: 1px solid #ad844b66; }
@@ -86,7 +85,6 @@ body.playing.ui-menu-open #party-hud, body.playing.dead #party-hud { display: no
   .party-banner-crest { width: 38px; height: 46px; }
   .social-group-panel .party-banner-crest svg { width: 26px; height: 30px; }
   .party-banner h3 { font-size: 14px; }
-  .party-eyebrow { font-size: 10px; }
   .party-seats { margin-left: auto; }
   .party-invite-form .btn { flex: 1; }
 }

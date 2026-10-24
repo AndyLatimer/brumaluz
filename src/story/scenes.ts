@@ -92,13 +92,13 @@ export function playIntro() {
   }
   story.playerScript = { target: entry, speed: 2.3 };
   cinematic.play([
-    { duration: 3, line: { text: 'La Puerta del Este' },
+    { duration: 3, line: { text: 'La Puerta del Este', eyebrow: 'Tu historia empieza aquí', detail: 'Un paso al otro lado. Todo un mundo por delante.' },
       camera: () => ({ position: up(holder.position.clone().addScaledVector(out, 8).addScaledVector(side, 3.4), 4.2), target: up(holder.position, 1.1) }),
       update: dt => { walkPlayer(dt); } },
-    { duration: 7, line: { text: 'Brumaluz, la capital de Pompelín' },
+    { duration: 5.5, line: { text: 'Brumaluz', eyebrow: 'Capital de Pompelín', detail: 'Cada gran historia empieza con algo pequeño.' },
       camera: orbitShot(centre, [96, 80], [64, 48], [heading - 2.2, heading - 1.25], 2),
       update: dt => { walkPlayer(dt); } },
-    { duration: 5, blend: 1.6,
+    { duration: 4, blend: 1.6,
       camera: dollyShot(
         { position: up(centre.clone().addScaledVector(out, 25), 48), target: centre.clone().addScaledVector(out, 80) },
         { position: up(entry.clone().addScaledVector(out, -7).addScaledVector(side, 4), 4), target: up(entry, 1.1) }),
@@ -106,12 +106,12 @@ export function playIntro() {
     { duration: 2, blend: 1,
       camera: () => ({ position: up(holder.position.clone().addScaledVector(out, -4.8).addScaledVector(side, 1.6), 1.6), target: up(holder.position, 1.25) }),
       update: dt => { walkPlayer(dt); } },
-    { duration: 7, minimum: 3.5, blend: .9, line: { speaker: gnomi, text: 'Ay, ay, ay… ¿Dónde lo habré dejado? Si David se entera…' },
+    { duration: 7, minimum: 4.5, blend: .9, line: { speaker: gnomi, text: 'Puerta del Este, nueva asignación, bienvenida impecable… Solo falta el distintivo. Ay, Gnomi. El distintivo.' },
       start: () => { story.playerScript = null; play.char.setGait('idle'); restoreStoryFog(); story.welcomeWorld.walkTo(meet, 1.6, true); },
       camera: () => ({ position: up(story.welcomeWorld.root.position.clone().addScaledVector(out, 3).addScaledVector(side, 1.7), 1.5), target: up(story.welcomeWorld.root.position, .55) }),
       update: () => story.welcomeWorld.arrived },
-    { duration: 3.2, blend: .8, line: { speaker: gnomi, text: '¡Oh! ¡Hola! No te había visto.' },
-      start: () => { story.welcomeWorld.release(); story.welcomeWorld.hop(); },
+    { duration: 3.6, blend: .8, line: { speaker: gnomi, text: '¡Ah, ya estás aquí! ¡Te estaba esperando! Mirando al suelo, sí. Pero esperando.' },
+      start: () => { story.welcomeWorld.release(); story.welcomeWorld.greet(); },
       camera: () => {
         const middle = holder.position.clone().add(story.welcomeWorld.root.position).multiplyScalar(.5);
         return { position: up(middle.clone().addScaledVector(side, 3.6).addScaledVector(out, -.6), 1.3), target: up(middle, .75) };
@@ -134,9 +134,9 @@ export function playMonsterReveal() {
   const isberto = session.registeredNpcs.isberto.name;
   const look = site.clone().setY(site.y + .7);
   cinematic.play([
-    { duration: 5.2, line: { speaker: isberto, text: 'Hay algo rondando mi herrería, al sur. Una sombra que se arrastra entre los yunques y no se aparta de la fragua.' },
+    { duration: 5.2, line: { speaker: isberto, text: 'Ahí la tienes, junto a mi herrería. Se pega al calor de la fragua. Ya he despejado la zona.' },
       camera: orbitShot(site, [7.5, 5.2], [3.4, 1.8], [-.9, -.1], .7) },
-    { duration: 4.2, blend: .6, line: { speaker: isberto, text: 'No es un lobo ni un zorro. Nunca había visto nada igual… y he visto muchas cosas.' },
+    { duration: 4.2, blend: .6, line: { speaker: isberto, text: 'No sé de dónde ha salido. Sí sé que no se va a quedar. Mírala bien: hasta eso tiene que dejar un hueco al atacar.' },
       start: () => playShadowEnemyAction(story.monsterPreview, 'attack', clock.getElapsedTime()),
       camera: dollyShot({ position: new THREE.Vector3(site.x + 3.4, site.y + 1.2, site.z - 1.6), target: look },
         { position: new THREE.Vector3(site.x + 2.2, site.y + .9, site.z - 1), target: look }) },

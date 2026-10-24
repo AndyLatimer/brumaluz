@@ -23,6 +23,7 @@ export interface ActionBarHooks {
   use: (item: string) => void;
   skill: () => { id: string; cls: ClassId; rank: number; equipment?: Equipment; icon: string; cooldown: number; duration: number; available: boolean };
   useSkill: () => void;
+  itemCooldown?:()=>number;
 }
 
 let hooks: ActionBarHooks;
@@ -96,6 +97,11 @@ export function renderActionBar(force = false) {
         slot.classList.remove('skill-ready'); void slot.offsetWidth; slot.classList.add('skill-ready');
       }
     });
+    root().querySelectorAll<HTMLElement>('.ab-slot[data-item-id]').forEach(slot=>{
+      if(!itemDef(slot.dataset.itemId!)?.restore)return;
+      const remaining=hooks.itemCooldown?.()??0;slot.classList.toggle('on-cooldown',remaining>0);slot.style.setProperty('--cooldown-sweep',`${Math.min(1,remaining/15)*360}deg`);
+      const timer=slot.querySelector('.ab-cooldown-time');if(timer)timer.textContent=remaining>0?String(Math.ceil(remaining)):'';
+    });
   };
   if (!force && next === signature) { updateCooldown(); return; }
   signature = next;
@@ -143,7 +149,7 @@ function slotElement(id: string | null, index: number) {
     const amount = document.createElement('i');
     amount.textContent = isSkill ? '' : String(count);
     slot.append(amount);
-    if (isSkill) {
+    if (isSkill || itemDef(id)?.restore) {
       const sweep = document.createElement('span'); sweep.className = 'ab-cooldown-sweep'; sweep.setAttribute('aria-hidden','true');
       const timer = document.createElement('span'); timer.className = 'ab-cooldown-time'; timer.setAttribute('aria-hidden','true');
       slot.append(sweep, timer);

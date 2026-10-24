@@ -122,6 +122,7 @@ export function simulateUse(d: CharData, slot: number) {
   }
   const restore = ITEMS[item.id].restore;
   if (!restore) throw new Error('Ese objeto no se puede usar.');
+  if((d.potionReadyAt??0)>Date.now()/1000)throw new Error('Las pociones todavía se están recuperando.');
   if (restore.kind !== 'health' && restore.kind !== v.resourceKind) throw new Error('Esta poción no corresponde al recurso de tu clase.');
   const health = restore.kind === 'health';
   const current = health ? v.health : v.resource, max = health ? v.maxHealth : v.maxResource;
@@ -129,4 +130,5 @@ export function simulateUse(d: CharData, slot: number) {
   removeItem(d, slot);
   const total = Math.min(max, current + Math.max(1, Math.ceil(max * restore.percent / 100)));
   d[health ? 'health' : 'resource'] = total >= max ? -1 : total;
+  d.potionReadyAt=Date.now()/1000+15;
 }

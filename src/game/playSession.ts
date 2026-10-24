@@ -23,8 +23,10 @@ import { restFade } from '../story/quests';
 import { playerInteractions } from './interaction';
 import { clearScreenEffects } from './camera';
 import { setGameMenuOpen, setPlayerMenuOpen, setWorldMenuOpen, setWindow } from '../ui/menus';
+import { clearToasts } from '../ui/toast';
 
 export function enterPlay() {
+  clearToasts();
   play.playGeneration++;
   story.introArmed = true; story.houseTourArmed = true;
   story.isbertoReturnShown = false; story.isbertoReturnDelay = 0; story.isbertoMeet = null; story.isbertoGuide = null;
@@ -85,6 +87,7 @@ export function stopChat() {
   clearChat();
 }
 export function exitPlay() {
+  clearToasts();
   talk.pendingIsbertoIntroduction = false;
   endIsbertoArrival();
   story.playerScript = null;
@@ -125,6 +128,7 @@ export function exitPlay() {
   play.jumpHeight = 0;
   holder.rotation.y = play.city.spawnYaw - 0.3;
   camera.fov = 30;
+  play.char.stand();
   play.char.setGait('idle');
   rebuildNow();
   layout();

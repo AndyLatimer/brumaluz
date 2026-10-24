@@ -29,7 +29,7 @@ export function updateHud() {
   $('#hud-class-icon').innerHTML = classIcon(session.state.cls, 'hud');
   $('#hud-name').textContent = session.state.name;
   $('#hud-level').textContent = `${t('Nivel')} ${session.state.level}`;
-  setBar('hud-health', v.health, v.maxHealth, `${v.health} / ${v.maxHealth}${v.overheal > 0 ? ` (+${v.overheal})` : ''}`);
+  setBar('hud-health', v.health, v.maxHealth, `${Math.ceil(v.health)} / ${v.maxHealth}${v.overheal > 0 ? ` (+${Math.ceil(v.overheal)})` : ''}`);
   // La sobrecuración se dibuja tras el final de la vida; si no cabe en la barra, se pega al borde derecho.
   const healthPct = (v.health / v.maxHealth) * 100, overPct = (v.overheal / v.maxHealth) * 100;
   const overEnd = Math.min(100, healthPct + overPct);
@@ -39,7 +39,7 @@ export function updateHud() {
   const lowHealth = v.health > 0 && v.health / v.maxHealth < 0.25;
   $('.hud-health').classList.toggle('low', lowHealth);
   $('#low-health-vignette').classList.toggle('on', lowHealth && play.mode === 'play');
-  setBar('hud-resource', v.resource, v.maxResource, `${v.resource} / ${v.maxResource}`);
+  setBar('hud-resource', v.resource, v.maxResource, `${Math.floor(v.resource)} / ${v.maxResource}`);
   $('#hud-resource').className = `hud-bar hud-resource ${v.resourceKind}`;
   $('#hud-resource').setAttribute('aria-label', t(v.resourceKind === 'mana' ? 'Maná' : 'Estamina'));
   setBar('hud-xp', v.experience, v.experienceNeeded, `${v.experience} / ${v.experienceNeeded} XP`);

@@ -1,5 +1,5 @@
 import type { CharData, ClassId } from './data';
-import { INVENTORY_UNLOCKED, type EquipmentSlot, type ItemStack } from './inventory';
+import { INVENTORY_UNLOCKED, sameStack, type EquipmentSlot, type ItemStack } from './inventory';
 import { WEAPONS } from './weapons';
 import { ARMOR } from './outfits';
 import { ACCESSORIES } from './accessories';
@@ -16,7 +16,7 @@ export function transferEquipment(data: CharData, slot: EquipmentSlot, bag: numb
   const before=vitalsOf(data);
   if (data.health === 0) throw new Error('Debes volver a la vida para cambiar tu equipo.');
   const source = bag === null ? data.equipment[slot] : data.inventory[bag];
-  if (!source || source.id !== expected.id || source.count !== expected.count || !!source.bound !== !!expected.bound)
+  if (!source || !sameStack(source,expected))
     throw new Error('Tu equipo o mochila ha cambiado. Vuelve a intentarlo.');
   if (bag === null) {
     const free = data.inventory.findIndex((item, index) => index < INVENTORY_UNLOCKED && !item);
@@ -27,9 +27,10 @@ export function transferEquipment(data: CharData, slot: EquipmentSlot, bag: numb
     if (source.count !== 1 || EQUIPPABLE[source.id]?.slot !== slot || (EQUIPPABLE[source.id]?.cls && EQUIPPABLE[source.id].cls !== data.cls))
       throw new Error('Ese objeto no se puede equipar en esta ranura con tu clase.');
     const target = data.equipment[slot];
-    data.equipment[slot] = source; data.inventory[bag] = target;
+    data.equipment[slot] = { ...source, instanceId: source.instanceId ?? crypto.randomUUID(), bound: true }; data.inventory[bag] = target;
   }
   const after=vitalsOf(data);
+  if(slot==='weapon')data.enchantState=undefined;
   data.health=Math.min(before.health,after.maxHealth);data.resource=Math.min(before.resource,after.maxResource);
   data.overheal=Math.min(data.overheal,Math.floor(after.maxHealth*.3));
 }

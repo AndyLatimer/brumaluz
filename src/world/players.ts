@@ -7,6 +7,7 @@ import type { WorldPlayer } from '../services/multiplayer';
 import { castShadows } from './render';
 
 interface Actor {
+  combatAt?:number;
   player: WorldPlayer;
   character: Character;
   appearance: string;
@@ -37,7 +38,7 @@ export class RemotePlayers {
     }
     const now = performance.now();
     for (const player of players) {
-      const appearance = JSON.stringify(player.data);
+      const appearance = JSON.stringify({...player.data,combatVisual:undefined});
       let actor = this.actors.get(player.id);
       if (actor && actor.appearance !== appearance) {
         this.remove(actor);
@@ -91,6 +92,8 @@ export class RemotePlayers {
         actor.player = player;
       }
       if (player.dead) actor.character.die(); else actor.character.revive();
+      const combat=player.data.combatVisual;
+      if(combat&&combat.at>(actor.combatAt??0)){actor.combatAt=combat.at;if(Date.now()/1000-combat.at<3)actor.character.attack(combat.action!=='attack');}
     }
   }
 

@@ -567,6 +567,17 @@ export async function buildCity(): Promise<City> {
     root,
     locationId: 'brumaluz',
     npcSites,
+    seats: parkBenches.flatMap((bench, benchIndex) => [-0.36, 0.36].map((side, seatIndex) => {
+      const forward = 0.4;
+      const x = bench.x + side * Math.cos(bench.ry) + forward * Math.sin(bench.ry);
+      const z = bench.z - side * Math.sin(bench.ry) + forward * Math.cos(bench.ry);
+      return {
+        id: `park-bench-${benchIndex}-${seatIndex}`,
+        position: new THREE.Vector3(x, groundY(x, z), z),
+        yaw: bench.ry,
+        seatHeight: bench.y + 0.64,
+      };
+    })),
     interactables: (() => { const w = hexToWorld(0, 0); return [{ id: 'well', position: new THREE.Vector3(w.x, groundY(w.x, w.y), w.y), radius: 3.4, label: 'Asomarse al pozo' }]; })(),
     vendorSpots,
     collide,

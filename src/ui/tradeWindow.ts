@@ -92,7 +92,7 @@ export function createTradeWindow(hooks: {
     const list=document.createElement('div'); list.className='trade-offer-list';
     for(const entry of offer.items) {
       const row=document.createElement('div'); row.className='trade-offer-item';
-      const icon=document.createElement('span'); icon.innerHTML=itemIcon(entry.id); setItemTooltip(icon,entry.id); icon.tabIndex=0;
+      const icon=document.createElement('span'); icon.innerHTML=itemIcon(entry.id); setItemTooltip(icon,entry.id,entry.bound,entry); icon.tabIndex=0;
       const label=document.createElement('span'); label.textContent=`${t(itemLabel(entry.id))} ×${entry.count}`;
       row.append(icon,label); list.append(row);
     }
@@ -148,7 +148,7 @@ export function createTradeWindow(hooks: {
     current!.inventory.forEach((stack,slot)=>{
       if(!stack || stack.bound || itemDef(stack.id)?.bound || !itemDef(stack.id)) return;
       const cell=document.createElement('div'); cell.className='trade-item';
-      const icon=document.createElement('span'); icon.innerHTML=itemIcon(stack.id); setItemTooltip(icon,stack.id,stack.bound);
+      const icon=document.createElement('span'); icon.innerHTML=itemIcon(stack.id); setItemTooltip(icon,stack.id,stack.bound,stack);
       icon.className='trade-item-icon'; icon.tabIndex=0;
       const info=document.createElement('div'); info.className='trade-item-info';
       info.append(line(itemLabel(stack.id),'strong'));

@@ -1,0 +1,965 @@
+[
+  {
+    "asset": "house_willow_cottage",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "willow_entry-handle"
+    ]
+  },
+  {
+    "asset": "house_willow_cottage",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "willow_side_window_-1_mullion",
+      "willow_side_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "house_willow_cottage",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "willow_rear_window_-1_mullion",
+      "willow_rear_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "house_willow_cottage",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "willow_side_window_1_mullion",
+      "willow_side_window_1_cross"
+    ]
+  },
+  {
+    "asset": "house_willow_cottage",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "willow_rear_window_1_mullion",
+      "willow_rear_window_1_cross"
+    ]
+  },
+  {
+    "asset": "house_willow_cottage",
+    "gap": 0.0671,
+    "parts": 9,
+    "names": [
+      "willow_lantern-glow",
+      "willow_lantern-cage",
+      "willow_lantern-cage.001",
+      "willow_lantern-cage.002",
+      "willow_lantern-cage.003",
+      "willow_lantern-rim",
+      "willow_lantern-rim.001",
+      "willow_lantern-cap",
+      "willow_lantern-ring"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "townhouse_front_door-handle"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_lower_front_mullion",
+      "townhouse_lower_front_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_upper_front_-1_mullion",
+      "townhouse_upper_front_-1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_upper_rear_-1_mullion",
+      "townhouse_upper_rear_-1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_side_upper_-1_mullion",
+      "townhouse_side_upper_-1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_side_lower_-1_mullion",
+      "townhouse_side_lower_-1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_upper_rear_1_mullion",
+      "townhouse_upper_rear_1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_side_upper_1_mullion",
+      "townhouse_side_upper_1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "townhouse_side_lower_1_mullion",
+      "townhouse_side_lower_1_cross"
+    ]
+  },
+  {
+    "asset": "house_lantern_townhouse",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "townhouse_rear_door-handle"
+    ]
+  },
+  {
+    "asset": "building_herbalist_shop",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "herbalist_entry-handle"
+    ]
+  },
+  {
+    "asset": "building_herbalist_shop",
+    "gap": 0.03,
+    "parts": 6,
+    "names": [
+      "herbalist_leaf_sign-board",
+      "herbalist_leaf_sign-inlay",
+      "herbalist_leaf_sign-leaf",
+      "herbalist_leaf_sign-stem",
+      "herbalist_leaf_sign-hanger",
+      "herbalist_leaf_sign-hanger.001"
+    ]
+  },
+  {
+    "asset": "building_herbalist_shop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "herbalist_side_window_-1_mullion",
+      "herbalist_side_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "building_herbalist_shop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "herbalist_rear_window_-1_mullion",
+      "herbalist_rear_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "building_herbalist_shop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "herbalist_side_window_1_mullion",
+      "herbalist_side_window_1_cross"
+    ]
+  },
+  {
+    "asset": "building_herbalist_shop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "herbalist_rear_window_1_mullion",
+      "herbalist_rear_window_1_cross"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "bakery_entry-handle"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0173,
+    "parts": 4,
+    "names": [
+      "bakery_fresh_loaf_0",
+      "bakery_fresh_loaf_0_score_0",
+      "bakery_fresh_loaf_0_score_1",
+      "bakery_fresh_loaf_0_score_2"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0173,
+    "parts": 4,
+    "names": [
+      "bakery_fresh_loaf_1",
+      "bakery_fresh_loaf_1_score_0",
+      "bakery_fresh_loaf_1_score_1",
+      "bakery_fresh_loaf_1_score_2"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0173,
+    "parts": 4,
+    "names": [
+      "bakery_fresh_loaf_2",
+      "bakery_fresh_loaf_2_score_0",
+      "bakery_fresh_loaf_2_score_1",
+      "bakery_fresh_loaf_2_score_2"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0173,
+    "parts": 4,
+    "names": [
+      "bakery_fresh_loaf_3",
+      "bakery_fresh_loaf_3_score_0",
+      "bakery_fresh_loaf_3_score_1",
+      "bakery_fresh_loaf_3_score_2"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0173,
+    "parts": 4,
+    "names": [
+      "bakery_fresh_loaf_4",
+      "bakery_fresh_loaf_4_score_0",
+      "bakery_fresh_loaf_4_score_1",
+      "bakery_fresh_loaf_4_score_2"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "bakery_rear_window_-1_mullion",
+      "bakery_rear_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "bakery_rear_window_1_mullion",
+      "bakery_rear_window_1_cross"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "bakery_left_window_mullion",
+      "bakery_left_window_cross"
+    ]
+  },
+  {
+    "asset": "building_bakery",
+    "gap": 0.0072,
+    "parts": 2,
+    "names": [
+      "bakery_right_window_mullion",
+      "bakery_right_window_cross"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "carpenter_side_entry-handle"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "carpenter_side_window_-1_mullion",
+      "carpenter_side_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "carpenter_rear_window_-1_mullion",
+      "carpenter_rear_window_-1_cross"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "carpenter_side_window_1_mullion",
+      "carpenter_side_window_1_cross"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "carpenter_rear_window_1_mullion",
+      "carpenter_rear_window_1_cross"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0138,
+    "parts": 2,
+    "names": [
+      "carpenter_hammer_sign-handle",
+      "carpenter_hammer_sign-head"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0125,
+    "parts": 5,
+    "names": [
+      "carpenter_workbench_working_plank",
+      "carpenter_workbench_hand_plane",
+      "carpenter_workbench_plane_iron",
+      "carpenter_workbench_hammer_handle",
+      "carpenter_workbench_hammer_head"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0125,
+    "parts": 2,
+    "names": [
+      "carpenter_hanging_tool_handle_0",
+      "carpenter_hanging_tool_head_0"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0125,
+    "parts": 2,
+    "names": [
+      "carpenter_hanging_tool_handle_1",
+      "carpenter_hanging_tool_head_1"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0125,
+    "parts": 2,
+    "names": [
+      "carpenter_hanging_tool_handle_2",
+      "carpenter_hanging_tool_head_2"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.03,
+    "parts": 1,
+    "names": [
+      "carpenter_stock_plank_3"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.03,
+    "parts": 1,
+    "names": [
+      "carpenter_stock_plank_5"
+    ]
+  },
+  {
+    "asset": "building_carpenter_workshop",
+    "gap": 0.0887,
+    "parts": 9,
+    "names": [
+      "carpenter_lantern-glow",
+      "carpenter_lantern-cage",
+      "carpenter_lantern-cage.001",
+      "carpenter_lantern-cage.002",
+      "carpenter_lantern-cage.003",
+      "carpenter_lantern-rim",
+      "carpenter_lantern-rim.001",
+      "carpenter_lantern-cap",
+      "carpenter_lantern-ring"
+    ]
+  },
+  {
+    "asset": "building_watchtower",
+    "gap": 0.032,
+    "parts": 1,
+    "names": [
+      "watchtower_entry-handle"
+    ]
+  },
+  {
+    "asset": "building_watchtower",
+    "gap": 0.0625,
+    "parts": 12,
+    "names": [
+      "watchtower_side_slit_-1_shadow",
+      "watchtower_side_slit_-1_frame-jamb",
+      "watchtower_side_slit_-1_frame-jamb.001",
+      "watchtower_side_slit_-1_frame-voussoir",
+      "watchtower_side_slit_-1_frame-voussoir.001",
+      "watchtower_side_slit_-1_frame-voussoir.002",
+      "watchtower_side_slit_-1_frame-voussoir.003",
+      "watchtower_side_slit_-1_frame-voussoir.004",
+      "watchtower_side_slit_-1_frame-voussoir.005",
+      "watchtower_side_slit_-1_frame-voussoir.006",
+      "watchtower_side_slit_-1_frame-voussoir.007",
+      "watchtower_side_slit_-1_cross_slit"
+    ]
+  },
+  {
+    "asset": "building_watchtower",
+    "gap": 0.0625,
+    "parts": 12,
+    "names": [
+      "watchtower_side_slit_1_shadow",
+      "watchtower_side_slit_1_frame-jamb",
+      "watchtower_side_slit_1_frame-jamb.001",
+      "watchtower_side_slit_1_frame-voussoir",
+      "watchtower_side_slit_1_frame-voussoir.001",
+      "watchtower_side_slit_1_frame-voussoir.002",
+      "watchtower_side_slit_1_frame-voussoir.003",
+      "watchtower_side_slit_1_frame-voussoir.004",
+      "watchtower_side_slit_1_frame-voussoir.005",
+      "watchtower_side_slit_1_frame-voussoir.006",
+      "watchtower_side_slit_1_frame-voussoir.007",
+      "watchtower_side_slit_1_cross_slit"
+    ]
+  },
+  {
+    "asset": "building_watchtower",
+    "gap": 0.0625,
+    "parts": 12,
+    "names": [
+      "watchtower_rear_slit_shadow",
+      "watchtower_rear_slit_frame-jamb",
+      "watchtower_rear_slit_frame-jamb.001",
+      "watchtower_rear_slit_frame-voussoir",
+      "watchtower_rear_slit_frame-voussoir.001",
+      "watchtower_rear_slit_frame-voussoir.002",
+      "watchtower_rear_slit_frame-voussoir.003",
+      "watchtower_rear_slit_frame-voussoir.004",
+      "watchtower_rear_slit_frame-voussoir.005",
+      "watchtower_rear_slit_frame-voussoir.006",
+      "watchtower_rear_slit_frame-voussoir.007",
+      "watchtower_rear_slit_cross_slit"
+    ]
+  },
+  {
+    "asset": "building_watchtower",
+    "gap": 0.0625,
+    "parts": 12,
+    "names": [
+      "watchtower_front_slit_shadow",
+      "watchtower_front_slit_frame-jamb",
+      "watchtower_front_slit_frame-jamb.001",
+      "watchtower_front_slit_frame-voussoir",
+      "watchtower_front_slit_frame-voussoir.001",
+      "watchtower_front_slit_frame-voussoir.002",
+      "watchtower_front_slit_frame-voussoir.003",
+      "watchtower_front_slit_frame-voussoir.004",
+      "watchtower_front_slit_frame-voussoir.005",
+      "watchtower_front_slit_frame-voussoir.006",
+      "watchtower_front_slit_frame-voussoir.007",
+      "watchtower_front_slit_cross_slit"
+    ]
+  },
+  {
+    "asset": "cabinet_apothecary",
+    "gap": 0.025,
+    "parts": 3,
+    "names": [
+      "medicine-bottle",
+      "medicine-bottle-cork",
+      "medicine-bottle-label"
+    ]
+  },
+  {
+    "asset": "cabinet_apothecary",
+    "gap": 0.025,
+    "parts": 3,
+    "names": [
+      "medicine-bottle.001",
+      "medicine-bottle-cork.001",
+      "medicine-bottle-label.001"
+    ]
+  },
+  {
+    "asset": "cabinet_apothecary",
+    "gap": 0.025,
+    "parts": 3,
+    "names": [
+      "medicine-bottle.002",
+      "medicine-bottle-cork.002",
+      "medicine-bottle-label.002"
+    ]
+  },
+  {
+    "asset": "cabinet_apothecary",
+    "gap": 0.025,
+    "parts": 2,
+    "names": [
+      "mortar",
+      "pestle"
+    ]
+  },
+  {
+    "asset": "desk_cartographer",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "ink",
+      "ink-cork",
+      "ink-label",
+      "quill"
+    ]
+  },
+  {
+    "asset": "counter_shop",
+    "gap": 0.015,
+    "parts": 5,
+    "names": [
+      "counter-tray",
+      "stacked-coin",
+      "stacked-coin.001",
+      "stacked-coin.002",
+      "stacked-coin.003"
+    ]
+  },
+  {
+    "asset": "counter_shop",
+    "gap": 0.015,
+    "parts": 3,
+    "names": [
+      "counter-jar",
+      "counter-jar-cork",
+      "counter-jar-label"
+    ]
+  },
+  {
+    "asset": "chest_ironbound",
+    "gap": 0.031,
+    "parts": 1,
+    "names": [
+      "side-handle"
+    ]
+  },
+  {
+    "asset": "chest_ironbound",
+    "gap": 0.031,
+    "parts": 1,
+    "names": [
+      "side-handle.001"
+    ]
+  },
+  {
+    "asset": "rug_woven_teal",
+    "gap": 0.007,
+    "parts": 2,
+    "names": [
+      "woven-diamond",
+      "diamond-heart"
+    ]
+  },
+  {
+    "asset": "rug_woven_teal",
+    "gap": 0.007,
+    "parts": 2,
+    "names": [
+      "woven-diamond.001",
+      "diamond-heart.001"
+    ]
+  },
+  {
+    "asset": "rug_woven_teal",
+    "gap": 0.007,
+    "parts": 2,
+    "names": [
+      "woven-diamond.002",
+      "diamond-heart.002"
+    ]
+  },
+  {
+    "asset": "crate_harvest",
+    "gap": 0.01,
+    "parts": 18,
+    "names": [
+      "harvest-cabbage",
+      "harvest-cabbage-leaf",
+      "harvest-cabbage-leaf.001",
+      "harvest-cabbage-leaf.002",
+      "harvest-apple",
+      "harvest-fruit-stem",
+      "harvest-cabbage.001",
+      "harvest-cabbage-leaf.003",
+      "harvest-cabbage-leaf.004",
+      "harvest-cabbage-leaf.005",
+      "harvest-apple.002",
+      "harvest-fruit-stem.002",
+      "harvest-cabbage.002",
+      "harvest-cabbage-leaf.006",
+      "harvest-cabbage-leaf.007",
+      "harvest-cabbage-leaf.008",
+      "harvest-apple.004",
+      "harvest-fruit-stem.004"
+    ]
+  },
+  {
+    "asset": "crate_harvest",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "harvest-apple.001",
+      "harvest-fruit-stem.001"
+    ]
+  },
+  {
+    "asset": "crate_harvest",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "harvest-apple.003",
+      "harvest-fruit-stem.003"
+    ]
+  },
+  {
+    "asset": "crate_harvest",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "harvest-apple.005",
+      "harvest-fruit-stem.005"
+    ]
+  },
+  {
+    "asset": "market_handcart",
+    "gap": 0.01,
+    "parts": 24,
+    "names": [
+      "cart-produce-cabbage",
+      "cart-produce-cabbage-leaf",
+      "cart-produce-cabbage-leaf.001",
+      "cart-produce-cabbage-leaf.002",
+      "cart-produce-apple",
+      "cart-produce-fruit-stem",
+      "cart-produce-cabbage.001",
+      "cart-produce-cabbage-leaf.003",
+      "cart-produce-cabbage-leaf.004",
+      "cart-produce-cabbage-leaf.005",
+      "cart-produce-apple.002",
+      "cart-produce-fruit-stem.002",
+      "cart-produce-cabbage.002",
+      "cart-produce-cabbage-leaf.006",
+      "cart-produce-cabbage-leaf.007",
+      "cart-produce-cabbage-leaf.008",
+      "cart-produce-apple.004",
+      "cart-produce-fruit-stem.004",
+      "cart-produce-cabbage.003",
+      "cart-produce-cabbage-leaf.009",
+      "cart-produce-cabbage-leaf.010",
+      "cart-produce-cabbage-leaf.011",
+      "cart-produce-apple.006",
+      "cart-produce-fruit-stem.006"
+    ]
+  },
+  {
+    "asset": "market_handcart",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "cart-produce-apple.001",
+      "cart-produce-fruit-stem.001"
+    ]
+  },
+  {
+    "asset": "market_handcart",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "cart-produce-apple.003",
+      "cart-produce-fruit-stem.003"
+    ]
+  },
+  {
+    "asset": "market_handcart",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "cart-produce-apple.005",
+      "cart-produce-fruit-stem.005"
+    ]
+  },
+  {
+    "asset": "market_handcart",
+    "gap": 0.0158,
+    "parts": 2,
+    "names": [
+      "cart-produce-apple.007",
+      "cart-produce-fruit-stem.007"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.0111,
+    "parts": 3,
+    "names": [
+      "individual-well-block.012",
+      "individual-well-block.013",
+      "individual-well-block.014"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.0111,
+    "parts": 3,
+    "names": [
+      "individual-well-block.015",
+      "individual-well-block.016",
+      "individual-well-block.017"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.0111,
+    "parts": 3,
+    "names": [
+      "individual-well-block.018",
+      "individual-well-block.019",
+      "individual-well-block.020"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.0111,
+    "parts": 3,
+    "names": [
+      "individual-well-block.021",
+      "individual-well-block.022",
+      "individual-well-block.023"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.0075,
+    "parts": 63,
+    "names": [
+      "chamfered-coping-stone",
+      "chamfered-coping-stone.001",
+      "chamfered-coping-stone.002",
+      "chamfered-coping-stone.003",
+      "chamfered-coping-stone.004",
+      "chamfered-coping-stone.005",
+      "chamfered-coping-stone.006",
+      "chamfered-coping-stone.007",
+      "chamfered-coping-stone.008",
+      "chamfered-coping-stone.009",
+      "chamfered-coping-stone.010",
+      "chamfered-coping-stone.011",
+      "roof-oak-upright",
+      "upright-stone-shoe",
+      "roof-knee-brace",
+      "roof-oak-upright.001",
+      "upright-stone-shoe.001",
+      "roof-knee-brace.001",
+      "roof-crossbar",
+      "wooden-windlass",
+      "windlass-bearing",
+      "windlass-bearing.001",
+      "windlass-wound-rope",
+      "windlass-wound-rope.001",
+      "windlass-wound-rope.002",
+      "hanging-rope",
+      "roof-timber-underlay",
+      "overlapping-terracotta-tile",
+      "overlapping-terracotta-tile.001",
+      "overlapping-terracotta-tile.002",
+      "overlapping-terracotta-tile.003",
+      "overlapping-terracotta-tile.004",
+      "overlapping-terracotta-tile.005",
+      "overlapping-terracotta-tile.006",
+      "overlapping-terracotta-tile.007",
+      "overlapping-terracotta-tile.008",
+      "overlapping-terracotta-tile.009",
+      "overlapping-terracotta-tile.010",
+      "overlapping-terracotta-tile.011",
+      "roof-eave-wood",
+      "gable-bargeboard",
+      "gable-bargeboard.001",
+      "roof-timber-underlay.001",
+      "overlapping-terracotta-tile.012",
+      "overlapping-terracotta-tile.013",
+      "overlapping-terracotta-tile.014",
+      "overlapping-terracotta-tile.015",
+      "overlapping-terracotta-tile.016",
+      "overlapping-terracotta-tile.017",
+      "overlapping-terracotta-tile.018",
+      "overlapping-terracotta-tile.019",
+      "overlapping-terracotta-tile.020",
+      "overlapping-terracotta-tile.021",
+      "overlapping-terracotta-tile.022",
+      "overlapping-terracotta-tile.023",
+      "roof-eave-wood.001",
+      "gable-bargeboard.002",
+      "gable-bargeboard.003",
+      "ridge-cap-tile",
+      "ridge-cap-tile.001",
+      "ridge-cap-tile.002",
+      "ridge-cap-tile.003",
+      "ridge-cap-tile.004"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.0075,
+    "parts": 2,
+    "names": [
+      "crank-iron-arm",
+      "crank-wood-grip"
+    ]
+  },
+  {
+    "asset": "well_courtyard",
+    "gap": 0.009,
+    "parts": 6,
+    "names": [
+      "open-oak-bucket",
+      "bucket-hoop",
+      "bucket-hoop.001",
+      "bucket-handle-left",
+      "bucket-handle-top",
+      "bucket-handle-right"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.001",
+      "picket-point.001",
+      "picket-iron-nail.002",
+      "picket-iron-nail.003"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.002",
+      "picket-point.002",
+      "picket-iron-nail.004",
+      "picket-iron-nail.005"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.003",
+      "picket-point.003",
+      "picket-iron-nail.006",
+      "picket-iron-nail.007"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.004",
+      "picket-point.004",
+      "picket-iron-nail.008",
+      "picket-iron-nail.009"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.005",
+      "picket-point.005",
+      "picket-iron-nail.010",
+      "picket-iron-nail.011"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.006",
+      "picket-point.006",
+      "picket-iron-nail.012",
+      "picket-iron-nail.013"
+    ]
+  },
+  {
+    "asset": "fence_oak_panel",
+    "gap": 0.015,
+    "parts": 4,
+    "names": [
+      "individual-oak-picket.007",
+      "picket-point.007",
+      "picket-iron-nail.014",
+      "picket-iron-nail.015"
+    ]
+  },
+  {
+    "asset": "gate_garden",
+    "gap": 0.0106,
+    "parts": 1,
+    "names": [
+      "gate-pull-ring"
+    ]
+  }
+]

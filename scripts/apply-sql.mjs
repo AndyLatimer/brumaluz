@@ -30,12 +30,14 @@ const scripts = [
 ];
 const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 let transaction = false;
+let currentSql = '';
 try {
   await client.connect();
   await client.query('begin');
   transaction = true;
   for (const [name, sql] of scripts) {
-    await client.query(sql());
+    currentSql = sql();
+    await client.query(currentSql);
     console.log(`OK  ${name}`);
   }
   // Recarga la caché de esquema de la API para que las funciones nuevas se vean al momento.
@@ -44,6 +46,9 @@ try {
   transaction = false;
 } catch (error) {
   console.error('Error aplicando el SQL:', error.message);
+  if(error.where)console.error(error.where);
+  const source=error.internalQuery??currentSql,position=Number(error.internalPosition??error.position);
+  if(Number.isFinite(position)&&position>0){const offset=position-1;console.error(`Línea ${source.slice(0,offset).split('\n').length}: ${source.slice(Math.max(0,offset-140),offset+100)}`);}
   if (transaction) {
     try { await client.query('rollback'); }
     catch (rollbackError) { console.error('Error deshaciendo la transacción:', rollbackError.message); }

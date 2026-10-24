@@ -31,40 +31,41 @@ export const testChoices: DialogChoice[] = [
   { text: 'Comerciar', action: () => openVendor('testiculos') },
 ];
 export function isbertoConversation(): Conversation {
-  const isberto = { speaker:session.registeredNpcs.isberto.name, subtitle:session.registeredNpcs.isberto.subtitle, start:'intro' };
-  const gnomi = { speaker:session.registeredNpcs.gnomi.name, subtitle:session.registeredNpcs.gnomi.subtitle };
+  const isberto = { speaker:session.registeredNpcs.isberto.name, subtitle:session.registeredNpcs.isberto.subtitle, emblem:'anvil' as const, start:'intro' };
+  const gnomi = { speaker:session.registeredNpcs.gnomi.name, subtitle:session.registeredNpcs.gnomi.subtitle, emblem:'guild' as const };
   const gnomiHere = story.welcomeWorld.root.visible && story.welcomeWorld.root.position.distanceTo(holder.position) < 8;
   const follow = [{ text:'Seguir a Isberto', action:()=>performShadow('report') }];
   if (session.state.shadowQuest === 'defeated' && !corpseLooted()) return { ...isberto,
-    nodes:{ intro:{ text:'Registra lo que quede de esa cosa antes de que se deshaga del todo. Quiero saber qué era.' } } };
+    nodes:{ intro:{ text:'Buen golpe. Ahora registra los restos antes de que se deshagan. Una pelea no termina hasta que sabes qué te ha atacado.' } } };
   if (session.state.shadowQuest === 'defeated') return { ...isberto, nodes:{
-    intro:{ text:'Ya no se mueve… Bien hecho. Todavía me tiemblan las manos, y eso que llevo media vida con el martillo. Exploré medio mundo antes de colgar la capa y nunca había visto nada parecido.', next:gnomiHere ? 'gnomi' : 'isberto' },
-    gnomi:{ ...gnomi, text:'Yo tampoco sé qué era. Y mira que en el gremio nos cruzamos con gente y bichos de todas clases… Esto no me suena de nada.', next:'isberto' },
-    isberto:{ text:'Pues no vamos a ponerle nombre por inventar. Guarda lo que hayas sacado de sus restos; por ahora no sabemos qué significa.', next:'offer' },
+    intro:{ text:'Buen trabajo. Has mantenido el tipo cuando se te ha echado encima. Eso vale más que llevar un arma bonita.\n\nAhora enséñame qué has encontrado. He cruzado medio Pompelín y esto no me gusta nada.', next:gnomiHere ? 'gnomi' : 'isberto' },
+    gnomi:{ ...gnomi, text:'En el gremio tenemos un registro de criaturas. Con dibujos, incluso. Esta no sale.\n\nY antes de que preguntes: sí, Isberto, he leído también las páginas sin dibujos.', next:'isberto' },
+    isberto:{ text:'Entonces mañana buscaremos a quien sepa más. Guarda esos restos. Hasta tener respuestas, esto se queda entre nosotros. No quiero a medio mercado pinchando sombras con un tenedor.', next:'offer' },
     offer:gnomiHere
-      ? { text:'…Mira. Se está haciendo tarde, y después de esto no pienso dejar que duermas al raso. Tengo una cama libre en casa. No me gustan las visitas, que conste. Pero vente. Antes de que me arrepienta.', next:'farewell' }
-      : { text:'…Mira. Se está haciendo tarde, y después de esto no pienso dejar que duermas al raso. Tengo una cama libre en casa. No me gustan las visitas, que conste. Pero vente. Antes de que me arrepienta.', choices:follow },
-    farewell:{ ...gnomi, text:'¡Isberto ofreciendo su casa! Esto sí que no lo había visto nunca. Yo vuelvo a la plaza del pozo; si me necesitas, allí estaré. ¡Descansa!', choices:follow },
+      ? { text:'Te has ganado un techo. Tengo una cama libre y un cofre que cierra como es debido. Vente a casa.\n\nY no pongas esa cara. Has defendido mi fragua; no voy a pagártelo señalándote un banco en la plaza.', next:'farewell' }
+      : { text:'Te has ganado un techo. Tengo una cama libre y un cofre que cierra como es debido. Vente a casa.\n\nY no pongas esa cara. Has defendido mi fragua; no voy a pagártelo señalándote un banco en la plaza.', choices:follow },
+    farewell:{ ...gnomi, text:'Una cama, un cofre y una invitación sin gruñido. Voy a tener que corregir mi guía de Brumaluz.\n\nDescansa. Te espero en la plaza del pozo; sigo siendo tu ayudante asignado. Isberto puede prestarte una cama, pero el gorro lo pongo yo.', choices:follow },
   } };
   if (session.state.shadowQuest === 'returning') return play.city.locationId === ISBERTO_HOUSE
     ? { ...isberto, nodes:{
-      intro:{ text:'No me mires así. Lo de esa criatura me ha dejado mal cuerpo, y prefiero tenerte bajo techo que pasarme la noche preocupado. Ponte cómodo.',
+      intro:{ text:'Aquí puedes descansar y dejar tus cosas. El cerrojo es bueno: lo hice yo.\n\nHas respondido cuando hacía falta. En mi casa eso cuenta. Ponte cómodo.',
         choices:[{ text:'Gracias, Isberto.', action:()=>performShadow('return'), next:'rest' }] },
-      rest:{ text:'Bah. Descansa, que mañana… ya veremos qué hacemos con lo que encontraste.' },
+      rest:{ text:'Descansa. Mañana seguiremos el rastro de esa cosa. Y si vuelve a acercarse a mi fragua, nos encontrará preparados.' },
     } }
     : { ...isberto, nodes:{ intro:{ text:'Mi casa es esa, la de la puerta junto al camino. Vamos, entra.' } } };
   if (session.state.shadowQuest === 'returned') return { ...isberto,
-    nodes:{ intro:{ text:'Ponte cómodo. La cama y el cofre de la esquina siguen ahí cuando los necesites. Yo sigo dándole vueltas a esa criatura.' } } };
-  const text = session.state.shadowQuest === 'active' ? 'La criatura sigue junto a la herrería, al sur. Ten cuidado.'
-    : `${gnomiHere ? t('¡Gnomi, menos mal que te encuentro! Y tú…') + ' ' : ''}${t('¿Sabes usar eso que llevas? Hay algo rondando mi herrería, al sur. No es un lobo ni un zorro. Yo ya tuve bastantes aventuras cuando era explorador; ahora solo quiero mi yunque y mi fragua. Necesito a alguien que se atreva a echarle un vistazo.')}`;
+    nodes:{ intro:{ text:'La cama y el cofre son tuyos mientras los necesites. Si sales, vuelve con todas las piezas. Las tuyas; las del equipo ya las arreglo yo.' } } };
+  const text = session.state.shadowQuest === 'active' ? 'Sigue junto a la herrería, al sur. Mantén los pies firmes, busca el hueco y golpea con intención. Yo me ocupo de que nadie se meta en medio.'
+    : `${gnomiHere ? t('Gnomi, mantén a la gente lejos de la herrería. Y tú, escúchame.') + '\n\n' : ''}${t('He sacado a todos de la fragua y cerrado el paso del sur. Esa cosa sigue dentro y no voy a dejar que llegue al mercado.\n\nLlevas un arma. Bien. Ahora hay que usarla con cabeza. Tú ve a por la criatura; yo cubro el camino. ¿Puedo contar contigo?')}`;
   const offer = !session.state.shadowQuest;
   return {
     ...isberto,
     nodes:{intro:{text,
       ...(offer ? {quest:{title:SHADOW_TITLE,objective:'Derrota a la criatura que ronda la herrería de Isberto, al sur.',experience:0,pelines:0}} : {}),
       ...(offer || (session.state.shadowQuest === 'active' && fight.combatEncounter?.status !== 'active')
-        ? {choices:[{text:offer ? 'Aceptar misión' : 'Volver a investigar',action:beginIsbertoEncounter}]} : {}),
-    }},
+        ? {choices:[{text:offer ? 'Aceptar misión' : 'Volver a investigar',action:beginIsbertoEncounter},
+          ...(offer ? [{text:'¿Has luchado antes con algo así?',next:'experience'}] : [])]} : {}),
+    }, experience:{text:'Con eso, no. Con cosas que también parecían imposibles de tumbar, unas cuantas.\n\nFui explorador antes de hacerme herrero. Aprendí a volver a casa. Primera lección: mirar bien. Segunda: no confundir valor con entrar a ciegas.',next:'intro'}},
   };
 }
 

@@ -1,0 +1,4 @@
+.combat-dashboard.enemy-windup{border-color:#d2a05e;box-shadow:0 0 0 1px #d5a76833,0 6px 20px #0005}.combat-dashboard.enemy-windup .combat-log-compact{color:#edca8d;opacity:1}
+.target-resource[hidden]{display:none}
+.target-resource.enemy-cast{height:12px;border-color:#b7995e80}.target-resource.enemy-cast i{background:linear-gradient(#dcb16d,#a77743)}.target-resource.enemy-cast span{font-size:9px;color:#fff0cb}
+.combat-dashboard:has(select:not([hidden])){min-width:0;padding:7px 10px;display:flex;gap:10px;align-items:center;font-size:10px}.combat-dashboard[hidden]{display:none!important}.combat-dashboard progress[hidden],.combat-dashboard [hidden]{display:none!important}

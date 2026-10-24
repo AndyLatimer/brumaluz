@@ -1,6 +1,6 @@
 # Armas, encantamientos y conjuntos: diseño con el jugador
 
-Estado: diseño en curso. Este documento distingue decisiones acordadas, propuestas y funcionamiento actual. Una propuesta no concede efectos en el juego ni debe aparecer como activa en un tooltip.
+Estado: diseño con historial de decisiones. La implementación del 24 de octubre está descrita en [RPG-IMPLEMENTATION.md](RPG-IMPLEMENTATION.md), con fórmulas, acceso en el juego y pendientes. Las referencias a «todavía no implementado» en secciones anteriores describen el estado al redactar esas decisiones. Para conjuntos prevalece la última corrección: bonificaciones numéricas, sin transformar habilidades; los efectos anteriores están archivados en [SET-EFFECTS-SUPERSEDED.md](SET-EFFECTS-SUPERSEDED.md).
 
 ## Decisiones acordadas
 
@@ -18,6 +18,8 @@ Estado: diseño en curso. Este documento distingue decisiones acordadas, propues
 | Aprendizaje de recetas | Permanente por personaje: maestros enseñan recetas básicas; exploración, enemigos y mazmorras proporcionan especiales; proyectos de maestría desbloquean avanzadas del oficio. Las recetas encontradas pueden venderse antes de aprenderlas; aprenderlas consume su pergamino. Esto no convierte automáticamente las recetas de maestro o maestría en objetos comerciables. |
 | Estaciones y fabricación | Se fabrica mediante estaciones del mundo y estaciones colocables en casas. Los talleres no se mejoran. Comida y pociones se fabrican instantáneamente, sin espera ni cola temporal. Para las recetas con tiempo se pueden encolar unidades y alejarse; avanzan también sin conexión y el resultado queda guardado para recogerlo, sin caducar. Los tiempos aumentan con la calidad del objeto; los proyectos de maestría incluyen componentes y pasos. Duraciones y capacidad de colas quedan por concretar; no dependen de mejoras de taller. |
 | Colas de fabricación | Una cola por oficio y personaje, independiente de la estación utilizada, con un trabajo activo y pendientes que empiezan automáticamente. Distintos oficios pueden trabajar simultáneamente. Usar varias estaciones no multiplica los trabajos activos. Comida y pociones quedan fuera de las colas temporales. |
+| Capacidad y gestión de colas | Máximo cinco trabajos por oficio en total: uno activo y cuatro pendientes. Se concreta así «hasta 5 por oficio». Pendientes reordenables gratuitamente; resultados terminados no ocupan puestos ni bloquean el avance. Sin mejoras de taller ni ampliaciones premium de cola. Los materiales se reservan al encolar. |
+| Garantías de fabricación | Cumplir receta, materiales y requisitos de oficio garantiza el resultado, sin fallos aleatorios. Estadísticas fijas por modelo. La experiencia se concede al terminar, una sola vez, aunque se recoja después. Resultados y materiales devueltos por cancelación permanecen pendientes de recoger si falta espacio, sin caducar ni perderse. Las pociones adicionales de la racial élfica no dan experiencia extra. |
 | Materiales y cancelación | Se reservan los materiales al encolar. Cancelar un trabajo pendiente o iniciado devuelve todos sus materiales; si estaba iniciado, pierde el progreso. Recoger el resultado anterior no bloquea el siguiente trabajo. |
 | Consulta y recogida | La cola personal y los resultados terminados están disponibles en cualquier estación del mismo oficio, pública o de casa; no se exige volver a la estación donde se inició el trabajo. |
 | Tiempos de equipo por pieza | Gris: 30 segundos; verde: 2 minutos; azul: 30 minutos; morado: 2 horas; dorado: 24 horas; naranja especial: 48 horas. Tiempos base, antes de la reducción racial humana del 15 %. |
@@ -48,16 +50,38 @@ Estado: diseño en curso. Este documento distingue decisiones acordadas, propues
 | Personalización | Encantamiento elegido por el jugador. |
 | Catálogo de encantamientos | Universal: compartido por todas las clases, sin encantamientos exclusivos de clase. |
 | Límite de encantamientos | Un encantamiento activo por arma. Un nuevo pergamino sustituye el anterior. |
+| Piezas encantables en la primera versión | Solo el arma principal, desde verde. Escudos, libros y dagas secundarias conservan sus estadísticas pero no admiten otro encantamiento; todas las clases tienen un único encantamiento activo. Mejoras específicas para secundarias se estudiarán después. |
+| Encantamiento y vínculo | Encantar no liga el arma: puede venderse o regalarse con el encantamiento hasta equiparla por primera vez según la regla de ligado al equipar. Cambiar el encantamiento no elimina un vínculo existente. Sustituirlo consume el nuevo pergamino y elimina el efecto anterior. Comercio y guardado deben conservar el encantamiento de cada copia. |
+| Grados de pergamino | Verde, azul, morado, dorado y naranja. El grado aplicado determina la intensidad; el arma admite grados de su calidad o inferiores. Mejorar la intensidad requiere consumir otro pergamino y sustituir el anterior, sin mejora automática por cambiar de arma. El encantamiento permanece asociado a su copia de arma, no se traslada automáticamente. Cifras por grado pendientes. |
+| Contadores de encantamientos | Escarcha y Rayo acumulan básicos acertados aunque se cambie de enemigo; Maldición umbría exige el mismo objetivo. Todos pierden cargas al cambiar de arma o encantamiento, morir o pasar 6 segundos sin acertar un básico válido. Habilidades y efectos secundarios no suman cargas. Contadores propios de portador e instancia de arma, sin compartirlos entre jugadores. |
+| Rayo sin segundo objetivo | Si al completar cuatro golpes no hay otro enemigo cercano elegible, conserva una única descarga preparada. El siguiente básico acertado con segundo objetivo válido la activa; no acumula varias descargas. Acertar básicos mantiene la ventana de actividad; se pierde al pasar 6 segundos sin acertar o por las demás causas de reinicio. Alcance, selección y daño pendientes. |
+| Alcance y selección de Rayo | Hasta 4 metros desde el objetivo del básico. Elegir el enemigo válido más cercano, distinto del principal y sin paredes entre ambos. Si ninguno cumple, conservar la descarga preparada. Desempate y daño por grado pendientes; no implementado. |
+| Daño de Rayo por grado | Verde/azul/morado/dorado/naranja: 40/50/60/70/80 % del daño de un básico del arma antes de defensas. Daño eléctrico al segundo enemigo, reducido por su propia Guardia; el principal solo recibe el básico normal. Valores iniciales aprobados, no implementados. |
+| Barrera de Escarcha por grado | Cada tres básicos acertados concede una barrera de 4 segundos. Absorción verde/azul/morado/dorado/naranja: 20/25/30/35/40 % del daño de un básico del arma antes de defensas. Al reaplicar, conservar la mayor entre la barrera restante y la nueva y renovar la duración, sin sumarlas. Orden respecto a Guardia y otros escudos pendiente; no implementado. |
+| Fuego: efecto y cifras | Cada básico acertado añade daño de fuego del 5/6/7/8/9 % del daño del básico antes de defensas en verde/azul/morado/dorado/naranja. El enemigo aplica su Guardia al daño de fuego. Sin quemadura ni daño periódico; no genera cargas ni activa otros encantamientos. Las habilidades no lo activan. Valores iniciales aprobados; no implementado. |
+| Vampirismo: efecto y cifras | Cada básico recupera vida por el 2/3/4/5/6 % del daño que realmente quite vida al enemigo en verde/azul/morado/dorado/naranja. Calcular después de defensas y absorciones, excluyendo el daño excedente al matar. No funciona con habilidades ni daño de encantamientos y no supera la vida máxima del portador. Redondeo de curaciones pequeñas pendiente; no implementado. |
+| Maldición umbría: cifras aprobadas | Cada tercer básico acertado contra el mismo enemigo añade daño oscuro del 20/25/30/35/40 % de un básico del arma antes de defensas en verde/azul/morado/dorado/naranja. Aplicar la Guardia del objetivo. Mantiene marcas de 6 segundos; el daño adicional no genera marcas ni otros efectos. Sustituye la antigua cifra propuesta del 30 % sin grados. No implementado. |
 | Rareza mínima para encantar | Verde (poco común, categoría 1) y superiores. El equipo gris de categoría 0 no admite encantamientos. |
 | Aplicación | Pergamino consumible, aplicación garantizada; sustituir un encantamiento elimina el anterior. |
 | Funcionamiento de encantamientos | Modifican el arma y sus golpes; no dependen de usar habilidades. Esta decisión sustituye la activación mediante habilidades propuesta anteriormente. |
 | Equipo inicial | Categoría 0; la siguiente es categoría 1. |
 | Piezas de armadura | Cabeza, pecho, manos y piernas. Piernas incluye todo el calzado; no hay ranura separada de pies. |
-| Bonificaciones de conjunto | 2/4 concede una mejora pequeña de estadísticas acorde al conjunto; 4/4 añade un efecto propio que refuerza una habilidad o función de clase sin cambiar toda la rotación. Combinar dos conjuntos de dos piezas concede ambos bonos parciales. Efectos concretos y cifras pendientes; no están implementados. |
+| Bonificaciones de conjunto | 2/4 mejora estadísticas; 4/4 mejora cifras de la clase o sus habilidades existentes sin cambiar su funcionamiento ni añadir mecánicas. Combinar dos conjuntos de dos piezas concede ambos bonos parciales. Los efectos anteriores que transformaban habilidades quedan sustituidos; ver la regla vigente de separación. No implementados. |
+| Alcance de la primera versión de conjuntos | Aprobada una primera versión de mejoras numéricas, con separación clara respecto a habilidades y encantamientos. Los efectos adicionales se estudiarán en una ampliación futura; no se reactivan automáticamente los efectos archivados ni se fijan sus condiciones futuras. |
+| Bonos de conjunto por calidad | Gris: sin bonos. Verde: bono de 2 piezas. Azul y superiores: bonos de 2 y 4 piezas. Desde azul se conserva el funcionamiento del efecto de 4 piezas y las calidades superiores mejoran sus cifras gradualmente, sin añadir efectos nuevos automáticamente. Valores concretos pendientes. |
+| Mezcla de calidades | Las piezas del mismo conjunto cuentan juntas aunque difieran en calidad. El bono de 2 usa la calidad de la segunda mejor pieza; el de 4, la peor de las cuatro. Se mantienen los mínimos: segunda mejor verde o superior para bono de 2; las cuatro azules o superiores para bono de 4. Ejemplo: dos moradas y dos azules conceden bono de 2 morado y de 4 azul. Identidad concreta de conjuntos entre modelos existentes pendiente. |
+| Cálculo del bono de 2 piezas | Porcentual, sobre la estadística del personaje y su equipo antes de bonificaciones temporales. Su porcentaje aumenta gradualmente según calidad. Dos bonos parciales sobre la misma estadística suman sus porcentajes sobre la misma base, sin multiplicarse; si mejoran estadísticas distintas, cada uno se aplica a la correspondiente. Excluir todos estos bonos de su propia base de cálculo para evitar recursión. |
+| Valores iniciales de 2 piezas | Verde/azul/morado/dorado/naranja: potencia, guardia o curación +2/+3/+4/+5/+6 %; recurso máximo +4/+6/+8/+10/+12 %. Cada conjunto concede solo el aumento de su estadística asignada, no toda la columna. Valores aprobados como punto de partida para equilibrar junto con los efectos de 4 piezas; no implementados. |
 | Atributo principal | Fuerza: guerrero. Agilidad: pícaro y explorador. Intelecto: mago y clérigo. Corpulencia: supervivencia. |
+| Función de atributos en combate | Fuerza aumenta la potencia del guerrero; Agilidad, la del pícaro y explorador; Intelecto, la del mago y tanto daño como curación del clérigo. El atributo principal beneficia básicos y habilidades. Corpulencia aumenta vida máxima; Guardia del equipo reduce daño recibido. Agilidad no concede automáticamente velocidad de ataque ni Corpulencia reducción de daño. Coeficientes, efectos sobre recursos y otras estadísticas pendientes; no implementado. |
+| Coeficiente del atributo principal | Valor inicial aprobado: +1 % de potencia por punto, sumado linealmente. Multiplicador = 1 + 0,01 × atributo principal. Se aplica a la potencia del arma y equipo para básicos y habilidades; en el clérigo también a curación. El bono porcentual de conjunto se calcula después sobre esa potencia. No aplicar el atributo otra vez al coeficiente de habilidad. Crecimiento por nivel y normalización por cadencia pendientes; no implementado. |
+| Crecimiento común por nivel | Aprobado: multiplicador = 1 + 0,02 × (nivel − 1), desde nivel 1. Se aplica una sola vez a básicos y a daño/curación de habilidades, junto con el atributo principal. Nivel 10: +18 %; nivel 50: +98 %. Arma, conjunto y rango de habilidad conservan sus aportaciones propias. Sustituirá el crecimiento actual del básico y su ausencia en habilidades al implementar; normalización por cadencia pendiente. |
+| Potencia y cadencia de armas | Aprobado: separar daño por golpe de la potencia usada por habilidades. A igual categoría y potencia, armas rápidas y lentas dan habilidades de fuerza equivalente; las rápidas tienen básicos más frecuentes y débiles, las lentas más fuertes y espaciados. Equilibrar los encantamientos considerando la cadencia para que más impactos no den ventaja automática. Fórmulas concretas, perfiles y aplicación al catálogo pendientes; no implementado. |
+| Coeficiente de Corpulencia | Valor inicial aprobado: +2 % de vida máxima por punto, sumado linealmente. Vida máxima = (vida base del personaje + vida aportada por equipo) × (1 + 0,02 × Corpulencia), antes de otros modificadores por concretar. Aumentar vida máxima mediante equipo no cura automáticamente. No se añade reducción de daño por Corpulencia. Redondeo y conservación de vida actual al cambiar el máximo pendientes; no implementado. |
+| Comportamiento de Guardia | Reducción porcentual del daño directo de básicos y habilidades, con rendimiento decreciente. Fórmula inicial aprobada: reducción = min(0,60; Guardia / (Guardia + 20)). No resta una cantidad fija por impacto. Referencia de nivel, redondeo y tratamiento de daño periódico/ambiental pendientes; no implementado. |
 | Colores actuales | Gris, verde, azul, morado, dorado, naranja especial. |
 
-Pendiente: compatibilidad con armas secundarias, fabricación y obtención de pergaminos, costes, estadísticas secundarias, fórmulas de los atributos, efectos de conjuntos y cifras de equilibrio. La aplicación garantizada no determina por sí sola las reglas de fabricación.
+Pendiente: fabricación y obtención concreta de pergaminos, costes, estadísticas secundarias, integración de fórmulas de atributos, nuevos bonos numéricos de conjuntos y cifras de equilibrio. Las secundarias no admiten encantamientos en la primera versión. La aplicación garantizada no determina por sí sola las reglas de fabricación.
 
 ## Lo que existe hoy
 
@@ -77,7 +101,7 @@ Fuentes: `src/data/weapons.ts`, `combat.ts`, `outfits.ts`, `accessories.ts`, `in
 Propuesta pendiente de acordar:
 
 1. Conservar potencia de ataque, potencia de curación y guardia como propiedades principales. El escudo y el libro deben tener una aportación visible propia; la daga secundaria necesita revisar su identidad, porque hoy únicamente reduce daño recibido.
-2. Conectar primero los atributos de personaje a sus efectos reales. Está acordado usar fuerza para el guerrero, agilidad para pícaro/explorador, intelecto para mago/clérigo y corpulencia para supervivencia. Todavía no están aprobadas ni implementadas las fórmulas nuevas de potencia: elegir el reparto no cambia por sí solo el daño actual.
+2. Reparto funcional aprobado: fuerza mejora potencia del guerrero; agilidad, potencia de pícaro/explorador; intelecto, potencia del mago y daño/curación del clérigo. Beneficia básicos y habilidades. Corpulencia aporta vida máxima y la guardia del equipo reduce daño recibido. No conceder cadencia automáticamente por agilidad ni reducción de daño por corpulencia. Todavía no están aprobados ni implementados los coeficientes nuevos: elegir el reparto no cambia por sí solo el daño actual. Efectos actuales sobre maná/estamina requieren revisión separada, sin retirarlos automáticamente.
 3. Empezar con pocas estadísticas secundarias y límites comunes: vida, recurso y eficiencia de habilidades son candidatas. Crítico, celeridad, resistencias y penetración requieren reglas propias antes de introducirse.
 4. Cada modelo puede tener un reparto fijo distinto, con un presupuesto comparable a otros de su escalón. Evitar que una opción gane en todas las cifras sin contrapartida dentro del mismo escalón.
 5. Pericia, presencia y percepción necesitan sistemas de oficio, comercio y exploración. No llenar el botín de armas con estadísticas que aún no tengan utilidad.
@@ -92,7 +116,7 @@ La decisión permite diferencias entre modelos de una misma familia, sin transfo
 | Versátil | Valores intermedios | Menor especialización; opción de referencia para comparar |
 | Pesado | Golpes potentes y alcance algo mayor cuando la geometría lo justifique | Intervalos largos; perder una oportunidad de atacar cuesta más |
 
-Comparar armas del mismo escalón por daño sostenido, daño en ventanas cortas, alcance, supervivencia y rendimiento de sus encantamientos. No basta con igualar daño por segundo contra un objetivo inmóvil. Evitar que el pesado obtenga además habilidades mucho más fuertes solo por tener más daño por golpe: la potencia de las habilidades debe normalizarse respecto a la cadencia de referencia de la clase. Es una regla de equilibrio propuesta, pendiente de fórmula.
+Comparar armas del mismo escalón por daño sostenido, daño en ventanas cortas, alcance, supervivencia y rendimiento de sus encantamientos. No basta con igualar daño por segundo contra un objetivo inmóvil. Regla aprobada: separar daño por golpe de potencia para habilidades; a igual categoría y potencia, rápidas y lentas conceden habilidades de fuerza equivalente. Normalizar respecto a la cadencia de referencia de la clase es una propuesta de implementación de esa regla, todavía pendiente de fórmula. No conceder al arma pesada habilidades más fuertes automáticamente por su mayor daño por golpe.
 
 Vampirismo y Maldición umbría pueden presupuestarse proporcionalmente al daño del arma; un añadido fijo por golpe favorecería la cadencia rápida. Escarcha necesita límites de duración/renovación para impedir ralentización permanente. La defensa plana por impacto también puede perjudicar más a las armas rápidas: revisar esa interacción al introducir defensa en enemigos.
 
@@ -110,7 +134,7 @@ La rareza y el nivel de poder son conceptos distintos aunque el catálogo actual
 
 Está acordado un encantamiento activo por arma. No se acumulan dos encantamientos en el mismo objeto: aplicar otro sustituye el anterior. La fuerza del pergamino debe tener requisitos de equipo para evitar equipar un efecto avanzado en el arma inicial y saltarse la progresión.
 
-La compatibilidad con secundarias queda por concretar. Si escudo, libro y daga secundaria admiten efectos, hay que equilibrar la aportación total frente a las clases con una sola arma. Cada efecto pertenece al objeto encantado y no se aplica automáticamente a los golpes de otra arma.
+Compatibilidad aprobada para la primera versión: solo arma principal desde verde; escudos, libros y dagas secundarias no admiten encantamientos. Cada efecto pertenece al arma principal encantada y no se duplica por llevar una secundaria. El límite efectivo es un encantamiento activo por personaje, independientemente de cuántas piezas de arma use su clase. Mejoras específicas de secundarias quedan para diseño futuro.
 
 Contrato de un encantamiento:
 
@@ -121,16 +145,21 @@ Contrato de un encantamiento:
 - Coste y fuente de obtención del pergamino, todavía por decidir.
 - Aplicación garantizada, consumo del pergamino y sustitución del anterior: **acordado**.
 
-El catálogo será universal por decisión del usuario. Los anteriores ejemplos exclusivos por clase se sustituyen por propuestas comunes. Universal significa compartido entre clases. La rareza mínima aprobada es verde (categoría 1); la compatibilidad con ranuras sigue pendiente. La restricción se validará tanto al mostrar destinos elegibles como al aplicar el pergamino en el servidor.
+El catálogo será universal por decisión del usuario. Los anteriores ejemplos exclusivos por clase se sustituyen por propuestas comunes. Universal significa compartido entre clases, no entre todas las ranuras: solo se admite arma principal desde verde (categoría 1). Grados de pergamino aprobados: verde, azul, morado, dorado y naranja; la calidad del arma limita el grado máximo aplicable. Una dorada puede llevar un pergamino verde, pero una verde no admite uno dorado. El grado aplicado fija la intensidad y no aumenta automáticamente por cambiar de arma; subirlo consume otro pergamino y sustituye el anterior. El efecto sigue asociado a la copia de arma, sin traslado automático. Validar ranura, calidad, propiedad y grado tanto en destinos elegibles como al aplicar en servidor. Cifras por grado pendientes.
 
 Primeros ejemplos para discutir, sin cifras ni efectos activos todavía:
 
 | Encantamiento propuesto | Efecto común | Restricción de diseño |
 | --- | --- | --- |
-| Filo ígneo | Los impactos del arma añaden una pequeña cantidad de daño de fuego | Fijar presupuesto por segundo y relación con la cadencia |
-| Vampirismo | Recupera una parte del daño que inflige esa arma | Usar daño efectivo; no curar por daño absorbido, excedente o generado por el propio encantamiento |
-| Escarcha | Los impactos del arma pueden ralentizar al objetivo | Duración y magnitud pendientes; limitar renovación y resistencia de enemigos especiales |
+| Fuego (Filo ígneo), aprobado | Cada básico acertado añade daño de fuego del 5/6/7/8/9 % según grado verde/azul/morado/dorado/naranja | Base antes de defensas; Guardia del receptor se aplica al daño de fuego. Sin quemadura, cargas ni activaciones secundarias; habilidades no lo activan |
+| Vampirismo, aprobado | Recupera vida por el 2/3/4/5/6 % del daño efectivo del básico según grado verde/azul/morado/dorado/naranja | Excluir daño absorbido, excedente al matar, habilidades y daño de encantamientos; no superar la vida máxima |
+| Escarcha, efecto aprobado | Cada tres ataques básicos acertados generan una pequeña barrera de hielo temporal para el portador | Sustituye la ralentización. Sin acumulación; absorción mejora por grado; habilidades no generan cargas. Duración, valores y reglas de reinicio/renovación pendientes |
+| Rayo, efecto aprobado | Cada cuatro ataques básicos acertados provocan una descarga que salta del objetivo a otro enemigo cercano y le causa daño eléctrico | Un solo salto, sin nuevas descargas ni activación de otros encantamientos; daño mejora por grado. Radio, daño, reglas del contador y tratamiento sin segundo objetivo pendientes |
 | Maldición umbría | Tres impactos del arma sobre el mismo enemigo consumen las marcas y causan daño oscuro adicional | Contador propio del portador, arma y objetivo; sin activación por habilidades |
+
+### Reglas comunes de contadores aprobadas
+
+Escarcha activa su barrera cada tres básicos acertados; Rayo prepara su descarga cada cuatro. Ambos conservan el progreso al cambiar de enemigo. Maldición umbría mantiene su contador por objetivo y exige tres golpes sobre el mismo enemigo. Todos pierden sus cargas al cambiar de arma o encantamiento, morir o transcurrir 6 segundos sin acertar un básico válido. Para la marca umbría, renovar la caducidad con golpes al enemigo marcado, no con golpes a terceros. Habilidades, daño de encantamientos y otros efectos secundarios no suman cargas ni las renuevan. Los contadores pertenecen al portador y a la instancia de arma; no se comparten entre jugadores. Rayo sin otro enemigo elegible, reglas de reaplicación de la barrera y resolución de impactos absorbidos siguen pendientes.
 
 ### Maldición umbría: sustituto de Equilibrio
 
@@ -138,7 +167,7 @@ El usuario ha pedido sustituir Equilibrio por un encantamiento de daño oscuro. 
 
 - Cada ataque básico que impacta y causa daño con el arma encantada aplica una marca umbría a ese enemigo.
 - El tercer impacto consume las marcas y añade una descarga de daño oscuro al golpe normal. No necesita habilidades ni una tirada aleatoria.
-- Valor inicial propuesto: daño oscuro equivalente al 30 % del daño de un ataque básico de esa arma, antes de defensas. Supone aproximadamente un 10 % adicional a lo largo de tres golpes contra un objetivo sin mitigación. La cifra queda pendiente de equilibrio junto a los demás encantamientos.
+- Valores iniciales aprobados por grado verde/azul/morado/dorado/naranja: daño oscuro equivalente al 20/25/30/35/40 % de un básico de esa arma antes de defensas; aplicar la Guardia del objetivo. Sustituye la propuesta anterior del 30 % sin grados. El daño adicional no genera marcas ni otros efectos. No implementado.
 - Las marcas caducan tras 6 segundos sin otro impacto válido de esa misma arma. Son propias de cada combinación de portador, instancia de arma y enemigo; otros jugadores no las consumen.
 - Retirar o sustituir el arma o su encantamiento, morir o salir del encuentro elimina sus marcas. El daño de la descarga no aplica nuevas marcas ni activa otros encantamientos.
 - Texto de tooltip propuesto: «Tus golpes aplican marcas umbrías. Cada tercer impacto sobre el mismo enemigo consume las marcas y causa daño oscuro adicional. Las marcas desaparecen tras 6 s sin golpearlo»; al implementar, incluir también el valor efectivo de la descarga.
@@ -163,54 +192,60 @@ Acuerdo: cuatro piezas de armadura —cabeza, pecho, manos y piernas con calzado
 
 La unión de piernas y botas está implementada en catálogo, montaje y GLB modular. La migración `17-combined-legwear.sql` conserva las piezas antiguas: cada bota se convierte en unas piernas completas. Si la ranura de piernas estaba ocupada, la conversión vuelve a mochila/banco o queda en la cola de entrega. Es una compensación de una sola vez que conserva cada objeto adquirido.
 
-Estructura de contenido aprobada: un bono pequeño de estadísticas acorde al conjunto con 2/4 y un efecto propio con 4/4 que refuerce una habilidad o función de clase, sin obligar a cambiar toda la rotación. Dos piezas de un conjunto y dos de otro conceden ambos bonos parciales; completar cuatro concede su bono de 2/4 y el de 4/4. Las orientaciones aprobadas por clase se detallan a continuación; sus cifras y reglas específicas siguen pendientes de implementación y equilibrio. No confundir los efectos de conjunto con encantamientos de arma: estos siguen vinculados al arma y sus golpes básicos, sin activarse mediante habilidades.
+### Separación entre habilidades, equipo y encantamientos: regla vigente
 
-### Orientaciones del guerrero aprobadas
+La última corrección del usuario sustituye los efectos de 4 piezas que transformaban habilidades. Las habilidades se benefician del equipo mediante cifras, pero el conjunto no cambia su funcionamiento ni añade efectos especiales ajenos a ellas.
 
-Se diseñan para los conjuntos existentes, sin sustituir ni eliminar sus modelos:
+- **Habilidades:** definen los impactos, objetivos, área y efectos propios. Diseñar su evolución en su sistema; un conjunto no convierte por sí solo una habilidad de un objetivo en un ataque de área.
+- **Equipo y conjuntos:** mejoran estadísticas y valores de una habilidad existente sin añadir mecánicas nuevas. Se retiran como bonos de conjunto los ecos, explosiones, escudos añadidos, marcas, réplicas, sangrados, curaciones secundarias y disparos que atraviesan enemigos propuestos anteriormente.
+- **Encantamientos:** conservan su sistema universal separado, asociado al arma y sus golpes básicos, sin activación por habilidades.
 
-| Orientación | 2 piezas | 4 piezas |
+Se conservan los umbrales 2/4 y 4/4, las reglas de calidad y mezcla y los porcentajes de 2 piezas. Dos conjuntos de dos piezas conceden ambos bonos parciales; cuatro piezas conceden el parcial y el completo. Los bonos completos deben reformularse como mejoras numéricas, sin trasladar automáticamente porcentajes de efectos retirados a estadísticas distintas. No son cambios de combate ya implementados.
+
+### Orientaciones y estado de los bonos
+
+Las orientaciones siguientes conservan la dirección y el bono de 2 piezas. Los nombres vinculados a efectos retirados podrán revisarse; no se eliminan modelos existentes.
+
+| Clase y orientación | 2 piezas vigente | 4 piezas vigente |
 | --- | --- | --- |
-| Defensiva | Más guardia. | Usar la habilidad concede una protección breve. |
-| Ofensiva | Más potencia de ataque. | Usar la habilidad potencia el siguiente ataque básico. |
+| Guerrero defensivo | Guardia. | Por rediseñar: se retira el escudo al usar Golpe contundente. |
+| Guerrero ofensivo | Potencia de ataque. | Por rediseñar: se retira la preparación del siguiente básico. |
+| Pícaro ofensivo | Potencia de ataque. | Por rediseñar: se retira la marca tras Corte doble. |
+| Pícaro Duelista | Guardia. | Por rediseñar: se retira la réplica que devuelve recurso. |
+| Mago Evocador | Potencia mágica. | Por rediseñar: se retira el eco de Descarga arcana. |
+| Mago Arcanista | Maná máximo. | Por rediseñar: se retira la explosión añadida. |
+| Explorador Quebrantador | Potencia de ataque. | Se conserva: Disparo preciso causa +9/14/19/24 % de daño en azul/morado/dorado/naranja, con defensa normal y sin condiciones añadidas. |
+| Explorador, segunda orientación | Recurso máximo. | Por rediseñar: se retira atravesar enemigos mediante Tiro de barrido. |
+| Clérigo Custodio | Potencia de curación. | Por rediseñar: se retira el escudo añadido a Curación. |
+| Clérigo Restaurador | Maná máximo. | Por rediseñar: se retiran las curaciones a aliados adicionales. |
 
-Ambas permiten jugar en solitario; la defensiva favorece el papel de tanque. Estas orientaciones y efectos generales están aprobados, pero quedan pendientes la asignación a conjuntos concretos, cifras, duraciones, tipo de protección, caducidad de la mejora ofensiva y reglas de acumulación. Todavía no están implementados. El efecto ofensivo es de conjunto, no una modificación de los encantamientos.
+La aprobación de la escala de Tiro de barrido se acompaña de esta corrección general: no se adopta como efecto de conjunto. Si se desea una habilidad que atraviese objetivos o cure en área, habrá que diseñarla y aprobarla por separado, sin concederla automáticamente al equipar cuatro piezas. Seleccionar y curar aliados sigue siendo una dependencia del combate cooperativo pendiente de desarrollo.
 
-### Orientaciones del pícaro
+El historial de efectos anteriores se conserva en [SET-EFFECTS-SUPERSEDED.md](SET-EFFECTS-SUPERSEDED.md), expresamente fuera del diseño vigente.
 
-- **Ofensiva aprobada:** 2 piezas aumentan la potencia de ataque; 4 piezas hacen que la habilidad aumente brevemente el daño contra el objetivo golpeado. Valores, duración, alcance del aumento de daño y acumulación pendientes; no implementado.
-- **Escurridiza descartada en su forma propuesta:** no se aprueba el bono de velocidad de movimiento tras usar la habilidad. El usuario pide rediseñarla.
-- **Duelista aprobada:** 2 piezas aumentan modestamente la guardia; con 4, acertar Corte doble reduce el daño del siguiente golpe recibido durante una ventana breve. Consumir la preparación al recibir ese golpe, sin inmunidad ni acumulación. Magnitud de la reducción, duración, definición del golpe elegible y asignación a conjuntos pendientes; no implementado. Se apoya en Corte doble, habilidad actual del pícaro en `src/data/combat.ts`.
+### Bonos numéricos de 4 piezas aprobados
 
-### Orientaciones del mago aprobadas
+El usuario aprueba este bloque para la primera versión numérica. Sustituye los efectos anteriores y las menciones a bonos pendientes de rediseño en la tabla de orientaciones; los nombres de orientación se mantienen provisionalmente y los modelos se conservan. Todavía no está implementado:
 
-- **Evocador:** 2 piezas aumentan la potencia mágica; con 4, acertar Descarga arcana provoca un pequeño eco de daño posterior en el mismo enemigo. El eco no se repite ni activa encantamientos. Daño y retraso del eco pendientes.
-- **Arcanista de área:** 2 piezas aumentan el maná máximo; con 4, Descarga arcana conserva su impacto principal y añade una explosión pequeña alrededor del objetivo, con daño reducido a enemigos cercanos y sin añadir un segundo impacto al objetivo principal. Sustituye la propuesta de Canalizador con devolución de maná. El daño secundario no genera nuevas explosiones ni activa encantamientos. Radio, límite de objetivos y cifras pendientes.
+- Escala A, azul/morado/dorado/naranja: +9/+14/+19/+24 % de daño o curación de la habilidad correspondiente. Quebrantador ya tiene esta escala aprobada.
+- Escala B, azul/morado/dorado/naranja: +5/+7/+9/+11 % de vida máxima, o −5/−7/−9/−11 % del coste de la habilidad, según orientación.
 
-Ambas orientaciones y sus efectos generales quedan aprobados; conservan la rotación y favorecen respectivamente un objetivo o grupos. Asignación a conjuntos, magnitudes y reglas detalladas pendientes; no implementadas.
+| Orientación | Bono de 4 piezas aprobado |
+| --- | --- |
+| Guerrero defensivo | Vida máxima, escala B. |
+| Guerrero ofensivo | Daño de Golpe contundente, escala A. |
+| Pícaro ofensivo | Daño de Corte doble, escala A, aplicado una vez a cada impacto propio. |
+| Pícaro Duelista | Menor coste de Corte doble, escala B. |
+| Mago Evocador | Daño de Descarga arcana, escala A. |
+| Mago Arcanista | Menor coste de Descarga arcana, escala B. |
+| Explorador Quebrantador | Daño de Disparo preciso, escala A ya aprobada. |
+| Explorador, segunda orientación | Menor coste de Disparo preciso, escala B; nuevo nombre pendiente. |
+| Clérigo Custodio | Curación de su habilidad, escala A. |
+| Clérigo Restaurador | Menor coste de Curación, escala B. |
 
-### Orientaciones del explorador
+No añaden efectos, objetivos ni activaciones nuevas. Se suman al bono de 2 piezas correspondiente al completar 4. Aplicar la mejora de daño/curación una sola vez; no trasladarla al daño base de encantamientos, que las habilidades no activan.
 
-El usuario pide dos alternativas enteramente nuevas: se retiran Tirador (daño según distancia), Cazador (ralentización) y Acechador (sangrado). La aprobación anterior de Tirador queda revocada por esta última instrucción.
-
-Estado de las alternativas revisadas:
-
-- **Hostigador descartado:** el usuario pide sustituir la propuesta de acelerar dos ataques básicos tras Disparo preciso.
-- **Quebrantador aprobado:** 2 piezas aumentan la potencia de ataque; con 4, Disparo preciso ignora una pequeña parte de la guardia del objetivo al calcular ese impacto. No reduce la defensa para otros ataques ni otros jugadores; no ignora toda la defensa. Porcentaje y relación con fórmulas defensivas pendientes.
-- **Tiro de barrido aprobado:** 2 piezas aumentan el recurso máximo; con 4, Disparo preciso atraviesa al objetivo y puede golpear hasta dos enemigos situados detrás, en una franja estrecha, con daño reducido. No duplica impactos sobre un mismo enemigo ni activa encantamientos con los impactos secundarios. Posicionarse para alinear enemigos diferencia esta opción de una explosión de área. Anchura, alcance posterior, daño y validación de obstáculos pendientes.
-
-Son efectos de conjunto, no encantamientos ni habilidades nuevas. Quebrantador y Tiro de barrido están aprobados en su funcionamiento general. Valores y asignación a conjuntos pendientes; no implementados.
-
-### Orientaciones del clérigo aprobadas
-
-El usuario pide otra propuesta tras presentar Sanador con curación periódica y Clérigo de batalla con ataque potenciado tras Curación. Ninguna de esas opciones queda aprobada.
-
-Alternativas aprobadas:
-
-- **Custodio:** 2 piezas aumentan la potencia de curación; con 4, Curación concede además un pequeño escudo temporal al objetivo curado, incluido el propio clérigo. Sin acumulación de escudos del mismo efecto.
-- **Restaurador:** 2 piezas aumentan el maná máximo; con 4, Curación conserva su efecto principal y cura en menor cantidad a aliados cercanos al objetivo, sin curar dos veces al objetivo principal ni encadenar curaciones secundarias.
-
-Ambas funcionan también al curarse el propio clérigo. Cifras, radio, límite de objetivos, duración del escudo, convivencia entre clérigos y asignación a conjuntos pendientes. Requiere diseñar selección y validación de aliados y curación cooperativa: la Curación actual en `src/data/combat.ts` se aplica al propio personaje y no acredita un sistema de sanación de grupo implementado. Los nuevos efectos de conjunto están aprobados como diseño, todavía no implementados.
+Reglas comunes aprobadas: aplicar Guardia antes de barreras y descontar de vida solo el daño restante; al aumentar máximos por equipo conservar vida/recurso actuales, y al reducirlos limitar los actuales al nuevo máximo; recalcular bonos al cambiar equipo sin conservar ventajas de conjuntos desequipados; mantener precisión interna y redondear para mostrar, definiendo por separado costes monetarios enteros. Son acuerdos de diseño, no cambios implementados. Los ejemplos de redondeo y los costes monetarios concretos siguen pendientes.
 
 Reglas propuestas:
 

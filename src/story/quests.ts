@@ -31,6 +31,8 @@ export function isbertoUnlocked() {
 /** Isberto se ve en Brumaluz hasta que invita al jugador a casa; desde entonces, dentro de ella. */
 export function isbertoVisible() {
   if (!isbertoUnlocked()) return false;
+  // Al entregar el distintivo aún estamos hablando con Gnomi: Isberto entra después.
+  if (talk.pendingIsbertoIntroduction) return false;
   if (play.city.locationId === ISBERTO_HOUSE) return session.state.shadowQuest === 'returning' || session.state.shadowQuest === 'returned';
   return session.state.shadowQuest !== 'returned';
 }
@@ -43,18 +45,18 @@ export function talkGnomi() {
   keys.clear(); play.moveTarget = null; play.pendingTalk = null; marker.visible = false;
   if (session.state.shadowQuest === 'returning' || session.state.shadowQuest === 'returned') {
     beginConversation(story.welcomeWorld.root, {
-      speaker:session.registeredNpcs.gnomi.name, subtitle:session.registeredNpcs.gnomi.subtitle, start:'intro',
+      speaker:session.registeredNpcs.gnomi.name, subtitle:session.registeredNpcs.gnomi.subtitle, emblem:'guild', start:'intro',
       nodes:{
         intro: session.state.shadowQuest === 'returned'
-          ? {text:'¿Qué tal en casa de Isberto? Dicen que su cama cruje, pero que se duerme de maravilla. Lo de esa criatura sigue siendo un misterio… Ya tendremos tiempo de darle vueltas.'}
-          : {text:'¡Sigue a Isberto antes de que se arrepienta! Su casa está junto a la herrería, al sur. Yo me quedo por la plaza del pozo.'},
+          ? {text:'Ya tienes techo. Eso es un buen comienzo. Yo sigo aquí para lo demás: buscar tu oficio, conocer la ciudad… y averiguar qué demonios rondaba la fragua. Un paso cada vez. Promesa de ayudante.'}
+          : {text:'Sigue a Isberto. Su casa está junto a la herrería, al sur. Cuando dice «vente», la invitación va en serio. Yo te espero en la plaza del pozo. Si necesitas a tu ayudante, busca el gorro.'},
       },
     });
     return;
   }
   if (!session.state.welcome) {
     beginConversation(story.welcomeWorld.root, {
-      speaker:session.registeredNpcs.gnomi.name,subtitle:session.registeredNpcs.gnomi.subtitle,start:'intro',
+      speaker:session.registeredNpcs.gnomi.name,subtitle:session.registeredNpcs.gnomi.subtitle,emblem:'guild',start:'intro',
       nodes:{intro:{text:'¡Hola! Soy Gnomi, del Gremio de Ayudantes. Ahora mismo no tengo ningún encargo para ti, pero seguro que nos cruzamos pronto.'}},
     });
     return;
@@ -83,7 +85,7 @@ export async function performShadow(action: ShadowAction) {
     // Isberto echa a andar hacia su casa y Gnomi vuelve a la plaza del pozo.
     story.isbertoGuide = storyPath(play.city, target.clone(), groundPoint(ISBERTO_WAY[ISBERTO_WAY.length - 1]));
     story.welcomeWorld.leave(groundPoint(SHADOW_RETURN));
-  } else toast(SHADOW_TITLE, 'Misión completada: Isberto te ofrece su cama y su cofre.');
+  } else toast(SHADOW_TITLE, 'Misión completada: Isberto te ofrece su cama y su cofre.', false, {}, 'reward');
   return true;
 }
 /** Cama de Isberto: vida y recurso al máximo. */
@@ -125,14 +127,14 @@ export async function performWelcome(action: WelcomeAction, origin?: number) {
     const success = await runOnServer(id => welcomeAction(id, action, origin), () => simulateWelcome(session.state, action, origin));
     if (!success || !stillCurrent()) return false;
     if (action === 'collect') play.char.pickUp();
-    updateHud();
-    if (action !== 'origin') {
-      const message = action === 'claim' ? 'Misión completada: 40 XP y 5 pelines.' : action === 'collect' ? 'Has encontrado el distintivo. Habla con Gnomi.' : 'Misión aceptada. Gnomi te acompaña.';
-      toast(WELCOME_TITLE, message);
-    }
     if (action === 'claim') {
       if (TEST && !session.activeCharacterId) session.state.isbertoPosition = { x: holder.position.x + 2, z: holder.position.z };
       talk.pendingIsbertoIntroduction = true;
+    }
+    updateHud();
+    if (action !== 'origin') {
+      const message = action === 'claim' ? 'Misión completada: 40 XP y 5 pelines.' : action === 'collect' ? 'Has encontrado el distintivo. Habla con Gnomi.' : 'Misión aceptada. Gnomi te acompaña.';
+      toast(WELCOME_TITLE, message, false, {}, action === 'claim' ? 'reward' : 'quest');
     }
     return true;
   } finally { finish(); }

@@ -15,6 +15,9 @@ import { t, getLanguage, raceText, classText } from './i18n';
 import { setItemTooltip } from './itemTooltip';
 import { createQuestItems } from './questWindow';
 import { EQUIPPABLE } from '../data/equipment';
+import { attackInterval, basicAttackDamage, primaryAttribute, skillCost, skillPower, skillRank, COMBAT_KITS } from '../data/combat';
+import { guardedDamage } from '../data/weapons';
+import { activeSets } from '../data/sets';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
   const node = document.createElement(tag);
@@ -29,15 +32,15 @@ const SLOT_LABEL: Record<EquipmentSlot, string> = {
 
 // Ilustraciones de las ranuras de equipo (viewBox 24).
 const SLOT_ICON: Record<EquipmentSlot, string> = {
-  head: '<path d="M5 20v-8a7 7 0 0 1 14 0v8l-4-2H9Z" fill="#9baeb0"/><path d="M12 4v8M6 12h12" fill="none" stroke="#e9e3ca"/><path d="m7 13 4 1v3H7Zm10 0-4 1v3h4Z" fill="#4e5d61"/><path d="M9 4 12 2l3 2-3 5Z" fill="#b68b4d"/>',
-  pendant: '<path d="M5 3c0 7 2 11 7 12 5-1 7-5 7-12" fill="none" stroke="#bb904c" stroke-width="2"/><path d="m12 13 5 4-5 5-5-5Z" fill="#be9953"/><path d="m12 15 2.7 2-2.7 3-2.7-3Z" fill="#6a9f99"/><path d="m11 16 1-1 1 1" fill="none" stroke="#e1f0d7"/>',
-  chest: '<path d="m8 3-5 3 2 5 3-1-1 10 5 2 5-2-1-10 3 1 2-5-5-3-4 2Z" fill="#93a9ab"/><path d="m8 3 4 3 4-3-1 7H9Z" fill="#d1ba82"/><path d="M12 10v10M8 16h8" fill="none" stroke="#eee3c2"/><path d="m4 6 3-1 1 5-3 1Zm16 0-3-1-1 5 3 1Z" fill="#7c8f91"/>',
-  hands: '<path d="M7 20v-5l-3-4 1-2 3 2V5l2-1 1 5V3h2l1 6V4h2l1 7 2-3 2 1-3 8v3Z" fill="#b58b60"/><path d="M7 18h11v4H7Z" fill="#8e6848"/><path d="m10 13 3-2 3 2-3 3Z" fill="#cdb274"/><path d="M10 19h5" stroke="#ecd9ae"/>',
-  ring: '<circle cx="12" cy="15" r="6.5" fill="#bf984e"/><circle cx="12" cy="15" r="3.7" fill="#f0dfb7"/><path d="m7 6 5-4 5 4-5 5Z" fill="#71968f"/><path d="m7 6 5 1 5-1M12 7V2" fill="none" stroke="#d6e6cc"/><path d="M7 14a5 5 0 0 1 2-3" fill="none" stroke="#f9e3a6"/>',
-  weapon: '<path d="m20 2 1 6-10 10-5-5Z" fill="#b1c2bd"/><path d="M19 5 9 15" stroke="#f3f0d7"/><path d="m5 11 8 8 2-2-8-8Z" fill="#c09b56"/><path d="m7 15 2 2-5 5-2-2Z" fill="#956a4d"/><path d="m3 18 3 3" stroke="#d6b77c"/>',
-  offhand: '<path d="m12 2 9 4-1 8c-1 4-4 6-8 8-4-2-7-4-8-8L3 6Z" fill="#b99a5a"/><path d="m12 5 6 3-1 6c-.5 2.5-2.5 4-5 5.5-2.5-1.5-4.5-3-5-5.5L6 8Z" fill="#73938a"/><path d="M12 7v10M8 11h8" fill="none" stroke="#e3d5a2" stroke-width="2"/><circle cx="12" cy="11" r="1.8" fill="#c4a35b"/>',
-  legs: '<path d="M6 3h12l1 18h-5l-2-10-2 10H5Z" fill="#8d9e9f"/><path d="M6 3h12v4H6Z" fill="#a38155"/><path d="M10 4h4v2h-4Z" fill="#dec181"/><path d="m7 14 3 1-1 5H6Zm10 0-3 1 1 5h3Z" fill="#b6c0b2"/><path d="M12 7v4" stroke="#e5ddbf"/><path d="M5 17h5v5H2v-3l3-1Zm9 0h5v1l3 1v3h-8Z" fill="#795c41"/>',
-  trinket: '<path d="m12 2 3 4 5 1-1 5 2 4-5 2-4 4-4-4-5-2 2-4-1-5 5-1Z" fill="#bb975b"/><circle cx="12" cy="12" r="5.5" fill="#8a80a0"/><path d="m12 7 1.5 3.5L17 12l-3.5 1.5L12 17l-1.5-3.5L7 12l3.5-1.5Z" fill="#efe0b7"/><circle cx="12" cy="12" r="1.4" fill="#c7ac69"/>',
+  head: '<path d="M4 16V11a8 8 0 0 1 16 0v5l-3 3H7Z" fill="#53646a" stroke="#40372e" stroke-width=".8"/><path d="M5 11a7 7 0 0 1 14 0v2H5Z" fill="#96a7a2" stroke="#e5d4a9" stroke-width=".7"/><path d="M4 13h16l-1 3H5Z" fill="#b18a4d" stroke="#55412d" stroke-width=".7"/><path d="m9 5 3-3 3 3-3 5Z" fill="#78a49b" stroke="#405a50" stroke-width=".6"/><path d="M7 17h10m-8 2h6" stroke="#d7c08b" stroke-width=".7"/><circle cx="6" cy="14.5" r=".65" fill="#f0d89a"/><circle cx="18" cy="14.5" r=".65" fill="#f0d89a"/>',
+  pendant: '<path d="M5 3c0 6.5 2.1 10.3 7 11.5C16.9 13.3 19 9.5 19 3" fill="none" stroke="#986b37" stroke-width="2.6"/><path d="M6 3c.2 5.8 2 9.1 6 10.2C16 12.1 17.8 8.8 18 3" fill="none" stroke="#e2c37d" stroke-width="1.1"/><path d="m12 12 6 5-6 6-6-6Z" fill="#ad8245" stroke="#57402c" stroke-width=".7"/><path d="m12 14 3.5 3-3.5 4-3.5-4Z" fill="#6d9d91" stroke="#d8c795" stroke-width=".7"/><path d="m10.8 16.6 1.2-1.4 1.2 1.4" fill="none" stroke="#eaf0d2" stroke-width=".65"/><circle cx="12" cy="21.5" r=".7" fill="#efd895"/>',
+  chest: '<path d="m8 3-5 3 2 5 3-1-1 10 5 2 5-2-1-10 3 1 2-5-5-3-4 2Z" fill="#52666b" stroke="#41372c" stroke-width=".8"/><path d="m8 3 4 3 4-3 2 2-2 6H8L6 5Z" fill="#b18a50" stroke="#e4cb91" stroke-width=".7"/><path d="m9 5 3 2 3-2-1 5h-4Z" fill="#d8c18a" stroke="#705737" stroke-width=".6"/><path d="m5 7 2-1 2 5-3 1Zm14 0-2-1-2 5 3 1Z" fill="#90a49d" stroke="#e4d4ad" stroke-width=".6"/><path d="M12 11v9m-3-5h6m-5 5 2 1 2-1" fill="none" stroke="#dfc68b" stroke-width=".8"/><circle cx="5.7" cy="7.3" r=".65" fill="#efd895"/><circle cx="18.3" cy="7.3" r=".65" fill="#efd895"/>',
+  hands: '<path d="M7 20v-5l-3-4 1-2 3 2V5l2-1 1 5V3h2l1 6V4h2l1 7 2-3 2 1-3 8v3Z" fill="#a8764a" stroke="#513b2b" stroke-width=".8"/><path d="M7 17h11l-1 3H7Z" fill="#d3b06d" stroke="#705137" stroke-width=".7"/><path d="m10 13 3-2 3 2-3 3Z" fill="#70988b" stroke="#e7d299" stroke-width=".7"/><path d="M9 7v5m4-7v6m4-5v6m-9 5 3 1m3-1 3 1" fill="none" stroke="#e8d6aa" stroke-width=".65"/><path d="m5 10 2 2m12 1 1-2" fill="none" stroke="#f0d69a" stroke-width=".7"/>',
+  ring: '<path d="M6 15a6 6 0 1 0 12 0 6 6 0 0 0-12 0Z" fill="#a8793d" stroke="#59402a" stroke-width=".8"/><path d="M7.7 15a4.3 4.3 0 1 0 8.6 0 4.3 4.3 0 0 0-8.6 0Z" fill="#f0ddb0" stroke="#e7c979" stroke-width=".6"/><path d="m7 6 5-4 5 4-5 6Z" fill="#71988d" stroke="#53442e" stroke-width=".8"/><path d="m8.7 6.2 3.3-2.7 3.3 2.7-3.3 3.9Z" fill="#a8c1a3"/><path d="M8 14a4.2 4.2 0 0 1 2-2.7M12 4v2" fill="none" stroke="#fff1c5" stroke-width=".7"/><circle cx="12" cy="6" r=".65" fill="#f1d486"/>',
+  weapon: '<path d="m19 2 3 1-1 6L10 20l-5-5Z" fill="#627981" stroke="#44372c" stroke-width=".8"/><path d="m19 3 1.5.5-.8 4.5L10 18l-2-2Z" fill="#cbd5c9"/><path d="m18 4 1 .3-.6 3.5L9 17l-1-1Z" fill="#f3e9c7"/><path d="m19 3 .8.2-.8 4-1 .8Z" fill="#80a39a"/><path d="m5 12 7 7-2 2-7-7Z" fill="#be9956" stroke="#62472d" stroke-width=".7"/><path d="m3 15 6 6-2 2-6-6Z" fill="#78513a" stroke="#49352a" stroke-width=".7"/><path d="m4 19 2 2m-3-1 2 2" stroke="#d9b66c" stroke-width=".7"/><path d="m13 11 2 2" stroke="#fff5d6" stroke-width=".7"/>',
+  offhand: '<path d="m12 2 9 4-1 8c-1 4-4 6-8 8-4-2-7-4-8-8L3 6Z" fill="#a77b43" stroke="#49392a" stroke-width=".9"/><path d="m12 4 7 3-1 7c-.8 3.3-3.2 5.2-6 6.8-2.8-1.6-5.2-3.5-6-6.8L5 7Z" fill="#6c8f83" stroke="#e1c77f" stroke-width=".7"/><path d="m12 6 5 2.2-.7 5.4c-.5 2.2-2.2 3.7-4.3 5-2.1-1.3-3.8-2.8-4.3-5L7 8.2Z" fill="#91aa98"/><path d="M12 7v10m-4-6h8" fill="none" stroke="#f0dba3" stroke-width="1.2"/><path d="m12 9 2 2-2 2-2-2Z" fill="#bd9856" stroke="#685132" stroke-width=".6"/><circle cx="12" cy="11" r=".7" fill="#f3dfaa"/><circle cx="5.1" cy="7.2" r=".6" fill="#f1d691"/><circle cx="18.9" cy="7.2" r=".6" fill="#f1d691"/>',
+  legs: '<path d="M6 3h12l1 18h-5l-2-10-2 10H5Z" fill="#54696d" stroke="#40372c" stroke-width=".8"/><path d="M6 3h12v4H6Z" fill="#a47c48" stroke="#e2c889" stroke-width=".7"/><path d="M9 4h6v2H9Z" fill="#d9bc7b"/><path d="M7 8h4v4H8l-1 7H6Zm10 0h-4v4h3l1 7h1Z" fill="#829991"/><path d="m7 14 3 1-1 5H6Zm10 0-3 1 1 5h3Z" fill="#bac4ae" stroke="#e9d8ad" stroke-width=".6"/><path d="M12 7v4m-2 4 1 1m3-1-1 1" fill="none" stroke="#e5d5aa" stroke-width=".7"/><path d="M5 18h5v4H2v-2l3-1Zm9 0h5l3 2v2h-8Z" fill="#78533a" stroke="#49382b" stroke-width=".7"/>',
+  trinket: '<path d="m12 2 3 4 5 1-1 5 2 4-5 2-4 4-4-4-5-2 2-4-1-5 5-1Z" fill="#a97d45" stroke="#55402d" stroke-width=".8"/><path d="m12 4 2.2 3.3 4.1.7-.8 4.1 1.2 3.2-3.8 1.5-2.9 2.9-2.9-2.9-3.8-1.5 1.2-3.2-.8-4.1 4.1-.7Z" fill="#78869b" stroke="#ddc582" stroke-width=".7"/><circle cx="12" cy="12" r="4.2" fill="#5f827e" stroke="#e9d9aa" stroke-width=".7"/><path d="m12 7 1.4 3.6L17 12l-3.6 1.4L12 17l-1.4-3.6L7 12l3.6-1.4Z" fill="#f0dfb5"/><circle cx="12" cy="12" r="1.25" fill="#c4a15b"/><path d="m12 8.3.8 2.8m2.9.9-2.8.8m-2.9.9L9.2 11" fill="none" stroke="#fff3c8" stroke-width=".6"/>',
 };
 
 const coins = (n: number) => n.toLocaleString(getLanguage() === 'en' ? 'en-US' : 'es-ES');
@@ -66,7 +69,7 @@ function equipCell(d: CharData, slot: EquipmentSlot, onUnequip?: (slot: Equipmen
   cell.append(el('small', undefined, t(SLOT_LABEL[slot])));
   if (item) {
     cell.removeAttribute('title');
-    setItemTooltip(cell, item.id, item.bound);
+    setItemTooltip(cell, item.id, item.bound,item);
     cell.tabIndex = 0;
     if (onUnequip) {
       cell.onclick = () => onUnequip(slot);
@@ -76,6 +79,7 @@ function equipCell(d: CharData, slot: EquipmentSlot, onUnequip?: (slot: Equipmen
       cell.innerHTML = itemIcon(item.id);
       cell.append(el('small', undefined, t(SLOT_LABEL[slot])));
     }
+    if (onUnequip) cell.append(el('span', 'inv-action-label', t('Desequipar')));
   }
   return cell;
 }
@@ -147,7 +151,7 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
     if (cell instanceof HTMLButtonElement) cell.type = 'button';
     cell.dataset.index = String(i);
     if (item) {
-      setItemTooltip(cell, item.id, item.bound);
+      setItemTooltip(cell, item.id, item.bound,item);
       cell.tabIndex = 0;
       cell.setAttribute('aria-label', t('{name}, {n} unidades', { name: t(itemLabel(item.id)), n: item.count }));
       cell.innerHTML = itemIcon(item.id);
@@ -160,6 +164,7 @@ export function renderInventory(container: HTMLElement, d: CharData, renderer: T
         cell.classList.add('usable');
         cell.setAttribute('aria-label', `${t('Equipar')}: ${t(itemLabel(item.id))}`);
         cell.onclick = () => { if (source === null) onEquip(i); };
+        cell.append(el('span', 'inv-action-label', t('Equipar')));
       }
       if (onMove || def?.usable) {
         cell.draggable = true;
@@ -418,7 +423,16 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
   }
   attrs.append(attrHead, grid);
 
-  right.append(title, vitals);
+  const combat = el('section','sheet-panel sheet-combat');
+  combat.append(el('h3',undefined,t('Combate')));
+  const number = (value:number) => value.toLocaleString(getLanguage()==='en'?'en-US':'es-ES',{maximumFractionDigits:1});
+  const stat = (label:string,value:string) => { const row=el('div','sheet-combat-stat');row.append(el('span',undefined,t(label)),el('b',undefined,value));combat.append(row); };
+  stat('Ataque básico',`${number(basicAttackDamage(d.cls,d.level,d.equipment,d))} · ${number(attackInterval(d.cls,d.equipment))} s`);
+  stat(COMBAT_KITS[d.cls].skill.label,`${number(skillPower(d.cls,skillRank(d),d.equipment,d))}${d.cls==='picaro'?' × 2':''} · ${number(skillCost(d))} ${t(v.resourceKind==='mana'?'Maná':'Estamina')}`);
+  stat('Reducción por guardia',`${number((1-guardedDamage(d.cls,d.equipment,100)/100)*100)} %`);
+  stat('Atributo principal',`${t(ATTRIBUTES[primaryAttribute(d.cls)].label)} · ${attributeTotal(d,primaryAttribute(d.cls))}`);
+  for(const set of activeSets(d.cls,d.equipment))stat(set.name,`${set.count}/4 · 2: ${set.two>=1?t('activo'):t('inactivo')} · 4: ${set.four>=2?t('activo'):t('inactivo')}`);
+  right.append(title, vitals, combat);
   wrap.append(left, right, attrs);
   container.append(wrap);
 }

@@ -4,6 +4,7 @@ import { ITEM_RARITIES, rarityForTier, type WeaponTier } from './itemRarity';
 import { ADVANCED_WEAPONS } from './weaponProgression';
 import { ORIGINAL_WEAPONS } from './uniqueWeapons';
 import { armorGuard } from './outfits';
+import { setBonuses } from './sets';
 
 export interface WeaponDef {
   cls: ClassId;
@@ -12,7 +13,7 @@ export interface WeaponDef {
   kind: 'sword' | 'shield' | 'staff' | 'dagger' | 'wand' | 'book' | 'crossbow';
   /** Base damage before character level; skills use their existing class coefficient. */
   power?: number;
-  /** Flat reduction to enemy melee hits; a hit always deals at least one damage. */
+  /** Defense rating; mitigation is capped at 60%, with diminishing returns. */
   guard?: number;
   /** Flat contribution to the cleric's healing, before skill rank. */
   healing?: number;
@@ -54,7 +55,8 @@ export function equippedWeapon(cls: ClassId, equipment: Equipment, slot: 'weapon
 
 export function guardedDamage(cls: ClassId, equipment: Equipment, incoming: number) {
   if (incoming <= 0) return 0;
-  return Math.max(1, incoming - (equippedWeapon(cls, equipment, 'offhand')?.guard ?? 0) - armorGuard(cls,equipment));
+  const guard = ((equippedWeapon(cls, equipment, 'offhand')?.guard ?? 0) + armorGuard(cls,equipment)) * (1 + setBonuses(cls,equipment).guard);
+  return incoming * (1 - Math.min(.6,guard/(guard+20)));
 }
 
 export function weaponItemStats(id: string) {
@@ -63,8 +65,8 @@ export function weaponItemStats(id: string) {
   return [
     { label: 'Rareza', value: ITEM_RARITIES[rarityForTier(w.tier)].label },
     { label: 'Categoría de equipo', value: String(w.tier) },
-    ...(w.power ? [{ label: 'Daño base', value: String(w.power) }] : []),
-    ...(w.guard ? [{ label: 'Guardia', value: `−${w.guard} daño cuerpo a cuerpo` }] : []),
+    ...(w.power ? [{ label: 'Potencia del arma', value: String(w.power) }] : []),
+    ...(w.guard ? [{ label: 'Guardia', value: `+${w.guard}` }] : []),
     ...(w.healing ? [{ label: 'Poder de curación', value: `+${w.healing}` }] : []),
   ];
 }

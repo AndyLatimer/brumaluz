@@ -3,7 +3,9 @@ import { ADVANCED_WEAPONS } from '../data/weaponProgression';
 import { OUTFITS, ARMOR } from '../data/outfits';
 import { ACCESSORIES } from '../data/accessories';
 import { ITEM_DESCRIPTION_TRANSLATIONS } from '../data/itemDescriptions';
+import { STORY_TRANSLATIONS } from './storyTranslations';
 export const translations: Record<string, string> = {
+  ...STORY_TRANSLATIONS,
   ...ITEM_DESCRIPTION_TRANSLATIONS,
   'Colección': 'Collection',
   'Arma principal': 'Main hand',
@@ -169,6 +171,8 @@ export const translations: Record<string, string> = {
   '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.': 'My searching companion! The badge is still in place. I checked. Twice. Isberto wanted to talk to you; afterwards I will help you find your way in Brumaluz.',
   'Equipar': 'Equip',
   'Desequipar': 'Unequip',
+  'Sentarse': 'Sit down',
+  'Levantarse': 'Stand up',
   'Pulsa en la mochila para equipar; pulsa en Equipo para desequipar.': 'Click in your backpack to equip; click in Equipment to unequip.',
   'Pulsa una pieza para desequiparla; pulsa su objeto en la mochila para equiparla.': 'Click a piece to unequip it; click its item in your backpack to equip it.',
   'Debes volver a la vida para cambiar tu equipo.': 'You must revive before changing your equipment.',
@@ -359,6 +363,16 @@ export const translations: Record<string, string> = {
   'En la bolsa': 'In your purse',
   'En el banco': 'In the bank',
   'Clic para mover todo': 'Click to move it all',
+  'Mover pelines': 'Move pelines',
+  'Elige una cantidad y decide dónde guardarla.': 'Choose an amount and decide where to store it.',
+  'Usar todo': 'Use all',
+  'Usar todo como cantidad': 'Use all as the amount',
+  'Cantidad': 'Amount',
+  'Añadir {amount} pelines': 'Add {amount} pelines',
+  'Retirar pelines del banco a la bolsa': 'Withdraw pelines from the bank to your purse',
+  'Guardar pelines de la bolsa en el banco': 'Store pelines from your purse in the bank',
+  'Transferir del banco a la bolsa': 'Transfer from the bank to your purse',
+  'Transferir de la bolsa al banco': 'Transfer from your purse to the bank',
   'Cantidad de pelines': 'Amount of pelines',
   'Huecos ocupados': 'Slots used',
   'ligado, no se puede guardar': 'bound, cannot be stored',

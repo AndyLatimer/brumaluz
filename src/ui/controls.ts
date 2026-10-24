@@ -38,6 +38,7 @@ export const CONTROLS: ControlBinding[] = [
   { keys: ['KeyC'], caption: 'C', label: 'Abrir / cerrar la ficha de personaje', group: 'system' },
   { keys: ['KeyJ'], caption: 'J', label: 'Abrir / cerrar el diario de misiones', group: 'system' },
   { keys: ['KeyK'], caption: 'K', label: 'Abrir / cerrar habilidades', group: 'system' },
+  { keys: ['KeyP'], caption: 'P', label: 'Abrir / cerrar oficios y talleres', group: 'system' },
   { keys: ['KeyM'], caption: 'M', label: 'Abrir / cerrar el mapa de la zona', group: 'system' },
   { keys: ['KeyO'], caption: 'O', label: 'Abrir / cerrar las opciones', group: 'system' },
   { keys: ['Backquote'], caption: 'º', label: 'Mostrar / ocultar el minimapa', group: 'system' },

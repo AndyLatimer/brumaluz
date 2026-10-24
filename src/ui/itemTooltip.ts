@@ -6,14 +6,22 @@ import { EQUIPPABLE } from '../data/equipment';
 import { CLASSES } from '../data/data';
 import { COMBAT_KITS } from '../data/combat';
 import { WEAPONS } from '../data/weapons';
-import type { EquipmentSlot } from '../data/inventory';
+import type { EquipmentSlot, ItemStack } from '../data/inventory';
+import { armorSet, activeSets, setBonusDescription } from '../data/sets';
+import { ENCHANT_LABELS, enchantmentDescription, RPG_CATALOG, ENCHANT_VALUES } from '../data/professions';
+import { session } from '../game/state';
+import { attackInterval, weaponTempo } from '../data/combat';
+
+const instances=new WeakMap<HTMLElement,ItemStack>();
+export const itemTooltipInstance=(target:HTMLElement)=>instances.get(target);
 
 const slotLabels: Record<EquipmentSlot, string> = {
   head: 'Cabeza', pendant: 'Colgante', chest: 'Pecho', hands: 'Manos', ring: 'Anillo',
   weapon: 'Arma principal', offhand: 'Mano secundaria', legs: 'Piernas', trinket: 'Abalorio',
 };
 
-export function setItemTooltip(target: HTMLElement, id: string, bound = false) {
+export function setItemTooltip(target: HTMLElement, id: string, bound = false, instance?:ItemStack) {
+  if(instance)instances.set(target,instance);else instances.delete(target);
   target.dataset.itemId = id;
   target.dataset.itemBound = String(bound || itemDef(id)?.bound === true);
   const rarity = itemRarity(id);
@@ -22,7 +30,7 @@ export function setItemTooltip(target: HTMLElement, id: string, bound = false) {
   target.setAttribute('aria-label', `${t(itemLabel(id))} · ${t(ITEM_RARITIES[rarity].label)}`);
 }
 
-export function renderItemTooltip(container: HTMLElement, id: string, bound = false) {
+export function renderItemTooltip(container: HTMLElement, id: string, bound = false, instance?:ItemStack) {
   const item = itemDef(id);
   const rarity = ITEM_RARITIES[itemRarity(id)];
   if (!item) {
@@ -48,6 +56,12 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   identity.append(category, name);
   header.append(icon, identity);
   container.append(header);
+  const scroll=RPG_CATALOG.items[id];
+  if(scroll?.enchant&&scroll.enchant in ENCHANT_VALUES){const p=document.createElement('p');p.className='item-tip-effects';p.textContent=enchantmentDescription(scroll.enchant as keyof typeof ENCHANT_VALUES,scroll.tier);container.append(p);}
+  if(instance?.enchantment){const e=instance.enchantment,p=document.createElement('p');p.className='item-tip-effects';p.textContent=`${ENCHANT_LABELS[e.id]} · ${enchantmentDescription(e.id,e.grade)}`;container.append(p);}
+  if(instance?.durability!==undefined){const p=document.createElement('p');p.textContent=`Durabilidad ${instance.durability.toFixed(1)} / ${instance.maxDurability?.toFixed(1)} · original ${instance.originalDurability}`;container.append(p);}
+  const set=armorSet(id);
+  if(set){const active=activeSets(session.state.cls,session.state.equipment).find(s=>s.id===set.id),cls=EQUIPPABLE[id].cls!;const p=document.createElement('p');p.className='item-tip-effects';p.textContent=`Conjunto ${set.name} · ${active?.count??0}/4 piezas\n2 piezas (${active&&active.two>=1?'activo':'inactivo, desde verde'}): ${setBonusDescription(cls,set.family,2,active?.two&&active.two>=1?active.two:Math.max(1,set.tier))}\n4 piezas (${active&&active.four>=2?'activo':'inactivo, desde azul'}): ${setBonusDescription(cls,set.family,4,active?.four&&active.four>=2?active.four:Math.max(2,set.tier))}`;p.style.whiteSpace='pre-line';container.append(p);}
   const equipment = EQUIPPABLE[id];
   if (equipment) {
     const requirements = document.createElement('p');
@@ -80,7 +94,8 @@ export function renderItemTooltip(container: HTMLElement, id: string, bound = fa
   if (weapon?.slot === 'weapon') {
     const kit = COMBAT_KITS[weapon.cls];
     const number = (value: number) => value.toLocaleString(getLanguage() === 'en' ? 'en-US' : 'es-ES');
-    visibleStats.push({ label: 'Intervalo de ataque', value: `${number(kit.interval)} s` }, { label: 'Alcance', value: `${number(kit.range)} m` });
+    visibleStats.push({label:'Perfil',value:weaponTempo(id)<1?'Ligero':weaponTempo(id)>1?'Pesado':'Versátil'},{label:'Daño del básico antes de atributos',value:number((weapon.power??0)*weaponTempo(id))});
+    visibleStats.push({ label: 'Intervalo de ataque', value: `${number(attackInterval(weapon.cls,{weapon:{id,count:1}} as import('../data/inventory').Equipment))} s` }, { label: 'Alcance', value: `${number(kit.range)} m` });
   }
   if (visibleStats.length) {
     const stats = document.createElement('dl');

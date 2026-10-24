@@ -21,6 +21,7 @@ export interface Interactable {
   /** Texto que se muestra al interactuar (interacciones creadas en el editor de mapas). */
   text?: string;
 }
+export interface SeatSpot { id: string; position: THREE.Vector3; yaw: number; seatHeight: number }
 export interface NpcSite {
   id: string;
   position: THREE.Vector3;
@@ -45,6 +46,8 @@ export interface City {
   npcSites: NpcSite[];
   /** Elementos con los que se puede interactuar con la tecla E. */
   interactables: Interactable[];
+  /** Asientos de muebles colocados en el mapa y bancos de la ciudad. */
+  seats: SeatSpot[];
   /** Puntos despejados delante de los servicios, listos para alojar NPCs. */
   vendorSpots: CityVendorSpot[];
   /** Corrige un movimiento para no atravesar edificios ni agua. */

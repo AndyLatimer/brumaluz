@@ -28,43 +28,54 @@ function createTrackButton(tracking: QuestTracking, questId: QuestId): HTMLButto
 
 export function welcomeConversation(data: CharData, act: (action: WelcomeAction, origin?: number) => Promise<boolean>): Conversation {
   const progress = data.welcome;
-  const conversation: Conversation = { speaker: 'Gnomi', subtitle: 'Ayudante de bienvenida', start: 'intro', nodes: {} };
-  const offer = 'Trabajo en el Gremio de Ayudantes. Los gnomos nos dedicamos a echar una mano… y yo he vuelto a perder mi distintivo del gremio. ¡Otra vez! Debió de soltarse junto al mercado de la plaza del Levante, aquí al lado. Si se entera David, el jefe, esta vez se va a enfadar de verdad…\n\n¿Me ayudas a encontrarlo? Te acompaño. Soy mejor ayudando que sujetando distintivos, te lo prometo.';
+  const conversation: Conversation = { speaker: 'Gnomi', subtitle: 'Ayudante de bienvenida', emblem: 'guild', start: 'intro', nodes: {} };
+  const offer = 'Hay un pequeño contratiempo con tu ayudante del Gremio de Ayudantes: he perdido el distintivo. ¡Otra vez! Sin él parezco un gnomo que te sigue por la calle dando consejos sin permiso.\n\nLo llevaba junto al mercado de la plaza del Levante. Si David, mi jefe, pregunta, estamos reconociendo el barrio. ¿Me ayudas a buscarlo? Luego me toca a mí echarte una mano. Trato de ayudantes.';
+  const accept = { text: 'Aceptar misión', action: () => act('accept') };
+  const offerChoices = [accept, { text: '¿Qué hace un ayudante asignado?', next: 'guild' }];
+  conversation.nodes.guild = {
+    text: 'Te ayuda a encontrar tu sitio. Un oficio, una calle, alguien de fiar… Brumaluz parece enorme cuando no conoces a nadie.\n\nDavid me ha asignado a ti. No al siguiente que cruce la puerta: a ti. Así que iremos a tu ritmo. Y si nos perdemos, preguntar también cuenta como trabajo de gremio.',
+    next: 'offer',
+  };
   const quest = {
     title: WELCOME_TITLE,
     objective: 'Acompaña a Gnomi al mercado de la plaza del Levante, encuentra su distintivo y devuélveselo.',
     ...WELCOME_REWARD,
   };
+  conversation.nodes.offer = { text: offer, quest, choices: offerChoices };
   if (!progress) {
     conversation.nodes.intro = { text: '¡Buen camino! Si alguien necesita una mano por aquí, procuraré que encuentre dos.' };
   } else if (progress.origin === null) {
     conversation.nodes.intro = {
-      text: '¡Te doy la bienvenida a Brumaluz! Perdona, andaba con la cabeza en otra parte. Soy Gnomi, ayudante de bienvenida del Gremio de Ayudantes. ¿Acabas de cruzar la puerta? Cuéntame un poquito: ¿qué te trae por aquí?',
+      text: '¡Te doy la bienvenida a Brumaluz! Tú debes de ser mi nueva asignación. Soy Gnomi, tu ayudante de bienvenida del Gremio de Ayudantes. David me ha encargado que te ayude a empezar aquí.\n\nTenía preparada una reverencia, pero se me ha enganchado el gorro. Mejor empezamos hablando: ¿qué te trae por la capital?',
       choices: ORIGINS[data.race].map((text, i) => ({ text, action: () => act('origin', i), next: `offer-${i}` })),
     };
     ORIGINS[data.race].forEach((_, i) => {
       conversation.nodes[`offer-${i}`] = {
         text: `${t(ORIGIN_REPLIES[i])}\n\n${t(offer)}`,
         quest,
-        choices: [{ text: 'Aceptar misión', action: () => act('accept') }],
+        choices: offerChoices,
       };
     });
   } else if (progress.stage === 'available') {
     conversation.nodes.intro = { text: `${t(ORIGIN_REPLIES[progress.origin])}\n\n${t(offer)}`, quest,
-      choices: [{ text: 'Aceptar misión', action: () => act('accept') }] };
+      choices: offerChoices };
   } else if (progress.stage === 'active') {
-    conversation.nodes.intro = { text: 'Estuve junto al mercado de la plaza del Levante. Seguro que sigue allí. Voy contigo… cuatro ojos ven más que dos, aunque dos estén bajo un gorro.' };
+    conversation.nodes.intro = {
+      text: 'La plaza del Levante está aquí al lado. Vamos mirando el suelo, sobre todo junto a los puestos. Es redondo, dorado y tiene una abolladura muy profesional.\n\nVoy contigo. Un ayudante asignado no abandona su puesto. Aunque su puesto esté buscando una cosa que se le ha caído.',
+      choices: [{ text: 'Vamos a encontrarlo.' }, { text: '¿Y si no aparece?', next: 'worry' }],
+    };
+    conversation.nodes.worry = { text: 'Pues se lo contaré a David. Me pondrá esa cara suya de «Gnomi, otra vez», y tendrá razón.\n\nPero tú seguirás teniendo ayudante. El distintivo dice dónde trabajo; no decide a quién ayudo. Ahora… preferiría muchísimo encontrarlo.' };
   } else if (progress.stage === 'found') {
     conversation.nodes.intro = {
-      text: '¡Mi distintivo del gremio! Menos mal… ¿Me lo devuelves? Esta vez lo voy a sujetar bien. Y, si nos cruzamos con David, tú y yo solo hemos dado un paseo. ¿De acuerdo?',
+      text: '¡Ese brillo! ¡Mi distintivo! Mira, la abolladura de siempre. No hay otro igual, aunque David dice que lo intento.\n\n¿Me lo devuelves? Voy a cerrar el broche, comprobar el broche y dejar de tocar el broche. En ese orden.',
       quest: { ...quest, objective: 'Devuelve a Gnomi su distintivo del Gremio de Ayudantes.', turnIn: true },
       choices: [{ text: 'Completar misión', action: () => act('claim'), next: 'thanks' }],
     };
     conversation.nodes.thanks = {
-      text: '¡Ahora sí, bien sujeto! Gracias de corazón: ¡menuda bienvenida a Brumaluz te he dado, buscando cosas perdidas! Anda, ¿ese que viene corriendo no es Isberto, el herrero?',
+      text: 'Ahora sí: bien sujeto. Yo tenía que ayudarte a empezar y has empezado ayudándome tú. Me lo apunto.\n\nYa conoces a alguien en Brumaluz. Alguien con gorro, con distintivo y de tu parte. Y ahora, tu primera visita… Un momento. ¿Oyes esas botas? Solo conozco a un herrero que corra así.',
     };
   } else if (progress.stage === 'completed') {
-    conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces. Isberto quería hablar contigo; después te ayudaré a encontrar tu camino por Brumaluz.' };
+    conversation.nodes.intro = { text: 'Distintivo en su sitio, ayudante en su puesto. Vamos mejorando. Isberto quería hablar contigo sobre su herrería.\n\nYo sigo asignado a ti. Lo de encontrar tu camino por Brumaluz no se resuelve con un broche; iremos paso a paso.' };
   } else conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces.' };
   return conversation;
 }

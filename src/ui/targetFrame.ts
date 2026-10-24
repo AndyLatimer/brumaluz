@@ -10,6 +10,7 @@ import type { NpcType } from '../data/npcBadges';
 export type { NpcType } from '../data/npcBadges';
 export const TARGET_RANGE = 10;
 export interface TargetDetails {
+  cast?:{label:string;remaining:number;duration:number};
   id: string;
   root: THREE.Object3D;
   name: string;
@@ -37,6 +38,9 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
   const health = panel.querySelector<HTMLElement>('.target-health')!;
   const resource = panel.querySelector<HTMLElement>('.target-resource')!;
   const ray = new THREE.Raycaster();
+  // set() does not assign a camera. World decorations can contain Sprites,
+  // whose raycast requires it even when they are far from the target.
+  ray.camera = camera;
   const pointer = new THREE.Vector2();
   const direction = new THREE.Vector3();
   const aim = new THREE.Vector3();
@@ -126,7 +130,7 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
     element.setAttribute('aria-valuemax', String(max));
     element.setAttribute('aria-valuenow', String(value));
     element.querySelector<HTMLElement>('i')!.style.width = `${value / max * 100}%`;
-    const text = `${value} / ${max}${extra ? ` (+${extra})` : ''}`;
+    const text = `${Math.ceil(value)} / ${Math.ceil(max)}${extra ? ` (+${Math.ceil(extra)})` : ''}`;
     element.querySelector('span')!.textContent = text;
     element.setAttribute('aria-valuetext', `${label} ${text}`);
   }
@@ -146,7 +150,7 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
       panel.setAttribute('data-locked', String(!!target && target.id === lockedId));
       panel.hidden = !target;
       if (!target) return;
-      const key = JSON.stringify([target.id, target.name, target.level, target.identity, target.vitals, t('Nivel {n}')]);
+      const key = JSON.stringify([target.id, target.name, target.level, target.identity, target.vitals, target.cast, t('Nivel {n}')]);
       if (key === signature) return;
       signature = key;
       const npc = target.identity.kind === 'npc';
@@ -178,9 +182,11 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
       }
       username.hidden = !username.textContent;
       const v = target.vitals;
+      resource.hidden=hostile&&!target.cast;resource.classList.toggle('enemy-cast',!!target.cast);
       meter(health, t('Vida'), v.health, v.maxHealth, v.overheal);
       resource.classList.toggle('stamina', v.resourceKind === 'stamina');
       meter(resource, t(v.resourceKind === 'mana' ? 'Maná' : 'Estamina'), v.resource, v.maxResource);
+      if(target.cast){meter(resource,target.cast.label,Math.max(0,target.cast.duration-target.cast.remaining),target.cast.duration);resource.querySelector('span')!.textContent=`${target.cast.label} · ${Math.max(0,target.cast.remaining).toFixed(1)} s`;}
     },
   };
 }

@@ -6,6 +6,7 @@ import { parseFoodBuff, type FoodBuff } from './food';
 import { parseWelcome, parseShadowQuest, type ShadowQuest, type WelcomeProgress } from './quests';
 import { COMBAT_KITS, skillRank, type SkillRanks } from './combat';
 import { isCoinBagId } from './coinBags';
+import { professionState, type RpgState } from './professions';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
@@ -24,13 +25,13 @@ export interface AttributeDef {
 }
 
 export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
-  fuerza: { label: 'Fuerza', desc: 'Aumenta el daño general en combate.' },
-  intelecto: { label: 'Intelecto', desc: 'Aumenta la reserva y el poder de la magia.' },
-  corpulencia: { label: 'Corpulencia', desc: 'Aumenta la vida máxima y la resistencia al daño.' },
-  agilidad: { label: 'Agilidad', desc: 'Aumenta la velocidad de movimiento y, ligeramente, la velocidad de ataque.' },
-  pericia: { label: 'Pericia', desc: 'Mejora la artesanía y la alquimia: velocidad de creación y probabilidad de obtener mejores objetos.' },
-  presencia: { label: 'Presencia', desc: 'Mejora el comercio, la negociación y las interacciones sociales.' },
-  percepcion: { label: 'Percepción', desc: 'Ayuda a rastrear, encontrar recursos y descubrir objetos.' },
+  fuerza: { label: 'Fuerza', desc: '+1 % de potencia por punto para el guerrero, en básicos y habilidades.' },
+  intelecto: { label: 'Intelecto', desc: '+1 % de daño y curación por punto para magos y clérigos, y +7 de maná máximo.' },
+  corpulencia: { label: 'Corpulencia', desc: '+2 % de vida máxima por punto. La reducción de daño depende de la Guardia.' },
+  agilidad: { label: 'Agilidad', desc: '+1 % de potencia por punto para pícaros y exploradores. No modifica la velocidad.' },
+  pericia: { label: 'Pericia', desc: 'Atributo de oficio reservado para futuras especializaciones. La fabricación actual depende del dominio del oficio.' },
+  presencia: { label: 'Presencia', desc: 'Atributo social reservado. Todavía no modifica precios ni relaciones.' },
+  percepcion: { label: 'Percepción', desc: 'Atributo de exploración reservado. Todavía no modifica recursos ni botín.' },
 };
 
 export type AttributeBonuses = Record<AttributeId, number>;
@@ -70,6 +71,12 @@ export interface CharData {
   wallet: Wallet; // monedas (ver currency.ts)
   inventory: InventorySlots;
   equipment: Equipment;
+  rpg?: RpgState;
+  enchantState?: { weapon?:string; count?:number; at?:number; target?:string; marks?:Record<string,{count:number;at:number}>; barrier?:number; barrierUntil?:number };
+  combatVisual?: {at:number;action:string};
+  expeditionId?:string;
+  potionReadyAt?:number;
+  wilderness?:{respawns?:Record<string,number>;firstRecipe?:boolean;kills?:number;graceUntil?:number};
   location: LocationId;
   position: { x: number; z: number; yaw: number } | null; // última posición guardada por el servidor; null = punto de inicio
   race: Race;
@@ -221,7 +228,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [],
+    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], rpg: undefined, enchantState: undefined, partyPeers: 0, potionReadyAt: undefined, combatVisual: undefined, wilderness: undefined,
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
@@ -255,6 +262,8 @@ export function sanitize(d: Record<string, unknown>): CharData {
   delete (out as unknown as Record<string, unknown>).gold;
   out.inventory = sanitizeInventory(out.inventory);
   out.equipment = sanitizeEquipment(out.equipment);
+  out.rpg = d.rpg && typeof d.rpg==='object' ? professionState(d.rpg) : undefined;
+  out.enchantState = d.enchantState && typeof d.enchantState === 'object' ? d.enchantState as CharData['enchantState'] : undefined;
   if (typeof out.location !== 'string' || !LOCATION_ID.test(out.location)) out.location = 'brumaluz';
   const pos = d.position as Partial<NonNullable<CharData['position']>> | null | undefined;
   out.position = pos && [pos.x, pos.z, pos.yaw].every((n) => typeof n === 'number' && Number.isFinite(n))

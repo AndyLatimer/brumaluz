@@ -7,6 +7,7 @@ import knightUrl from '../assets/models/Knight.glb?url';
 import rogueUrl from '../assets/models/Rogue.glb?url';
 import barbarianUrl from '../assets/models/Barbarian.glb?url';
 import ambientAnimationsUrl from '../assets/models/ambient-animations.glb?url';
+import rangedAnimationsUrl from '../assets/library/character-animations/animations/Rig_Medium_CombatRanged.glb?url';
 import creatorPartsUrl from '../assets/models/creator-parts.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
 import { buildHead, FACE_KITS, type HeadSource, type HeadKit, type HeadResult, type CreatorParts, type HeadOptions } from './head';
@@ -14,6 +15,7 @@ import { paintCell, smoothNormals } from './head/geometry';
 import { softDot } from '../world/paint';
 import { STARTER_MODELS } from '../data/starterItems';
 import { loadWeaponModels, weaponModel } from './weaponModels';
+import { refinedCombatClips } from './combatAnimations';
 import { ARMOR_SLOTS, equippedArmor } from '../data/outfits';
 import { mountModularWardrobe, modularHairFit, mountEquippedAccessories } from './wardrobe';
 import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
@@ -34,6 +36,7 @@ export function characterKit(kit: Kit) {
   return kits[kit];
 }
 let ambientAnimations: THREE.AnimationClip[] = [];
+let rangedAnimations: THREE.AnimationClip[] = [];
 /** Cuánto se hunde el modelo bajo la superficie del agua: flotando de pie (hasta los hombros) y nadando (tumbado). */
 const SWIM_TREAD_DEPTH = -0.62;
 const SWIM_STROKE_DEPTH = -0.3;
@@ -47,6 +50,7 @@ export async function loadKits() {
     loadWardrobe(),
     loadWeaponModels(),
     loadGLB(ambientAnimationsUrl).then(gltf => { ambientAnimations = gltf.animations; }),
+    loadGLB(rangedAnimationsUrl).then(gltf => { rangedAnimations = gltf.animations.filter(clip=>clip.name.startsWith('Ranged_1H_')); }),
     loadGLB(creatorPartsUrl).then(gltf => {
       const geometry = (name: keyof CreatorParts) => {
         const mesh = gltf.scene.getObjectByName(name);
@@ -360,7 +364,7 @@ export class Character {
 
     // Animaciones
     this.mixer = new THREE.AnimationMixer(this.model);
-    for (const clip of [...base.animations, ...ambientAnimations]) this.actions.set(clip.name, this.mixer.clipAction(clip));
+    for (const clip of [...base.animations, ...ambientAnimations, ...refinedCombatClips([...base.animations,...rangedAnimations])]) this.actions.set(clip.name, this.mixer.clipAction(clip));
     this.idle = this.actions.get(outfit.idle) ?? this.actions.get('Idle')!;
     this.idle.play();
     this.applyBodyShape();
@@ -646,6 +650,7 @@ export class Character {
     const a = this.actions.get(name);
     if (!a) throw new Error(`Falta la animación ${name}.`);
     const from = this.oneShot ?? this.gaitAction();
+    if (name !== 'Sit_Chair_Idle') this.seated = false;
     this.oneShot = a;
     this.interruptible = interruptible;
     this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
@@ -653,7 +658,7 @@ export class Character {
     a.setLoop(THREE.LoopOnce, 1);
     a.clampWhenFinished = true;
     a.play();
-    if (from !== a) from.crossFadeTo(a, 0.2, false);
+      if (from !== a) from.crossFadeTo(a, name.startsWith('Combat_') ? .11 : .2, false);
     return a.getClip().duration;
   }
   /** Reproduce un clip compatible sin reemplazar las animaciones del personaje. */
@@ -677,6 +682,10 @@ export class Character {
   private oneShot: THREE.AnimationAction | null = null;
   private interruptible = false;
   private nextIdleAt = Infinity;
+  private seated = false;
+  private seatHeight = 0;
+  private seatOffset = 0;
+  get isSeated() { return this.seated; }
   private gaitAction(gait = this.gait) {
     // Nadando: brazadas (el gateo, tumbado a ras de agua) al avanzar y reposo flotando al estar quieto.
     if (this.swimming) return gait === 'idle' ? this.idle : this.actions.get('Crawling') ?? this.idle;
@@ -691,6 +700,7 @@ export class Character {
     const from = this.oneShot ?? this.gaitAction();
     this.swimming = on;
     if (this.dead) return;
+    this.seated = false;
     this.oneShot = null;
     this.interruptible = false;
     this.playGait(from);
@@ -708,6 +718,35 @@ export class Character {
     const from = this.oneShot ?? this.gaitAction();
     this.gait = g;
     if (this.dead || (this.oneShot && !this.interruptible)) return;
+    this.seated = false;
+    this.oneShot = null;
+    this.interruptible = false;
+    this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
+    this.playGait(from);
+  }
+  sit(seatHeight: number) {
+    if (this.dead || this.swimming || this.jumpTime >= 0) return false;
+    const action = this.actions.get('Sit_Chair_Idle');
+    if (!action) throw new Error('Falta la animación Sit_Chair_Idle.');
+    if (this.seated) return true;
+    const from = this.oneShot ?? this.gaitAction();
+    this.seatHeight = seatHeight;
+    this.gait = 'idle';
+    this.seated = true;
+    this.oneShot = action;
+    this.interruptible = true;
+    this.nextIdleAt = Infinity;
+    action.reset();
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.clampWhenFinished = false;
+    action.play();
+    if (from !== action) from.crossFadeTo(action, 0.32, false);
+    return true;
+  }
+  stand() {
+    if (!this.seated) return;
+    const from = this.oneShot ?? this.gaitAction();
+    this.seated = false;
     this.oneShot = null;
     this.interruptible = false;
     this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
@@ -730,14 +769,16 @@ export class Character {
   speak(seconds: number) { this.speakUntil = Math.max(this.lastT, 0) + seconds; }
   private hitVariant = false;
   hit() {
-    if (this.dead) return;
+    // Cosmetic damage reactions must not cancel the attack the player just issued.
+    if (this.dead || this.oneShot?.getClip().name.startsWith('Combat_')) return;
     this.play(this.hitVariant ? 'Hit_B' : 'Hit_A');
     this.hitVariant = !this.hitVariant;
   }
   attack(skill = false) {
     const magic = this.d.cls === 'mago' || this.d.cls === 'clerigo';
-    this.play(magic ? skill ? 'Spellcast_Raise' : 'Spellcasting'
-      : this.d.cls === 'explorador' ? 'Interact' : '1H_Melee_Attack_Slice_Diagonal');
+    if(this.dead)return;
+    const name=magic ? skill?'Combat_Discharge':'Combat_Cast':this.d.cls==='explorador'?skill?'Combat_Precise':'Combat_Aim':this.d.cls==='picaro'&&skill?'Combat_Double':skill?'Combat_Heavy':'Combat_Slash';
+    this.play(name);
   }
   private dead = false;
   /** Cae al suelo y se queda ahí hasta `revive()`. */
@@ -747,12 +788,14 @@ export class Character {
     this.jumpAction?.stop();
     this.jumpAction = null;
     this.jumpTime = -1;
+    this.seated = false;
     this.dead = true;
     this.play('Death_A');
   }
   revive() {
     if (!this.dead) return;
     this.dead = false;
+    this.seated = false;
     const from = this.oneShot;
     this.oneShot = null;
     this.interruptible = false;
@@ -768,6 +811,7 @@ export class Character {
   /** El salto se mezcla por encima de la locomoción con un peso suave, para que no parezca un clip aparte. */
   jump() {
     if (this.dead) return 0;
+    this.stand();
     const act = this.actions.get('Jump_Full_Short');
     if (!act) return 0;
     if (this.jumpTime >= 0) return this.jumpLength;
@@ -822,6 +866,9 @@ export class Character {
     this.mixer.update(dt);
     // Animation tracks reset bone scales, so reapply the chosen proportions afterward.
     this.applyBodyShape();
+    const targetSeatOffset = this.seated ? Math.max(0, this.seatHeight - 0.481283 * this.model.scale.y) : 0;
+    this.seatOffset += (targetSeatOffset - this.seatOffset) * (1 - Math.exp(-dt * 8));
+    this.model.position.y += this.seatOffset;
     this.applySwim(t, dt);
     if (this.tail) this.tail.forEach((g, i) => { g.rotation.y = Math.sin(t * 1.6 - i * 0.6) * 0.16; g.rotation.x = Math.sin(t * 1.1 - i * 0.5) * 0.05; });
     this.ears.forEach((e, i) => { e.rotation.x = (e.userData.rx ??= e.rotation.x) - Math.max(0, Math.sin(t * 0.7 + i * 0.4) - 0.97) * 8; });

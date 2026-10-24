@@ -70,6 +70,10 @@ interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      rpg_action: {Args:{p_character_id:string;p_action:string;p_args:Json;p_request:string;p_revision:number};Returns:Json};
+      expedition_action: {Args:{p_character_id:string;p_action:string;p_target?:number};Returns:Json};
+      wilderness_action: {Args:{p_character_id:string;p_action:string;p_spawn?:string|null;p_slot?:number|null};Returns:Json};
+      heal_ally: {Args:{p_character_id:string;p_target:string};Returns:Json};
       create_character: { Args: { p_data: Json }; Returns: string };
       welcome_action: { Args: { p_character_id: string; p_action: string; p_origin?: number }; Returns: Json };
       shadow_action: { Args: { p_character_id: string; p_action: ShadowAction }; Returns: Json };
@@ -573,6 +577,14 @@ export async function deleteCharacter(userId: string, id: string) {
   if (error) throw error;
   return data.id;
 }
+
+export const rpgAction = async (id:string,action:string,args:Record<string,unknown>,revision=0):Promise<Record<string,unknown>> => {
+  const result=await serverCall(requireClient().rpc('rpg_action',{p_character_id:id,p_action:action,p_args:args as Json,p_request:crypto.randomUUID(),p_revision:revision}));
+  if(!result||typeof result!=='object'||Array.isArray(result))throw new Error('Respuesta de oficios no válida.');return result;
+};
+export const expeditionAction=async(id:string,action:string,target?:number)=>await serverCall(requireClient().rpc('expedition_action',{p_character_id:id,p_action:action,...(target===undefined?{}:{p_target:target})})) as Record<string,unknown>;
+export const wildernessAction=async(id:string,action:string,spawn?:string|null,slot?:number|null)=>await serverCall(requireClient().rpc('wilderness_action',{p_character_id:id,p_action:action,p_spawn:spawn??null,p_slot:slot??null})) as Record<string,unknown>;
+export const healAlly=async(id:string,target:string)=>await serverCall(requireClient().rpc('heal_ally',{p_character_id:id,p_target:target})) as Record<string,unknown>;
 
 function requireClient() {
   const configured = getAccountClient();

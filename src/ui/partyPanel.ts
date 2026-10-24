@@ -89,7 +89,7 @@ export function renderPartyPanel(container: HTMLElement) {
     const banner=document.createElement('header');banner.className='party-banner';
     const crest=document.createElement('span');crest.className='party-banner-crest';crest.append(partyIcon('crest'));
     const bannerText=document.createElement('div');bannerText.className='party-banner-text';
-    const caption=document.createElement('span');caption.className='party-eyebrow';caption.textContent=t('Unidos por la aventura');
+    const caption=document.createElement('span');caption.textContent=t('Unidos por la aventura');
     bannerText.append(caption,summary);
     const seats=document.createElement('span');seats.className='party-seats';seats.setAttribute('aria-label',t('Integrantes: {n} de 4',{n:state.members.length}));
     for(let i=0;i<4;i++){const seat=document.createElement('i');seat.classList.toggle('filled',i<state.members.length);seats.append(seat);}

@@ -1,7 +1,7 @@
 // Banco personal de la cuenta: compartido por todos sus personajes y abierto desde un baúl concreto.
 // Las reglas viven en bank_action (supabase/server/); aquí solo se refleja su estado y la simulación de ?test.
 import type { CharData } from './data';
-import { INVENTORY_UNLOCKED, type ItemStack } from './inventory';
+import { INVENTORY_UNLOCKED, asStack as parseStack, type ItemStack } from './inventory';
 import { ITEMS, itemStack } from './items';
 
 export const BANK_SIZE = 50;
@@ -33,7 +33,7 @@ export function sanitizeBank(v: unknown): BankState {
   return {
     size,
     pelines: Number.isSafeInteger(pelines) && pelines > 0 ? pelines : 0,
-    items: Array.from({ length: size }, (_, i) => asStack(list[i])),
+    items: Array.from({ length: size }, (_, i) => parseStack(list[i])),
   };
 }
 
@@ -47,7 +47,7 @@ export function stackInto(slots: (ItemStack | null)[], item: ItemStack): (ItemSt
   let left = item.count;
   for (const slot of out) {
     if (left <= 0) break;
-    if (slot && slot.id === item.id && (slot.bound === true) === bound && slot.count < max) {
+    if (slot && slot.id === item.id && !slot.instanceId && !item.instanceId && (slot.bound === true) === bound && slot.count < max) {
       const room = Math.min(max - slot.count, left);
       slot.count += room; left -= room;
     }
@@ -55,7 +55,7 @@ export function stackInto(slots: (ItemStack | null)[], item: ItemStack): (ItemSt
   for (let i = 0; i < out.length && left > 0; i++) {
     if (out[i]) continue;
     const room = Math.min(max, left);
-    out[i] = { id: item.id, count: room, ...(bound ? { bound: true } : {}) };
+    out[i] = { ...item, count: room, ...(bound ? { bound: true } : {}) };
     left -= room;
   }
   return left > 0 ? null : out;
@@ -68,7 +68,7 @@ export function stackInto(slots: (ItemStack | null)[], item: ItemStack): (ItemSt
 export function placeItem(slots: (ItemStack | null)[], index: number, item: ItemStack): ItemStack | null {
   const target = slots[index];
   if (!target) { slots[index] = { ...item }; return null; }
-  if (target.id === item.id && (target.bound === true) === (item.bound === true)) {
+  if (target.id === item.id && !target.instanceId && !item.instanceId && (target.bound === true) === (item.bound === true)) {
     const moved = Math.min(Math.max(0, Math.max(1, itemStack(item.id)) - target.count), item.count);
     slots[index] = { ...target, count: target.count + moved };
     return item.count > moved ? { ...item, count: item.count - moved } : null;

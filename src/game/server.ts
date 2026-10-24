@@ -10,6 +10,7 @@ import { setCombatEncounter } from './combat';
 import { resetFoodTimer, tickFood, resetOverheal } from './vitals';
 import { TEST } from './stage';
 import { toast } from '../ui/toast';
+import { acceptSnapshot } from './snapshotOrder';
 
 /** Pide una acción al servidor (que decide el resultado) y copia sus datos al estado local. En ?test se simula en local. */
 
@@ -25,12 +26,15 @@ export async function runOnServer(call: (id: string) => Promise<Record<string, u
     if (session.activeCharacterId) {
       const data = await call(session.activeCharacterId);
       if (!stillCurrent()) return false;
+      if(!acceptSnapshot('full',data.serverRevision))return true;
       const next = sanitize(data);
+      const currentVitals=acceptSnapshot('vitals',data.serverRevision);
+      if(!currentVitals){next.health=session.state.health;next.resource=session.state.resource;next.overheal=session.state.overheal;next.enchantState=session.state.enchantState;}
       const at = typeof data.food_at === 'number' ? data.food_at : 0;
       const foodCurrent = next.foodRevision > session.state.foodRevision || (next.foodRevision === session.state.foodRevision && at >= vitals.foodSampleAt);
       if (!foodCurrent) { next.foodBuff = session.state.foodBuff; next.foodRevision = session.state.foodRevision; }
       Object.assign(session.state, next);
-      if (data.combatEncounter !== undefined) setCombatEncounter(data.combatEncounter);
+      if (currentVitals&&data.combatEncounter !== undefined) setCombatEncounter(data.combatEncounter);
       if (foodCurrent) resetFoodTimer(at);
     }
     else if (TEST) { tickFood(); simulate(); resetFoodTimer(); }

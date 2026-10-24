@@ -4,6 +4,7 @@
 import { CharData, ClassId, AttributeId, RACES, ATTRIBUTE_BASE_VALUE } from './data';
 import { foodEffect } from './food';
 import { equipmentVitalBonus } from './accessories';
+import { setBonuses } from './sets';
 
 export type ResourceKind = 'mana' | 'stamina';
 
@@ -23,7 +24,7 @@ export interface StatFormula {
   attributes: Partial<Record<AttributeId, number>>;
 }
 
-export const MAX_HEALTH: StatFormula = { base: 60, perLevel: 12, attributes: { corpulencia: 8 } };
+export const MAX_HEALTH: StatFormula = { base: 60, perLevel: 12, attributes: {} };
 export const MAX_RESOURCE: Record<ResourceKind, StatFormula> = {
   mana: { base: 30, perLevel: 6, attributes: { intelecto: 7 } },
   stamina: { base: 50, perLevel: 6, attributes: { agilidad: 3, corpulencia: 3 } },
@@ -50,8 +51,8 @@ export const experienceToNextLevel = (level: number) => Math.round(XP_CURVE.base
 export const resourceKindOf = (cls: ClassId): ResourceKind => CLASS_RESOURCE[cls];
 const withPartyBonus = (value: number, d: CharData) =>
   Math.floor(value * (1000 + Math.min(Math.max(d.partyPeers ?? 0, 0), 3) * 15) / 1000);
-export const maxHealthOf = (d: CharData) => withPartyBonus(evaluate(MAX_HEALTH, d), d) + (foodEffect(d.foodBuff)?.maxHealth ?? 0) + equipmentVitalBonus(d.cls,d.equipment,'maxHealth');
-export const maxResourceOf = (d: CharData) => withPartyBonus(evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d), d) + (foodEffect(d.foodBuff)?.maxResource ?? 0) + equipmentVitalBonus(d.cls,d.equipment,'maxResource');
+export const maxHealthOf = (d: CharData) => Math.floor(withPartyBonus((evaluate(MAX_HEALTH, d) + equipmentVitalBonus(d.cls,d.equipment,'maxHealth')) * (1 + .02 * attributeTotal(d,'corpulencia')) * (1 + setBonuses(d.cls,d.equipment).maxHealth), d) + (foodEffect(d.foodBuff)?.maxHealth ?? 0));
+export const maxResourceOf = (d: CharData) => Math.floor(withPartyBonus((evaluate(MAX_RESOURCE[resourceKindOf(d.cls)], d) + equipmentVitalBonus(d.cls,d.equipment,'maxResource')) * (1 + setBonuses(d.cls,d.equipment).maxResource), d) + (foodEffect(d.foodBuff)?.maxResource ?? 0));
 
 export interface Vitals {
   health: number; maxHealth: number; overheal: number;

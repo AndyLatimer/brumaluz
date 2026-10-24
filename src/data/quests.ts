@@ -65,9 +65,9 @@ export const ORIGINS: Record<Race, readonly [string, string, string]> = {
   pelso: ['He llegado desde Luna Argéntea para conocer la capital.', 'Busco oportunidades en tierra firme.', 'Vivo aquí y busco un nuevo rumbo.'],
 };
 export const ORIGIN_REPLIES = [
-  '¡Pues me alegro de haberte encontrado! Una cara amiga siempre viene bien al empezar.',
-  'Un rumbo nuevo, ¿eh? Si necesitas orientación, estás en buenas manos. Pequeñas, pero buenas.',
-  'Entonces habrá que buscarte un buen comienzo. Y, si no te importa, empezar por echarme una mano a mí.',
+  'Pues vamos a buscarte un buen comienzo. Conozco a gente estupenda por aquí. Alguna hasta deja terminar las frases.',
+  'Brumaluz tiene puertas para casi todo. Mi trabajo es ayudarte a encontrar la tuya… y comprobar que no sea un armario. Una vez me pasó.',
+  'Cambiar de rumbo tiene su mérito. Demos un primer paso pequeño. Pequeñísimo, en realidad. Del tamaño de un distintivo.',
 ] as const;
 export function parseWelcome(value: unknown): WelcomeProgress | null {
   if (value === undefined || value === null) return null;

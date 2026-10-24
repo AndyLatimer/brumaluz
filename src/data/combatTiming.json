@@ -1,0 +1,7 @@
+{
+  "guerrero":{"basic":0.20,"skill":0.34},
+  "picaro":{"basic":0.16,"skill":0.20},
+  "mago":{"basic":0.18,"skill":0.38},
+  "clerigo":{"basic":0.20,"skill":0.38},
+  "explorador":{"basic":0.20,"skill":0.40}
+}

@@ -30,7 +30,7 @@ export function updatePlay(dt: number) {
   const dir = new THREE.Vector3();
   let clickMoving = false;
   if (input.lengthSq() > 0) {
-    fight.combatApproach=false;fight.pendingCombatSkill=false;
+    fight.combatApproach=false;
     play.moveTarget = null;
     marker.visible = false;
     const fx = -Math.sin(view.yaw), fz = -Math.cos(view.yaw);
@@ -43,6 +43,7 @@ export function updatePlay(dt: number) {
     const dx=fight.combatTargetRoot.position.x-holder.position.x,dz=fight.combatTargetRoot.position.z-holder.position.z;
     if(Math.hypot(dx,dz)>range-.1){dir.set(dx,0,dz).normalize();clickMoving=true;}
   }
+  if (play.char.isSeated && dir.lengthSq() > 0) play.char.stand();
   if (!view.dragging && clickMoving && !fight.lockedEnemy) {
     // al ir con clic la cámara se recoloca poco a poco tras el personaje
     let back = Math.atan2(-dir.x, -dir.z) - view.yaw;
@@ -72,6 +73,10 @@ export function updatePlay(dt: number) {
       d = Math.atan2(Math.sin(d), Math.cos(d));
       holder.rotation.y += d * (1 - Math.exp(-dt * 12));
     }
+  }
+  if(fight.combatBusy&&fight.combatTargetRoot&&fight.combatEncounter?.status==='active'){
+    const want=Math.atan2(fight.combatTargetRoot.position.x-holder.position.x,fight.combatTargetRoot.position.z-holder.position.z);
+    const turn=Math.atan2(Math.sin(want-holder.rotation.y),Math.cos(want-holder.rotation.y));holder.rotation.y+=turn*(1-Math.exp(-dt*22));
   }
   const wasJumping = play.jumpDuration > 0 && play.jumpElapsed < play.jumpDuration;
   const previousJumpHeight = play.jumpHeight;

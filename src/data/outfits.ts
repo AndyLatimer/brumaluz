@@ -33,7 +33,7 @@ export const outfitItemStats = (id: string) => {
   return [
     { label: 'Rareza', value: ITEM_RARITIES[rarityForTier(item.tier)].label },
     { label: 'Categoría de equipo', value: String(item.tier) },
-    ...(item.guard ? [{ label: 'Guardia', value: `−${item.guard} daño cuerpo a cuerpo` }] : []),
+    ...(item.guard ? [{ label: 'Guardia', value: `+${item.guard}` }] : []),
     ...(item.maxHealth ? [{label:'Vida máxima',value:`+${item.maxHealth}`}] : []),
     ...(item.maxResource ? [{label:'Recurso máximo',value:`+${item.maxResource}`}] : []),
   ];

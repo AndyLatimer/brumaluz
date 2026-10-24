@@ -14,9 +14,11 @@ import { resetFoodTimer, resetOverheal, receiveFood, die, setFoodRunning } from 
 import { toast } from '../ui/toast';
 import { errorMessage } from './server';
 import { updateHud } from './hud';
-import { setCombatEncounter } from './combat';
+import { setCombatEncounter, resetCombatActions } from './combat';
 import { exitPlay } from './playSession';
 import { loadCharacterSelection, returnToCharacters } from '../ui/characterSelect';
+import { acceptSnapshot } from './snapshotOrder';
+import { combatFloat } from './combatFeedback';
 
 /** Pide al servidor los datos vigentes del personaje antes de entrar al mundo. */
 export async function loadWorldState() {
@@ -52,17 +54,19 @@ export function refreshWorldStatus() {
 }
 export function receiveWorld(value: WorldSnapshot) {
   if (value.food) receiveFood(value.food);
-  if (value.selfVitals) {
+  const current=acceptSnapshot('vitals',value.selfVitals?.serverRevision);
+  if (current&&value.selfVitals) {
     const changed = session.state.health !== value.selfVitals.health || session.state.resource !== value.selfVitals.resource;
-    const tookDamage=value.selfVitals.health<session.state.health;
+    const lostHealth=Math.max(0,session.state.health-value.selfVitals.health),tookDamage=lostHealth>0;
     session.state.health = value.selfVitals.health;
     session.state.resource = value.selfVitals.resource;
     session.state.overheal=value.selfVitals.overheal;
-    if(tookDamage)play.char.hit();
+    if(value.selfVitals.barrier!==undefined&&session.state.enchantState)session.state.enchantState.barrier=value.selfVitals.barrier;
+    if(tookDamage){if(!fight.combatBusy)play.char.hit();combatFloat(lostHealth,holder.position,'incoming');}
     if (session.state.health === 0 && !play.dead) die();
     if (changed) updateHud();
   }
-  if(value.encounter!==undefined)setCombatEncounter(value.encounter);
+  if(current&&value.encounter!==undefined)setCombatEncounter(value.encounter);
   session.state.position = value.position;
   if (value.status === 'corrected') {
     const correctedY = play.city.platformY(value.position.x, value.position.z) ?? play.city.groundY(value.position.x, value.position.z);
@@ -102,6 +106,7 @@ export async function prepareMultiplayer() {
   receiveWorld(initial);
 }
 export function stopMultiplayer() {
+  resetCombatActions();
   setFoodRunning(false);
   const connection = session.worldConnection;
   session.worldConnection = null;

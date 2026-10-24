@@ -9,6 +9,7 @@ import { weaponPortrait, weaponIconFrame } from '../art/weaponIcons';
 import { ARMOR, outfitItemStats } from './outfits';
 import { ACCESSORIES } from './accessories';
 import { describeWeapon, describeArmor, describeAccessory, weaponCollection, EQUIPMENT_COLLECTIONS } from './itemDescriptions';
+import rpgCatalog from './generated/rpg-catalog.json';
 
 export interface ItemDef {
   id: string;
@@ -208,6 +209,7 @@ for (const item of Object.values(ITEMS)) {
     + (item.id.endsWith('_t2') ? '<path d="m19 9 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#edb64f" stroke="#714b2a" stroke-width=".7"/>' : '');
   if (WEAPONS[item.id]) item.icon = weaponPortrait(item.id) ?? item.icon;
 }
+Object.assign(ITEMS,rpgCatalog.items as unknown as Record<string,ItemDef>);
 export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];
 export const itemLabel = (id: string) => ITEMS[id]?.label ?? id;
@@ -224,5 +226,5 @@ export const VENDOR_STOCK: Record<string, string[]> = {
     'daga_secundaria_cazador_t1', 'varita_ambar_t1', 'grimorio_verde_t1', 'ballesta_roble_t1',
     'espada_cobre_t2', 'escudo_roble_t2', 'baston_ambar_t2', 'daga_cazador_t2',
     'daga_secundaria_cazador_t2', 'varita_ambar_t2', 'grimorio_verde_t2', 'ballesta_roble_t2',
-    ...ADVANCED_WEAPONS.map(item => item.id), ...ORIGINAL_WEAPONS.map(item => item.id), ...Object.keys(ARMOR), ...Object.keys(ACCESSORIES)],
+    ...Object.values(ARMOR).filter(item=>item.tier===0).map(item=>item.id)],
 };

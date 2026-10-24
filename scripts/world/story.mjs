@@ -205,7 +205,7 @@ test('a new character enters through the East Gate, tours the city and meets a w
     await page.locator('.cinematic-line.title').filter({hasText:'La Puerta del Este'}).waitFor();
     await page.waitForTimeout(700);
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'intro-gate.png')});
-    await page.locator('.cinematic-line.title').filter({hasText:'Brumaluz, la capital de Pompelín'}).waitFor();
+    await page.locator('.cinematic-line.title').filter({hasText:'Capital de Pompelín'}).waitFor();
     await page.waitForTimeout(1500);
     const flight=await page.evaluate(()=>({
       camera:window.brumaluz.camera().position.toArray(),player:window.brumaluz.char().root.parent.position.toArray(),
@@ -219,7 +219,7 @@ test('a new character enters through the East Gate, tours the city and meets a w
     const afterInput=await page.evaluate(()=>window.brumaluz.char().root.parent.position.toArray());
     assert.ok(Math.abs(afterInput[2])<.05 && afterInput[0]<=flight.player[0],'Only the scripted entry moves the player during the cutscene');
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'intro-flight.png')});
-    await page.locator('.cinematic-line').filter({hasText:'¿Dónde lo habré dejado?'}).waitFor({timeout:30000});
+    await page.locator('.cinematic-line').filter({hasText:'Solo falta el distintivo'}).waitFor({timeout:30000});
     await page.waitForTimeout(1200);
     const meeting=await page.evaluate(()=>{
       const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal'),me=window.brumaluz.char().root.parent;
@@ -326,7 +326,7 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.locator('#story-arrival').waitFor({state:'visible'});
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
     await facing('npc:isberto');
-    assert.match(await page.locator('.dialog-text').textContent(),/nunca había visto nada parecido/);
+    assert.match(await page.locator('.dialog-text').textContent(),/Has mantenido el tipo/);
     const beforeSpeakerChange=await page.evaluate(()=>({
       position:window.brumaluz.char().root.parent.position.toArray(),facing:window.brumaluz.char().root.parent.rotation.y,
     }));
@@ -341,7 +341,7 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.keyboard.press('KeyE');
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
     await page.keyboard.press('KeyE');
-    await page.locator('.dialog-text').filter({hasText:'Antes de que me arrepienta'}).waitFor();
+    await page.locator('.dialog-text').filter({hasText:'Te has ganado un techo'}).waitFor();
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'isberto-invitation.png')});
     await page.keyboard.press('Escape');
     assert.equal(account.character.data.shadowQuest,'defeated','Exiting partway through the scene never advances the story');
@@ -419,8 +419,8 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.getByRole('button',{name:'Gracias, Isberto.',exact:true}).click();
     await page.locator('.dialog-text').filter({hasText:'Descansa'}).waitFor();
     assert.equal(account.character.data.shadowQuest,'returned');
-    await page.locator('#toast').filter({hasText:'Misión completada'}).waitFor();
     await page.keyboard.press('KeyE');
+    await page.locator('#toast.show').filter({hasText:'Misión completada'}).waitFor();
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
     // La cama recupera la vida.
     await teleport(-.3,-1.4);

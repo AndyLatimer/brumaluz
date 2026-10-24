@@ -3,7 +3,7 @@
 // Mientras el elemento está bajo el cursor o con foco, el `title` se guarda en `data-tip`
 // para que no salga el tooltip nativo, y se restaura al salir (así i18n sigue funcionando).
 // Para tooltips con título y texto usa "Título|Descripción".
-import { renderItemTooltip } from './itemTooltip';
+import { renderItemTooltip, itemTooltipInstance } from './itemTooltip';
 import { renderSkillTooltip, skillTooltipEquipment } from './skillTooltip';
 import { COMBAT_KITS } from '../data/combat';
 import type { ClassId } from '../data/data';
@@ -67,7 +67,7 @@ function show(target: HTMLElement) {
   box.classList.toggle('item-tooltip', !!item || !!skillClass);
   box.classList.toggle('skill-tooltip', !!skillClass);
   if (skillClass) renderSkillTooltip(box, skillClass, Number(target.dataset.skillRank), skillTooltipEquipment(target));
-  else if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true');
+  else if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true', itemTooltipInstance(target));
   else {
     const [head, body] = text!.includes('|') ? text!.split('|', 2) : [text!, ''];
     const strong = document.createElement('strong');

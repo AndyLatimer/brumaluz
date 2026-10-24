@@ -1,7 +1,7 @@
 import { tradeAction } from './account';
-import { sanitizeInventory, type InventorySlots } from '../data/inventory';
+import { sanitizeInventory, type InventorySlots, type ItemStack } from '../data/inventory';
 
-export interface TradeOffer { items: { slot: number; id: string; count: number }[]; pelines: number }
+export interface TradeOffer { items: (ItemStack & { slot: number })[]; pelines: number }
 export interface Trade {
   id: string; status: 'invited' | 'open' | 'completed' | 'cancelled'; reason: string | null;
   revision: number; incoming: boolean; peerId: string; peerName: string;

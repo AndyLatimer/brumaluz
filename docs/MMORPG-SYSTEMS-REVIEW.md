@@ -1,5 +1,11 @@
 # Revisión de sistemas MMORPG y dependencias
 
+## Actualización del 24 de octubre de 2026
+
+Se han implementado atributos de combate, Guardia porcentual, identidad de equipo, conjuntos numéricos, cinco encantamientos, profesiones, recetas, colas sin conexión, recolección, herramientas y un encuentro cooperativo repetible con curación a aliados. El estado concreto, valores iniciales y límites están en [RPG-IMPLEMENTATION.md](RPG-IMPLEMENTATION.md).
+
+El inventario de carencias que sigue es la **auditoría histórica del día 23**. No debe interpretarse como el estado actual ni como una lista de sistemas ya comprobados en una partida multijugador.
+
 Fecha: 23 de octubre de 2026. Revisión del código del repositorio, no auditoría del estado de un servidor desplegado. «No localizado» significa que no se ha encontrado un sistema general en los módulos revisados; no demuestra ausencia de cualquier prototipo o herramienta aislada.
 
 ## Estado y prioridades
@@ -29,6 +35,8 @@ P0 = dependencia técnica o de coherencia antes de ampliar equipo. P1 = siguient
 
 ### 1. Los atributos no cumplen todavía toda su descripción
 
+Corpulencia, coeficiente inicial aprobado: +2 % de vida máxima por punto, sumado linealmente sobre vida base del personaje y vida de equipo. Fórmula parcial: (vida base + vida de equipo) × (1 + 0,02 × Corpulencia). No concede reducción de daño ni cura automáticamente por aumentar el máximo mediante equipo. Redondeo, integración de otros modificadores y conservación de vida actual al cambiar equipo pendientes. No se ha sustituido todavía la fórmula implementada.
+
 `src/data/data.ts` anuncia daño para fuerza, poder mágico para intelecto, resistencia al daño para corpulencia, velocidad para agilidad y efectos de oficio/comercio/exploración. En los cálculos revisados:
 
 - Corpulencia aumenta vida y participa en estamina.
@@ -39,9 +47,19 @@ P0 = dependencia técnica o de coherencia antes de ampliar equipo. P1 = siguient
 
 Antes de ofrecer atributos en armas hay que cerrar su función y hacer coincidir ficha, creador, combate y servidor. No recomendar invertir puntos basándose en efectos que aún no se aplican.
 
-Decisión tomada durante el diseño: Fuerza para guerrero, Agilidad para pícaro/explorador, Intelecto para mago/clérigo y Corpulencia para supervivencia. El reparto está aprobado; las fórmulas y su implementación siguen pendientes.
+Decisión funcional vigente: Fuerza mejora potencia del guerrero; Agilidad, potencia de pícaro/explorador; Intelecto, potencia del mago y daño/curación del clérigo. El atributo principal beneficia básicos y habilidades. Corpulencia aumenta vida máxima y la Guardia del equipo reduce daño recibido. Agilidad no aumenta automáticamente velocidad de ataque ni Corpulencia concede además reducción de daño. El reparto está aprobado; coeficientes y cambios de implementación pendientes. Los efectos actuales sobre maná y estamina se revisarán aparte, sin asumir su eliminación.
 
 ### 2. Ataque básico y habilidad no comparten la misma escala de nivel
+
+Cadencia y habilidades, regla aprobada: separar el daño de cada básico de la potencia usada por habilidades. A igual categoría y potencia, un arma rápida y una lenta deben dar habilidades de fuerza equivalente. Las diferencias de frecuencia y daño por básico se mantienen. Equilibrar encantamientos teniendo en cuenta cadencia, sin ventaja automática por golpear más veces. Fórmula concreta de normalización y asignación al catálogo pendientes; no implementado.
+
+Crecimiento común aprobado: multiplicador por nivel = 1 + 0,02 × (nivel − 1), aplicado una sola vez tanto a básicos como a daño y curación de habilidades, junto al atributo principal. Nivel 1: sin aumento; 10: +18 %; 50: +98 %. Al implementar, sustituye el factor actual del básico de 5 % por nivel y la ausencia de ese factor en habilidades. No duplicarlo al resolver coeficientes/rangos de habilidades ni al calcular efectos desde daño ya escalado. Armas, conjuntos y rangos conservan sus aportaciones propias. Las descripciones siguientes del 5 % reflejan el funcionamiento anterior aún no modificado, no la fórmula nueva aprobada.
+
+Conversión inicial de Guardia aprobada: reducción = min(0,60; Guardia / (Guardia + 20)). Ejemplos: 2 puntos ≈ 9,1 %; 5 = 20 %; 10 ≈ 33,3 %; 20 = 50 %; 30 = 60 %. Usar la misma conversión en combate y tooltip; no añadir además una resta plana por impacto. Esta regla concreta la conversión antes pendiente, pero no cambia todavía las fórmulas implementadas. Tratamiento de nivel, daño periódico/ambiental y redondeo pendientes.
+
+Guardia, comportamiento aprobado: mitiga un porcentaje del daño directo de básicos y habilidades, con rendimiento decreciente y un máximo inicial del 60 %. No resta una cantidad fija por impacto, para no penalizar especialmente armas rápidas. Conversión de puntos a porcentaje, referencia de nivel y daño periódico/ambiental pendientes. Esta decisión requiere sustituir cualquier resta plana incompatible al implementar, manteniendo sincronizados cliente, servidor y tooltips.
+
+Coeficiente inicial del atributo principal aprobado: +1 % de potencia por punto, acumulado linealmente (multiplicador 1 + 0,01 × atributo principal). Aplicar a la potencia del arma y equipo para básicos y habilidades; en clérigo, también a la curación. Calcular después el bono de conjunto sobre esa potencia, sin multiplicar otra vez por atributo al resolver la habilidad. La integración del crecimiento por nivel y la normalización de armas con cadencias distintas siguen pendientes; esta aprobación no cambia todavía el combate implementado.
 
 El básico multiplica potencia por `1 + 0,05 × (nivel − 1)`. Las habilidades ofensivas usan coeficiente, rango y potencia del arma, sin ese factor de nivel. Con espada inicial, a nivel 50 el básico sería 35 y Golpe contundente de rango 1 sería 18 antes de otros cambios. Esto compara fórmulas, no una medición de equilibrio del juego completo.
 
@@ -84,17 +102,45 @@ Comercio usa revisión de oferta y bloqueos; banco conserva objetos y coordina c
 
 ## Primera vertical propuesta
 
-Explorador: aprobados Quebrantador (2 piezas: potencia de ataque; 4: Disparo preciso ignora una pequeña parte de la guardia exclusivamente para su propio impacto, sin debilitar al enemigo para otros ataques) y Tiro de barrido (2: recurso máximo; 4: Disparo preciso atraviesa al objetivo y golpea hasta dos enemigos alineados detrás con daño reducido, sin impactos duplicados ni activación de encantamientos en los impactos secundarios). Hostigador con ataques acelerados queda descartado, al igual que Tirador, Cazador y Acechador. Magnitudes, geometría, obstáculos y asignación a conjuntos pendientes; no implementados.
+### Separación vigente de habilidades y conjuntos
 
-Clérigo: aprobados Custodio (2 piezas: potencia de curación; 4: Curación añade un pequeño escudo temporal al objetivo, incluido el propio clérigo, sin acumulación del mismo efecto) y Restaurador (2: maná máximo; 4: Curación sana en menor cantidad a aliados próximos al objetivo, sin duplicar la curación principal ni encadenar curaciones secundarias). Reemplazan las propuestas previas no aprobadas de curación periódica y ataque potenciado. Selección de aliados, sanación cooperativa, cifras, radio, límite de objetivos, duración, convivencia entre clérigos y asignación a conjuntos pendientes; no implementados.
+Maldición umbría, cifras aprobadas: cada tercer básico contra el mismo enemigo añade daño oscuro del 20/25/30/35/40 % de un básico antes de defensas en verde/azul/morado/dorado/naranja, sujeto a Guardia. Marcas de 6 segundos, sin generar marcas ni efectos secundarios desde la descarga. Sustituye la antigua propuesta única del 30 %. No implementado.
 
-Mago: aprobados Evocador (potencia mágica a 2 piezas y eco de daño de Descarga arcana al mismo objetivo a 4, sin repetirse ni activar encantamientos) y Arcanista de área (maná máximo a 2 y explosión pequeña de Descarga arcana a 4, con daño reducido a enemigos próximos, sin duplicar daño al objetivo principal, encadenarse o activar encantamientos). La alternativa de área sustituye a Canalizador y su devolución de maná. Radio, límite de objetivos, magnitudes, retraso del eco y asignación a conjuntos siguen pendientes; no implementadas.
+Bloque agrupado aprobado en `WEAPON-SYSTEM-DESIGN.md`: bonos numéricos de 4 piezas para todas las orientaciones. Escala azul/morado/dorado/naranja de +9/+14/+19/+24 % para daño o curación de habilidad; +5/+7/+9/+11 % para vida máxima, o −5/−7/−9/−11 % para coste según orientación. También aprobados: Guardia antes de barreras y vida; cambiar equipo conserva vida/recurso actuales limitándolos al nuevo máximo, sin rellenarlos; retirar inmediatamente bonos de piezas desequipadas; conservar precisión interna y redondear presentación. Reemplaza los bonos pendientes de rediseño y sus cifras anteriores, sin reactivar efectos archivados. Los costes monetarios enteros siguen por definir. Aprobado como diseño, no implementado.
 
-Pícaro: aprobadas las orientaciones Ofensiva (2 piezas: potencia de ataque; 4: la habilidad aumenta brevemente el daño contra el objetivo golpeado) y Duelista (2: guardia; 4: acertar Corte doble reduce el daño del siguiente golpe recibido durante una ventana breve). Duelista consume la preparación al recibir ese golpe, sin inmunidad ni acumulación. Sustituye a Escurridiza con velocidad de movimiento, que no se aprueba. Magnitudes, duraciones, reglas específicas y asignación a conjuntos pendientes; no implementadas.
+Vampirismo aprobado: cada básico recupera vida equivalente al 2/3/4/5/6 % de la vida realmente quitada al enemigo en verde/azul/morado/dorado/naranja. Calcular tras defensas y absorciones y excluir exceso de daño al matar; no activar con habilidades ni daño de encantamientos ni superar la vida máxima del portador. Redondeo y tratamiento de recuperaciones pequeñas pendientes; no implementado.
 
-Guerrero: aprobadas dos orientaciones para los conjuntos existentes. Defensiva: guardia con 2 piezas y protección breve al usar la habilidad con 4. Ofensiva: potencia de ataque con 2 y mejora del siguiente ataque básico tras usar la habilidad con 4. Ambas deben servir para jugar en solitario; la defensiva favorece tanque. Asignación a conjuntos, magnitudes y reglas detalladas pendientes; no implementadas.
+Fuego aprobado: cada básico acertado añade daño de fuego del 5/6/7/8/9 % del daño propio del básico antes de defensas en verde/azul/morado/dorado/naranja. Aplicar la Guardia del receptor al componente de fuego. Sin quemadura ni daño periódico, sin generar cargas ni activar otros encantamientos, y sin activación por habilidades. Cifras iniciales de diseño, no implementadas; unificar la definición de daño base con Rayo y Escarcha al desarrollar.
 
-Estructura de bonificaciones de conjunto aprobada: 2/4 mejora ligeramente estadísticas acordes al conjunto; 4/4 añade un efecto propio sobre una habilidad o función de clase sin cambiar toda la rotación. Combinar dos conjuntos de dos piezas concede los dos bonos parciales como alternativa al conjunto completo. Armas y joyas no cuentan entre las cuatro piezas. Efectos concretos y valores siguen pendientes y no implementados; diseñar y comparar 2+2 frente a 4 piezas para que ambas configuraciones sean viables. Esta decisión no cambia los encantamientos universales ligados al arma y sus golpes básicos.
+Escarcha, cifras y renovación aprobadas: barrera cada tres básicos acertados, duración de 4 segundos y absorción del 20/25/30/35/40 % del daño de un básico del arma antes de defensas en verde/azul/morado/dorado/naranja. Reaplicar conserva la mayor entre la barrera restante y la nueva y renueva la duración, sin sumar absorciones. Orden respecto a Guardia y otros escudos, definición exacta de la base de daño y retirada del efecto pendientes; no implementado. Concreta valores y renovación antes pendientes.
+
+Rayo, daño inicial aprobado: 40/50/60/70/80 % del daño de un básico del arma antes de defensas en verde/azul/morado/dorado/naranja. La descarga causa daño eléctrico al segundo enemigo, con su propia mitigación por Guardia; no añade daño eléctrico al objetivo principal. Concreta el daño por grado antes pendiente; definición exacta de la base de daño y su integración con otros modificadores, desempates y elegibilidad pendientes. No implementado.
+
+Rayo, alcance y selección aprobados: salto de hasta 4 metros desde el enemigo golpeado por el básico al enemigo válido más cercano distinto del principal, sin atravesar paredes. Si no existe segundo objetivo elegible, aplicar la regla de descarga preparada. Desempate, daño por grado y validaciones concretas de elegibilidad pendientes; no implementado. Concreta el radio y selección antes pendientes.
+
+Rayo sin segundo objetivo, regla aprobada que concreta el caso antes pendiente: conservar una única descarga preparada si al cuarto básico no hay otro enemigo cercano elegible. El siguiente básico acertado con un segundo objetivo válido activa la descarga. No acumular descargas ni seguir almacenando nuevos ciclos mientras esté preparada. Los básicos acertados mantienen su actividad; 6 segundos sin acertar, cambio de arma/encantamiento o muerte la eliminan. Radio, selección y daño pendientes; no implementado.
+
+Contadores de encantamientos aprobados: Escarcha (tres básicos) y Rayo (cuatro) conservan progreso al cambiar de enemigo; Maldición umbría requiere tres golpes en el mismo objetivo. Reiniciar al cambiar arma o encantamiento, morir o transcurrir 6 segundos sin acertar un básico válido. En Umbría, la caducidad de cada objetivo se renueva con golpes a ese objetivo. Habilidades y efectos secundarios no suman cargas. Los contadores pertenecen al portador y a su instancia de arma, sin compartirlos. Rayo sin segundo objetivo y reaplicación de barreras pendientes; no implementados.
+
+Rayo y Escarcha aprobados: Rayo provoca una descarga eléctrica que salta del objetivo a otro enemigo cercano cada cuatro ataques básicos acertados, con un único salto, sin nuevas descargas ni activación de otros encantamientos; su daño mejora por grado. Escarcha concede al portador una pequeña barrera temporal de hielo cada tres básicos acertados, sin acumulación, con absorción creciente por grado; sustituye la ralentización. Son efectos del arma, no de conjuntos; las habilidades no generan cargas y los efectos todavía no están implementados. Daños, absorción, reinicio/renovación de contadores, duración, radio y tratamiento sin segundo objetivo pendientes.
+
+Grados de encantamiento aprobados: pergaminos verdes, azules, morados, dorados y naranjas. La intensidad depende del grado aplicado; solo puede aplicarse uno de calidad igual o inferior al arma principal. Mejorar requiere consumir otro pergamino, sustituyendo el anterior; cambiar de arma no mejora ni transfiere automáticamente su encantamiento. Cifras, costes y recetas por grado pendientes; no implementado.
+
+Encantamiento y vínculo aprobados: aplicar un pergamino no liga el arma. Un arma no ligada puede venderse o regalarse con su encantamiento hasta equiparse por primera vez; cambiar encantamiento no elimina un vínculo existente. Reemplazar consume el nuevo pergamino y elimina el anterior. Las transacciones deben conservar identidad y encantamiento de cada copia; no apilar ni confundir copias con efectos distintos. No implementado.
+
+Compatibilidad de encantamientos aprobada para la primera versión: solo arma principal desde verde, con un único encantamiento activo por personaje. Escudos, libros y dagas secundarias mantienen estadísticas pero no admiten otro encantamiento; mejoras específicas futuras pendientes de diseño. No está implementado aún el sistema de encantamientos.
+
+El usuario confirma empezar con mejoras numéricas y ampliar efectos más adelante. Priorizar ahora las fórmulas comunes de atributos y combate, la identidad por copia y las dependencias cooperativas; no seguir equilibrando como vigentes los efectos de conjunto archivados.
+
+Última directiva del usuario: el equipo beneficia numéricamente las habilidades sin transformarlas ni añadir efectos especiales. El funcionamiento de las habilidades se diseña en su propio sistema. Se sustituyen los bonos de conjunto que añadían escudos, marcas, réplicas, ecos, explosiones, curaciones secundarias y disparos que atraviesan objetivos. Su historial queda en [SET-EFFECTS-SUPERSEDED.md](SET-EFFECTS-SUPERSEDED.md), sin vigencia para implementar.
+
+Se conservan las orientaciones y estadísticas de 2 piezas, los umbrales 2/4 y 4/4, la mezcla de calidades y la alternativa 2+2. Los bonos de 4 deben rediseñarse como mejoras numéricas. Quebrantador conserva su aumento directo del daño de Disparo preciso del 9/14/19/24 % en azul/morado/dorado/naranja, compatible con esta regla. No trasladar automáticamente cifras de efectos retirados a nuevos bonos. Encantamientos siguen separados, vinculados al arma y golpes básicos. No se han implementado los efectos retirados ni los nuevos bonos.
+
+Valores iniciales aprobados para bonos de 2 piezas, por calidad verde/azul/morado/dorado/naranja: potencia de ataque o mágica, guardia o potencia de curación +2/+3/+4/+5/+6 %; recurso máximo +4/+6/+8/+10/+12 %. Cada conjunto mejora solo la estadística que tenga asignada. Son cifras de partida, pendientes de contraste con fórmulas de combate y efectos de 4 piezas; no implementadas. Sustituyen la ausencia previa de magnitudes en esta revisión.
+
+Bonos de estadísticas de 2 piezas aprobados como porcentajes de la estadística del personaje y su equipo, calculados antes de las bonificaciones temporales. El porcentaje aumenta gradualmente con la calidad. Si dos bonos parciales mejoran la misma estadística, sumar sus porcentajes y aplicarlos sobre la misma base, excluyendo ambos bonos de ella; no multiplicarlos entre sí. Si afectan a estadísticas distintas, aplicar cada uno a la correspondiente. Ejemplo ilustrativo, no cifras aprobadas: 4 % + 4 % = 8 %. Magnitudes por estadística/calidad pendientes; no implementadas.
+
+Bonificaciones de conjunto por calidad aprobadas: gris sin bonos, verde con bono de 2 piezas, azul y superiores con bonos de 2 y 4 piezas. Desde azul, el efecto de 4 piezas mantiene su funcionamiento y mejora gradualmente sus cifras en calidades superiores, sin añadir automáticamente efectos nuevos. Mezcla de calidades aprobada: piezas del mismo conjunto cuentan juntas; bono de 2 según segunda mejor calidad y bono de 4 según peor de las cuatro. Se respetan las calidades mínimas de activación: dos verdes o superiores para el parcial, cuatro azules o superiores para el completo. Dos moradas y dos azules conceden parcial morado y completo azul. Identidad entre modelos de catálogo y cifras pendientes; no implementadas.
 
 ### Economía de profesiones: dirección aprobada
 
@@ -147,6 +193,10 @@ El usuario mantiene la propuesta de fabricación, pide sustituir el nombre Marro
 La recolección tiene progresión propia. Por ahora solo se incluyen Minero, Leñador y Recolector: Pesca y Desuello no forman parte de la lista inicial. La integración de muebles con vivienda, colocación y almacenamiento queda por diseñar; añadir Ebanistería al diseño no implementa esos sistemas.
 
 ### Estaciones y fabricación diferida
+
+Gestión de colas aprobada con corrección del usuario: hasta cinco trabajos por oficio, concretados como uno activo y cuatro pendientes en total. Se pueden reordenar pendientes gratuitamente. Los resultados terminados no cuentan contra ese límite ni bloquean el siguiente trabajo. Materiales reservados al encolar; sin mejoras de taller ni ampliaciones premium de cola. La capacidad queda así fijada y sustituye las menciones anteriores a límite pendiente. Definir todavía cómo representar cantidades de una receta sin que una fila de lote permita eludir el límite de trabajos.
+
+Garantías aprobadas: fabricación garantizada si se cumplen receta, materiales y oficio, sin fallo aleatorio ni variación de estadísticas por copia. Conceder experiencia una sola vez al terminar, no al recoger; resultados quedan guardados si la mochila está llena. Los reembolsos al cancelar tampoco se pierden por falta de espacio y quedan pendientes de recoger. Las pociones extra de la racial élfica no conceden experiencia adicional. Concreta la regla antes pendiente de experiencia racial. Requiere implementación transaccional; no está programado todavía.
 
 Autonomía inicial de herramientas confirmada: una herramienta gris usada por Aprendiz con recursos de su rango aguanta aproximadamente cuatro reservas de energía hasta la primera reparación. Las reparaciones posteriores reducen su máximo y, por tanto, su autonomía. Es un objetivo para calibrar desgaste base, no una regla de descontar durabilidad por gastar energía ni por transcurso de tiempo. El desgaste sigue aplicándose por extracción completada.
 

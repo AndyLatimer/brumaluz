@@ -9,6 +9,11 @@ export interface ItemStack {
   id: string;
   count: number;
   bound?: boolean;
+  instanceId?: string;
+  enchantment?: { id: 'fire' | 'vampirism' | 'frost' | 'lightning' | 'dark'; grade: number };
+  durability?: number;
+  maxDurability?: number;
+  originalDurability?: number;
 }
 
 export type InventorySlots = (ItemStack | null)[];
@@ -20,12 +25,24 @@ export type Equipment = Record<EquipmentSlot, ItemStack | null>;
 export const emptyInventory = (): InventorySlots => Array.from({ length: INVENTORY_SIZE }, () => null);
 export const emptyEquipment = (): Equipment => Object.fromEntries(EQUIPMENT_SLOTS.map((s) => [s, null])) as Equipment;
 
-const asStack = (v: unknown): ItemStack | null => {
+export const asStack = (v: unknown): ItemStack | null => {
   if (!v || typeof v !== 'object') return null;
-  const { id, count, bound } = v as Record<string, unknown>;
+  const { id, count, bound, instanceId, enchantment, durability, maxDurability, originalDurability } = v as Record<string, unknown>;
   const n = Number(count);
-  return typeof id === 'string' && id && Number.isSafeInteger(n) && n > 0 ? { id, count: n, ...(bound === true ? { bound: true } : {}) } : null;
+  if (typeof id !== 'string' || !id || !Number.isSafeInteger(n) || n <= 0) return null;
+  const out: ItemStack = { id, count: n, ...(bound === true ? { bound: true } : {}) };
+  if (typeof instanceId === 'string' && /^[a-zA-Z0-9-]{8,80}$/.test(instanceId)) out.instanceId = instanceId;
+  if (enchantment && typeof enchantment === 'object') {
+    const e = enchantment as Record<string, unknown>;
+    if (['fire','vampirism','frost','lightning','dark'].includes(String(e.id)) && Number.isInteger(e.grade) && Number(e.grade) >= 1 && Number(e.grade) <= 5)
+      out.enchantment = { id: e.id as NonNullable<ItemStack['enchantment']>['id'], grade: Number(e.grade) };
+  }
+  for (const [key, value] of Object.entries({ durability, maxDurability, originalDurability }))
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100000) (out as unknown as Record<string, unknown>)[key] = value;
+  return out;
 };
+
+export const sameStack = (a: ItemStack | null, b: ItemStack | null) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
 export function sanitizeInventory(v: unknown): InventorySlots {
   const out = emptyInventory();

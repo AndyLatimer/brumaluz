@@ -1,0 +1,917 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "brumaluz-hamlet",
+      "label": "Brumaluz · Barrio artesanal",
+      "author": "Brumaluz",
+      "description": "Original Blender-native medieval city kit for Rusty Hearts. Continuous window frames, fitted roofs and connected fittings. Metres, +Y up and +Z front in GLB.",
+      "targetProject": "Rusty Hearts",
+      "count": 30,
+      "source": "art/hamlet/brumaluz-hamlet.blend",
+      "license": null
+    }
+  ],
+  "assets": [
+    {
+      "id": "brumaluz-hamlet/objects/house_willow_cottage",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "house_willow_cottage",
+      "label": "Casa del Sauce",
+      "category": "Edificios",
+      "path": "brumaluz-hamlet/objects/house_willow_cottage.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#house_willow_cottage",
+      "bytes": 1187732,
+      "sha256": "25eb6e43b763cfd9797ef4f3b28e243a6bd788bbc0a5bc53fd09afb75415c4d5",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.515000104904175,
+          0,
+          -2.125
+        ],
+        "max": [
+          2.515000104904175,
+          4.965000152587891,
+          2.3949999809265137
+        ]
+      },
+      "triangles": 14620,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/house_lantern_townhouse",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "house_lantern_townhouse",
+      "label": "Casa del Farol",
+      "category": "Edificios",
+      "path": "brumaluz-hamlet/objects/house_lantern_townhouse.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#house_lantern_townhouse",
+      "bytes": 1393672,
+      "sha256": "a41680244a7385296e18854c65d6b412891552a1c51bc96c00b452f21aecf149",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.1649999618530273,
+          0,
+          -2.0850002765655518
+        ],
+        "max": [
+          2.1649999618530273,
+          6.6419997215271,
+          2.240000009536743
+        ]
+      },
+      "triangles": 17696,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_herbalist_shop",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "building_herbalist_shop",
+      "label": "Herbolario de la Bruma",
+      "category": "Edificios",
+      "path": "brumaluz-hamlet/objects/building_herbalist_shop.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#building_herbalist_shop",
+      "bytes": 1318064,
+      "sha256": "44af5c990daa9319b2c4f804385c31aa53bb082722736cb7362e42986c5e8713",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.6000001430511475,
+          0,
+          -2.240000009536743
+        ],
+        "max": [
+          2.6000001430511475,
+          5.074000358581543,
+          2.877500057220459
+        ]
+      },
+      "triangles": 16360,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_bakery",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "building_bakery",
+      "label": "Horno de la Plaza",
+      "category": "Edificios",
+      "path": "brumaluz-hamlet/objects/building_bakery.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#building_bakery",
+      "bytes": 1314636,
+      "sha256": "f716a41720b6c7006e207625dfe12464e1c7db611bc08b9f3d32866562f81af4",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.690000057220459,
+          0,
+          -2.299999952316284
+        ],
+        "max": [
+          3.674999952316284,
+          4.889000415802002,
+          3.0375001430511475
+        ]
+      },
+      "triangles": 16260,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_carpenter_workshop",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "building_carpenter_workshop",
+      "label": "Taller del Roble",
+      "category": "Edificios",
+      "path": "brumaluz-hamlet/objects/building_carpenter_workshop.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#building_carpenter_workshop",
+      "bytes": 1163444,
+      "sha256": "71aa04d743e0d39a6d812d9515b78062c01cbc46d7e293f3dc7340c3839fb925",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.825000047683716,
+          0,
+          -2.325000286102295
+        ],
+        "max": [
+          3.059999942779541,
+          4.965999603271484,
+          2.619999885559082
+        ]
+      },
+      "triangles": 14328,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_watchtower",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "building_watchtower",
+      "label": "Torre del Alba",
+      "category": "Edificios",
+      "path": "brumaluz-hamlet/objects/building_watchtower.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#building_watchtower",
+      "bytes": 1121428,
+      "sha256": "50e81f003724b674c966d2fc78f34a104d555159bff328b944c81331689a9292",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.205000162124634,
+          0,
+          -2.2150001525878906
+        ],
+        "max": [
+          2.205000162124634,
+          6.970000267028809,
+          2.2150001525878906
+        ]
+      },
+      "triangles": 13496,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/table_tavern_feast",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "table_tavern_feast",
+      "label": "Mesa de la posada",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/table_tavern_feast.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#table_tavern_feast",
+      "bytes": 265044,
+      "sha256": "356ee745fdd4d734fc8b45bb41c46f84ce5ff1c11cf31915e9f0443ee5468e7c",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.087499976158142,
+          0,
+          -0.4699999988079071
+        ],
+        "max": [
+          1.087499976158142,
+          1.281000018119812,
+          0.4699999988079071
+        ]
+      },
+      "triangles": 1820,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/chair_oak_carved",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "chair_oak_carved",
+      "label": "Silla de roble tallado",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/chair_oak_carved.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#chair_oak_carved",
+      "bytes": 227184,
+      "sha256": "912b3aebe3e54b6a53618e62980af2f08f90197fa2a0e5f7390968ed4fce54e3",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.3474999964237213,
+          0,
+          -0.38999995589256287
+        ],
+        "max": [
+          0.3475000262260437,
+          1.3600000143051147,
+          0.3151056468486786
+        ]
+      },
+      "triangles": 1280,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/bench_garden",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "bench_garden",
+      "label": "Banco del jardín",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/bench_garden.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#bench_garden",
+      "bytes": 215296,
+      "sha256": "13d274650a5d13ed34fce9ff681d5afabc40f8fb7fb12b062bfd90b94b5c677e",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9375,
+          0,
+          -0.3677111268043518
+        ],
+        "max": [
+          0.9374999403953552,
+          1.1247577667236328,
+          0.3199999928474426
+        ]
+      },
+      "triangles": 1084,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/stool_round",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "stool_round",
+      "label": "Taburete del artesano",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/stool_round.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#stool_round",
+      "bytes": 157516,
+      "sha256": "08f86200de804e1221b6f382196778ea58db49b58686810dad1ea19d8ba9ebb0",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.32999998331069946,
+          0.002193039283156395,
+          -0.33000001311302185
+        ],
+        "max": [
+          0.33000001311302185,
+          0.5718322992324829,
+          0.33000001311302185
+        ]
+      },
+      "triangles": 408,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/bed_linen_quilt",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "bed_linen_quilt",
+      "label": "Cama con colcha de lino",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/bed_linen_quilt.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#bed_linen_quilt",
+      "bytes": 234968,
+      "sha256": "105c0ac3ec23b51180e84d33020d37295a1cbe968dbf7c862bf6f5defaf84c11",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7598611116409302,
+          0,
+          -1.1050000190734863
+        ],
+        "max": [
+          0.7598611116409302,
+          1.2850000858306885,
+          1.1050000190734863
+        ]
+      },
+      "triangles": 1288,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/cabinet_apothecary",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "cabinet_apothecary",
+      "label": "Alacena del boticario",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/cabinet_apothecary.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#cabinet_apothecary",
+      "bytes": 453576,
+      "sha256": "0654ead23dd4f2c2203cc5b906544c87b4297f0c2ed262ba2893c6b50d0bc3bd",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7875000238418579,
+          0,
+          -0.36500003933906555
+        ],
+        "max": [
+          0.7874999642372131,
+          1.965499997138977,
+          0.43400001525878906
+        ]
+      },
+      "triangles": 4120,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/bookcase_scholar",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "bookcase_scholar",
+      "label": "Librería del cronista",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/bookcase_scholar.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#bookcase_scholar",
+      "bytes": 568896,
+      "sha256": "0fcf56ec1314158e1f13e97f7c38120a8719c0fb5e7b27324240c0954cfe7c81",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.824999988079071,
+          0,
+          -0.3100000023841858
+        ],
+        "max": [
+          0.824999988079071,
+          2.1399998664855957,
+          0.3100000023841858
+        ]
+      },
+      "triangles": 5804,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/desk_cartographer",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "desk_cartographer",
+      "label": "Escritorio del cartógrafo",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/desk_cartographer.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#desk_cartographer",
+      "bytes": 306076,
+      "sha256": "ac0426b8e8c31b38fa07b6e9486dded5489fce5ba358bbae8f6d4c7f6a745f3c",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8324999809265137,
+          0,
+          -0.43000003695487976
+        ],
+        "max": [
+          0.8324999809265137,
+          1.2623237371444702,
+          0.4300000071525574
+        ]
+      },
+      "triangles": 2364,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/counter_shop",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "counter_shop",
+      "label": "Mostrador del mercader",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/counter_shop.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#counter_shop",
+      "bytes": 255684,
+      "sha256": "5e504057a3e9433dce2d3abfa8af76836acfb1f4e78015336c2e1022adbf20da",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.027500033378601,
+          0,
+          -0.46000000834465027
+        ],
+        "max": [
+          1.027500033378601,
+          1.3925000429153442,
+          0.46000000834465027
+        ]
+      },
+      "triangles": 1732,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/chest_ironbound",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "chest_ironbound",
+      "label": "Arcón de viaje reforzado",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/chest_ironbound.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#chest_ironbound",
+      "bytes": 314388,
+      "sha256": "f5888bbb9acc80820788dfdf5ba3552365c932a1835364e64e0cac85e87de0ff",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.574999988079071,
+          0,
+          -0.38799071311950684
+        ],
+        "max": [
+          0.574999988079071,
+          0.8991956114768982,
+          0.41200000047683716
+        ]
+      },
+      "triangles": 2460,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/hearth_cookfire",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "hearth_cookfire",
+      "label": "Hogar de piedra y cobre",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/hearth_cookfire.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#hearth_cookfire",
+      "bytes": 274076,
+      "sha256": "373288f3b88a59f251a866902367660d496f9e2b855f2acd22bdc217367b1403",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7599999904632568,
+          0,
+          -0.41999998688697815
+        ],
+        "max": [
+          0.7599999904632568,
+          2.059999942779541,
+          0.45500001311302185
+        ]
+      },
+      "triangles": 2024,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/rug_woven_teal",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "rug_woven_teal",
+      "label": "Alfombra tejida de Brumaluz",
+      "category": "Mobiliario",
+      "path": "brumaluz-hamlet/objects/rug_woven_teal.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#rug_woven_teal",
+      "bytes": 272392,
+      "sha256": "426c765be795bcce8d6a6d50f034357ae93dc78097f1fc1f9309220c5a13da2e",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7900000214576721,
+          0,
+          -1.1399998664855957
+        ],
+        "max": [
+          0.7900000214576721,
+          0.046000003814697266,
+          1.1399998664855957
+        ]
+      },
+      "triangles": 1892,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/lantern_street_oak",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "lantern_street_oak",
+      "label": "Farol del barrio",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/lantern_street_oak.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#lantern_street_oak",
+      "bytes": 201480,
+      "sha256": "5cca9545734064b74ff48c8065d1de9d4c8b3dfb3969ebfe59026154c2627fed",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.25200000405311584,
+          0,
+          -0.26499998569488525
+        ],
+        "max": [
+          0.25200000405311584,
+          2.6000001430511475,
+          0.7420000433921814
+        ]
+      },
+      "triangles": 952,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/lantern_wall",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "lantern_wall",
+      "label": "Farol de pared",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/lantern_wall.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#lantern_wall",
+      "bytes": 191352,
+      "sha256": "d107ed22732e70ccb41adfa294fe35dae25f17b8bc9d84692c7b5664c11c35b2",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.20999999344348907,
+          0,
+          -0.16249999403953552
+        ],
+        "max": [
+          0.20999999344348907,
+          0.6468284726142883,
+          0.5
+        ]
+      },
+      "triangles": 804,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/signpost_crossroads",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "signpost_crossroads",
+      "label": "Señal de caminos",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/signpost_crossroads.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#signpost_crossroads",
+      "bytes": 184148,
+      "sha256": "9af292ac2414c2d642cc7299cd62fc078cfff86c5ba2c29e989adb13815d71b1",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7599999904632568,
+          0,
+          -0.17000000178813934
+        ],
+        "max": [
+          0.800000011920929,
+          2,
+          0.2459999918937683
+        ]
+      },
+      "triangles": 692,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/planter_herb_trough",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "planter_herb_trough",
+      "label": "Jardinera aromática",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/planter_herb_trough.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#planter_herb_trough",
+      "bytes": 278300,
+      "sha256": "70e5936946516a9370c6adc1a476eb946888a615a88646c0f2cc6a447e18b3a9",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7300000190734863,
+          0,
+          -0.2874999940395355
+        ],
+        "max": [
+          0.7300000190734863,
+          0.9495600461959839,
+          0.2874999940395355
+        ]
+      },
+      "triangles": 1724,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/planter_flower_urn",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "planter_flower_urn",
+      "label": "Maceta de flores",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/planter_flower_urn.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#planter_flower_urn",
+      "bytes": 310680,
+      "sha256": "372bfcfa20c8900b8ab6550b9b5f367b84cb5c66f49c6d278b7bd1664fb2f8d8",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.43199998140335083,
+          0,
+          -0.37047260999679565
+        ],
+        "max": [
+          0.43199998140335083,
+          1.1130000352859497,
+          0.37047260999679565
+        ]
+      },
+      "triangles": 2256,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/barrel_cider",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "barrel_cider",
+      "label": "Barril de sidra con grifo",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/barrel_cider.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#barrel_cider",
+      "bytes": 260728,
+      "sha256": "52741f3020fdc1ac7e2cd89ec10fc9052131b57610ea1ff2ff71ad7421fe1327",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.44909965991973877,
+          0,
+          -0.4483115077018738
+        ],
+        "max": [
+          0.44909965991973877,
+          0.9824999570846558,
+          0.562999963760376
+        ]
+      },
+      "triangles": 1932,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/crate_harvest",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "crate_harvest",
+      "label": "Caja de cosecha",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/crate_harvest.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#crate_harvest",
+      "bytes": 274384,
+      "sha256": "52c62a83deb1d1e9e874ca36e70939a5e701c7c3124d6abc487f5335ac400da7",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4975000023841858,
+          0,
+          -0.40305832028388977
+        ],
+        "max": [
+          0.49750006198883057,
+          0.5849999785423279,
+          0.40305832028388977
+        ]
+      },
+      "triangles": 1776,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/market_handcart",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "market_handcart",
+      "label": "Carro de verdulero",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/market_handcart.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#market_handcart",
+      "bytes": 409724,
+      "sha256": "cc15d6d7d9ef7ee642c0ce17ae82b73bde478c6bd5f535c96271d0b723c09a6f",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9025000333786011,
+          0,
+          -1.372499942779541
+        ],
+        "max": [
+          0.9025000333786011,
+          1.2249999046325684,
+          1.3423640727996826
+        ]
+      },
+      "triangles": 3596,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/well_courtyard",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "well_courtyard",
+      "label": "Pozo de patio",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/well_courtyard.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#well_courtyard",
+      "bytes": 401140,
+      "sha256": "75e8b5aad3937feec73badf4cb0bd2028d05c53b5db3b3bf0eb04bdfa81976c4",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0750000476837158,
+          0,
+          -0.830000102519989
+        ],
+        "max": [
+          1.0750000476837158,
+          2.503999948501587,
+          0.8084604144096375
+        ]
+      },
+      "triangles": 4032,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/fountain_lily",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "fountain_lily",
+      "label": "Fuente del Nenúfar",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/fountain_lily.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#fountain_lily",
+      "bytes": 263084,
+      "sha256": "2289ffdd883c19da714555f855b4eb8430c4b4e3ca3664fd9e711430ff3dabb2",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0149999856948853,
+          0,
+          -1.0149999856948853
+        ],
+        "max": [
+          1.0149999856948853,
+          2,
+          1.0149999856948853
+        ]
+      },
+      "triangles": 1964,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/fence_oak_panel",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "fence_oak_panel",
+      "label": "Valla de roble",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/fence_oak_panel.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#fence_oak_panel",
+      "bytes": 232952,
+      "sha256": "2e118f65652c91ce04bc52ca2ac78e3b40b1fe349e8a730cce2f637eb9e12aa6",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1,
+          -3.725290298461914e-9,
+          -0.125
+        ],
+        "max": [
+          1,
+          1,
+          0.125
+        ]
+      },
+      "triangles": 1248,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/gate_garden",
+      "pack": "brumaluz-hamlet",
+      "kind": "objects",
+      "name": "gate_garden",
+      "label": "Portilla del jardín",
+      "category": "Decoración",
+      "path": "brumaluz-hamlet/objects/gate_garden.glb",
+      "source": "art/hamlet/brumaluz-hamlet.blend#gate_garden",
+      "bytes": 249312,
+      "sha256": "9b596af8fe23606a7e3c0000e9cad75686e33ef498f0cf266c2df3821f177192",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8499999642372131,
+          0,
+          -0.1350000500679016
+        ],
+        "max": [
+          0.8499999642372131,
+          1.1800000667572021,
+          0.18549999594688416
+        ]
+      },
+      "triangles": 1500,
+      "materials": 1
+    }
+  ]
+}

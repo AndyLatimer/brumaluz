@@ -12,6 +12,7 @@ export const conversationFacings = new Map<THREE.Object3D, number>();
 export const storyLock = () => !!talk.isbertoArrival || cinematic.active || story.introFinishing || story.resting;
 export const conversationPosition = new THREE.Vector3();
 export const conversationRay = new THREE.Raycaster();
+conversationRay.camera = camera;
 export function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
   closeDialog();
   talk.conversationActor = actor;

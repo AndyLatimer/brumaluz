@@ -2,10 +2,10 @@ import { sanitize, type CharData } from '../data/data';
 import { joinWorld, leaveWorld, syncWorld, travelWorld } from './account';
 import type { Vitals } from '../data/stats';
 import { parseFoodBuff, type FoodBuff } from '../data/food';
-import type { ItemStack } from '../data/inventory';
+import { asStack, type ItemStack } from '../data/inventory';
 import { parseWorldClock, syncWorldClock } from '../data/worldClock';
 
-export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'>;
+export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'> & {barrier?:number;serverRevision?:number};
 
 export interface WorldPosition { x: number; z: number; yaw: number }
 export interface WorldMotion extends WorldPosition { facing: number; jump: number; wave: number }
@@ -31,7 +31,11 @@ export interface WorldSnapshot {
 }
 
 export interface CombatEncounter {
-  id: 'shadowling';
+  spawn?:string;enemy?:string;level?:number;windup?:number;attackSeq?:number;aimX?:number;aimZ?:number;
+  kind?:string; label?:string; expeditionId?:string; selected?:number;
+  enemies?:{id:string;label?:string;health:number;maxHealth:number;x:number;z:number;guard?:number}[];
+  targets?:{id:string;label?:string;health:number;maxHealth:number;x:number;z:number;guard?:number}[];
+  id: 'shadowling'|'wild_enemy';
   status: 'active' | 'defeated' | 'fled' | 'failed';
   engaged: boolean;
   health: number;
@@ -70,15 +74,20 @@ export function parseCombatEncounter(value: unknown): CombatEncounter | null {
       if (item === null) { loot.push(null); continue; }
       const row = record(item);
       if (typeof row.id !== 'string' || !Number.isSafeInteger(row.count) || Number(row.count) < 1) throw new Error('Botín no válido.');
-      loot.push({ id: row.id, count: Number(row.count), ...(row.bound === true ? { bound: true } : {}) });
+      loot.push(asStack(row));
     }
   }
-  if(encounter.id!=='shadowling'||(status!=='active'&&status!=='defeated'&&status!=='fled'&&status!=='failed')
+  if((encounter.id!=='shadowling'&&!(encounter.id==='wild_enemy'&&encounter.kind==='wilderness'))||(status!=='active'&&status!=='defeated'&&status!=='fled'&&status!=='failed')
     ||maxHealth<=0||health<0||health>maxHealth||number(encounter.enemyAttackAt)<0) {
     throw new Error('Respuesta de combate no válida.');
   }
   return {
-    id:'shadowling',status,health,maxHealth,engaged:encounter.engaged === undefined ? health < maxHealth : encounter.engaged,
+      id:encounter.id as CombatEncounter['id'],status,health,maxHealth,engaged:encounter.engaged === undefined ? health < maxHealth : encounter.engaged,
+      kind:typeof encounter.kind==='string'?encounter.kind:undefined,label:typeof encounter.label==='string'?encounter.label:undefined,
+      spawn:typeof encounter.spawn==='string'?encounter.spawn:undefined,enemy:typeof encounter.enemy==='string'?encounter.enemy:undefined,level:typeof encounter.level==='number'?encounter.level:undefined,windup:typeof encounter.windup==='number'?encounter.windup:undefined,attackSeq:typeof encounter.attackSeq==='number'?encounter.attackSeq:undefined,
+      aimX:typeof encounter.aimX==='number'?encounter.aimX:undefined,aimZ:typeof encounter.aimZ==='number'?encounter.aimZ:undefined,
+      expeditionId:typeof encounter.expeditionId==='string'?encounter.expeditionId:undefined,selected:typeof encounter.selected==='number'?encounter.selected:undefined,
+      enemies:Array.isArray(encounter.enemies)?encounter.enemies as CombatEncounter['enemies']:undefined,targets:Array.isArray(encounter.targets)?encounter.targets as CombatEncounter['targets']:undefined,
     x:number(encounter.x),z:number(encounter.z),enemyAttackAt:number(encounter.enemyAttackAt),
     instanceId: typeof encounter.instanceId === 'string' ? encounter.instanceId : null,
     loot, looted: encounter.looted === true,
@@ -92,7 +101,7 @@ export function parsePublicVitals(value: unknown): PublicVitals {
     || resource < 0 || resource > maxResource || (v.resourceKind !== 'mana' && v.resourceKind !== 'stamina')) {
     throw new Error('Respuesta multijugador no válida.');
   }
-  return { health, maxHealth, overheal, resource, maxResource, resourceKind: v.resourceKind };
+  return { health, maxHealth, overheal, resource, maxResource, resourceKind: v.resourceKind,...(typeof v.barrier==='number'?{barrier:Math.max(0,v.barrier)}:{}),...(typeof v.serverRevision==='number'?{serverRevision:v.serverRevision}:{}) };
 }
 function snapshot(value: unknown): WorldSnapshot {
   const data = record(value);

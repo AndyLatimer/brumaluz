@@ -21,7 +21,11 @@ import { setWindow } from '../ui/menus';
 import { openBank } from './inventory';
 import { pickUpCoinBag } from './vitals';
 import { lockCombatTarget } from './combat';
+import { beginWilderness, wildernessInteractions } from './wilderness';
 import { $ } from '../ui/dom';
+import { professionInteractions } from '../world/professionWorld';
+import { gatherResource, performProfession } from './professions';
+import { selectProfessionTab } from '../ui/professionsWindow';
 
 // ---------------- Interacción (tecla E) ----------------
 export const playerInteractions = createPlayerInteractions((target) => tradeWindow.invite(target));
@@ -41,7 +45,10 @@ export function nearestInteractable(): Interactable | null {
     ? [{ id: 'bank:chest', label: 'Abrir el banco', position: new THREE.Vector3(spot.x, play.city.groundY(spot.x, spot.z), spot.z), radius: BANK_INTERACT_RADIUS }] : [];
   const beds: Interactable[] = play.city.locationId === ISBERTO_HOUSE && houseOpen()
     ? [{ id: 'house:bed', label: 'Descansar', position: groundPoint(HOUSE_BED), radius: BED_RADIUS }] : [];
-  for (const item of [...portals, ...corpses, ...banks, ...beds, ...play.city.interactables, ...story.welcomeWorld.interactions(), ...story.coinBags.interactions()]) {
+  const seats: Interactable[] = play.city.seats.map(seat => ({
+    id: `seat:${seat.id}`, label: 'Sentarse', position: seat.position, radius: 2.2,
+  }));
+  for (const item of [...portals, ...corpses, ...banks, ...beds, ...seats, ...wildernessInteractions(), ...professionInteractions(play.city,session.state.rpg), ...play.city.interactables, ...story.welcomeWorld.interactions(), ...story.coinBags.interactions()]) {
     if (item.id === 'npc:isberto' && !isbertoVisible()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -72,6 +79,7 @@ export function talkTo(npcId: string) {
 }
 export function interact() {
   if (play.mode !== 'play' || play.mapTravelling || play.dead || storyLock() || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || ui.openWindow || ui.gameMenuOpen || ui.playerMenuOpen || ui.worldMenuOpen || ui.optionsOpen) return;
+  if (play.char.isSeated) { play.char.stand(); return; }
   const { item, player } = nearestInteraction();
   if (player) {
     play.pendingTalk = null;
@@ -83,6 +91,24 @@ export function interact() {
     return;
   }
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
+  if (item?.id.startsWith('seat:')) {
+    if (isInCombat(fight.combatEncounter) || play.jumpHeight > 0.05) return;
+    const seat = play.city.seats.find(candidate => candidate.id === item.id.slice(5));
+    if (!seat || !play.char.sit(seat.seatHeight)) return;
+    play.pendingTalk = null;
+    keys.clear();
+    play.moveTarget = null;
+    marker.visible = false;
+    playerVel.set(0, 0, 0);
+    holder.position.copy(seat.position);
+    holder.rotation.y = seat.yaw;
+    play.groundHeight = seat.position.y;
+    play.lastPlatformY = null;
+    return;
+  }
+  if(item?.id.startsWith('wild:')){void beginWilderness(item.id.slice(5));return;}
+  if(item?.id.startsWith('resource:')){void gatherResource(item.id.slice(9));return;}
+  if(item?.id.startsWith('station:')){const job=item.id.slice(8);selectProfessionTab(job==='reparacion'?'tools':'recipes',job==='reparacion'?'herreria':job);setWindow('professions');void performProfession('state');return;}
   if (item?.id.startsWith('portal:')) {
     const portal = play.city.portals.find(portal => portal.id === item.id.slice(7));
     if (portal && doorLocked(portal)) { toast('Casa de Isberto', 'La puerta está cerrada con llave.', true); return; }
@@ -147,8 +173,15 @@ export function updateInteractPrompt() {
     const target = remotePlayers.list().find((player) => player.id === playerInteractions.targetId);
     if (play.mode !== 'play' || play.dead || !target || Math.hypot(target.root.position.x - holder.position.x, target.root.position.z - holder.position.z) > TALK_RANGE) playerInteractions.close();
   }
-  const interaction = play.mode === 'play' && !play.dead && !storyLock() && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen ? nearestInteraction() : null;
-  prompt.hidden = !interaction?.item && !interaction?.player;
+  const canInteract = play.mode === 'play' && !play.dead && !storyLock() && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen;
+  const seated = play.mode === 'play' && play.char.isSeated;
+  const interaction = canInteract && !seated ? nearestInteraction() : null;
+  prompt.hidden = seated ? !canInteract : !interaction?.item && !interaction?.player;
+  if (seated && canInteract) {
+    const label = t('Levantarse');
+    if ($('#interact-label').textContent !== label) $('#interact-label').textContent = label;
+    return;
+  }
   if (interaction?.item || interaction?.player) {
     let label = interaction.player ? t('Interactuar') : interaction.item?.id === 'welcome:gnomi'
       ? t('Hablar con {name}', { name: session.registeredNpcs.gnomi.name }) : t(interaction.item!.label);

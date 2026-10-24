@@ -7,6 +7,7 @@ import { request as httpRequest } from 'node:http';
 import { createServer } from 'vite';
 import { chromium } from 'playwright';
 import { mapEditorPlugin } from '../tools/map-editor-plugin.mjs';
+import { readLibraryCatalog } from '../tools/library-catalog.mjs';
 
 // Todo se guarda en directorios temporales: las pruebas nunca tocan src/data/maps ni src/data/world.
 let server, browser, directory, publishDirectory, maps;
@@ -232,7 +233,7 @@ test('overworld settlement decoration preserves edits, travel points and terrain
   assert.equal(JSON.stringify(map.markers),markers);
   assert.equal(JSON.stringify(map.terrain),terrain);
   maps.validateMap(map);
-  const catalog = JSON.parse(await readFile(join(process.cwd(),'src','assets','library','catalog.json'),'utf8'));
+  const catalog = await readLibraryCatalog(join(process.cwd(), 'src', 'assets', 'library'));
   const ids = new Set(catalog.assets.map(asset=>asset.id));
   for(const detail of details) if(!/^(city|builtin)\//.test(detail.asset)) assert.ok(ids.has(detail.asset), detail.asset);
   const page = await browser.newPage();
@@ -241,7 +242,7 @@ test('overworld settlement decoration preserves edits, travel points and terrain
     const result = await page.evaluate(async ({details, markers})=>{
       const {loadCityModels,boxOf,BUILTIN_BOUNDS}=await import('/src/world/mapAssetsCore.ts');
       const models=await loadCityModels();
-      const catalog=await (await fetch('/src/assets/library/catalog.json')).json();
+      const { catalog } = await import('/src/art/library.ts');
       const assets=new Map(catalog.assets.map(asset=>[asset.id,asset.bounds]));
       const missing=[], blocked=[];
       for(const object of details){
@@ -711,7 +712,7 @@ test('publishing preserves multiple maps, generates SQL and rejects broken arriv
   const post = (body, type = 'application/json') => fetch(published, { method: 'POST', headers: { 'Content-Type': type }, body: typeof body === 'string' ? body : JSON.stringify(body) });
   assert.deepEqual(await (await fetch(published)).json(), { published: [] });
 
-  const catalog = JSON.parse(await readFile(join(process.cwd(), 'src', 'assets', 'library', 'catalog.json'), 'utf8'));
+  const catalog = await readLibraryCatalog(join(process.cwd(), 'src', 'assets', 'library'));
   const library = catalog.assets[0];
   const map = maps.newMap('ciudad_test', 'Ciudad de prueba', { width: 32, depth: 32, cell: 2 });
   const layer = map.layers[0].id;
@@ -848,7 +849,7 @@ test('the game adapter turns the Brumaluz template into a playable capital', { t
       const THREE = await import(/from\s+["']([^"']*\/three\.js[^"']*)["']/.exec(source)[1]);
       const { pompelinTemplate } = await import('/src/dev/mapEditor/pompelin.ts');
       const { buildMapCity } = await import('/src/world/mapCity.ts');
-      const catalog = await (await fetch('/src/assets/library/catalog.json')).json();
+      const { catalog } = await import('/src/art/library.ts');
       const doc = await pompelinTemplate();
       const assets = Object.fromEntries(catalog.assets.map(asset => [asset.id, `/src/assets/library/${asset.path}`]));
       const city = await buildMapCity(doc, assets, new THREE.Scene());

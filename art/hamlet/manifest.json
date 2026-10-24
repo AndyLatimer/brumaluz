@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "revision": 2,
+  "targetProject": "Rusty Hearts",
+  "title": "Brumaluz · Barrio artesanal",
+  "author": "Brumaluz",
+  "description": "Original Blender-native medieval city kit for Rusty Hearts. Continuous window frames, fitted roofs and connected fittings. Metres, +Y up and +Z front in GLB.",
+  "assets": [
+    {
+      "name": "house_willow_cottage",
+      "label": "Casa del Sauce",
+      "category": "Edificios",
+      "triangles": 14620,
+      "parts": 475
+    },
+    {
+      "name": "house_lantern_townhouse",
+      "label": "Casa del Farol",
+      "category": "Edificios",
+      "triangles": 17696,
+      "parts": 531
+    },
+    {
+      "name": "building_herbalist_shop",
+      "label": "Herbolario de la Bruma",
+      "category": "Edificios",
+      "triangles": 16360,
+      "parts": 512
+    },
+    {
+      "name": "building_bakery",
+      "label": "Horno de la Plaza",
+      "category": "Edificios",
+      "triangles": 16260,
+      "parts": 496
+    },
+    {
+      "name": "building_carpenter_workshop",
+      "label": "Taller del Roble",
+      "category": "Edificios",
+      "triangles": 14328,
+      "parts": 477
+    },
+    {
+      "name": "building_watchtower",
+      "label": "Torre del Alba",
+      "category": "Edificios",
+      "triangles": 13496,
+      "parts": 411
+    },
+    {
+      "name": "table_tavern_feast",
+      "label": "Mesa de la posada",
+      "category": "Mobiliario",
+      "triangles": 1820,
+      "parts": 35
+    },
+    {
+      "name": "chair_oak_carved",
+      "label": "Silla de roble tallado",
+      "category": "Mobiliario",
+      "triangles": 1280,
+      "parts": 23
+    },
+    {
+      "name": "bench_garden",
+      "label": "Banco del jardín",
+      "category": "Mobiliario",
+      "triangles": 1084,
+      "parts": 29
+    },
+    {
+      "name": "stool_round",
+      "label": "Taburete del artesano",
+      "category": "Mobiliario",
+      "triangles": 408,
+      "parts": 10
+    },
+    {
+      "name": "bed_linen_quilt",
+      "label": "Cama con colcha de lino",
+      "category": "Mobiliario",
+      "triangles": 1288,
+      "parts": 26
+    },
+    {
+      "name": "cabinet_apothecary",
+      "label": "Alacena del boticario",
+      "category": "Mobiliario",
+      "triangles": 4120,
+      "parts": 77
+    },
+    {
+      "name": "bookcase_scholar",
+      "label": "Librería del cronista",
+      "category": "Mobiliario",
+      "triangles": 5804,
+      "parts": 128
+    },
+    {
+      "name": "desk_cartographer",
+      "label": "Escritorio del cartógrafo",
+      "category": "Mobiliario",
+      "triangles": 2364,
+      "parts": 43
+    },
+    {
+      "name": "counter_shop",
+      "label": "Mostrador del mercader",
+      "category": "Mobiliario",
+      "triangles": 1732,
+      "parts": 37
+    },
+    {
+      "name": "chest_ironbound",
+      "label": "Arcón de viaje reforzado",
+      "category": "Mobiliario",
+      "triangles": 2460,
+      "parts": 56
+    },
+    {
+      "name": "hearth_cookfire",
+      "label": "Hogar de piedra y cobre",
+      "category": "Mobiliario",
+      "triangles": 2024,
+      "parts": 37
+    },
+    {
+      "name": "rug_woven_teal",
+      "label": "Alfombra tejida de Brumaluz",
+      "category": "Mobiliario",
+      "triangles": 1892,
+      "parts": 43
+    },
+    {
+      "name": "lantern_street_oak",
+      "label": "Farol del barrio",
+      "category": "Decoración",
+      "triangles": 952,
+      "parts": 23
+    },
+    {
+      "name": "lantern_wall",
+      "label": "Farol de pared",
+      "category": "Decoración",
+      "triangles": 804,
+      "parts": 20
+    },
+    {
+      "name": "signpost_crossroads",
+      "label": "Señal de caminos",
+      "category": "Decoración",
+      "triangles": 692,
+      "parts": 23
+    },
+    {
+      "name": "planter_herb_trough",
+      "label": "Jardinera aromática",
+      "category": "Decoración",
+      "triangles": 1724,
+      "parts": 71
+    },
+    {
+      "name": "planter_flower_urn",
+      "label": "Maceta de flores",
+      "category": "Decoración",
+      "triangles": 2256,
+      "parts": 69
+    },
+    {
+      "name": "barrel_cider",
+      "label": "Barril de sidra con grifo",
+      "category": "Decoración",
+      "triangles": 1932,
+      "parts": 50
+    },
+    {
+      "name": "crate_harvest",
+      "label": "Caja de cosecha",
+      "category": "Decoración",
+      "triangles": 1776,
+      "parts": 60
+    },
+    {
+      "name": "market_handcart",
+      "label": "Carro de verdulero",
+      "category": "Decoración",
+      "triangles": 3596,
+      "parts": 103
+    },
+    {
+      "name": "well_courtyard",
+      "label": "Pozo de patio",
+      "category": "Decoración",
+      "triangles": 4032,
+      "parts": 97
+    },
+    {
+      "name": "fountain_lily",
+      "label": "Fuente del Nenúfar",
+      "category": "Decoración",
+      "triangles": 1964,
+      "parts": 36
+    },
+    {
+      "name": "fence_oak_panel",
+      "label": "Valla de roble",
+      "category": "Decoración",
+      "triangles": 1248,
+      "parts": 47
+    },
+    {
+      "name": "gate_garden",
+      "label": "Portilla del jardín",
+      "category": "Decoración",
+      "triangles": 1500,
+      "parts": 46
+    }
+  ]
+}

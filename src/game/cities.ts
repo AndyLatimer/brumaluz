@@ -23,6 +23,7 @@ import { remotePlayers, receiveWorld } from './worldClient';
 import { setCombatEncounter } from './combat';
 import { toast } from '../ui/toast';
 import { updateHud } from './hud';
+import { buildProfessionWorld } from '../world/professionWorld';
 import { errorMessage } from './server';
 import { returnToCharacters } from '../ui/characterSelect';
 import { storyLock } from './conversation';
@@ -37,7 +38,7 @@ export function testCity(): City {
   return { root, locationId: 'brumaluz', npcSites: [
     { id: 'testiculos', position: new THREE.Vector3(2, 0, -1), yaw: Math.PI / 2 },
     { id: 'isberto', position: new THREE.Vector3(LOCAL_COMBAT_SITE.x - 3, 0, LOCAL_COMBAT_SITE.z), yaw: Math.PI / 2 },
-  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], vendorSpots: [], portals: [], arrivals: {}, collide: (_f, t) => t, groundY: () => 0, platformY: () => null, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
+  ], interactables: [{ id: 'well', position: new THREE.Vector3(0, 0, -2), radius: 3, label: 'Asomarse al pozo' }], seats: [], vendorSpots: [], portals: [], arrivals: {}, collide: (_f, t) => t, groundY: () => 0, platformY: () => null, spawn: new THREE.Vector3(), spawnYaw: 0, update() {} };
 }
 export const loadedCities = new Map<string, City>();
 export async function gameCity(id: string): Promise<City> {
@@ -47,6 +48,7 @@ export async function gameCity(id: string): Promise<City> {
     ? (await loadPublishedMap(id, scene)).city
     : id === 'brumaluz' ? await buildCity()
       : (() => { throw new Error(`El mapa «${id}» no está incluido en esta versión del juego.`); })();
+  buildProfessionWorld(result);
   loadedCities.set(id, result);
   return result;
 }
@@ -143,6 +145,7 @@ export async function travelPortal(portal: CityPortal) {
     toast('Camino cerrado', 'El mapa de destino todavía no está publicado.', true);
     return;
   }
+  play.char.stand();
   play.mapTravelling = true;
   keys.clear(); playerVel.set(0, 0, 0); play.moveTarget = null; marker.visible = false;
   const entry = publishedMaps()[target.map];

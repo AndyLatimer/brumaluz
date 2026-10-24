@@ -36,6 +36,10 @@ import { installStoryLines } from './story/scenes';
 import { installNpcBarks } from './game/targets';
 import { installDebugHook } from './game/debugHook';
 import { startGameLoop } from './game/loop';
+import { installProfessions } from './game/professions';
+import './styles/game/15-rpg.css';
+import './styles/game/16-professions.css';
+import './styles/game/17-wilderness.css';
 
 if (!session.state.name) session.state.name = randomName(session.state.race);
 installStoryLines();
@@ -51,6 +55,7 @@ installCombatControls();
 
 installGameInterface();
 installMenus();
+installProfessions();
 installOptions();
 
 installCreator();

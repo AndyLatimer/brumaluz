@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile, rename, unlink, stat } from 'node:fs/promises';
 import { resolve, join, sep, relative, dirname } from 'node:path';
+import { readLibraryCatalog } from './library-catalog.mjs';
 
 const hash = text => `"${createHash('sha256').update(text).digest('hex')}"`;
 const MAX_BYTES = 48_000_000;
@@ -47,7 +48,7 @@ async function writeManifest(publishDir, srcDir, metas) {
  * los GLB de la biblioteca que usa (el build es un único archivo). El resto de mapas publicados se conserva.
  */
 async function publishMap(map, { publishDir, libraryDir, srcDir }) {
-  const catalog = JSON.parse(await readFile(join(libraryDir, 'catalog.json'), 'utf8'));
+  const catalog = await readLibraryCatalog(libraryDir);
   const paths = new Map(catalog.assets.map(asset => [asset.id, join(libraryDir, asset.path)]));
   const variants = JSON.parse(await readFile(join(srcDir, 'art', 'mapVariants.json'), 'utf8'));
   for (const [id, file] of Object.entries(variants)) if (paths.has(id)) paths.set(id, join(srcDir, 'assets', file));

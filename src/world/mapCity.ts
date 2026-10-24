@@ -10,7 +10,7 @@ import { daylight } from './dayNight';
 import { loadMapWorld } from './mapRuntime';
 import { WaterLayer } from './water';
 import { boxOf, createMapAssetProvider, LAMPPOST_FLAME_Y, LAMPPOST_GLASS } from './mapAssetsCore';
-import { cityLinks, type City, type CityVendorSpot, type Interactable, type NpcSite } from './city';
+import { cityLinks, type City, type CityVendorSpot, type Interactable, type NpcSite, type SeatSpot } from './city';
 
 // Mapas del juego publicados desde el editor (`/maps.html`): el mundo de Pompelín, Brumaluz y el resto de lugares.
 
@@ -42,6 +42,7 @@ const VIEW_MARGIN = 30;
 /** Piezas que cuentan como pared en los interiores (se vuelven transparentes si tapan al personaje). */
 const INTERIOR_WALL = /(^|\/)wall/;
 const DETAIL_DISTANCE = 75;
+const SEAT_ASSET = /(?:chair|bench|seat|stool|armchair|sofa|couch|pew|throne|settee)/i;
 
 // En desarrollo, «Publicar en el juego» del editor recarga las pestañas del juego.
 import.meta.hot?.on('brumaluz:city-published', () => location.reload());
@@ -206,6 +207,27 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
       ? { id: 'well', position: onGround(marker.position), radius: marker.radius, label: marker.name || 'Asomarse al pozo' }
       : { id: `map:${marker.id}`, position: onGround(marker.position), radius: Math.max(1, marker.radius), label: marker.name || 'Examinar', text: text || undefined });
   }
+  const seats: SeatSpot[] = doc.objects.flatMap(object => {
+    if (object.hidden || !visibleLayers.has(object.layer) || !SEAT_ASSET.test(object.asset)) return [];
+    const [x, objectY, z] = object.position, yaw = object.rotation[1];
+    const [sx, , sz] = object.scale;
+    const scale = Math.max(Math.abs(sx), Math.abs(sz));
+    const bench = /bench/i.test(object.asset);
+    const sides = bench ? [-0.36, 0.36] : [0];
+    return sides.map((side, index) => {
+      const forward = 0.4;
+      const seatX = x + (side * Math.cos(yaw) + forward * Math.sin(yaw)) * scale;
+      const seatZ = z + (-side * Math.sin(yaw) + forward * Math.cos(yaw)) * scale;
+      const baseY = object.conform ? field.heightAt(x, z) + objectY : objectY;
+      const seatHeight = baseY + (object.asset === 'builtin/bench' ? 0.64 : 0.5) * scale;
+      return {
+        id: `map-object-${object.id}-${index}`,
+        position: new THREE.Vector3(seatX, field.heightAt(seatX, seatZ), seatZ),
+        yaw,
+        seatHeight,
+      };
+    });
+  });
 
   // Faroles: llama en cada farol básico; luz real en cada farol y en cada marcador de luz (los más cercanos).
   const flameTexture = softDot('rgba(255,210,120,1)', 'rgba(255,120,40,0)');
@@ -216,6 +238,7 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTexture, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     const base = object.conform ? field.heightAt(object.position[0], object.position[2]) : 0;
     flame.position.set(object.position[0], base + object.position[1] + LAMPPOST_FLAME_Y * object.scale[1], object.position[2]);
+    flame.raycast = () => {};
     flame.userData.size = 1.3 * object.scale[1];
     flame.raycast = () => {};
     root.add(flame);
@@ -246,6 +269,7 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     mapBounds: { x: (field.minX + field.maxX) / 2, z: (field.minZ + field.maxZ) / 2, extent: Math.max(field.maxX - field.minX, field.maxZ - field.minZ) / 2 },
     npcSites,
     interactables,
+    seats,
     vendorSpots,
     collide: collision.collide,
     groundY: collision.groundY,

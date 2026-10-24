@@ -88,3 +88,6 @@ Antes de implementarlo hay que acordar obtención, coste, reemplazo y vínculo. 
 - `tools/recover-amber-weapons.mjs`: recuperación desde el archivo anterior sin alterar los buffers de mallas y materiales.
 
 El siguiente paso de diseño es escoger el primer efecto de cada familia, ya con activación por habilidad confirmada; después podremos distribuir el peso entre atributo y arma y diseñar una primera runa sobre una mecánica ya definida.
+# Reglas vigentes de equipo
+
+La implementación del 24 de octubre de atributos, Guardia porcentual, cadencias, conjuntos y encantamientos se describe en [RPG-IMPLEMENTATION.md](RPG-IMPLEMENTATION.md). Para esas fórmulas prevalece sobre las cifras históricas del prototipo que figuran a continuación.

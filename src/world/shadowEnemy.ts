@@ -438,6 +438,7 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
 }
 
 export function playShadowEnemyAction(root: THREE.Group | null, action: Exclude<ShadowEnemyAction, 'idle'>, time: number) {
+  const actor=root?.userData.wildernessActor;if(actor){if(action==='hit')actor.hit();else if(action==='death')actor.die();else actor.attack();return;}
   const rig = root?.userData.shadowEnemyRig as ShadowEnemyRig | undefined;
   if (!rig || rig.action === 'death') return;
   rig.action = action;
@@ -473,6 +474,7 @@ export function resetShadowEnemy(root: THREE.Group, time: number) {
 }
 
 export function updateShadowEnemy(root: THREE.Group, time: number, dt: number, target: THREE.Vector3, active: boolean) {
+  if(root.userData.wildernessActor)return;
   const rig = root.userData.shadowEnemyRig as ShadowEnemyRig | undefined;
   if (!rig) return;
 

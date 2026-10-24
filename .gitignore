@@ -2,7 +2,11 @@ node_modules/
 dist/
 .art-sources/
 art/equipment/*.blend1
+art/hamlet/*.blend1
+art/hamlet/*.log
+tools/blender/__pycache__/
 # Local diagnostic captures from tools/render-asset.mjs.
+art/diagnostics/
 tools/render-*.png
 .DS_Store
 .env

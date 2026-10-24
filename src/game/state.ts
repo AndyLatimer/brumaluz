@@ -19,7 +19,7 @@ import type { createTargetFrame } from '../ui/targetFrame';
 
 export type Focus = 'body' | 'face';
 
-export type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'bank' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map';
+export type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'bank' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map' | 'professions';
 
 /** Cuenta y personaje activos, y la conexión con el mundo. */
 export const session = {
@@ -150,6 +150,7 @@ export const vitals = {
 
 /** Combate: el encuentro con la criatura, el objetivo fijado y el ataque automático. */
 export const fight = {
+  healTarget:null as string|null,
   lockedEnemy: false,
   combatApproach: false,
   combatEncounter: null as CombatEncounter|null,

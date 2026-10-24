@@ -1,14 +1,13 @@
-// Isberto llega andando junto al jugador antes de hablarle (escena corta).
+// Isberto entra corriendo y frena al llegar junto al jugador.
 import * as THREE from 'three';
 import type { Character } from '../character/character';
 import { closeDialog } from '../ui/dialog';
-import { play, view, talk } from '../game/state';
+import { play, view, talk, session } from '../game/state';
 import { t } from '../ui/i18n';
 import { talkTo } from '../game/interaction';
 import { setWindow, setGameMenuOpen, setPlayerMenuOpen, setWorldMenuOpen } from '../ui/menus';
 import { setOptionsOpen } from '../ui/options';
 import { keys, marker, playerVel, canvas, holder } from '../game/stage';
-import { toast } from '../ui/toast';
 import { cinematic } from './scenes';
 
 export const arrivalOverlay = document.createElement('div');
@@ -27,7 +26,7 @@ export function beginIsbertoArrival(character: Character, then: () => void = () 
   // Build a short reversible route from the meeting point, never across blocked terrain.
   for (const angle of [view.yaw + Math.PI / 2, view.yaw - Math.PI / 2, view.yaw, view.yaw + Math.PI, view.yaw + Math.PI / 4, view.yaw - Math.PI / 4]) {
     const path = [destination.clone()];
-    for (let step = 0; step < 24; step++) {
+    for (let step = 0; step < 36; step++) {
       const from = path[path.length - 1];
       const next = from.clone().add(new THREE.Vector3(Math.sin(angle) * .25, 0, Math.cos(angle) * .25));
       next.y = play.city.groundY(next.x, next.z);
@@ -37,10 +36,11 @@ export function beginIsbertoArrival(character: Character, then: () => void = () 
       path.push(next);
     }
     if (path.length > bestPath.length) bestPath = path;
-    if (path.length === 25) break;
+    if (path.length === 37) break;
   }
   if (bestPath.length < 2) {
-    toast('Isberto', 'No hay espacio para que Isberto se acerque andando.', true);
+    // Si el encuentro está encajonado, resolverlo junto al jugador sin mostrar errores de escena.
+    character.root.visible = true;
     then();
     return;
   }
@@ -49,17 +49,20 @@ export function beginIsbertoArrival(character: Character, then: () => void = () 
   character.root.visible = true;
   character.root.rotation.y = Math.atan2(path[0].x - character.root.position.x, path[0].z - character.root.position.z);
   talk.isbertoArrival = { character, path, then };
-  character.setGait('walk');
-  character.root.userData.gait = 'walk';
+  character.setGait('run');
+  character.root.userData.gait = 'run';
   talk.conversationActor = character.root;
   talk.conversationShot = '';
   talk.conversationOrbitYaw = 0; talk.conversationOrbitPitch = 0;
   talk.conversationSide = 1;
-  arrivalOverlay.textContent = t('Isberto se acerca…');
+  arrivalOverlay.setAttribute('aria-label', t('Isberto se acerca…'));
   arrivalOverlay.hidden = false;
   document.body.classList.add('conversation-open');
   const generation = play.playGeneration;
-  cinematic.play([{ duration: Math.max(1.5, path.length * .25 / 2 + .5), minimum: 1,
+  cinematic.play([{ duration: Math.max(4, path.length * .25 / 3 + 1), minimum: 3.5,
+    line: { speaker: session.registeredNpcs.isberto.name, text: session.state.shadowQuest === 'defeated'
+      ? 'Bien rematado. Ahora veamos qué nos ha dejado esa cosa.'
+      : '¡Gnomi! Hay trabajo. Algo se ha metido en mi fragua y vamos a sacarlo.' },
     update: () => !talk.isbertoArrival?.path.length }], () => {
     const next = talk.isbertoArrival?.then;
     endIsbertoArrival();
@@ -72,6 +75,8 @@ export function endIsbertoArrival() {
   if (destination) talk.isbertoArrival.character.root.position.copy(destination);
   talk.isbertoArrival.character.setGait('idle');
   talk.isbertoArrival.character.root.userData.gait = 'idle';
+  const root = talk.isbertoArrival.character.root;
+  root.rotation.y = Math.atan2(holder.position.x - root.position.x, holder.position.z - root.position.z);
   talk.isbertoArrival = null;
   talk.conversationActor = null;
   talk.returningFromConversation = true;
@@ -82,18 +87,27 @@ export function updateIsbertoArrival(dt: number) {
   if (!talk.isbertoArrival) return;
   if (play.mode !== 'play' || play.dead) { endIsbertoArrival(); return; }
   const { character, path } = talk.isbertoArrival;
-  const target = path[0], position = character.root.position;
-  if (!target) { character.setGait('idle'); character.root.userData.gait = 'idle'; return; }
-  const distance = Math.hypot(target.x - position.x, target.z - position.z);
-  const step = Math.min(distance, dt * 2);
-  if (distance > .001) {
+  const position = character.root.position;
+  const destination = path[path.length - 1];
+  const remaining = destination ? Math.hypot(destination.x - position.x, destination.z - position.z) : 0;
+  const speed = remaining > 1.6 ? 4.2 : 2;
+  const gait = path.length ? speed > 3 ? 'run' : 'walk' : 'idle';
+  character.setGait(gait); character.root.userData.gait = gait;
+  // Consumir el paso completo evita pequeños parones en cada punto del camino.
+  let budget = dt * speed;
+  while (path.length && budget > 0) {
+    const target = path[0];
+    const distance = Math.hypot(target.x - position.x, target.z - position.z);
+    if (distance < .001) { path.shift(); continue; }
+    const step = Math.min(distance, budget);
     const angle = Math.atan2(target.x - position.x, target.z - position.z);
     character.root.rotation.y += Math.atan2(Math.sin(angle - character.root.rotation.y), Math.cos(angle - character.root.rotation.y)) * Math.min(1, dt * 12);
     position.x += (target.x - position.x) * step / distance;
     position.z += (target.z - position.z) * step / distance;
     position.y = play.city.groundY(position.x, position.z);
+    budget -= step;
+    if (distance <= step + .001) path.shift();
   }
-  if (distance <= step + .001) path.shift();
 }
 /** Rótulo de la llegada de Isberto. */
 export function installArrivalOverlay() {

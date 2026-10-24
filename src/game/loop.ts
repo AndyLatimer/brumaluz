@@ -30,6 +30,7 @@ import { remotePlayers } from './worldClient';
 export function startGameLoop() {
   renderer.setAnimationLoop(() => {
     if (graphics.failed) return;
+    try {
     const t = clock.getElapsedTime();
     const dt = Math.min(t - play.last, 0.05);
     play.last = t;
@@ -105,6 +106,11 @@ export function startGameLoop() {
       if (TEST) renderer.render(scene, camera); else stage.render();
     } catch (error) {
       graphics.fail('No se pudo dibujar el mundo 3D. Prueba el modo compatible.', error);
+    }
+    } catch (error) {
+      // An exception outside the render call used to stop WebGL's animation
+      // scheduling silently, leaving a frozen image and no recovery controls.
+      graphics.fail('No se pudo actualizar el mundo. Recarga el juego.', error);
     }
   });
 }

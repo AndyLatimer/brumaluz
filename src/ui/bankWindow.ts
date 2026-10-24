@@ -163,38 +163,51 @@ function panel(side: Side, title: string, icon: string, items: (ItemStack | null
 
 function ledger(d: CharData, bank: BankState, handlers: BankHandlers) {
   const form = el('form', 'bank-ledger');
+  const heading = el('header', 'bank-ledger-heading');
+  heading.append(el('h3', undefined, t('Mover pelines')), el('p', undefined, t('Elige una cantidad y decide dónde guardarla.')));
   const balance = (label: string, amount: number, cls: string) => {
     const button = el('button', `bank-balance ${cls}`) as HTMLButtonElement;
     button.type = 'button';
     button.innerHTML = currencyIcon('pelines');
     const text = el('span');
-    text.append(el('small', undefined, t(label)), el('b', undefined, amount.toLocaleString()));
+    text.append(el('small', undefined, t(label)), el('b', undefined, amount.toLocaleString()), el('em', undefined, t('Usar todo')));
     button.append(text);
-    button.title = `${t(label)}|${t('Clic para mover todo')}`;
+    button.title = `${t(label)}|${t('Usar todo como cantidad')}`;
+    button.setAttribute('aria-label', `${t(label)}: ${amount.toLocaleString()} · ${t('Usar todo como cantidad')}`);
     button.disabled = amount <= 0;
     return button;
   };
   const wallet = balance('En la bolsa', d.wallet.pelines, 'wallet');
   const stored = balance('En el banco', bank.pelines, 'stored');
+  const balances = el('div', 'bank-ledger-balances');
+  balances.append(stored, wallet);
   const middle = el('div', 'bank-ledger-middle');
+  const amountLabel = el('label', 'bank-amount');
+  amountLabel.append(el('span', undefined, t('Cantidad')));
   const input = el('input') as HTMLInputElement;
   input.type = 'number'; input.min = '1'; input.step = '1'; input.inputMode = 'numeric'; input.placeholder = '0';
   input.setAttribute('aria-label', t('Cantidad de pelines'));
+  amountLabel.append(input);
   const chips = el('div', 'bank-chips');
   for (const amount of [10, 100, 1000]) {
     const chip = el('button', 'bank-chip', `+${amount}`) as HTMLButtonElement;
     chip.type = 'button';
+    chip.setAttribute('aria-label', t('Añadir {amount} pelines', { amount }));
     chip.onclick = () => { input.value = String(Math.floor(Number(input.value) || 0) + amount); refresh(); input.focus(); };
     chips.append(chip);
   }
   const withdraw = el('button', 'btn bank-move withdraw') as HTMLButtonElement;
   withdraw.type = 'button';
-  withdraw.innerHTML = '<span aria-hidden="true">←</span>';
+  withdraw.innerHTML = '<span aria-hidden="true">→</span>';
   withdraw.append(t('Retirar'));
+  withdraw.setAttribute('aria-label', t('Retirar pelines del banco a la bolsa'));
+  withdraw.title = t('Transferir del banco a la bolsa');
   const deposit = el('button', 'btn gold bank-move deposit') as HTMLButtonElement;
   deposit.type = 'submit';
   deposit.append(t('Guardar'));
-  deposit.insertAdjacentHTML('beforeend', '<span aria-hidden="true">→</span>');
+  deposit.insertAdjacentHTML('beforeend', '<span aria-hidden="true">←</span>');
+  deposit.setAttribute('aria-label', t('Guardar pelines de la bolsa en el banco'));
+  deposit.title = t('Transferir de la bolsa al banco');
   const amount = () => Math.floor(Number(input.value));
   const refresh = () => {
     const n = amount();
@@ -202,15 +215,15 @@ function ledger(d: CharData, bank: BankState, handlers: BankHandlers) {
     withdraw.disabled = !(n > 0 && n <= bank.pelines);
   };
   input.oninput = refresh;
-  wallet.onclick = () => { input.value = String(d.wallet.pelines); refresh(); };
-  stored.onclick = () => { input.value = String(bank.pelines); refresh(); };
+  wallet.onclick = () => { input.value = String(d.wallet.pelines); refresh(); input.focus(); };
+  stored.onclick = () => { input.value = String(bank.pelines); refresh(); input.focus(); };
   withdraw.onclick = () => { const n = amount(); if (n > 0 && n <= bank.pelines) handlers.onWithdrawPelines(n); };
   form.onsubmit = e => { e.preventDefault(); const n = amount(); if (n > 0 && n <= d.wallet.pelines) handlers.onDepositPelines(n); };
   refresh();
-  middle.append(input, chips);
+  middle.append(amountLabel, chips);
   const actions = el('div', 'bank-ledger-actions');
   actions.append(withdraw, deposit);
-  form.append(wallet, middle, actions, stored);
+  form.append(heading, balances, middle, actions);
   return form;
 }
 

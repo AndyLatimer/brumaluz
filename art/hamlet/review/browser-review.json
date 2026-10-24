@@ -1,0 +1,451 @@
+{
+  "pack": "brumaluz-hamlet",
+  "catalog": "src\\assets\\library\\brumaluz-hamlet\\catalog.json",
+  "assets": [
+    {
+      "id": "brumaluz-hamlet/objects/house_willow_cottage",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/house_willow_cottage.glb",
+      "meshes": 1,
+      "triangles": 14620,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/house_lantern_townhouse",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/house_lantern_townhouse.glb",
+      "meshes": 1,
+      "triangles": 17696,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_herbalist_shop",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/building_herbalist_shop.glb",
+      "meshes": 1,
+      "triangles": 16360,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_bakery",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/building_bakery.glb",
+      "meshes": 1,
+      "triangles": 16260,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_carpenter_workshop",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/building_carpenter_workshop.glb",
+      "meshes": 1,
+      "triangles": 14328,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/building_watchtower",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/building_watchtower.glb",
+      "meshes": 1,
+      "triangles": 13496,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/table_tavern_feast",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/table_tavern_feast.glb",
+      "meshes": 1,
+      "triangles": 1820,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/chair_oak_carved",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/chair_oak_carved.glb",
+      "meshes": 1,
+      "triangles": 1280,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/bench_garden",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/bench_garden.glb",
+      "meshes": 1,
+      "triangles": 1084,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/stool_round",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/stool_round.glb",
+      "meshes": 1,
+      "triangles": 408,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/bed_linen_quilt",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/bed_linen_quilt.glb",
+      "meshes": 1,
+      "triangles": 1288,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/cabinet_apothecary",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/cabinet_apothecary.glb",
+      "meshes": 1,
+      "triangles": 4120,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/bookcase_scholar",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/bookcase_scholar.glb",
+      "meshes": 1,
+      "triangles": 5804,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/desk_cartographer",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/desk_cartographer.glb",
+      "meshes": 1,
+      "triangles": 2364,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/counter_shop",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/counter_shop.glb",
+      "meshes": 1,
+      "triangles": 1732,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/chest_ironbound",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/chest_ironbound.glb",
+      "meshes": 1,
+      "triangles": 2460,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/hearth_cookfire",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/hearth_cookfire.glb",
+      "meshes": 1,
+      "triangles": 2024,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/rug_woven_teal",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/rug_woven_teal.glb",
+      "meshes": 1,
+      "triangles": 1892,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/lantern_street_oak",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/lantern_street_oak.glb",
+      "meshes": 1,
+      "triangles": 952,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/lantern_wall",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/lantern_wall.glb",
+      "meshes": 1,
+      "triangles": 804,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/signpost_crossroads",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/signpost_crossroads.glb",
+      "meshes": 1,
+      "triangles": 692,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/planter_herb_trough",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/planter_herb_trough.glb",
+      "meshes": 1,
+      "triangles": 1724,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/planter_flower_urn",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/planter_flower_urn.glb",
+      "meshes": 1,
+      "triangles": 2256,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/barrel_cider",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/barrel_cider.glb",
+      "meshes": 1,
+      "triangles": 1932,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/crate_harvest",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/crate_harvest.glb",
+      "meshes": 1,
+      "triangles": 1776,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/market_handcart",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/market_handcart.glb",
+      "meshes": 1,
+      "triangles": 3596,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/well_courtyard",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/well_courtyard.glb",
+      "meshes": 1,
+      "triangles": 4032,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/fountain_lily",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/fountain_lily.glb",
+      "meshes": 1,
+      "triangles": 1964,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/fence_oak_panel",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/fence_oak_panel.glb",
+      "meshes": 1,
+      "triangles": 1248,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-hamlet/objects/gate_garden",
+      "url": "/src/assets/library/brumaluz-hamlet/objects/gate_garden.glb",
+      "meshes": 1,
+      "triangles": 1500,
+      "materials": 1,
+      "textures": 1,
+      "texturedMaterials": 1
+    }
+  ],
+  "captures": [
+    {
+      "file": "house_willow_cottage.png",
+      "asset": "brumaluz-hamlet/objects/house_willow_cottage",
+      "size": [
+        5.03000020980835,
+        4.965000152587891,
+        4.519999980926514
+      ]
+    },
+    {
+      "file": "building_herbalist_shop.png",
+      "asset": "brumaluz-hamlet/objects/building_herbalist_shop",
+      "size": [
+        5.200000286102295,
+        5.074000358581543,
+        5.117500066757202
+      ]
+    },
+    {
+      "file": "table_tavern_feast.png",
+      "asset": "brumaluz-hamlet/objects/table_tavern_feast",
+      "size": [
+        2.174999952316284,
+        1.281000018119812,
+        0.9399999976158142
+      ]
+    },
+    {
+      "file": "house_lantern_townhouse.png",
+      "asset": "brumaluz-hamlet/objects/house_lantern_townhouse",
+      "size": [
+        4.329999923706055,
+        6.6419997215271,
+        4.325000286102295
+      ]
+    },
+    {
+      "file": "editor-catalog.png",
+      "cards": 30
+    },
+    {
+      "file": "editor-hamlet-hero.png"
+    },
+    {
+      "file": "hamlet-in-world.png"
+    }
+  ],
+  "editor": {
+    "document": "hamlet_visual_review",
+    "savedId": null,
+    "objects": [
+      {
+        "asset": "brumaluz-hamlet/objects/house_willow_cottage",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -4.2,
+          0,
+          -2
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/house_lantern_townhouse",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          5,
+          0,
+          -3
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/market_handcart",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          5.8,
+          0,
+          4.3
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/table_tavern_feast",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -3,
+          0,
+          4.8
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/bench_garden",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -3,
+          0,
+          6.2
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/planter_herb_trough",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -0.1,
+          0,
+          1.8
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/barrel_cider",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -7,
+          0,
+          0.4
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/lantern_street_oak",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          1.5,
+          0,
+          2.4
+        ]
+      },
+      {
+        "asset": "brumaluz-hamlet/objects/signpost_crossroads",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -1.6,
+          0,
+          -0.6
+        ]
+      }
+    ],
+    "catalogCount": 30,
+    "characterForScale": true
+  },
+  "issues": [],
+  "apiWrites": []
+}

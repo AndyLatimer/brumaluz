@@ -10,7 +10,7 @@ as $$
   select jsonb_build_object(
     'hour', mod(mod((cfg ->> 'start_hour')::numeric
       + (extract(epoch from now()) - (cfg ->> 'epoch')::numeric) / (cfg ->> 'seconds_per_hour')::numeric, 24) + 24, 24),
-    'secondsPerHour', (cfg ->> 'seconds_per_hour')::numeric)
+    'secondsPerHour', (cfg ->> 'seconds_per_hour')::numeric,'serverTime',extract(epoch from clock_timestamp()))
   from (select coalesce((select value from public.server_config where key = 'world_clock'),
     '{"epoch": 1767225600, "start_hour": 8, "seconds_per_hour": 600}'::jsonb) as cfg) as config;
 $$;

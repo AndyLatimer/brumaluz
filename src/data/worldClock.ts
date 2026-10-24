@@ -7,9 +7,12 @@ export const SECONDS_PER_WORLD_HOUR = 600;
 /** Mismo origen que server_config.world_clock: el 1 de enero de 2026 (UTC) eran las 8:00 en el mundo. */
 const EPOCH = 1767225600, START_HOUR = 8;
 
-export interface WorldClockSample { hour: number; secondsPerHour: number }
+export interface WorldClockSample { hour: number; secondsPerHour: number;serverTime?:number }
 
 let base: { hour: number; at: number; secondsPerHour: number } | null = null;
+let serverBase:{seconds:number;at:number}|null=null;
+/** Monotonic server time for attack telegraphs, independent of the PC's wall clock. */
+export function serverNow(){return serverBase?serverBase.seconds+(performance.now()-serverBase.at)/1000:Date.now()/1000;}
 
 const wrap = (hour: number) => ((hour % 24) + 24) % 24;
 
@@ -21,9 +24,9 @@ export function localWorldHour(now = Date.now()) {
 /** Lee el reloj que manda el servidor; `null` si la respuesta no lo trae o no es válido. */
 export function parseWorldClock(value: unknown): WorldClockSample | null {
   if (!value || typeof value !== 'object') return null;
-  const { hour, secondsPerHour } = value as Record<string, unknown>;
+  const { hour, secondsPerHour,serverTime } = value as Record<string, unknown>;
   const h = Number(hour), s = Number(secondsPerHour);
-  return Number.isFinite(h) && Number.isFinite(s) && s > 0 ? { hour: wrap(h), secondsPerHour: s } : null;
+  return Number.isFinite(h) && Number.isFinite(s) && s > 0 ? { hour: wrap(h), secondsPerHour: s,serverTime:typeof serverTime==='number'&&Number.isFinite(serverTime)?serverTime:undefined } : null;
 }
 
 /**
@@ -31,6 +34,7 @@ export function parseWorldClock(value: unknown): WorldClockSample | null {
  * se ignoran para que el cielo no dé tirones; si el servidor cambia de hora o de ritmo, se salta a la suya.
  */
 export function syncWorldClock(sample: WorldClockSample, now = performance.now()) {
+  if(sample.serverTime!==undefined){const predicted=serverNow();serverBase={seconds:serverBase&&Math.abs(predicted-sample.serverTime)<.5?predicted*.8+sample.serverTime*.2:sample.serverTime,at:now};}
   if (base && base.secondsPerHour === sample.secondsPerHour) {
     let diff = sample.hour - worldHour(now);
     diff -= Math.round(diff / 24) * 24;

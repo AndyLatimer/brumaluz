@@ -11,7 +11,7 @@ export interface CinematicShot {
   /** El plano no termina antes de este tiempo aunque `update` diga que ya está. */
   minimum?: number;
   /** Subtítulo (en español; se traduce al mostrarlo). Sin `speaker`, es un rótulo. */
-  line?: { speaker?: string; text: string };
+  line?: { speaker?: string; text: string; eyebrow?: string; detail?: string };
   start?(): void;
   /** Cámara según el avance `k` (0→1, ya suavizado). Sin ella manda la cámara de conversación. */
   camera?(k: number, elapsed: number): CinematicFrame;
@@ -51,7 +51,7 @@ export function createCinematics() {
   root.id = 'cinematic';
   root.hidden = true;
   root.innerHTML = '<div class="cinematic-bar top"></div><div class="cinematic-bar bottom"></div>'
-    + '<p class="cinematic-line" role="status" aria-live="polite"><strong></strong><span></span></p>'
+    + '<p class="cinematic-line" role="status" aria-live="polite" aria-atomic="true"><small></small><strong></strong><span></span><em></em></p>'
     + '<button type="button" class="cinematic-skip"></button>';
   document.body.append(root);
   const line = root.querySelector<HTMLElement>('.cinematic-line')!;
@@ -74,6 +74,8 @@ export function createCinematics() {
       line.classList.toggle('title', !shot.line.speaker);
       line.querySelector('strong')!.textContent = shot.line.speaker ?? '';
       line.querySelector('span')!.textContent = t(shot.line.text);
+      line.querySelector('small')!.textContent = t(shot.line.eyebrow ?? '');
+      line.querySelector('em')!.textContent = t(shot.line.detail ?? '');
       line.hidden = false;
       // Reinicia la animación de entrada del subtítulo.
       line.classList.remove('show'); void line.offsetWidth; line.classList.add('show');

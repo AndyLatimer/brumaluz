@@ -1,7 +1,7 @@
 -- Generado por el editor de mapas al publicar. No lo edites a mano.
 -- Mapas de Pompelín publicados y sus portales. Se aplica después del SQL del servidor con «npm run db:apply».
 delete from public.world_portals;
-delete from public.world_maps where id not in ('brumaluz', 'brumaluz_2', 'casa_de_isberto_interior', 'habitacion_posada_lucero_del_alba', 'pompelin');
+delete from public.world_maps where id not in ('brumaluz', 'brumaluz_2', 'casa_de_isberto_interior', 'habitacion_posada_lucero_del_alba', 'pompelin', 'posada_lucero_del_alba');
 insert into public.world_maps(id, name, spawn) values ('brumaluz', 'Brumaluz', '{"x":-6.4,"z":-11.08,"yaw":0.52}'::jsonb) on conflict (id) do update set name = excluded.name, spawn = excluded.spawn;
 update public.world_maps set bounds = '{"minX":-196,"minZ":-196,"maxX":196,"maxZ":196}'::jsonb where id = 'brumaluz';
 insert into public.world_maps(id, name, spawn) values ('brumaluz_2', 'Brumaluz', '{"x":-6.4,"z":-11.08,"yaw":0.52}'::jsonb) on conflict (id) do update set name = excluded.name, spawn = excluded.spawn;
@@ -12,6 +12,8 @@ insert into public.world_maps(id, name, spawn) values ('habitacion_posada_lucero
 update public.world_maps set bounds = '{"minX":-2.5,"minZ":-2.5,"maxX":2.5,"maxZ":2.5}'::jsonb where id = 'habitacion_posada_lucero_del_alba';
 insert into public.world_maps(id, name, spawn) values ('pompelin', 'Pompelín', '{"x":-120,"z":-10,"yaw":0}'::jsonb) on conflict (id) do update set name = excluded.name, spawn = excluded.spawn;
 update public.world_maps set bounds = '{"minX":-1080,"minZ":-810,"maxX":1080,"maxZ":810}'::jsonb where id = 'pompelin';
+insert into public.world_maps(id, name, spawn) values ('posada_lucero_del_alba', 'Posada lucero del alba', '{"x":0,"z":11,"yaw":0}'::jsonb) on conflict (id) do update set name = excluded.name, spawn = excluded.spawn;
+update public.world_maps set bounds = '{"minX":-8,"minZ":-12,"maxX":8,"maxZ":12}'::jsonb where id = 'posada_lucero_del_alba';
 update public.server_config set value = '{"x":-6.4,"z":-11.08}'::jsonb where key = 'spawn';
 insert into public.world_portals(map, id, x, z, radius, target_map, target) values
   ('brumaluz', 'salida_este', 175.2, 0, 3.6, 'pompelin', '{"x":-56,"z":-90,"yaw":-1.57}'::jsonb),
@@ -20,6 +22,7 @@ insert into public.world_portals(map, id, x, z, radius, target_map, target) valu
   ('brumaluz', 'salida_sureste', 87.6, 151.73, 3.6, 'pompelin', '{"x":-88,"z":-34.57,"yaw":-2.62}'::jsonb),
   ('brumaluz', 'salida_suroeste', -87.6, 151.73, 3.6, 'pompelin', '{"x":-152,"z":-34.57,"yaw":2.62}'::jsonb),
   ('brumaluz', 'mknnlaak', 23.5, -48.5, 2.2, 'casa_de_isberto_interior', '{"x":0,"z":2.25,"yaw":0}'::jsonb),
+  ('brumaluz', 'mki9y7l0', -78, 54.5, 1.5, 'posada_lucero_del_alba', '{"x":0,"z":11,"yaw":0}'::jsonb),
   ('brumaluz_2', 'salida_este', 84.8, 0, 3.2, 'pompelin', '{"x":-56,"z":-90,"yaw":-1.57}'::jsonb),
   ('brumaluz_2', 'salida_noreste', 42.4, -73.44, 3.2, 'pompelin', '{"x":-88,"z":-145.43,"yaw":-0.52}'::jsonb),
   ('brumaluz_2', 'salida_oeste', -84.8, 0, 3.2, 'pompelin', '{"x":-184,"z":-90,"yaw":1.57}'::jsonb),
@@ -30,4 +33,5 @@ insert into public.world_portals(map, id, x, z, radius, target_map, target) valu
   ('pompelin', 'entrada_brumaluz_noreste', -95, -133.3, 4, 'brumaluz', '{"x":78,"z":-135.1,"yaw":2.62}'::jsonb),
   ('pompelin', 'entrada_brumaluz_oeste', -170, -90, 4, 'brumaluz', '{"x":-156,"z":0,"yaw":-1.57}'::jsonb),
   ('pompelin', 'entrada_brumaluz_sureste', -95, -46.7, 4, 'brumaluz', '{"x":78,"z":135.1,"yaw":0.52}'::jsonb),
-  ('pompelin', 'entrada_brumaluz_suroeste', -145, -46.7, 4, 'brumaluz', '{"x":-78,"z":135.1,"yaw":-0.52}'::jsonb);
+  ('pompelin', 'entrada_brumaluz_suroeste', -145, -46.7, 4, 'brumaluz', '{"x":-78,"z":135.1,"yaw":-0.52}'::jsonb),
+  ('posada_lucero_del_alba', 'mkf9n1bp', -7, 6, 1, 'habitacion_posada_lucero_del_alba', '{"x":0,"z":0,"yaw":0}'::jsonb);

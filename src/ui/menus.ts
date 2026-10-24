@@ -28,6 +28,7 @@ import { runOnServer, errorMessage } from '../game/server';
 import { updateHud } from '../game/hud';
 import { characterContext } from '../game/avatar';
 import { toast } from './toast';
+import { renderProfessions } from './professionsWindow';
 
 export function setGameMenuOpen(open: boolean, restoreFocus = true) {
   if (open) playerInteractions.close();
@@ -84,7 +85,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   if (win === 'quests' && ui.openWindow === 'quests' && ui.questJournalKey === journalKey) return;
   ui.questJournalKey = journalKey;
   const body = $('#window-body');
-  const refreshingSheet = win === 'sheet' && ui.openWindow === 'sheet';
+  const refreshingSheet = win === ui.openWindow && (win === 'sheet' || win === 'professions');
   const refreshingJournal = win === 'quests' && ui.openWindow === 'quests';
   const journalCompleted = refreshingJournal ? body.querySelector('[data-quest-control="completed"]')?.getAttribute('aria-pressed') === 'true' : undefined;
   const expandedQuests = refreshingJournal ? [...body.querySelectorAll<HTMLDetailsElement>('details.quest-completed[open]')].map(entry => entry.dataset.quest) : [];
@@ -92,6 +93,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   const focused = (refreshingSheet || refreshingJournal) && document.activeElement instanceof HTMLElement && body.contains(document.activeElement)
     ? document.activeElement : null;
   const focusedQuestControl = focused?.dataset.questControl;
+  const focusedProfessionControl = focused?.dataset.professionControl;
   const focusedAttribute = focused?.closest<HTMLElement>('[data-attribute]');
   const focusedControl = focusedAttribute && focused instanceof HTMLButtonElement ? [...focusedAttribute.querySelectorAll('button')].indexOf(focused) : -1;
   playerInteractions.close();
@@ -119,6 +121,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('collection-window-frame', win === 'collections');
   $('#window-backdrop .game-window').classList.toggle('skills-window-frame', win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('map-window-frame', win === 'map');
+  $('#window-backdrop .game-window').classList.toggle('profession-window-frame', win === 'professions');
   $('#map-window-close').hidden = win !== 'map';
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor' || win === 'bank');
   if (closeMenu) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); }
@@ -127,10 +130,11 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor' || win === 'bank');
   if (win === 'loot') {
     play.moveTarget = null; play.pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
-    $('#window-title').textContent = t('Botín de la criatura');
+    $('#window-title').textContent = fight.combatEncounter?.kind==='wilderness'?`${t('Botín')}: ${fight.combatEncounter.label}`:t('Botín de la criatura');
     if (fight.combatEncounter?.status === 'defeated' && !fight.combatEncounter.looted) renderLoot(body, fight.combatEncounter, collectCorpseLoot);
     else { setWindow(null); return; }
   }
+  else if(win==='professions') {$('#window-title').textContent=t('Profesiones');renderProfessions(body,session.state);}
   else if (win === 'inventory') renderInventory(body, session.state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to), equipInventoryItem, slot => void updateEquipment(slot, null));
   else if (win === 'skills') renderSkills(body, session.state, assignSkillToActionBar, async (id, rank) => {
     const previousView = body.firstElementChild;
@@ -196,7 +200,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   const restoredAttribute = focusedAttribute?.dataset.attribute
     ? body.querySelector<HTMLElement>(`[data-attribute="${CSS.escape(focusedAttribute.dataset.attribute)}"]`) : null;
   const restoredControl = restoredAttribute?.querySelectorAll('button')[focusedControl];
-  const focusTarget = focusedQuestControl ? body.querySelector<HTMLElement>(`[data-quest-control="${CSS.escape(focusedQuestControl)}"]`) : restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
+  const focusTarget = focusedProfessionControl ? body.querySelector<HTMLElement>(`[data-profession-control="${CSS.escape(focusedProfessionControl)}"]`) : focusedQuestControl ? body.querySelector<HTMLElement>(`[data-quest-control="${CSS.escape(focusedQuestControl)}"]`) : restoredControl && !restoredControl.disabled ? restoredControl : restoredAttribute;
   (focusTarget ?? (win === 'map' ? $('#map-window-close') : win === 'loot' ? body.querySelector<HTMLButtonElement>('.loot-item') : null) ?? $<HTMLButtonElement>('#window-close')).focus({ preventScroll: refreshingSheet || refreshingJournal });
   body.scrollTop = sheetScroll;
 }

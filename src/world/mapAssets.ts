@@ -4,7 +4,7 @@ import { BUILTIN_BOUNDS, boxOf, createMapAssetProvider, loadCityModels } from '.
 import type { Vec3 } from '../data/maps';
 
 // Recursos disponibles para los mapas: piezas de Pompelín (city.glb), toda la
-// biblioteca KayKit importada y unas pocas piezas procedurales del juego.
+// biblioteca importada, el barrio artesanal original y las piezas procedurales del juego.
 
 export interface MapAssetInfo {
   id: string;
@@ -51,8 +51,8 @@ export function loadMapAssetIndex() {
       const hex = /^hex_/.test(asset.name) || asset.pack === 'kenney-hexagon' && Math.abs(asset.bounds.max[2] - asset.bounds.min[2] - 1.155) < 0.02;
       const tile = asset.pack === 'medieval-builder' && /^(hex|square)_/.test(asset.name);
       result.push({
-        id: asset.id, name: asset.name, group: asset.pack, groupLabel: packs.get(asset.pack) ?? asset.pack,
-        category: tile || hex ? 'Casillas' : guessCategory(asset.name),
+        id: asset.id, name: asset.label ?? asset.name, group: asset.pack, groupLabel: packs.get(asset.pack) ?? asset.pack,
+        category: tile || hex ? 'Casillas' : asset.category ?? guessCategory(asset.name),
         bounds: { min: asset.bounds.min as Vec3, max: asset.bounds.max as Vec3 }, tile, hex,
       });
     }
@@ -76,6 +76,7 @@ function guessCategory(name: string) {
 export function defaultScale(info: MapAssetInfo): Vec3 {
   if (info.group === 'city') return info.tile ? [4, 1.12, 4] : [4, 4, 4];
   if (info.group === 'builtin') return [1, 1, 1];
+  if (info.group === 'brumaluz-hamlet') return [1, 1, 1];
   if (info.group === 'medieval-builder') return info.tile ? [4, 1.12, 4] : [4, 4, 4];
   if (info.group === 'kenney-hexagon') return [8, 8, 8];
   return [0.65, 0.65, 0.65];

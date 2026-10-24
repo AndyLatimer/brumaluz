@@ -1,6 +1,6 @@
 # Sistema de estadísticas
 
-Todo el cálculo vive en [`src/data/stats.ts`](../src/data/stats.ts). Los datos del personaje (`CharData`) están en [`src/data/data.ts`](../src/data/data.ts). La interfaz (`updateHud` en `src/main.ts`) solo lee `vitalsOf(state)`.
+Los máximos viven en [`src/data/stats.ts`](../src/data/stats.ts); daño, conjuntos y encantamientos, en los módulos correspondientes de `src/data/`. Los datos del personaje (`CharData`) están en [`src/data/data.ts`](../src/data/data.ts). La implementación vigente del 24 de octubre se resume en [RPG-IMPLEMENTATION.md](RPG-IMPLEMENTATION.md); sus fórmulas tienen réplica autoritativa en SQL.
 
 ## Datos guardados en el personaje
 
@@ -29,11 +29,20 @@ valor = base + (nivel - 1) × perLevel + Σ (atributo × peso)
 
 | Estadística | base | perLevel | Pesos por atributo |
 |---|---|---|---|
-| Vida máxima (`MAX_HEALTH`) | 60 | 12 | Corpulencia ×8 |
+| Vida base (`MAX_HEALTH`) | 60 | 12 | Sin suma plana por atributo |
 | Maná máximo (`MAX_RESOURCE.mana`) | 30 | 6 | Intelecto ×7 |
 | Estamina máxima (`MAX_RESOURCE.stamina`) | 50 | 6 | Agilidad ×3, Corpulencia ×3 |
 
 Ejemplo: mago de nivel 2 con Intelecto 8 → 30 + 6 + 8×7 = **92** de maná.
+
+Después se añaden equipo y multiplicadores:
+
+```
+vida = floor((vida base + vida de equipo) × (1 + 0,02 × Corpulencia) × (1 + bono de vida del conjunto) × grupo) + comida
+recurso = floor((recurso base + recurso de equipo) × (1 + bono de recurso del conjunto) × grupo) + comida
+```
+
+La potencia usa `(1 + 0,01 × atributo principal) × (1 + 0,02 × (nivel − 1))`, una sola vez para básicos, habilidades y curación. Guardia mitiga `min(0,60; Guardia / (Guardia + 20))`; no resta daño plano. Pericia, Presencia y Percepción no conceden todavía bonificaciones generales.
 
 ### Recurso por clase
 
@@ -53,7 +62,7 @@ máximo con grupo = floor(máximo base × (1 + partyPeers × 0.015))
 
 Se aplica a vida y maná/estamina: +1,5 % con dos integrantes, +3 % con tres y +4,5 % con cuatro. Sin compañeros no hay bonificación. El máximo aumentado no añade una curación explícita; `-1` sigue representando una barra llena.
 
-La experiencia ganada recibe **+2 % fijo** cuando hay al menos un compañero, no +2 % por integrante. La fuente actual, `debug_xp`, concede 204 en vez de 200; la curva necesaria para subir de nivel no cambia. Las fuentes futuras deben aplicar también esta bonificación en el servidor.
+La experiencia de personaje ganada recibe **+2 % fijo** cuando hay al menos un compañero, no +2 % por integrante. Se aplica en `debug_xp` y en las expediciones; estas últimas conservan restos fraccionarios para no perder el bono en recompensas pequeñas. La experiencia propia de los oficios se calcula por dificultad y calidad, sin este bono.
 
 ### Comida temporal
 

@@ -1,9 +1,15 @@
-import catalog from '../assets/library/catalog.json';
+import importedCatalog from '../assets/library/catalog.json';
+import hamletCatalog from '../assets/library/brumaluz-hamlet/catalog.json';
 import { loadGLB } from '../world/load';
 import { mapVariantUrl } from './mapVariants';
 
-export { catalog };
-export type LibraryAsset = typeof catalog.assets[number];
+export type LibraryAsset = typeof importedCatalog.assets[number] & { label?: string; category?: string };
+// La biblioteca importada conserva su inventario y licencia; el arte original tiene su propio catálogo.
+export const catalog = {
+  version: importedCatalog.version,
+  packs: [...importedCatalog.packs, ...hamletCatalog.packs],
+  assets: [...importedCatalog.assets, ...hamletCatalog.assets] as LibraryAsset[],
+};
 export function animationLibrariesFor(asset: LibraryAsset) {
   if (asset.kind !== 'characters' || !asset.rig) return [];
   const libraries = catalog.assets.filter(value => value.kind === 'animations' && value.rig === asset.rig);

@@ -4,6 +4,10 @@ import { once } from 'node:events';
 import { after, before, test } from 'node:test';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
+import { fileURLToPath } from 'node:url';
+import { readLibraryCatalog } from '../tools/library-catalog.mjs';
+
+const expectedCatalog = await readLibraryCatalog(fileURLToPath(new URL('../src/assets/library/', import.meta.url)));
 
 const url = 'http://127.0.0.1:4182';
 let server, browser;
@@ -27,7 +31,7 @@ after(async () => {
     const stopped = once(server, 'exit'); server.kill(); await stopped;
   }
 });
-test('all 566 new resources load in a real browser and full animation families play in the library', { timeout: 240000 }, async () => {
+test('new resources load in a real browser and full animation families play in the library', { timeout: 240000 }, async () => {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -38,7 +42,7 @@ test('all 566 new resources load in a real browser and full animation families p
   try {
     await page.goto(`${url}/assets.html`);
     await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Listo.'), null, { timeout: 60000 });
-    assert.match(await page.locator('#summary').textContent(), /1021 recursos de 12 paquetes/);
+    assert.equal(await page.locator('#summary').textContent(), `${expectedCatalog.assets.length} recursos de ${expectedCatalog.packs.length} paquetes`);
     const result = await page.evaluate(async () => {
       const { catalog, loadLibraryAsset } = await import('/src/art/library.ts');
       const old = ['resources', 'forest', 'adventurers', 'skeletons', 'dungeon'];
@@ -68,8 +72,10 @@ test('all 566 new resources load in a real browser and full animation families p
       }
       return { count, meshes };
     });
-    assert.equal(result.count, 566);
-    assert.ok(result.meshes > 566);
+    const old = ['resources', 'forest', 'adventurers', 'skeletons', 'dungeon'];
+    const expected = expectedCatalog.assets.filter(asset => !old.includes(asset.pack)).length;
+    assert.equal(result.count, expected);
+    assert.ok(result.meshes > expected);
     await page.locator('#pack').selectOption('restaurant');
     assert.equal(await page.locator('#asset option').count(), 68);
     assert.equal(await page.locator('#asset option').filter({ hasText: /fridge|stove|oven|burger|ketchup|papertowel/ }).count(), 0);
