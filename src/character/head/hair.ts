@@ -91,6 +91,20 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
     smoothNormals(flat, 80);
     return paintCell(flat, hairCell, 0.2, 0.8);
   };
+  const braid = (points: THREE.Vector3[], radius: number, turns: number) => {
+    const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+    const frames = curve.computeFrenetFrames(64, false);
+    for (let lock = 0; lock < 3; lock++) {
+      const path: THREE.Vector3[] = [];
+      for (let k = 0; k <= 64; k++) {
+        const t = k / 64, angle = t * PI * 2 * turns + lock * PI * 2 / 3;
+        const width = radius * 0.5 * (1 - t * 0.55);
+        path.push(curve.getPointAt(t).addScaledVector(frames.normals[k], Math.sin(angle) * width)
+          .addScaledVector(frames.binormals[k], Math.cos(angle) * width * 0.65));
+      }
+      hairPieces.push({ geo: pushOut(strand(path, radius * 0.49, radius * 0.18), 0.014), kit: o.face });
+    }
+  };
   const hasHat = o.hat !== 'none';
   switch (o.hat === 'helmet' ? -1 : o.hair) {
     case 1: kitHair('Mage'); break;
@@ -120,9 +134,21 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
       break;
     case 7: // cresta: una franja continua de la frente a la nuca
       if (!hasHat) {
-        const pts: THREE.Vector3[] = [];
-        for (let k = 0; k <= 10; k++) { const a = 0.85 - k * 0.22; pts.push(V(0, HEAD_C.y + Math.cos(a) * 0.5, HEAD_C.z + Math.sin(a) * 0.5)); }
-        hairPieces.push({ geo: strand(pts, 0.12, 0.07, { flat: 0.42, taperStart: true }), kit: o.face });
+        const positions: number[] = [], indices: number[] = [];
+        for (let k = 0; k <= 40; k++) {
+          const t = k / 40, a = 1.05 - t * 2.5, dir = V(0, Math.cos(a), Math.sin(a));
+          const height = 0.025 + Math.sin(t * PI) * 0.16;
+          for (const [x, out] of [[-0.052, -0.025], [-0.025, height], [0.025, height], [0.052, -0.025]]) {
+            const point = headAt(dir, out); positions.push(x, point.y, point.z);
+          }
+          if (k) for (let j = 0; j < 4; j++) {
+            const a = (k - 1) * 4 + j, b = (k - 1) * 4 + (j + 1) % 4;
+            indices.push(a, a + 4, b, b, a + 4, b + 4);
+          }
+        }
+        const crest = new THREE.BufferGeometry();
+        crest.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); crest.setIndex(indices); crest.computeVertexNormals();
+        hairPieces.push({ geo: paintCell(crest, hairCell, 0.2, 0.8), kit: o.face });
       }
       break;
     case 8: { // melena larga: una sola cubierta continua prolongada por la nuca
@@ -177,7 +203,7 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
     }
     case 9: // trenza: un mechón con ondas de trenzado
       kitHair('Mage');
-      hairPieces.push({ geo: strand([V(0, 1.78, -0.44), V(0, 1.6, -0.56), V(0, 1.36, -0.61), V(0, 1.12, -0.6), V(0, 0.96, -0.57)], 0.09, 0.045, { braid: 7 }), kit: o.face });
+      braid([headAt(V(0, 0.22, -1), -0.025), V(0, 1.6, -0.52), V(0, 1.36, -0.57), V(0, 1.12, -0.55), V(0, 0.99, -0.5)], 0.09, 5);
       break;
     case 10: // moños dobles
       kitHair('Rogue');
@@ -206,6 +232,50 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
     case 15: {
       kitHair('Rogue', .97);
       importedHair('rogue-fringe');
+      break;
+    }
+    case 16:
+    case 17: { // Trenzas con la raíz hundida en la cubierta, fuera del cuello.
+      kitHair('Rogue');
+      for (const side of o.hair === 16 ? [1] : [-1, 1]) {
+        const root = headAt(V(side * 0.85, -0.12, -0.5), -0.025);
+        const points = [root, root.clone().add(V(side * 0.065, -0.12, -0.03)),
+          V(side * 0.49, 1.21, -0.24), V(side * 0.45, 1.04, -0.16)];
+        braid(points, 0.077, 4);
+      }
+      break;
+    }
+    case 18: {
+      kitHair('Mage');
+      if (!hasHat) {
+        const root = headAt(V(0, 0.48, -0.88), 0.045);
+        hairPieces.push({ geo: blob(0.16, root, V(1, 0.85, 0.8), new THREE.Euler(), 3), kit: o.face });
+      }
+      break;
+    }
+    case 19:
+      importedHair('rogue-fringe');
+      kitHair('Mage');
+      ponytail(V(0, 0.22, -1), [V(0, -0.09, -0.08), V(0.05, -0.28, -0.1), V(0.12, -0.48, -0.06)], 0.095);
+      break;
+    case 20:
+      kitHair('Rogue');
+      for (const side of [-1, 1]) for (let k = 0; k < 3; k++) {
+        const root = headAt(V(side * 0.92, 0.05, -0.12 - k * 0.3), -0.015);
+        hairPieces.push({ geo: pushOut(strand([root, root.clone().add(V(side * 0.025, -0.12, 0)),
+          root.clone().add(V(side * 0.045, -0.28, 0.03)), root.clone().add(V(-side * 0.025, -0.4, 0.05))], 0.065, 0.025, { taperStart: true }), 0.014), kit: o.face });
+      }
+      break;
+    case 21: {
+      kitHair('Mage');
+      if (!hasHat) {
+        const points: THREE.Vector3[] = [];
+        for (let k = 0; k <= 32; k++) {
+          const a = k / 32 * PI * 2;
+          points.push(headAt(V(Math.sin(a), 0.82, Math.cos(a)), 0.025));
+        }
+        braid(points, 0.055, 16);
+      }
       break;
     }
   }

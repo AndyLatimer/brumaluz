@@ -219,7 +219,10 @@ test('a new character enters through the East Gate, tours the city and meets a w
     const afterInput=await page.evaluate(()=>window.brumaluz.char().root.parent.position.toArray());
     assert.ok(Math.abs(afterInput[2])<.05 && afterInput[0]<=flight.player[0],'Only the scripted entry moves the player during the cutscene');
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'intro-flight.png')});
-    await page.locator('.cinematic-line').filter({hasText:'Solo falta el distintivo'}).waitFor({timeout:30000});
+    await page.locator('#cinematic[data-shot="gnomi-search"]').waitFor({timeout:30000});
+    assert.equal(await page.locator('.cinematic-line').isVisible(),false,'Gnomi searches through animation, without a slogan or spoken subtitle');
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'intro-gnomi-search.png')});
+    await page.locator('#cinematic[data-shot="gnomi-approach"]').waitFor();
     await page.waitForTimeout(1200);
     const meeting=await page.evaluate(()=>{
       const gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal'),me=window.brumaluz.char().root.parent;
@@ -229,6 +232,25 @@ test('a new character enters through the East Gate, tours the city and meets a w
     assert.ok(Math.abs(Math.sin(meeting.facing)+1)<.05,'The character faces into the city');
     assert.ok(meeting.gnomi[0]<153.5&&meeting.gnomi[0]>143,'Gnomi walks toward the gate from the square: '+JSON.stringify(meeting));
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'intro-gnomi.png')});
+    await page.locator('#cinematic[data-shot="gnomi-greeting"]').waitFor();
+    const greetStart=await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').position.toArray());
+    assert.ok(Math.hypot(greetStart[0]-153.5,greetStart[2])<.2,'Gnomi reaches the meeting point by walking: '+JSON.stringify(greetStart));
+    await page.waitForTimeout(350);
+    assert.deepEqual(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').position.toArray()),greetStart,'Gnomi stays in place while greeting instead of snapping back to his post');
+    assert.equal(await page.locator('.cinematic-line').isVisible(),false,'The greeting is visual; conversation follows afterwards');
+    await page.setViewportSize({width:390,height:844});
+    await page.waitForTimeout(180);
+    const narrowFraming=await page.evaluate(()=>{
+      const player=window.brumaluz.char().root.parent,gnomi=window.brumaluz.city().root.parent.getObjectByName('gnomi-personal');
+      return [player,gnomi].flatMap((actor,i)=>[.05,i===0?2.2:1].map(height=>{
+        const p=actor.position.clone();p.y+=height;p.project(window.brumaluz.camera());
+        return {x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2,z:p.z};
+      }));
+    });
+    if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'intro-greeting-mobile.png')});
+    const narrowScene=await page.evaluate(()=>({player:window.brumaluz.char().root.parent.position.toArray(),gnomi:window.brumaluz.city().root.parent.getObjectByName('gnomi-personal').position.toArray(),camera:window.brumaluz.camera().position.toArray(),shot:document.querySelector('#cinematic').dataset.shot}));
+    assert.ok(narrowFraming.every(p=>p.x>0&&p.x<390&&p.y>844*.11&&p.y<844*.89&&p.z>-1&&p.z<1),'The greeting frames both characters in portrait: '+JSON.stringify({points:narrowFraming,...narrowScene}));
+    await page.setViewportSize({width:1280,height:800});
     await page.locator('#dialog').waitFor({state:'visible',timeout:30000});
     assert.equal(await page.locator('.dialog-speaker').textContent(),'Gnomi');
     assert.match(await page.locator('.dialog-text').textContent(),/bienvenida a Brumaluz.*Gremio de Ayudantes/s);
@@ -411,19 +433,19 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.locator('.cinematic-line').filter({hasText:'cama'}).waitFor();
     await page.waitForTimeout(1300);
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'isberto-house-bed.png')});
-    await page.locator('.cinematic-line').filter({hasText:'cofre de la esquina'}).waitFor();
+    await page.locator('.cinematic-line').filter({hasText:'Cofre personal'}).waitFor();
     await page.waitForTimeout(1400);
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'isberto-house-chest.png')});
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor({timeout:20000});
     assert.equal(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible),true,'Isberto is home');
     await page.getByRole('button',{name:'Gracias, Isberto.',exact:true}).click();
-    await page.locator('.dialog-text').filter({hasText:'Descansa'}).waitFor();
+    await page.locator('.dialog-text').filter({hasText:/^Descansa\./}).waitFor();
     assert.equal(account.character.data.shadowQuest,'returned');
     await page.keyboard.press('KeyE');
     await page.locator('#toast.show').filter({hasText:'Misión completada'}).waitFor();
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
-    // La cama recupera la vida.
-    await teleport(-.3,-1.4);
+    // Acercarse por los pies de la cama: junto a la mesa queda más cerca una silla.
+    await teleport(-1.5,-1.5);
     await page.locator('#interact-label').filter({hasText:'Descansar'}).waitFor();
     await page.keyboard.press('KeyE');
     await page.locator('#rest-fade').waitFor({state:'visible'});

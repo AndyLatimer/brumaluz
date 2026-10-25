@@ -110,7 +110,7 @@ export async function storyCombat(t, { client, a, b, ca, sa, location, user, rpc
         await rejected(()=>rpc('combat_action',[ca,'kill']),/COMBAT_INVALID_ACTION/);
 
         await client.query('reset role');
-        await client.query("update public.characters set data=jsonb_set(data,'{combatEncounter,enemyAttackAt}',to_jsonb(extract(epoch from clock_timestamp())-1)) where id=$1",[ca]);
+        await client.query("update public.characters set data=jsonb_set(data,'{combatEncounter}',(data->'combatEncounter')||jsonb_build_object('enemyAttackAt',0,'windup',extract(epoch from clock_timestamp())-1,'aimX',2,'aimZ',-62.35)) where id=$1",[ca]);
         await user(a);
         const hit=await rpc('world_sync',[ca,sa,motion(2,{z:-62.35})]);
         assert.equal(hit.vitals.health,92,'The server applies the enemy hit during world heartbeat');
@@ -119,7 +119,7 @@ export async function storyCombat(t, { client, a, b, ca, sa, location, user, rpc
         await rpc('combat_start',[ca]);
         await client.query('reset role');
         await client.query(
-          "update public.characters set data=jsonb_set(jsonb_set(data,'{health}','1'::jsonb),'{combatEncounter,enemyAttackAt}',to_jsonb(extract(epoch from clock_timestamp())-1)) where id=$1",
+          "update public.characters set data=jsonb_set(jsonb_set(data,'{health}','1'::jsonb),'{combatEncounter}',(data->'combatEncounter')||jsonb_build_object('enemyAttackAt',0,'windup',extract(epoch from clock_timestamp())-1,'aimX',2,'aimZ',-62.35)) where id=$1",
           [ca],
         );
         await user(a);

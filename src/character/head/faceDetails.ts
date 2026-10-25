@@ -47,14 +47,16 @@ export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, ra
     decals.push(new THREE.Mesh(geometry, extraMat('#3a6ab8')));
   };
   const cheekY = nose.y - 0.04;
-  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: '#ff6f7a', transparent: true, opacity: o.detail === 1 ? 0.85 : o.race === 'lagto' ? 0.16 : (o.makeup ?? 0) > 0 ? 0.42 : 0.24, depthWrite: false });
+  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: o.makeup === 9 ? o.makeupColor : '#ff6f7a', transparent: true, opacity: o.detail === 1 || o.makeup === 9 ? 0.85 : o.race === 'lagto' ? 0.16 : (o.makeup ?? 0) > 0 ? 0.42 : 0.24, depthWrite: false });
   for (const s of [-1, 1]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.14), blushMat);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.14, 12, 8), blushMat);
     const r = facing(s * 0.27, cheekY);
-    m.position.copy(onFace(s * 0.27, cheekY, 0.008));
-    m.rotation.set(r.x, r.y, 0);
+    const patch = new THREE.Group();
+    patch.position.copy(onFace(s * 0.27, cheekY, 0.008));
+    patch.rotation.set(r.x, r.y, 0); patch.add(m);
+    conform(patch, 0.004);
     m.renderOrder = 2;
-    decals.push(m);
+    decals.push(patch);
   }
   switch (o.detail) {
     case 1: break;
@@ -65,6 +67,32 @@ export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, ra
       break;
     case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) warPaintStripe(s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
     case 5: decal(new THREE.CircleGeometry(0.016, 10), '#3a2420', 0.2, mouthY + 0.01, 0, V(1, 1, 1), 0.006); break;
+    case 6:
+      for (let k = 0; k < 19; k++) {
+        const x = (k - 9) * 0.033, y = cheekY + 0.025 + Math.sin(k * 2.4) * 0.033;
+        decal(new THREE.CircleGeometry(0.006 + k % 3 * 0.0018, 8), '#a3704e', x, y, 0, V(1, 0.85, 1), 0.005);
+      }
+      break;
+    case 7:
+      for (const side of [-1, 1]) for (let k = 0; k < 4; k++) {
+        const x = side * (0.19 + k * 0.042), y = cheekY + Math.sin(k * 1.7) * 0.043;
+        decal(new THREE.CircleGeometry(k === 1 ? 0.013 : 0.008, 8), '#e0bb74', x, y);
+        if (k < 3) decal(new THREE.CapsuleGeometry(0.002, 0.04, 2, 4), '#d1ad71', x + side * 0.02, y - 0.003, side * -0.9, V(1, 1, 0.3));
+      }
+      break;
+    case 8:
+      for (const side of [-1, 1]) {
+        decal(new THREE.CircleGeometry(0.035, 24), '#638469', side * 0.29, cheekY, side * 0.65, V(0.55, 1.5, 1));
+        decal(new THREE.CapsuleGeometry(0.0025, 0.075, 2, 4), '#c8c593', side * 0.29, cheekY, side * 0.65, V(1, 1, 0.3), 0.007);
+      }
+      break;
+    case 9:
+      decal(new THREE.CapsuleGeometry(0.006, 0.11, 2, 6), '#d79b87', -0.22, nose.y + 0.22, -0.3, V(1, 1, 0.3), 0.018);
+      break;
+    case 10:
+      for (const side of [-1, 1]) for (let k = 0; k < 3; k++)
+        decal(new THREE.CircleGeometry(0.018 - k * 0.003, 4), '#568a82', side * (0.22 + k * 0.047), cheekY - k * 0.017, PI / 4, V(0.65, 1, 1));
+      break;
   }
   return { decal, cheekY, blushMat };
 }

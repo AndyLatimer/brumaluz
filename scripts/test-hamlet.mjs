@@ -59,7 +59,8 @@ test('original Blender pack joins the library without changing the imported inve
   assert.equal(own.packs[0].license, null);
   assert.equal(own.packs[0].count, manifest.assets.length);
   assert.deepEqual(own.assets.map(asset => asset.name), manifest.assets.map(asset => asset.name));
-  assert.equal(combined.assets.length, imported.assets.length + own.assets.length);
+  const arboleda = JSON.parse(await readFile(join(libraryDir, 'brumaluz-arboleda', 'catalog.json'), 'utf8'));
+  assert.equal(combined.assets.length, imported.assets.length + own.assets.length + arboleda.assets.length);
   assert.equal(new Set(combined.assets.map(asset => asset.id)).size, combined.assets.length);
   assert.ok(own.assets.length > 0);
 });
@@ -122,7 +123,7 @@ test('Blender pack loads in the map editor at metre scale and publishes GLB impo
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(`${url}/assets.html`);
+    await page.goto(`${url}/assets.html`, { waitUntil: 'domcontentloaded', timeout: 90000 });
     await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Listo.'), null, { timeout: 60000 });
     await page.locator('#pack').selectOption(packId);
     assert.equal(await page.locator('#asset option').count(), own.assets.length);

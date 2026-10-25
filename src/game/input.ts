@@ -5,7 +5,7 @@ import { talk, view, play, ui, fight } from './state';
 import { focusChat } from '../ui/chatWindow';
 import { actionBarSlotForKey, toggleActionBarPage, useActionBarSlot } from '../ui/actionBar';
 import { toggleMinimap } from '../ui/minimap';
-import { canvas, holder, keys } from './stage';
+import { canvas, holder, keys, marker } from './stage';
 import { storyLock } from './conversation';
 import { tradeWindow } from '../ui/gameInterface';
 import { playerInteractions, clickNpc, clickToMove, interact } from './interaction';
@@ -14,12 +14,33 @@ import { respawn } from './vitals';
 import { setOptionsOpen } from '../ui/options';
 import { $ } from '../ui/dom';
 import { setWindow, setPlayerMenuOpen, setWorldMenuOpen, setGameMenuOpen } from '../ui/menus';
-import { releaseCombatTarget, lockCombatTarget } from './combat';
+import { releaseCombatTarget, lockCombatTarget, cycleCombatTarget } from './combat';
+import { noteCameraControl } from './camera';
+
+let dragPointer: number | null = null;
+let dragButton = -1;
+const heldShift = new Set<string>();
+let shiftUsedAsModifier = false;
+const editableTarget = (target: EventTarget | null) => target instanceof HTMLElement
+  && (!!target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"]') || target.isContentEditable);
+function cancelDrag() {
+  const pointer = dragPointer;
+  dragPointer = null; dragButton = -1; view.dragging = false;
+  canvas.classList.remove('drag');
+  if (pointer !== null && canvas.hasPointerCapture(pointer)) canvas.releasePointerCapture(pointer);
+}
+function clearHeldInput() {
+  keys.clear(); heldShift.clear(); shiftUsedAsModifier = false;
+  cancelDrag();
+  play.moveTarget = null; marker.visible = false; fight.combatApproach = false;
+}
 
 export const endDrag = (e: PointerEvent) => {
-  if (view.dragging && play.mode === 'play' && !storyLock() && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && view.dragDist < 6 && !clickNpc(e)) clickToMove(e);
-  view.dragging = false;
-  canvas.classList.remove('drag');
+  if (e.pointerId !== dragPointer) return;
+  const click = view.dragging && dragButton === 0 && view.dragDist < 6;
+  // Soltar la captura antes de activar una interacción: esta puede abrir un diálogo.
+  cancelDrag();
+  if (click && play.mode === 'play' && !play.dead && !play.mapTravelling && !storyLock() && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && !ui.optionsOpen && !ui.openWindow && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !clickNpc(e)) clickToMove(e);
 };
 export function startJump() {
   if (play.char.isSwimming) return; // nadando no se salta
@@ -30,12 +51,22 @@ export function startJump() {
 }
 /** Registra los manejadores de ratón y teclado. */
 export function installInput() {
-  canvas.addEventListener('pointerdown', (e) => { if (storyLock() || (isDialogOpen() && !talk.conversationActor)) return; view.dragging = true; view.dragDist = 0; view.lastX = e.clientX; view.lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!e.isPrimary || dragPointer !== null || ![0, 1, 2].includes(e.button) || storyLock() || play.mapTravelling || (isDialogOpen() && !talk.conversationActor)) return;
+    if (play.mode === 'play' && (ui.optionsOpen || ui.gameMenuOpen || ui.playerMenuOpen || ui.worldMenuOpen || ui.openWindow || tradeWindow.isOpen || playerInteractions.isOpen)) return;
+    e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    dragPointer = e.pointerId; dragButton = e.button;
+    view.dragging = true; view.dragDist = 0; view.lastX = e.clientX; view.lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag');
+  });
   canvas.addEventListener('pointermove', (e) => {
-    if (!view.dragging) return;
+    if (!view.dragging || e.pointerId !== dragPointer) return;
     const dx = e.clientX - view.lastX, dy = e.clientY - view.lastY;
     view.lastX = e.clientX; view.lastY = e.clientY;
     view.dragDist += Math.abs(dx) + Math.abs(dy);
+    if (dragButton === 0 && view.dragDist < 6) return;
+    noteCameraControl();
     if (talk.conversationActor && isDialogOpen()) {
       talk.conversationOrbitYaw -= dx * .006;
       talk.conversationOrbitPitch = THREE.MathUtils.clamp(talk.conversationOrbitPitch + dy * .005, -1.2, 1.2);
@@ -48,15 +79,27 @@ export function installInput() {
     }
   });
   canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', () => { view.dragging = false; canvas.classList.remove('drag'); });
+  canvas.addEventListener('pointercancel', (e) => { if (e.pointerId === dragPointer) cancelDrag(); });
+  canvas.addEventListener('lostpointercapture', (e) => { if (e.pointerId === dragPointer) cancelDrag(); });
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    if (isDialogOpen() || storyLock()) return;
-    if (play.mode === 'play') view.zoomTarget = THREE.MathUtils.clamp(view.zoomTarget * (1 + e.deltaY * 0.001), 3, 30);
-    else view.zoom = THREE.MathUtils.clamp(view.zoom * (1 + e.deltaY * 0.001), 0.6, 1.4);
+    if (isDialogOpen() || storyLock() || play.mapTravelling || ui.optionsOpen || ui.openWindow || ui.gameMenuOpen || ui.playerMenuOpen || ui.worldMenuOpen) return;
+    noteCameraControl();
+    const unit = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : e.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
+    const factor = Math.exp(THREE.MathUtils.clamp(e.deltaY * unit, -240, 240) * .0011);
+    if (play.mode === 'play') view.zoomTarget = THREE.MathUtils.clamp(view.zoomTarget * factor, 3, 30);
+    else view.zoom = THREE.MathUtils.clamp(view.zoom * factor, 0.6, 1.4);
   }, { passive: false });
+  window.addEventListener('blur', clearHeldInput);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearHeldInput(); });
+  document.addEventListener('focusin', (e) => { if (editableTarget(e.target)) { keys.clear(); heldShift.clear(); shiftUsedAsModifier = false; } });
   window.addEventListener('keydown', (e) => {
     if (play.mode !== 'play') return;
+    if (editableTarget(e.target) || e.isComposing) return;
+    const isShift = e.code === 'ShiftLeft' || e.code === 'ShiftRight';
+    if (!isShift && !e.repeat && heldShift.size) shiftUsedAsModifier = true;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (play.mapTravelling) { e.preventDefault(); return; }
     if (storyLock()) {
       e.preventDefault();
@@ -117,21 +160,21 @@ export function installInput() {
       if (!e.repeat) focusChat();
       return;
     }
-    if (!e.repeat && !ui.gameMenuOpen && ui.openWindow !== 'vendor' && ui.openWindow !== 'bank' && (e.target as HTMLElement).tagName !== 'INPUT') {
-      const win = e.code === 'KeyM' ? 'map' : e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : e.code === 'KeyK' ? 'skills' : null;
+    if (!e.repeat && !ui.gameMenuOpen && ui.openWindow !== 'vendor' && ui.openWindow !== 'bank') {
+      const win = e.code === 'KeyM' ? 'map' : e.code === 'KeyI' ? 'inventory' : e.code === 'KeyC' ? 'sheet' : e.code === 'KeyJ' ? 'quests' : e.code === 'KeyK' ? 'skills' : e.code === 'KeyP' ? 'professions' : null;
       if (win) { e.preventDefault(); setWindow(ui.openWindow === win ? null : win); return; }
       if (e.code === 'KeyO') { e.preventDefault(); setWindow(null, false); setPlayerMenuOpen(false, false); setOptionsOpen(true); return; }
     }
-    if (ui.gameMenuOpen || ui.playerMenuOpen || ui.worldMenuOpen || (ui.openWindow && ui.openWindow !== 'loot') || (e.target as HTMLElement).tagName === 'INPUT') return;
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+    if (ui.gameMenuOpen || ui.playerMenuOpen || ui.worldMenuOpen || (ui.openWindow && ui.openWindow !== 'loot')) return;
+    if (isShift) {
       e.preventDefault();
-      if (!e.repeat) play.running = !play.running;
+      if (!e.repeat) { if (!heldShift.size) shiftUsedAsModifier = false; heldShift.add(e.code); }
       return;
     }
     if(e.code==='KeyF'){
       e.preventDefault();
       if(e.repeat)return;
-      lockCombatTarget();
+      if (e.shiftKey) cycleCombatTarget(true); else lockCombatTarget();
       return;
     }
     const barSlot = actionBarSlotForKey(e.code);
@@ -155,5 +198,9 @@ export function installInput() {
       if (!e.repeat) startJump();
     } else if (e.code.startsWith('Arrow')) e.preventDefault();
   });
-  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('keyup', (e) => {
+    keys.delete(e.code);
+    if (!heldShift.delete(e.code) || heldShift.size || shiftUsedAsModifier) return;
+    if (play.mode === 'play' && !play.dead && !play.mapTravelling && !storyLock() && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && !ui.optionsOpen && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !editableTarget(e.target)) play.running = !play.running;
+  });
 }

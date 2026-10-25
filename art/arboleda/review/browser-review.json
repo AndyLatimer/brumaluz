@@ -1,0 +1,477 @@
+{
+  "pack": "brumaluz-arboleda",
+  "catalog": "src\\assets\\library\\brumaluz-arboleda\\catalog.json",
+  "assets": [
+    {
+      "id": "brumaluz-arboleda/objects/house_leafhaven",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/house_leafhaven.glb",
+      "meshes": 1,
+      "triangles": 14584,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/laboratory_dew",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/laboratory_dew.glb",
+      "meshes": 1,
+      "triangles": 12752,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/pavilion_moonwell.glb",
+      "meshes": 1,
+      "triangles": 8708,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tower_starwatch",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/tower_starwatch.glb",
+      "meshes": 1,
+      "triangles": 9876,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/greenhouse_moonfern",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/greenhouse_moonfern.glb",
+      "meshes": 1,
+      "triangles": 8900,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/gateway_twining",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/gateway_twining.glb",
+      "meshes": 1,
+      "triangles": 3792,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/bridge_rootwoven",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/bridge_rootwoven.glb",
+      "meshes": 1,
+      "triangles": 5080,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/fence_vinepanel",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/fence_vinepanel.glb",
+      "meshes": 1,
+      "triangles": 1408,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/table_alchemist",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/table_alchemist.glb",
+      "meshes": 1,
+      "triangles": 3008,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/chair_leafback",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/chair_leafback.glb",
+      "meshes": 1,
+      "triangles": 568,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/bench_bough",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/bench_bough.glb",
+      "meshes": 1,
+      "triangles": 1144,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/bed_ferncanopy",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/bed_ferncanopy.glb",
+      "meshes": 1,
+      "triangles": 2244,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/cabinet_seedkeeper",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/cabinet_seedkeeper.glb",
+      "meshes": 1,
+      "triangles": 1772,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/shelf_herbarium",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/shelf_herbarium.glb",
+      "meshes": 1,
+      "triangles": 7290,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/cauldron_bloom",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/cauldron_bloom.glb",
+      "meshes": 1,
+      "triangles": 1904,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/distiller_spiral",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/distiller_spiral.glb",
+      "meshes": 1,
+      "triangles": 3492,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/lantern_budpost",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/lantern_budpost.glb",
+      "meshes": 1,
+      "triangles": 1404,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/fountain_lotus",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/fountain_lotus.glb",
+      "meshes": 1,
+      "triangles": 2690,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/waystone_leafrune",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/waystone_leafrune.glb",
+      "meshes": 1,
+      "triangles": 990,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/armillary_moon",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/armillary_moon.glb",
+      "meshes": 1,
+      "triangles": 2600,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/rack_dryingherbs",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/rack_dryingherbs.glb",
+      "meshes": 1,
+      "triangles": 7554,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/planter_moonlily",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/planter_moonlily.glb",
+      "meshes": 1,
+      "triangles": 5362,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/potion_tray",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/potion_tray.glb",
+      "meshes": 1,
+      "triangles": 2456,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tree_ancient_oak",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/tree_ancient_oak.glb",
+      "meshes": 1,
+      "triangles": 10210,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tree_weeping_willow",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/tree_weeping_willow.glb",
+      "meshes": 1,
+      "triangles": 11662,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tree_young_rowan",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/tree_young_rowan.glb",
+      "meshes": 1,
+      "triangles": 2632,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/fern_cluster",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/fern_cluster.glb",
+      "meshes": 1,
+      "triangles": 8106,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/mushrooms_mooncap",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/mushrooms_mooncap.glb",
+      "meshes": 1,
+      "triangles": 4648,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/crystals_dewstone",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/crystals_dewstone.glb",
+      "meshes": 1,
+      "triangles": 2394,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/flowers_starmeadow",
+      "url": "/src/assets/library/brumaluz-arboleda/objects/flowers_starmeadow.glb",
+      "meshes": 1,
+      "triangles": 5454,
+      "materials": 1,
+      "textures": 3,
+      "texturedMaterials": 1
+    }
+  ],
+  "captures": [
+    {
+      "file": "house_leafhaven.png",
+      "asset": "brumaluz-arboleda/objects/house_leafhaven",
+      "size": [
+        4.631041526794434,
+        5.570000171661377,
+        4.640520811080933
+      ]
+    },
+    {
+      "file": "laboratory_dew.png",
+      "asset": "brumaluz-arboleda/objects/laboratory_dew",
+      "size": [
+        5.438488245010376,
+        6.949999809265137,
+        4.816484451293945
+      ]
+    },
+    {
+      "file": "table_alchemist.png",
+      "asset": "brumaluz-arboleda/objects/table_alchemist",
+      "size": [
+        2.1500000953674316,
+        1.4812095165252686,
+        0.9509999752044678
+      ]
+    },
+    {
+      "file": "pavilion_moonwell.png",
+      "asset": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "size": [
+        5.199999809265137,
+        5.389999866485596,
+        5.199999809265137
+      ]
+    },
+    {
+      "file": "editor-catalog.png",
+      "cards": 30
+    },
+    {
+      "file": "editor-hamlet-hero.png"
+    },
+    {
+      "file": "hamlet-in-world.png"
+    }
+  ],
+  "editor": {
+    "document": "hamlet_visual_review",
+    "savedId": null,
+    "objects": [
+      {
+        "asset": "brumaluz-arboleda/objects/house_leafhaven",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -4.2,
+          0,
+          -2
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/laboratory_dew",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          5,
+          0,
+          -3
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/pavilion_moonwell",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          5.8,
+          0,
+          4.3
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/table_alchemist",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -3,
+          0,
+          4.8
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/bench_bough",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -3,
+          0,
+          6.2
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/planter_moonlily",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -0.1,
+          0,
+          1.8
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/lantern_budpost",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          1.5,
+          0,
+          2.4
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/tree_ancient_oak",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -9,
+          0,
+          -6
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/tree_weeping_willow",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          9,
+          0,
+          -7
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/fern_cluster",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          -6,
+          0,
+          2
+        ]
+      },
+      {
+        "asset": "brumaluz-arboleda/objects/gateway_twining",
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "position": [
+          0,
+          0,
+          7.8
+        ]
+      }
+    ],
+    "catalogCount": 30,
+    "characterForScale": true
+  },
+  "issues": [],
+  "apiWrites": []
+}

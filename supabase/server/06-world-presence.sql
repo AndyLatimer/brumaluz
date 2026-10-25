@@ -147,6 +147,9 @@ declare
   remaining int;
   hp int;
   incoming int;
+  cfg jsonb:=public.game_shadow_combat_config();
+  attack_kind text;
+  attack_distance numeric;
 begin
   if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false)
     or encounter->>'status' is distinct from 'active'
@@ -157,9 +160,27 @@ begin
   end if;
   enemy_x := (encounter->>'x')::numeric;
   enemy_z := (encounter->>'z')::numeric;
-  if sqrt(power(p_x-enemy_x,2)+power(p_z-enemy_z,2))>2 then return d; end if;
+  attack_distance:=sqrt(power(p_x-enemy_x,2)+power(p_z-enemy_z,2));
+  if coalesce((encounter->>'windup')::numeric,0)=0 then
+    if attack_distance>
+      (case when coalesce((encounter->>'engaged')::boolean,false) then (cfg->>'range')::numeric else (cfg->>'aggro')::numeric end)
+      or not public.game_rpg_sight('brumaluz',p_x::numeric,p_z::numeric,enemy_x,enemy_z) then return d; end if;
+    attack_kind:=case when coalesce((encounter->>'attackSeq')::int,0)%3=0 then 'area' when attack_distance<=(cfg->>'meleeRange')::numeric then 'melee' else 'bolt' end;
+    encounter:=encounter||jsonb_build_object('attackKind',attack_kind,'windup',stamp+case attack_kind when 'area' then (cfg->>'windup')::numeric when 'bolt' then (cfg->>'boltWindup')::numeric else (cfg->>'meleeWindup')::numeric end,'aimX',p_x,'aimZ',p_z,
+      'attackSeq',coalesce((encounter->>'attackSeq')::int,0)+1,'engaged',true);
+    return jsonb_set(d,'{combatEncounter}',encounter);
+  end if;
+  if stamp<(encounter->>'windup')::numeric then return d; end if;
+  attack_kind:=coalesce(encounter->>'attackKind','area');
+  encounter:=encounter||jsonb_build_object('windup',null,'enemyAttackAt',stamp+(cfg->>'recovery')::numeric);
+  if (attack_kind='area' and sqrt(power(p_x-(encounter->>'aimX')::numeric,2)+power(p_z-(encounter->>'aimZ')::numeric,2))>(cfg->>'radius')::numeric)
+    or (attack_kind='melee' and attack_distance>(cfg->>'meleeRange')::numeric)
+    or attack_distance>(cfg->>'range')::numeric
+    or not public.game_rpg_sight('brumaluz',p_x::numeric,p_z::numeric,enemy_x,enemy_z) then
+    return jsonb_set(d,'{combatEncounter}',encounter);
+  end if;
 
-  incoming := greatest(1,8-public.game_equipment_stat(d,'guard'));
+  incoming := greatest(1,(cfg->'damage'->>attack_kind)::int-public.game_equipment_stat(d,'guard'));
   absorbed := least(public.game_overheal_now(d),incoming);
   remaining := incoming-absorbed;
   hp := public.game_health(d);
@@ -169,7 +190,7 @@ begin
     'overheal_at',stamp,'combat_at',stamp
   );
   encounter := encounter || jsonb_build_object(
-    'enemyAttackAt',stamp+2,'engaged',true,
+    'enemyAttackAt',stamp+(cfg->>'recovery')::numeric,'engaged',true,
     'status',case when hp=0 then 'failed' else 'active' end
   );
   return jsonb_set(d,'{combatEncounter}',encounter);

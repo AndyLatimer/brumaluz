@@ -4,17 +4,18 @@ function fn(source,name){const start=source.indexOf(`create or replace function 
 function replace(s,a,b){if(!s.includes(a))throw new Error(`Missing patch: ${a}`);return s.replace(a,b);}
 let combat=fn(read('07-combat.sql'),'combat_action');
 const cadence=JSON.parse(fs.readFileSync('src/data/combatCadence.json','utf8'));
+const duration=JSON.parse(fs.readFileSync('src/data/combatDuration.json','utf8'));
 combat=replace(combat,"  cadence:=case cls when 'guerrero' then 1.5 when 'mago' then 1.8 when 'picaro' then 0.9\n    when 'clerigo' then 1.8 when 'explorador' then 1.7 else 0 end;",`  cadence:=case cls ${Object.entries(cadence).map(([cls,value])=>`when '${cls}' then ${value}`).join(' ')} else 0 end;`);
 combat=replace(combat,"'skillCooldown',greatest", "'attackCooldown',greatest(0,coalesce((c.data->>'combatNextAttack')::numeric,0)-stamp),'skillCooldown',greatest");
 combat=replace(combat,'  skill_rank int;','  skill_rank int;\n  e jsonb; es jsonb; grade int; extra numeric:=0; raw_basic numeric; actual_basic numeric; shield numeric; barrier numeric; recovered numeric:=0; counters int; bonus jsonb; events jsonb:=\'[]\'; packed jsonb; secondary jsonb; nearest numeric; secondary_index int; points numeric; target_index int; enemy_guard numeric;');
 for(const name of ['damage','cost','resource','enemy_hp','each_hit','total_damage','healed'])combat=combat.replace(new RegExp(`  ${name} int`),`  ${name} numeric`);
 combat=replace(combat,"  cls:=c.data->>'cls';","  cls:=c.data->>'cls';\n  bonus:=public.game_set_bonuses(c.data);\n  enemy_guard:=coalesce((encounter->>'guard')::numeric,0);\n  e:=c.data->'equipment'->'weapon'->'enchantment';\n  es:=coalesce(c.data->'enchantState','{}');\n  if es->>'weapon' is distinct from coalesce(c.data->'equipment'->'weapon'->>'instanceId',c.data->'equipment'->'weapon'->>'id') or stamp-coalesce((es->>'at')::numeric,0)>6 then es:='{}';end if;\n  es:=es||jsonb_build_object('weapon',coalesce(c.data->'equipment'->'weapon'->>'instanceId',c.data->'equipment'->'weapon'->>'id'));\n  grade:=least(5,greatest(1,coalesce((e->>'grade')::int,1)));" );
-combat=replace(combat,'  damage:=round(damage*(1+0.05*(public.game_level(c.data)-1)))::int;',`  cadence:=cadence*public.game_weapon_tempo(c.data);
-  damage:=damage*public.game_power_multiplier(c.data)*(1+(bonus->>'power')::numeric)*public.game_weapon_tempo(c.data);
+combat=replace(combat,'  damage:=round(damage*(1+0.05*(public.game_level(c.data)-1)))::int;',`  cadence:=greatest(case cls ${Object.entries(duration).map(([cls,v])=>`when '${cls}' then ${v.basic+.04}`).join(' ')} else .72 end,cadence*public.game_weapon_tempo(c.data)*public.game_agility_tempo(c.data));
+  damage:=damage*public.game_power_multiplier(c.data)*public.game_strength_power(c.data)*(1+(bonus->>'power')::numeric)*public.game_weapon_tempo(c.data);
   raw_basic:=damage;`);
 combat=combat.replace("enemy_hp:=(encounter->>'health')::int;","enemy_hp:=(encounter->>'health')::numeric;");
 combat=replace(combat,"  c.data:=public.game_store(c.id,c.data);","  c.data:=c.data||jsonb_build_object('combatVisual',jsonb_build_object('at',stamp,'action',case when skill then 'skill' else 'attack' end));\n  c.data:=public.game_store(c.id,c.data);");
-combat=replace(combat,'  resource:=(public.game_public_vitals(c.data)->>\'resource\')::int;',"  cost:=cost*(1-(bonus->>'skillCost')::numeric);\n  resource:=(public.game_public_vitals(c.data)->>'resource')::numeric;");
+combat=replace(combat,'  resource:=(public.game_public_vitals(c.data)->>\'resource\')::int;',"  cost:=cost*(1-(bonus->>'skillCost')::numeric)*public.game_intellect_efficiency(c.data);\n  resource:=(public.game_public_vitals(c.data)->>'resource')::numeric;");
 combat=replace(combat,"    if distance>attack_range then raise exception 'COMBAT_OUT_OF_RANGE'; end if;","    if distance>attack_range then raise exception 'COMBAT_OUT_OF_RANGE'; end if;\n    if not public.game_rpg_sight(c.data->>'location',(w.position->>'x')::numeric,(w.position->>'z')::numeric,(encounter->>'x')::numeric,(encounter->>'z')::numeric) then raise exception 'El objetivo no está en tu línea de visión.';end if;");
 combat=replace(combat,'  resource:=resource-cost;',"  cost:=cost+coalesce((c.data->>'resourceCostFraction')::numeric,0);\n  resource:=resource-floor(cost);\n  c.data:=c.data||jsonb_build_object('resourceCostFraction',cost-floor(cost));");
 combat=replace(combat,"    healed:=least(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1),public.game_max_health(c.data)-hp);",`    recovered:=(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1))*public.game_power_multiplier(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
@@ -67,15 +68,16 @@ combat=replace(combat,"    encounter:=encounter||jsonb_build_object(\n      'hea
 // Do not round the base of offensive skills before attributes/sets/mitigation.
 combat=combat.replace('each_hit:=round((each_hit+','each_hit:=((each_hit+');
 combat=replace(combat,"    'damage',total_damage,'healing',healed,","    'damage',total_damage,'healing',healed,'events',events,'action',case when skill then 'skill' else 'attack' end,'enchantState',c.data->'enchantState',");
+combat=combat.replaceAll('*public.game_power_multiplier(c.data)*(1+(bonus', '*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus');
 let tick=fn(read('06-world-presence.sql'),'game_combat_tick');
 tick=replace(tick,'begin\n  if not coalesce',"begin\n  if encounter->>'kind'='expedition' then return d;end if;\n  if not coalesce");
 tick=replace(tick,'  incoming int;','  incoming numeric; barrier numeric; blocked numeric; fraction numeric;');
-tick=replace(tick,"  incoming := greatest(1,8-public.game_equipment_stat(d,'guard'));",`  incoming:=8*public.game_guard_multiplier(d);
+tick=replace(tick,"  incoming := greatest(1,(cfg->'damage'->>attack_kind)::int-public.game_equipment_stat(d,'guard'));",`  incoming:=(cfg->'damage'->>attack_kind)::numeric*public.game_guard_multiplier(d);
   barrier:=case when coalesce((d->'enchantState'->>'barrierUntil')::numeric,0)>stamp then coalesce((d->'enchantState'->>'barrier')::numeric,0) else 0 end;
   blocked:=least(incoming,barrier);incoming:=incoming-blocked;
   if d ? 'enchantState' then d:=jsonb_set(d,'{enchantState,barrier}',to_jsonb(greatest(0,barrier-blocked)));end if;
   fraction:=incoming+coalesce((d->>'incomingFraction')::numeric,0);incoming:=floor(fraction);d:=d||jsonb_build_object('incomingFraction',fraction-incoming);`);
-tick=replace(tick,"  return jsonb_set(d,'{combatEncounter}',encounter);","  if hp=0 then d:=d-'enchantState';end if;\n  return jsonb_set(d,'{combatEncounter}',encounter);");
+tick=replace(tick,"\n  return jsonb_set(d,'{combatEncounter}',encounter);","\n  if hp=0 then d:=d-'enchantState';end if;\n  return jsonb_set(d,'{combatEncounter}',encounter);");
 let store=fn(read('03-formulas.sql'),'game_store');store=replace(store,'  d := public.game_food_data(p_id,d);','  d := public.game_rpg_settle(d,extract(epoch from clock_timestamp()));\n  d := public.game_food_data(p_id,d);');
 store=replace(store,'  update public.characters set data =',"  d:=d||jsonb_build_object('serverRevision',coalesce((select (data->>'serverRevision')::bigint from public.characters where id=p_id),0)+1);\n  update public.characters set data =");
 let regen=fn(read('06-world-presence.sql'),'game_regen_data');
@@ -91,7 +93,9 @@ let offer=fn(read('12-trade-inventory.sql'),'game_trade_offer');offer=replace(of
 let tradeAdd=fn(read('12-trade-inventory.sql'),'game_trade_add');tradeAdd=replace(tradeAdd,"    for i in 1..(entry->>'count')::int loop d:=public.game_add_item(d,entry->>'id'); end loop;","    d:=public.game_rpg_give(d,entry-'slot',false);");
 let place=fn(read('15-bank.sql'),'game_place_item');place=replace(place,"  if target->>'id'=p_item->>'id'", "  if target-'count'-'bound'=p_item-'count'-'bound'\n    and target->>'id'=p_item->>'id'");
 let move=fn(read('12-trade-inventory.sql'),'move_inventory_item');move=move.replace("actual->>'id' is distinct from expected->>'id'","actual-'bound' is distinct from expected-'bound' or actual->>'id' is distinct from expected->>'id'");
-fs.writeFileSync('supabase/server/21-rpg-combat.sql',`-- Generated from authoritative existing entry points by tools/build-rpg-server.mjs.\n${[combat,tick,regen,store,change,offer,tradeAdd,place,move,publicCharacter].join('\n\n')}\n`);
+const shadowRules=fs.readFileSync('src/data/shadowCombat.json','utf8').trim().replaceAll("'","''");
+const shadowConfig=`create or replace function public.game_shadow_combat_config() returns jsonb language sql immutable set search_path='' as $$ select '${shadowRules}'::jsonb $$;\nrevoke all on function public.game_shadow_combat_config() from public,anon,authenticated;`;
+fs.writeFileSync('supabase/server/21-rpg-combat.sql',`-- Generated from authoritative existing entry points by tools/build-rpg-server.mjs.\n${[shadowConfig,combat,tick,regen,store,change,offer,tradeAdd,place,move,publicCharacter].join('\n\n')}\n`);
 console.log('Generated combat and object-preservation RPC overrides.');
 let food=fn(read('03-formulas.sql'),'game_food_data');food=replace(food,"if d -> 'foodBuff' ->> 'itemId' = 'pan_duro' then","if public.game_item(d->'foodBuff'->>'itemId')->>'food_seconds' is not null then");food=replace(food,"jsonb_build_object('itemId','pan_duro','remaining',remaining)","jsonb_build_object('itemId',d->'foodBuff'->>'itemId','remaining',remaining)");
 let use=fn(read('05-items-vendors.sql'),'use_item');use=replace(use,"  if item -> 'resource_pct' is not null then",`  if item ? 'resource_pct' or item ? 'heal_pct' then

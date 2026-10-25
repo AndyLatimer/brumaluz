@@ -1,4 +1,5 @@
--- First outdoor PvE circuit. Encounters and respawns are individual in this version.
+-- Legacy first outdoor circuit, superseded by 28-shared-wilderness.sql.
+-- Retained for the story resolver bootstrap and migration of pending individual loot.
 create or replace function public.game_wilderness_loot(d jsonb,e jsonb) returns jsonb
 language plpgsql volatile set search_path='' as $$
 declare def jsonb:=public.game_wilderness_catalog()->'enemies'->(e->>'enemy'); result jsonb:='[]';entry record;recipe text;

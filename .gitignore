@@ -4,6 +4,8 @@ dist/
 art/equipment/*.blend1
 art/hamlet/*.blend1
 art/hamlet/*.log
+art/arboleda/*.blend1
+art/arboleda/*.log
 tools/blender/__pycache__/
 # Local diagnostic captures from tools/render-asset.mjs.
 art/diagnostics/

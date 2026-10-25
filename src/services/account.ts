@@ -104,6 +104,7 @@ interface Database {
       change_equipment: { Args: { p_character_id: string; p_slot: string; p_bag: number | null; p_expected: Json }; Returns: Json };
       loot_corpse: { Args: { p_character_id: string; p_instance_id: string; p_slot?: number | null }; Returns: Json };
       collect_coin_bag: { Args: { p_character_id: string; p_bag_id: string }; Returns: Json };
+      collect_fairy_dust: { Args: { p_character_id: string; p_dust_id: string }; Returns: Json };
       bank_action: { Args: { p_character_id: string; p_action: string; p_slot?: number | null; p_expected?: Json | null; p_amount?: number | null; p_target?: number | null }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
@@ -384,7 +385,7 @@ export async function startCombat(id: string) {
   return asRecord(await serverCall(requireClient().rpc('combat_start',{p_character_id:id})));
 }
 export async function combatAction(id: string, action: 'attack' | SkillId) {
-  return asRecord(await serverCall(requireClient().rpc('combat_action',{p_character_id:id,p_action:action})));
+  return asRecord(await serverCall(requireClient().rpc('combat_action',{p_character_id:id,p_action:action}).abortSignal(AbortSignal.timeout(8000))));
 }
 export async function stopCombat(id: string) {
   return asRecord(await serverCall(requireClient().rpc('combat_stop',{p_character_id:id})));
@@ -404,6 +405,12 @@ export async function lootCorpse(id: string, instanceId: string, slot: number | 
 export async function collectCoinBag(id: string, bagId: string) {
   return asRecord(await serverCall(requireClient().rpc('collect_coin_bag', {
     p_character_id: id, p_bag_id: bagId,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+/** Recoge un montón de polvos de hada del mundo; el servidor valida distancia y que no se haya recogido, y sortea la cantidad. */
+export async function collectFairyDust(id: string, dustId: string) {
+  return asRecord(await serverCall(requireClient().rpc('collect_fairy_dust', {
+    p_character_id: id, p_dust_id: dustId,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 
@@ -583,8 +590,8 @@ export const rpgAction = async (id:string,action:string,args:Record<string,unkno
   if(!result||typeof result!=='object'||Array.isArray(result))throw new Error('Respuesta de oficios no válida.');return result;
 };
 export const expeditionAction=async(id:string,action:string,target?:number)=>await serverCall(requireClient().rpc('expedition_action',{p_character_id:id,p_action:action,...(target===undefined?{}:{p_target:target})})) as Record<string,unknown>;
-export const wildernessAction=async(id:string,action:string,spawn?:string|null,slot?:number|null)=>await serverCall(requireClient().rpc('wilderness_action',{p_character_id:id,p_action:action,p_spawn:spawn??null,p_slot:slot??null})) as Record<string,unknown>;
-export const healAlly=async(id:string,target:string)=>await serverCall(requireClient().rpc('heal_ally',{p_character_id:id,p_target:target})) as Record<string,unknown>;
+export const wildernessAction=async(id:string,action:string,spawn?:string|null,slot?:number|null)=>await serverCall(requireClient().rpc('wilderness_action',{p_character_id:id,p_action:action,p_spawn:spawn??null,p_slot:slot??null}).abortSignal(AbortSignal.timeout(8000))) as Record<string,unknown>;
+export const healAlly=async(id:string,target:string)=>await serverCall(requireClient().rpc('heal_ally',{p_character_id:id,p_target:target}).abortSignal(AbortSignal.timeout(8000))) as Record<string,unknown>;
 
 function requireClient() {
   const configured = getAccountClient();

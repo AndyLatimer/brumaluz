@@ -38,6 +38,33 @@ Los valores anteriores no se reordenan. La validación SQL de apariencia ya
 admite los nuevos IDs y no necesita una migración de personajes.
 `npm run test:creator` comprueba extracción, opciones, ajuste, colores y render.
 
+### Ampliación y ajuste de apariencia
+
+El catálogo conserva los IDs anteriores y añade seis peinados (22 en total),
+cuatro formas de ojos (13), tres barbas, cejas, narices y bocas, cinco detalles
+faciales, tres maquillajes y seis complementos. Las trenzas se construyen con
+tres mechones entrelazados. Las paletas incorporan tonos de pelo, iris, piel y
+adornos, y cada linaje con rasgos propios recibe dos variantes de orejas o cresta.
+Los nuevos valores también están disponibles en el taller de NPCs.
+
+Los adornos se orientan con la normal de la superficie final del pelo. Las gafas
+ajustan el radio y el puente al tamaño de los ojos e incluyen patillas; los
+pendientes siguen la base de las orejas de cada linaje. Bufandas y colgantes se
+montan sobre el pecho para que no giren con la cabeza. Los proxies de raycast
+compensan la transformación al hueso, conservando los anclajes posteriores.
+El rubor y las sombras siguen la curvatura de la cara mediante geometría subdividida.
+
+Los selectores permiten abrir la lista completa o avanzar con las flechas.
+Cambiar el cuerpo conserva las elecciones de apariencia. Los colores tienen
+estado accesible y los nombres nuevos se traducen al inglés.
+
+- `npm run test:creator:fit`: comprobaciones desde los módulos fuente de anclajes,
+  combinaciones de los cuatro rostros y linajes, animación y controles del creador.
+- `npm run art:creator:review`: genera vistas de frente, perfil, espalda,
+  detalles, complementos y linajes en `art/creator-review/`.
+
+Es ajuste geométrico durante el montaje, sin simulación física del pelo o las joyas.
+
 ## Primera pieza de producción
 
 `src/assets/models/wardrobe/helpers.glb` contiene el uniforme base del Gremio

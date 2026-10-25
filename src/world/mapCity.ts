@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createLineOfSight } from './lineOfSight';
 import { mapVariantUrl } from '../art/mapVariants';
 import { mapFireflies, validateMap, type MapDocument, type MapKind } from '../data/maps';
 import { isWorldNpcId } from '../data/npcs';
@@ -194,11 +195,15 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     npcSites.push({ id: marker.npcId, position: onGround(marker.position), yaw: marker.rotationY });
   }
 
-  const interactables: Interactable[] = [], vendorSpots: CityVendorSpot[] = [];
+  const interactables: Interactable[] = [], vendorSpots: CityVendorSpot[] = [], fairyDustSpots: { id: string; x: number; z: number; yaw: number }[] = [];
   for (const marker of markers) {
     if (marker.type !== 'interaction') continue;
     const text = marker.text?.trim() ?? '';
     if (marker.id.startsWith('coins_') || text === 'coin-bag') continue;
+    if (text === 'fairy-dust') {
+      fairyDustSpots.push({ id: marker.id, x: marker.position[0], z: marker.position[2], yaw: marker.rotationY });
+      continue;
+    }
     if (VENDOR_ROLES.has(text as CityVendorSpot['role'])) {
       vendorSpots.push({ id: marker.id.replace(/^vendor_/, ''), role: text as CityVendorSpot['role'], position: onGround(marker.position) });
       continue;
@@ -273,9 +278,11 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     vendorSpots,
     collide: collision.collide,
     groundY: collision.groundY,
+    lineOfSight: createLineOfSight(collision.shapes.filter(shape => shape.source !== 'marker'), collision.groundY),
     platformY: collision.platformY,
     spawn: spawnMarker ? onGround(spawnMarker.position) : world.spawn,
     spawnYaw: spawnMarker?.rotationY ?? 0,
+    fairyDustSpots,
     ...cityLinks(markers, (x, z) => field.heightAt(x, z)),
     // Solo en interiores, y solo sus paredes: muebles, casas de la ciudad o árboles no se atenúan.
     waterAt: collision.waterAt,

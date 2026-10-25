@@ -8,6 +8,7 @@ import rogueUrl from '../assets/models/Rogue.glb?url';
 import barbarianUrl from '../assets/models/Barbarian.glb?url';
 import ambientAnimationsUrl from '../assets/models/ambient-animations.glb?url';
 import rangedAnimationsUrl from '../assets/library/character-animations/animations/Rig_Medium_CombatRanged.glb?url';
+import meleeAnimationsUrl from '../assets/library/character-animations/animations/Rig_Medium_CombatMelee.glb?url';
 import creatorPartsUrl from '../assets/models/creator-parts.glb?url';
 import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
 import { buildHead, FACE_KITS, type HeadSource, type HeadKit, type HeadResult, type CreatorParts, type HeadOptions } from './head';
@@ -37,6 +38,7 @@ export function characterKit(kit: Kit) {
 }
 let ambientAnimations: THREE.AnimationClip[] = [];
 let rangedAnimations: THREE.AnimationClip[] = [];
+let meleeAnimations: THREE.AnimationClip[] = [];
 /** Cuánto se hunde el modelo bajo la superficie del agua: flotando de pie (hasta los hombros) y nadando (tumbado). */
 const SWIM_TREAD_DEPTH = -0.62;
 const SWIM_STROKE_DEPTH = -0.3;
@@ -51,6 +53,7 @@ export async function loadKits() {
     loadWeaponModels(),
     loadGLB(ambientAnimationsUrl).then(gltf => { ambientAnimations = gltf.animations; }),
     loadGLB(rangedAnimationsUrl).then(gltf => { rangedAnimations = gltf.animations.filter(clip=>clip.name.startsWith('Ranged_1H_')); }),
+    loadGLB(meleeAnimationsUrl).then(gltf => { meleeAnimations = gltf.animations.filter(clip=>/^Melee_(1H_Attack|Dualwield_Attack)/.test(clip.name)); }),
     loadGLB(creatorPartsUrl).then(gltf => {
       const geometry = (name: keyof CreatorParts) => {
         const mesh = gltf.scene.getObjectByName(name);
@@ -285,7 +288,7 @@ export class Character {
       hairAcc: d.hairAcc, hairAccColor: ACC_COLORS[d.hairAccColor], acc: d.acc, makeup: d.makeup, makeupColor: ACC_COLORS[d.makeupColor], accColor: ACC_COLORS[d.accColor],
     }, headMat, flatMat, creatorParts);
     this.bones.get('head')!.add(head.group);
-    this.owned.push(...head.ownedMaterials);
+    this.owned.push(...head.ownedMaterials.filter(material => !this.owned.includes(material)));
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
     this.happy = head.happy;
     this.mouth = { rest: head.mouth.rest, open: head.mouth.open, sy: head.mouth.open.scale.y };
@@ -362,9 +365,17 @@ export class Character {
     // Rasgos del linaje
     this.addRaceTraits(d, head, headMat(FACE_KITS[d.face] ?? 'Mage'), flatMat, hatKind);
 
+    // Las piezas de cuello siguen al pecho. Conservar la pose de montaje evita
+    // que bufandas y colgantes giren y atraviesen la túnica al mirar o saludar.
+    this.model.updateMatrixWorld(true);
+    const chest = this.bones.get('chest');
+    if (chest) for (const accessory of [...head.group.children]) {
+      if (accessory.name === 'character-neck-accessory') chest.attach(accessory);
+    }
+
     // Animaciones
     this.mixer = new THREE.AnimationMixer(this.model);
-    for (const clip of [...base.animations, ...ambientAnimations, ...refinedCombatClips([...base.animations,...rangedAnimations])]) this.actions.set(clip.name, this.mixer.clipAction(clip));
+    for (const clip of [...base.animations, ...ambientAnimations, ...refinedCombatClips([...base.animations,...rangedAnimations,...meleeAnimations])]) this.actions.set(clip.name, this.mixer.clipAction(clip));
     this.idle = this.actions.get(outfit.idle) ?? this.actions.get('Idle')!;
     this.idle.play();
     this.applyBodyShape();
@@ -552,9 +563,9 @@ export class Character {
 
     if (d.race === 'elfo') {
       for (const s of [-1, 1]) {
-        const len = [0.5, 0.3, 0.42][d.trait];
-        const dir = d.trait === 2 ? V(s, -0.25, -0.35) : V(s, 0.5, -0.3);
-        const g = paintCell(cone(0.1, len, 8, dir, 0.4), 0, 0.15, 0.5);
+        const len = [0.5, 0.3, 0.42, 0.36, 0.44][d.trait] ?? 0.5;
+        const dir = d.trait === 2 ? V(s, -0.25, -0.35) : d.trait === 4 ? V(s, 0.05, -0.15) : V(s, 0.5, -0.3);
+        const g = paintCell(cone(d.trait === 3 ? 0.135 : 0.1, len, 8, dir, 0.4), 0, 0.15, 0.5);
         mesh(g.translate(-s * 0.02, 0, 0), mat, pivot(A.ear(s)));
       }
     }
@@ -578,21 +589,29 @@ export class Character {
           // la base se hunde en la cabeza para que la oreja nazca de ella y no flote
           mesh(paintCell(new THREE.ConeGeometry(0.19, 0.46, 4).rotateY(Math.PI / 4).scale(1, 1, 0.6).translate(0, 0.11, 0), 0), furMat, g);
           mesh(new THREE.ConeGeometry(0.1, 0.26, 4).rotateY(Math.PI / 4).scale(1, 1, 0.3).translate(0, 0.1, 0.07), flatMat(innerCol), g);
+          if (d.trait === 3) for (const offset of [-0.025, 0, 0.025])
+            mesh(cone(0.016, 0.12 - Math.abs(offset), 5, V(offset * 5, 1, 0)).translate(offset, 0.3, 0), flatMat(coat?.markColor ?? '#5a423c'), g);
+          if (d.trait === 4) g.scale.setScalar(0.68);
         }
         this.ears.push(g);
       }
       this.addTail(furMat, 0, 0.055, 0.035, [[0, 0, 0], [0, -0.1, -0.16], [0, -0.04, -0.34], [0, 0.16, -0.44], [0.04, 0.33, -0.42]]);
     }
     if (d.race === 'lagto') {
-      if (hat === 'none' && d.trait === 0) A.crest.forEach((c, i) => {
-        const h = [0.16, 0.22, 0.24, 0.22, 0.18, 0.13][i];
+      if (hat === 'none' && (d.trait === 0 || d.trait === 5)) A.crest.forEach((c, i) => {
+        const h = [0.16, 0.22, 0.24, 0.22, 0.18, 0.13][i] * (d.trait === 5 ? 0.7 : 1);
         mesh(paintCell(cone(0.09, h, 4, c.n, 1).scale(0.35, 1, 1), 0, 0.5, 0.95), mat, pivot(c.p.clone().addScaledVector(c.n, -0.04)));
+        if (d.trait === 5) for (const side of [-1, 1]) {
+          const n = c.n.clone().add(V(side * 0.45, 0, 0)).normalize();
+          const p = A.surf(n, 0.025).p;
+          mesh(paintCell(cone(0.045, h * 0.65, 6, n), 0, 0.5, 0.95), mat, pivot(p));
+        }
       });
-      if (hat === 'none' && d.trait === 1) for (const s of [-1, 1]) {
+      if (hat === 'none' && (d.trait === 1 || d.trait === 4)) for (const s of [-1, 1]) {
         // cuernos que nacen de la superficie de la cabeza, con la base hundida
         const { p, n } = A.surf(V(s * 0.6, 0.75, -0.25), 0.05);
         const dir = n.clone().multiplyScalar(0.7).add(V(0, 0.15, -0.55));
-        mesh(cone(0.075, 0.4, 8, dir), flatMat('#efe4c8'), pivot(p));
+        mesh(cone(0.075, d.trait === 4 ? 0.2 : 0.4, 8, dir), flatMat('#efe4c8'), pivot(p));
       }
       if (d.trait === 2) for (const s of [-1, 1]) {
         // aletas laterales ancladas a la superficie y hundidas en la cabeza
@@ -757,7 +776,10 @@ export class Character {
     this.play(name, true);
   }
   /** Gestos cosméticos: nunca bloquean el movimiento ni interrumpen el combate. */
-  pickUp() { this.gesture('PickUp'); }
+  pickUp(scripted = false) {
+    if (scripted && !this.dead) this.play('PickUp', true);
+    else this.gesture('PickUp');
+  }
   useItem() { this.gesture('Use_Item'); }
   wave() { if (!this.dead) { this.play('Cheer'); this.happyReq = true; } }
   attachToChest(object: THREE.Object3D) {
@@ -774,10 +796,12 @@ export class Character {
     this.play(this.hitVariant ? 'Hit_B' : 'Hit_A');
     this.hitVariant = !this.hitVariant;
   }
+  private attackCycle=0;
   attack(skill = false) {
     const magic = this.d.cls === 'mago' || this.d.cls === 'clerigo';
     if(this.dead)return;
-    const name=magic ? skill?'Combat_Discharge':'Combat_Cast':this.d.cls==='explorador'?skill?'Combat_Precise':'Combat_Aim':this.d.cls==='picaro'&&skill?'Combat_Double':skill?'Combat_Heavy':'Combat_Slash';
+    const basic=['Combat_Slash','Combat_Backhand','Combat_Thrust'][this.attackCycle++%3];
+    const name=magic ? skill?'Combat_Discharge':'Combat_Cast':this.d.cls==='explorador'?skill?'Combat_Precise':'Combat_Aim':this.d.cls==='picaro'&&skill?'Combat_Double':skill?'Combat_Heavy':basic;
     this.play(name);
   }
   private dead = false;

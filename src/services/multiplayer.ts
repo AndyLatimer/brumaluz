@@ -22,6 +22,7 @@ export interface WorldPlayer {
   dead: boolean;
 }
 export interface WorldSnapshot {
+  wilderness?: WildernessSnapshot;
   status: 'ok' | 'corrected';
   position: WorldPosition;
   players: WorldPlayer[];
@@ -31,6 +32,8 @@ export interface WorldSnapshot {
 }
 
 export interface CombatEncounter {
+  attackKind?:'area'|'bolt'|'melee';
+  shared?:boolean;attackers?:number;
   spawn?:string;enemy?:string;level?:number;windup?:number;attackSeq?:number;aimX?:number;aimZ?:number;
   kind?:string; label?:string; expeditionId?:string; selected?:number;
   enemies?:{id:string;label?:string;health:number;maxHealth:number;x:number;z:number;guard?:number}[];
@@ -46,6 +49,25 @@ export interface CombatEncounter {
   instanceId: string | null;
   loot: (ItemStack | null)[];
   looted: boolean;
+}
+
+export interface WildernessMob extends Omit<CombatEncounter,'status'> {
+  status:'idle'|'active'|'returning'|'defeated';revision:number;attackingYou:boolean;
+  target?:string;targetX?:number;targetZ?:number;respawnAt?:number;
+}
+export interface WildernessSnapshot {shared:true;serverTime:number;mobs:WildernessMob[];corpses:CombatEncounter[];inCombat:boolean;skillReadyAt?:number;attackReadyAt?:number}
+export function parseWilderness(value:unknown):WildernessSnapshot|undefined{
+  if(!value||typeof value!=='object'||(value as {shared?:unknown}).shared!==true)return;
+  const data=record(value);
+  if(!Array.isArray(data.mobs)||!Array.isArray(data.corpses))throw new Error('Población del mundo no válida.');
+  const mobs=data.mobs.map(value=>{const m=record(value),status=m.status;
+    if(!['idle','active','returning','defeated'].includes(String(status)))throw new Error('Estado de criatura no válido.');
+    const parsed=parseCombatEncounter({...m,status:status==='idle'?'active':status==='returning'?'fled':status});
+    if(!parsed||!parsed.spawn||!parsed.instanceId)throw new Error('Identidad de criatura no válida.');
+    return {...parsed,status,revision:number(m.revision),attackingYou:m.attackingYou===true,target:typeof m.target==='string'?m.target:undefined,targetX:typeof m.targetX==='number'?number(m.targetX):undefined,targetZ:typeof m.targetZ==='number'?number(m.targetZ):undefined,respawnAt:typeof m.respawnAt==='number'?number(m.respawnAt):undefined} as WildernessMob;
+  });
+  const corpses=data.corpses.map(value=>{const e=parseCombatEncounter(value);if(!e||e.status!=='defeated')throw new Error('Cuerpo no válido.');return e;});
+  return {shared:true,serverTime:number(data.serverTime),mobs,corpses,inCombat:data.inCombat===true,skillReadyAt:typeof data.skillReadyAt==='number'?number(data.skillReadyAt):undefined,attackReadyAt:typeof data.attackReadyAt==='number'?number(data.attackReadyAt):undefined};
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -83,6 +105,8 @@ export function parseCombatEncounter(value: unknown): CombatEncounter | null {
   }
   return {
       id:encounter.id as CombatEncounter['id'],status,health,maxHealth,engaged:encounter.engaged === undefined ? health < maxHealth : encounter.engaged,
+      shared:encounter.shared===true,attackers:typeof encounter.attackers==='number'?number(encounter.attackers):undefined,
+      attackKind:encounter.attackKind==='area'||encounter.attackKind==='bolt'||encounter.attackKind==='melee'?encounter.attackKind:undefined,
       kind:typeof encounter.kind==='string'?encounter.kind:undefined,label:typeof encounter.label==='string'?encounter.label:undefined,
       spawn:typeof encounter.spawn==='string'?encounter.spawn:undefined,enemy:typeof encounter.enemy==='string'?encounter.enemy:undefined,level:typeof encounter.level==='number'?encounter.level:undefined,windup:typeof encounter.windup==='number'?encounter.windup:undefined,attackSeq:typeof encounter.attackSeq==='number'?encounter.attackSeq:undefined,
       aimX:typeof encounter.aimX==='number'?encounter.aimX:undefined,aimZ:typeof encounter.aimZ==='number'?encounter.aimZ:undefined,
@@ -120,6 +144,7 @@ function snapshot(value: unknown): WorldSnapshot {
   if (clock) syncWorldClock(clock);
   return {
     status: data.status, position: position(data.position),
+    wilderness:parseWilderness(data.wilderness),
     food, selfVitals, encounter,
     players: data.players.map((value) => {
       const p = record(value);

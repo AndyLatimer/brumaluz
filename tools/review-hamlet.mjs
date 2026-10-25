@@ -13,9 +13,10 @@ import { createServer } from 'vite';
 import { chromium } from 'playwright';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const pack = 'brumaluz-hamlet';
-const output = path.join(root, 'art', 'hamlet', 'review');
-const explicitCatalog = process.argv[2];
+const arboleda = process.argv.includes('--arboleda');
+const pack = arboleda ? 'brumaluz-arboleda' : 'brumaluz-hamlet';
+const output = path.join(root, 'art', arboleda ? 'arboleda' : 'hamlet', 'review');
+const explicitCatalog = process.argv.slice(2).find(arg => !arg.startsWith('--'));
 const candidates = explicitCatalog ? [path.resolve(root, explicitCatalog)] : [
   path.join(root, 'src', 'assets', 'library', pack, 'catalog.json'),
   path.join(root, 'src', 'assets', 'library', 'catalog-hamlet.json'),
@@ -53,7 +54,7 @@ function watch(page, label) {
   });
 }
 const settle = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-const heroPatterns = [/cottage|herbalist|house/i, /workshop|tavern|inn|shop/i, /bookcase|cabinet|table/i, /market|fountain|well|lantern/i];
+const heroPatterns = [/cottage|herbalist|house/i, /workshop|tavern|inn|shop|laboratory/i, /bookcase|cabinet|table/i, /market|fountain|well|lantern/i];
 const heroes = [];
 for (const pattern of heroPatterns) {
   const hero = entries.find(asset => pattern.test(`${asset.name ?? ''} ${asset.id}`) && !heroes.includes(asset));
@@ -212,7 +213,7 @@ try {
     const first = state.doc.objects.find(object => object.asset === hero);
     first.position = [-4.2, 0, -2];
     first.rotation[1] = -.12;
-    add(/workshop|tavern|inn|shop|cottage|house/i, 5, -3, -.15);
+    add(/workshop|tavern|inn|shop|cottage|house|laboratory/i, 5, -3, -.15);
     add(/well|fountain|market/i, 5.8, 4.3, 0);
     add(/table/i, -3, 4.8, .12);
     add(/bench/i, -3, 6.2, .12);
@@ -220,6 +221,12 @@ try {
     add(/barrel|crate/i, -7, .4, .22);
     add(/lantern|lamp/i, 1.5, 2.4, 0);
     add(/sign/i, -1.6, -.6, -.1);
+    if (hero.startsWith('brumaluz-arboleda/')) {
+      add(/tree_ancient/i, -9, -6, 0);
+      add(/tree_weeping/i, 9, -7, .4);
+      add(/fern_cluster/i, -6, 2, 0);
+      add(/gateway/i, 0, 7.8, 0);
+    }
     state.view.grid = false; state.view.markers = false;
     core.syncScene();
     await core.objectLayer.ready();
@@ -244,13 +251,14 @@ try {
     return {
       document: state.doc.id, savedId: state.savedId,
       objects: state.doc.objects.map(object => ({ asset: object.asset, scale: object.scale, position: object.position })),
-      catalogCount: state.assets.filter(asset => asset.group === 'brumaluz-hamlet').length,
+      catalogCount: state.assets.filter(asset => asset.group === hero.split('/')[0]).length,
       characterForScale: true,
     };
   }, { assets: entries, hero: firstHero.id });
   assert.equal(placement.savedId, null, 'Review must remain unsaved');
   assert.ok(placement.objects.length >= 4, 'Hero scene has too few supporting pieces');
   assert.equal(placement.catalogCount, entries.length);
+  for (const object of placement.objects) assert.deepEqual(object.scale, [1, 1, 1], `Wrong metre scale: ${object.asset}`);
   await editor.mouse.move(10, 10);
   await settle(editor);
   assert.ok(!/No se pudo|Error/.test(await editor.locator('#hint-info').textContent()), 'Editor reported a status error');

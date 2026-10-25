@@ -19,9 +19,9 @@ import { beginConversation, storyLock } from './conversation';
 import { toast } from '../ui/toast';
 import { setWindow } from '../ui/menus';
 import { openBank } from './inventory';
-import { pickUpCoinBag } from './vitals';
+import { pickUpCoinBag, pickUpFairyDust } from './vitals';
 import { lockCombatTarget } from './combat';
-import { beginWilderness, wildernessInteractions } from './wilderness';
+import { wildernessInteractions, openWildernessCorpse, clickWilderness } from './wilderness';
 import { $ } from '../ui/dom';
 import { professionInteractions } from '../world/professionWorld';
 import { gatherResource, performProfession } from './professions';
@@ -106,7 +106,7 @@ export function interact() {
     play.lastPlatformY = null;
     return;
   }
-  if(item?.id.startsWith('wild:')){void beginWilderness(item.id.slice(5));return;}
+  if(item?.id.startsWith('wildloot:')){openWildernessCorpse(item.id.slice(9));return;}
   if(item?.id.startsWith('resource:')){void gatherResource(item.id.slice(9));return;}
   if(item?.id.startsWith('station:')){const job=item.id.slice(8);selectProfessionTab(job==='reparacion'?'tools':'recipes',job==='reparacion'?'herreria':job);setWindow('professions');void performProfession('state');return;}
   if (item?.id.startsWith('portal:')) {
@@ -117,9 +117,10 @@ export function interact() {
   }
   if (item?.id === 'house:bed') { void restInBed(); return; }
   if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
-  if (item?.id === 'corpse:shadowling') { setWindow('loot'); return; }
+  if (item?.id === 'corpse:shadowling') { fight.lootEncounter=null;fight.lootTargetRoot=null;setWindow('loot'); return; }
   if (item?.id === 'bank:chest') { void openBank(); return; }
   if (item?.id.startsWith('coinbag:')) { void pickUpCoinBag(item.id.slice('coinbag:'.length)); return; }
+  if (item?.id.startsWith('fairydust:')) { void pickUpFairyDust(item.id.slice('fairydust:'.length)); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   if (npcId) { talkTo(npcId); return; }
   const lines = item && (INTERACTIONS[item.id]?.() ?? (item.text ? [{ speaker: session.state.name, text: item.text }] : undefined));
@@ -133,9 +134,10 @@ export function interact() {
 
 export const TALK_RANGE = 2.3;
 export function clickNpc(e: PointerEvent) {
-  if (play.dead || isDialogOpen() || !npcActors.length) return false;
+  if (play.dead || isDialogOpen()) return false;
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  if(play.city.locationId==='pompelin'&&clickWilderness(ray))return true;
   if (fight.combatTargetRoot && fight.combatEncounter?.status === 'defeated' && ray.intersectObject(fight.combatTargetRoot, true).length) {
     if (holder.position.distanceTo(fight.combatTargetRoot.position) <= 3) setWindow('loot');
     else toast('Botín', 'Acércate al cuerpo para recoger el botín.', true);

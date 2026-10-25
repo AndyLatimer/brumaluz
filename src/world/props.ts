@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { loadGLB } from './load';
 import coinBagUrl from '../assets/models/props/coin-bag.glb?url';
+import fairyDustUrl from '../assets/models/props/fairy-dust.glb?url';
 import woodenBridgeUrl from '../assets/models/props/wooden-bridge.glb?url';
 import medievalBridgeUrl from '../assets/models/props/medieval-bridge.glb?url';
 import medievalRoofedBridgeUrl from '../assets/models/props/medieval-bridge_roofed.glb?url';
@@ -15,7 +16,7 @@ import bushUrl from '../assets/library/forest/objects/Bush_1_A_Color1.glb?url';
 import rockUrl from '../assets/library/forest/objects/Rock_1_A_Color1.glb?url';
 
 export const PROP_URLS = {
-  'coin-bag': coinBagUrl, textiles: textilesUrl, iron: ironUrl, logs: logsUrl, planks: planksUrl,
+  'coin-bag': coinBagUrl, 'fairy-dust': fairyDustUrl, textiles: textilesUrl, iron: ironUrl, logs: logsUrl, planks: planksUrl,
   'tavern-table': tableUrl, barrels: barrelsUrl, bush: bushUrl, rock: rockUrl,
   'wooden-bridge': woodenBridgeUrl,
   'medieval-bridge': medievalBridgeUrl,

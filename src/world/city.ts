@@ -3,12 +3,14 @@ import { loadGLB } from './load';
 import cityUrl from '../assets/models/city.glb?url';
 import { buildCityDetails } from './cityDetails';
 import { COIN_BAGS } from '../data/coinBags';
+import { FAIRY_DUST_SPOTS } from '../data/fairyDust';
 import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN } from '../data/quests';
 import { brumaluzGateMarkers } from '../data/pompelin';
 import type { MapMarker } from '../data/maps';
 import { type CityPortal, type CityArrival, type City, type Placement, type Collider, type Platform, type NpcSite, COMBAT_SITE } from './city/types';
 import { PI, S, BLOCK, worldToHex, key, hexDist, hexToWorld, SQ3 } from './city/hex';
 import { layoutCity } from './city/layout';
+import { createLineOfSight } from './lineOfSight';
 
 // ---------------------------------------------------------------------------
 // Brumaluz: ciudad de casillas hexagonales con el pack "KayKit Medieval
@@ -508,6 +510,7 @@ export async function buildCity(): Promise<City> {
   }
 
   // NPC de prueba junto a la casa más cercana al punto de aparición del jugador
+  const sightObstacles = colliders.slice();
   const spawnPoint = hexToWorld(0, -1.6);
   const nearestHome = place
     .filter((p) => p.model === 'home_A' || p.model === 'home_B')
@@ -553,6 +556,7 @@ export async function buildCity(): Promise<City> {
   root.add(details.root);
   for (const detail of details.placements) {
     colliders.push({ x: detail.x, z: detail.z, r: detail.radius, topY: detail.topY });
+    sightObstacles.push({ x: detail.x, z: detail.z, r: detail.radius, topY: detail.topY });
     const rise = detail.topY - groundY(detail.x, detail.z);
     if (detail.prop !== 'bush' && detail.prop !== 'rock'
       && rise >= .3 && rise <= 1.2 && detail.hx >= .3 && detail.hz >= .3) {
@@ -579,9 +583,11 @@ export async function buildCity(): Promise<City> {
       };
     })),
     interactables: (() => { const w = hexToWorld(0, 0); return [{ id: 'well', position: new THREE.Vector3(w.x, groundY(w.x, w.y), w.y), radius: 3.4, label: 'Asomarse al pozo' }]; })(),
+    fairyDustSpots: FAIRY_DUST_SPOTS.map(d => ({ id: d.id, x: d.x, z: d.z, yaw: d.yaw })),
     vendorSpots,
     collide,
     groundY,
+    lineOfSight: createLineOfSight(sightObstacles, groundY),
     platformY,
     spawn: (() => { const w = hexToWorld(0, -1.6); return new THREE.Vector3(w.x, groundY(w.x, w.y), w.y); })(),
     spawnYaw: Math.atan2(0.5, SQ3 / 2),

@@ -1,4 +1,7 @@
 -- Generated from authoritative existing entry points by tools/build-rpg-server.mjs.
+create or replace function public.game_shadow_combat_config() returns jsonb language sql immutable set search_path='' as $$ select '{"health":110,"windup":1.4,"boltWindup":0.65,"meleeWindup":0.7,"recovery":1.8,"radius":1.6,"meleeRange":2.2,"range":12,"aggro":2,"damage":{"area":9,"bolt":5,"melee":6}}'::jsonb $$;
+revoke all on function public.game_shadow_combat_config() from public,anon,authenticated;
+
 create or replace function public.combat_action(p_character_id uuid,p_action text)
 returns jsonb
 language plpgsql
@@ -64,8 +67,8 @@ begin
     when 'clerigo' then 6 when 'explorador' then 8 else 0 end;
   cadence:=case cls when 'guerrero' then 1.5 when 'mago' then 1.5 when 'picaro' then 1.15 when 'clerigo' then 1.65 when 'explorador' then 1.5 else 0 end;
   damage:=public.game_equipment_stat(c.data,'power');
-  cadence:=cadence*public.game_weapon_tempo(c.data);
-  damage:=damage*public.game_power_multiplier(c.data)*(1+(bonus->>'power')::numeric)*public.game_weapon_tempo(c.data);
+  cadence:=greatest(case cls when 'guerrero' then 0.7200000000000001 when 'picaro' then 0.7200000000000001 when 'mago' then 0.5900000000000001 when 'clerigo' then 0.5900000000000001 when 'explorador' then 0.8200000000000001 else .72 end,cadence*public.game_weapon_tempo(c.data)*public.game_agility_tempo(c.data));
+  damage:=damage*public.game_power_multiplier(c.data)*public.game_strength_power(c.data)*(1+(bonus->>'power')::numeric)*public.game_weapon_tempo(c.data);
   raw_basic:=damage;
   enemy_hp:=(encounter->>'health')::numeric;
   hp:=public.game_health(c.data);
@@ -90,7 +93,7 @@ begin
     raise exception 'COMBAT_COOLDOWN';
   end if;
 
-  cost:=cost*(1-(bonus->>'skillCost')::numeric);
+  cost:=cost*(1-(bonus->>'skillCost')::numeric)*public.game_intellect_efficiency(c.data);
   resource:=(public.game_public_vitals(c.data)->>'resource')::numeric;
   if resource<cost then raise exception 'COMBAT_NOT_ENOUGH_RESOURCE'; end if;
   cost:=cost+coalesce((c.data->>'resourceCostFraction')::numeric,0);
@@ -106,7 +109,7 @@ begin
   end if;
 
   if healing then
-    recovered:=(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1))*public.game_power_multiplier(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
+    recovered:=(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1))*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
     healed:=least(floor(recovered),public.game_max_health(c.data)-hp);
     c.data:=c.data||jsonb_build_object('health_regen',case when hp+healed>=public.game_max_health(c.data) then 0 else recovered-floor(recovered) end);
     c.data:=c.data||jsonb_build_object('health',hp+healed);
@@ -118,7 +121,7 @@ begin
     if skill then
       each_hit:=((each_hit+(skill_rank-1)*case when cls='picaro' then 1 else 2 end)
         *public.game_equipment_stat(c.data,'power')::numeric
-        /case when cls='picaro' then 8 else 10 end)*public.game_power_multiplier(c.data)*(1+(bonus->>'power')::numeric)*(1+(bonus->>'skillPower')::numeric);
+        /case when cls='picaro' then 8 else 10 end)*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus->>'power')::numeric)*(1+(bonus->>'skillPower')::numeric);
     end if;
     if not skill and e is not null then
       counters:=coalesce((es->>'count')::int,0)+1;
@@ -206,6 +209,9 @@ declare
   remaining int;
   hp int;
   incoming numeric; barrier numeric; blocked numeric; fraction numeric;
+  cfg jsonb:=public.game_shadow_combat_config();
+  attack_kind text;
+  attack_distance numeric;
 begin
   if encounter->>'kind'='expedition' then return d;end if;
   if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false)
@@ -217,9 +223,27 @@ begin
   end if;
   enemy_x := (encounter->>'x')::numeric;
   enemy_z := (encounter->>'z')::numeric;
-  if sqrt(power(p_x-enemy_x,2)+power(p_z-enemy_z,2))>2 then return d; end if;
+  attack_distance:=sqrt(power(p_x-enemy_x,2)+power(p_z-enemy_z,2));
+  if coalesce((encounter->>'windup')::numeric,0)=0 then
+    if attack_distance>
+      (case when coalesce((encounter->>'engaged')::boolean,false) then (cfg->>'range')::numeric else (cfg->>'aggro')::numeric end)
+      or not public.game_rpg_sight('brumaluz',p_x::numeric,p_z::numeric,enemy_x,enemy_z) then return d; end if;
+    attack_kind:=case when coalesce((encounter->>'attackSeq')::int,0)%3=0 then 'area' when attack_distance<=(cfg->>'meleeRange')::numeric then 'melee' else 'bolt' end;
+    encounter:=encounter||jsonb_build_object('attackKind',attack_kind,'windup',stamp+case attack_kind when 'area' then (cfg->>'windup')::numeric when 'bolt' then (cfg->>'boltWindup')::numeric else (cfg->>'meleeWindup')::numeric end,'aimX',p_x,'aimZ',p_z,
+      'attackSeq',coalesce((encounter->>'attackSeq')::int,0)+1,'engaged',true);
+    return jsonb_set(d,'{combatEncounter}',encounter);
+  end if;
+  if stamp<(encounter->>'windup')::numeric then return d; end if;
+  attack_kind:=coalesce(encounter->>'attackKind','area');
+  encounter:=encounter||jsonb_build_object('windup',null,'enemyAttackAt',stamp+(cfg->>'recovery')::numeric);
+  if (attack_kind='area' and sqrt(power(p_x-(encounter->>'aimX')::numeric,2)+power(p_z-(encounter->>'aimZ')::numeric,2))>(cfg->>'radius')::numeric)
+    or (attack_kind='melee' and attack_distance>(cfg->>'meleeRange')::numeric)
+    or attack_distance>(cfg->>'range')::numeric
+    or not public.game_rpg_sight('brumaluz',p_x::numeric,p_z::numeric,enemy_x,enemy_z) then
+    return jsonb_set(d,'{combatEncounter}',encounter);
+  end if;
 
-  incoming:=8*public.game_guard_multiplier(d);
+  incoming:=(cfg->'damage'->>attack_kind)::numeric*public.game_guard_multiplier(d);
   barrier:=case when coalesce((d->'enchantState'->>'barrierUntil')::numeric,0)>stamp then coalesce((d->'enchantState'->>'barrier')::numeric,0) else 0 end;
   blocked:=least(incoming,barrier);incoming:=incoming-blocked;
   if d ? 'enchantState' then d:=jsonb_set(d,'{enchantState,barrier}',to_jsonb(greatest(0,barrier-blocked)));end if;
@@ -233,7 +257,7 @@ begin
     'overheal_at',stamp,'combat_at',stamp
   );
   encounter := encounter || jsonb_build_object(
-    'enemyAttackAt',stamp+2,'engaged',true,
+    'enemyAttackAt',stamp+(cfg->>'recovery')::numeric,'engaged',true,
     'status',case when hp=0 then 'failed' else 'active' end
   );
   if hp=0 then d:=d-'enchantState';end if;

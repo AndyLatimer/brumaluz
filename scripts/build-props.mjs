@@ -106,3 +106,55 @@ coinBag();
 await mkdir(fileURLToPath(props), { recursive: true });
 await io.write(fileURLToPath(new URL('coin-bag.glb', props)), document);
 console.log('props: coin-bag.glb');
+
+// ---------------- Polvos de hada ----------------
+// Montón de polvo mágico brillante en el suelo, con destellos alrededor.
+// Origen en el suelo, altura ~0.25 m.
+const dustDocument = new Document();
+const dustBuffer = dustDocument.createBuffer('FairyDust');
+const dustScene = dustDocument.createScene('FairyDust');
+const dustMaterials = new Map(Object.entries({
+  gold: ['#e6b445', .38, .55],
+}).map(([name, [color, roughness, metallic]]) => [
+  name, dustDocument.createMaterial(name)
+    .setBaseColorFactor([...new THREE.Color(color).toArray(), 1])
+    .setRoughnessFactor(roughness).setMetallicFactor(metallic),
+]));
+const dustAccess = (name, array, type) => dustDocument.createAccessor(name).setType(type).setArray(array).setBuffer(dustBuffer);
+const dustMesh = (name, parts, parent) => {
+  const output = dustDocument.createMesh(name);
+  for (const [material, geometry] of Object.entries(parts)) {
+    const merged = mergeVertices(geometry.deleteAttribute('uv').deleteAttribute('normal'), 1e-4);
+    merged.computeVertexNormals();
+    output.addPrimitive(dustDocument.createPrimitive()
+      .setAttribute('POSITION', dustAccess(`${name}:${material}:position`, Float32Array.from(merged.getAttribute('position').array), 'VEC3'))
+      .setAttribute('NORMAL', dustAccess(`${name}:${material}:normal`, Float32Array.from(merged.getAttribute('normal').array), 'VEC3'))
+      .setIndices(dustAccess(`${name}:${material}:indices`, Uint16Array.from(merged.index.array), 'SCALAR'))
+      .setMaterial(dustMaterials.get(material)));
+    geometry.dispose(); merged.dispose();
+  }
+  parent.addChild(dustDocument.createNode(name).setMesh(output));
+};
+
+const dustRoot = dustDocument.createNode('fairy-dust');
+dustScene.addChild(dustRoot);
+// Montículo de polvo: cono bajo y ancho.
+const dust = place(new THREE.ConeGeometry(.18, .18, 16), { y: .09, rx: -Math.PI / 2 });
+// Base brillante: disco más amplio bajo el montículo.
+const base = place(new THREE.CircleGeometry(.22, 16), { y: .01, rx: -Math.PI / 2 });
+// Partículas de brillo alrededor: esferas pequeñas en aro.
+const sparkle = (x, z, y = .12) => place(new THREE.IcosahedronGeometry(.018, 1), { x, y, z });
+const sparkles = [];
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2;
+  const r = .13 + Math.sin(i * 1.3) * .04;
+  sparkles.push(sparkle(Math.cos(a) * r, Math.sin(a) * r, .08 + Math.cos(i * 2.1) * .04));
+}
+
+dustMesh('fairy-dust-dust', { gold: dust }, dustRoot);
+dustMesh('fairy-dust-base', { gold: base }, dustRoot);
+dustMesh('fairy-dust-sparkles', { gold: mergeGeometries(sparkles) }, dustRoot);
+
+await io.write(fileURLToPath(new URL('fairy-dust.glb', props)), dustDocument);
+console.log('props: fairy-dust.glb');
+console.log('props: fairy-dust.glb');

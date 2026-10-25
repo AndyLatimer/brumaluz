@@ -11,6 +11,7 @@ import type { SavedCharacter } from '../services/account';
 import type { CombatEncounter, WorldConnection } from '../services/multiplayer';
 import type { City } from '../world/city';
 import type { createCoinBags } from '../world/coinBags';
+import type { createFairyDust } from '../world/fairyDust';
 import type { createWelcomeWorld } from '../world/welcome';
 import type { NpcDef } from '../story/npcs';
 import type { createDestinationIndicator } from '../ui/destinationIndicator';
@@ -150,6 +151,9 @@ export const vitals = {
 
 /** Combate: el encuentro con la criatura, el objetivo fijado y el ataque automático. */
 export const fight = {
+  facingUntil:0,
+  lootEncounter:null as CombatEncounter|null,
+  lootTargetRoot:null as THREE.Group|null,
   healTarget:null as string|null,
   lockedEnemy: false,
   combatApproach: false,
@@ -185,5 +189,6 @@ export const story = {
   storyFog: null as { near: number; far: number } | null,
   welcomeWorld: undefined! as ReturnType<typeof createWelcomeWorld>,
   coinBags: undefined! as ReturnType<typeof createCoinBags>,
+  fairyDust: undefined! as ReturnType<typeof createFairyDust>,
   NPCS: undefined! as Record<string, NpcDef>,
 };

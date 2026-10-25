@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { after, before } from 'node:test';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
@@ -11,12 +12,13 @@ import { chromium } from 'playwright';
 export const port = Number(process.env.TEST_WORLD_PORT || 4175);
 export const url = `http://127.0.0.1:${port}`;
 export const npcDefinitions = JSON.parse(readFileSync(new URL('../../src/data/npcs.json', import.meta.url), 'utf8')).npcs;
-export const project = readFileSync(new URL('../../dist/index.html', import.meta.url), 'utf8').match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
+const outputDirectory = resolve(process.env.TEST_WORLD_DIST || 'dist');
+export const project = readFileSync(resolve(outputDirectory, 'index.html'), 'utf8').match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
 let server;
 export let browser;
 before(async () => {
   assert.ok(project, 'Build with the public Supabase configuration before running browser tests');
-  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort']);
+  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort', '--outDir', outputDirectory]);
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Preview server did not start')), 15000);
     server.once('error', reject);

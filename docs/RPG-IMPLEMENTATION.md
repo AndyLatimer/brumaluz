@@ -105,7 +105,7 @@ Precios, umbrales, distribución de recursos, probabilidades de recetas y tiempo
 
 ## Cooperación, interfaz y persistencia
 
-Las expediciones provisionales están retiradas. El primer circuito exterior incluye cinco enemigos individuales en Pompelín, con agresión automática, persecución, ataques anunciados y botín de materiales/recetas. El clérigo puede curar a un compañero del grupo a 6 m con línea de visión. La persecución comprueba obstáculos; no sustituye a una malla de navegación completa. Detalles y límites en `docs/COMBAT-REFINEMENT.md`.
+Las expediciones provisionales están retiradas. El circuito exterior incluye cinco enemigos compartidos en Pompelín, con múltiples agresores simultáneos, amenaza, persecución, retirada y ataques anunciados que comprueban a todos los jugadores dentro del área. El botín se reparte por participación y tiene selección independiente del objetivo de combate. El clérigo puede curar a un compañero del grupo a 6 m con línea de visión. Reglas actuales y límites en `docs/SHARED-WORLD-COMBAT.md`.
 
 Interfaz conservada, con recarga de habilidad, números de daño/curación y preparación enemiga en el marco existente. Tooltips muestran instancia, efecto aplicado, durabilidad, cadencia y progreso de conjuntos. Mesas, tablón e iconos provisionales de talleres/expediciones permanecen retirados.
 
@@ -118,7 +118,7 @@ Muebles y estaciones colocables en el interior habilitado de Isberto, con compro
 - Catálogo: `tools/build-rpg-catalog.mjs` → `src/data/generated/rpg-catalog.json`.
 - Geometría: `tools/build-rpg-geometry.mjs`, a partir de mapas publicados y huellas de colisión.
 - Reglas: `src/data/{combat,sets,enchantments,professions}.ts`.
-- Servidor: `supabase/server/18*`–`27*`. Los archivos 18, 18a, 21, 23 y 26 se generan; cambiar sus fuentes, no sus salidas. Cadencia compartida en `src/data/combatCadence.json`; preparación visual en `src/data/combatTiming.json`; enemigos en `src/data/wilderness.json`.
+- Servidor: `supabase/server/18*`–`29*`. Los archivos 18, 18a, 21, 23, 26 y 29 se generan; cambiar sus fuentes, no sus salidas. Cadencia compartida en `src/data/combatCadence.json`; preparación visual en `src/data/combatTiming.json`; enemigos en `src/data/wilderness.json`. El archivo 28 sustituye los encuentros exteriores individuales del 27.
 - `npm run build`: regenera catálogo, geometría, catálogo de equipo y adaptaciones SQL, luego compila TypeScript y Vite.
 - `npm run db:apply`: aplica el SQL a la base configurada. Regenerar y aplicar juntos cuando cambien fórmulas o contenido.
 
@@ -126,7 +126,7 @@ Muebles y estaciones colocables en el interior habilitado de Isberto, con compro
 
 El explorador utiliza los clips KayKit de apuntar, disparar y recargar ballesta del rig compatible. El básico y Disparo preciso tienen tiempos de preparación distintos; sustituyen la pose provisional de lanzamiento de magia.
 
-Faltan revisión de equilibrio con jugadores, población exterior compartida, un recorrido de mazmorra con jefes y mecánicas de roles, navegación completa de enemigos, arte propio para talleres/recursos/muebles y expansión del alojamiento. Las expediciones continúan retiradas mientras se diseña su versión definitiva.
+Faltan revisión de equilibrio con jugadores y varias sesiones reales, un recorrido de mazmorra con jefes y mecánicas de roles, navegación completa de enemigos, arte propio para talleres/recursos/muebles y expansión del alojamiento. La población exterior ya es compartida. Las expediciones continúan retiradas mientras se diseña su versión definitiva.
 
 Pericia, Presencia y Percepción mantienen sus valores de personaje, pero sus efectos generales siguen reservados para el diseño de especializaciones, comercio y exploración. Sus descripciones ya no prometen bonificaciones inexistentes. Las raciales de fabricación y el dominio de cada oficio sí tienen efecto.
 

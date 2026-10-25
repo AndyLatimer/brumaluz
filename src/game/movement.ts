@@ -28,7 +28,7 @@ export function updatePlay(dt: number) {
   );
   // Movimiento relativo a la cámara: W va hacia donde mira la cámara, A/D van a los lados
   const dir = new THREE.Vector3();
-  let clickMoving = false;
+  let clickMoving = false,arrivalSpeed=Infinity;
   if (input.lengthSq() > 0) {
     fight.combatApproach=false;
     play.moveTarget = null;
@@ -41,7 +41,8 @@ export function updatePlay(dt: number) {
   } else if(fight.combatAuto&&fight.combatApproach&&fight.combatTargetRoot&&fight.combatEncounter?.status==='active'){
     const range=COMBAT_KITS[session.state.cls].range;
     const dx=fight.combatTargetRoot.position.x-holder.position.x,dz=fight.combatTargetRoot.position.z-holder.position.z;
-    if(Math.hypot(dx,dz)>range-.1){dir.set(dx,0,dz).normalize();clickMoving=true;}
+    const remaining=Math.hypot(dx,dz)-Math.max(.7,range-.12);
+    if(remaining>0){dir.set(dx,0,dz).normalize();clickMoving=true;arrivalSpeed=remaining*7;}
   }
   if (play.char.isSeated && dir.lengthSq() > 0) play.char.stand();
   if (!view.dragging && clickMoving && !fight.lockedEnemy) {
@@ -55,7 +56,7 @@ export function updatePlay(dt: number) {
   // En el agua se va más despacio: vadeando un poco, nadando bastante (sin «correr»).
   const water = play.mode === 'play' ? play.city.waterAt?.(holder.position.x, holder.position.z) ?? null : null;
   const waterPace = water?.deep ? 0.5 : water ? 0.75 : 1;
-  const maxSpeed = dir.lengthSq() ? (play.running ? 6.2 : 2.4) * waterPace : 0;
+  const maxSpeed = dir.lengthSq() ? Math.min((play.running ? 6.2 : 2.4) * waterPace,arrivalSpeed) : 0;
   const wantVel = dir.clone().multiplyScalar(maxSpeed);
   playerVel.lerp(wantVel, 1 - Math.exp(-dt * (maxSpeed > 0 ? 9 : 11)));
   const speed = playerVel.length();
@@ -74,7 +75,7 @@ export function updatePlay(dt: number) {
       holder.rotation.y += d * (1 - Math.exp(-dt * 12));
     }
   }
-  if(fight.combatBusy&&fight.combatTargetRoot&&fight.combatEncounter?.status==='active'){
+  if(performance.now()<fight.facingUntil&&fight.combatTargetRoot&&fight.combatEncounter?.status==='active'){
     const want=Math.atan2(fight.combatTargetRoot.position.x-holder.position.x,fight.combatTargetRoot.position.z-holder.position.z);
     const turn=Math.atan2(Math.sin(want-holder.rotation.y),Math.cos(want-holder.rotation.y));holder.rotation.y+=turn*(1-Math.exp(-dt*22));
   }

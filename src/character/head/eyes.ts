@@ -15,11 +15,16 @@ export const EYE = [
   { rx: 0.06, ry: 0.06, tilt: 0, lid: 0 },
   // masculinos: más pequeños, párpado recto y brillos discretos
   { rx: 0.047, ry: 0.054, tilt: 0.06, lid: 0.12, hl: 0.7 }, { rx: 0.053, ry: 0.044, tilt: 0.2, lid: 0.16, hl: 0.65 },
+  { rx: 0.061, ry: 0.046, tilt: 0.12, lid: 0.04 }, { rx: 0.053, ry: 0.075, tilt: -0.08, lid: 0, hl: 0.9 },
+  { rx: 0.057, ry: 0.052, tilt: 0, lid: 0.24, hl: 0.75 }, { rx: 0.057, ry: 0.069, tilt: 0.16, lid: 0, hl: 1.1 },
 ] as { rx: number; ry: number; tilt: number; lid: number; hl?: number }[];
 /** Cejas: grosor, largo, altura extra, giro (+ = preocupada), curva. */
 export const BROW = [
   { t: 0.022, l: 0.15, dy: 0, rot: 0.05, arc: 0.2 }, { t: 0.012, l: 0.14, dy: 0.008, rot: 0.04, arc: 0.3 }, { t: 0.034, l: 0.17, dy: -0.004, rot: 0, arc: 0.1 },
   { t: 0.02, l: 0.14, dy: 0.04, rot: 0.02, arc: 0.45 }, { t: 0.026, l: 0.16, dy: -0.01, rot: 0.38, arc: 0 }, { t: 0.022, l: 0.15, dy: 0.015, rot: -0.32, arc: 0.1 },
+  { t: 0.018, l: 0.155, dy: 0.014, rot: -0.1, arc: 0.8 },
+  { t: 0.021, l: 0.16, dy: 0.004, rot: 0, arc: 0 },
+  { t: 0.016, l: 0.13, dy: 0.012, rot: 0.1, arc: 0.4 },
 ];
 /** Ojos y cejas de la cabeza (parte de buildHead). */
 export function buildEyes({ extraMat, A, facing, onFace, E, o, beast, E0, conform, B, material }: { extraMat: (c: string) => THREE.Material; A: Analysis; facing: (x: number, y: number) => THREE.Euler; onFace: (x: number, y: number, out?: number) => THREE.Vector3; E: { rx: number; ry: number; tilt: number; lid: number; hl?: number; }; o: HeadOptions; beast: boolean; E0: { rx: number; ry: number; tilt: number; lid: number; hl?: number; }; conform: (grp: THREE.Object3D, lift: number, clampY?: number) => void; B: { t: number; l: number; dy: number; rot: number; arc: number; }; material: (kit: HeadKit) => THREE.Material }) {
@@ -55,7 +60,7 @@ export function buildEyes({ extraMat, A, facing, onFace, E, o, beast, E0, confor
     const hl2 = disc(E.rx * 0.14 * hlk, E.ry * 0.12 * hlk, 0.012, white);
     hl2.position.set(s * E.rx * 0.34, -E.ry * 0.42, 0.012);
     // línea del párpado superior y pestañas
-    const lidLine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.14, 5, 24, PI * 0.86).rotateZ(PI * 0.07), pupil);
+    const lidLine = new THREE.Mesh(new THREE.TorusGeometry(1, 0.14, 5, 24, PI * 0.86).rotateZ(PI * 0.07), o.makeup === 8 ? extraMat(o.makeupColor ?? '#638469') : pupil);
     lidLine.scale.set(E.rx * 1.1, E.ry * 1.1, 0.3);
     lidLine.position.z = 0.012;
     eye.add(lidLine);

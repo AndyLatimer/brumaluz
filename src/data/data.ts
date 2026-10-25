@@ -25,13 +25,13 @@ export interface AttributeDef {
 }
 
 export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
-  fuerza: { label: 'Fuerza', desc: '+1 % de potencia por punto para el guerrero, en básicos y habilidades.' },
-  intelecto: { label: 'Intelecto', desc: '+1 % de daño y curación por punto para magos y clérigos, y +7 de maná máximo.' },
+  fuerza: { label: 'Fuerza', desc: 'Mejora los ataques básicos de todas las clases un 0,3 % por punto por encima de 5. El guerrero obtiene además +1 % de potencia por punto.' },
+  intelecto: { label: 'Intelecto', desc: 'Reduce el coste de habilidades de todas las clases, con rendimiento decreciente y hasta un 25 %. Magos y clérigos ganan además potencia y maná.' },
   corpulencia: { label: 'Corpulencia', desc: '+2 % de vida máxima por punto. La reducción de daño depende de la Guardia.' },
-  agilidad: { label: 'Agilidad', desc: '+1 % de potencia por punto para pícaros y exploradores. No modifica la velocidad.' },
-  pericia: { label: 'Pericia', desc: 'Atributo de oficio reservado para futuras especializaciones. La fabricación actual depende del dominio del oficio.' },
-  presencia: { label: 'Presencia', desc: 'Atributo social reservado. Todavía no modifica precios ni relaciones.' },
-  percepcion: { label: 'Percepción', desc: 'Atributo de exploración reservado. Todavía no modifica recursos ni botín.' },
+  agilidad: { label: 'Agilidad', desc: 'Acelera los ataques básicos de todas las clases, hasta un 25 %, sin cortar su animación. Pícaros y exploradores ganan además potencia.' },
+  pericia: { label: 'Pericia', desc: '+0,4 % de daño o curación de habilidades por punto por encima de 5, para todas las clases.' },
+  presencia: { label: 'Presencia', desc: '+1 de recurso máximo por punto: maná o estamina según la clase.' },
+  percepcion: { label: 'Percepción', desc: 'Reduce el daño recibido de todas las clases, con rendimiento decreciente y hasta un 15 % adicional a la Guardia.' },
 };
 
 export type AttributeBonuses = Record<AttributeId, number>;
@@ -56,6 +56,7 @@ export interface CharData {
   shadowQuest: ShadowQuest | null;
   isbertoPosition: { x: number; z: number } | null;
   coinBags: string[]; // bolsas de pelines ya recogidas (ver coinBags.ts)
+  fairyDust: string[]; // polvos de hada ya recogidos (ver fairyDust.ts)
   welcome: WelcomeProgress | null;
   name: string;
   title: TitleId; // título mostrado junto al nombre (ver titles.ts)
@@ -76,7 +77,7 @@ export interface CharData {
   combatVisual?: {at:number;action:string};
   expeditionId?:string;
   potionReadyAt?:number;
-  wilderness?:{respawns?:Record<string,number>;firstRecipe?:boolean;kills?:number;graceUntil?:number};
+  wilderness?:{selected?:string;respawns?:Record<string,number>;firstRecipe?:boolean;kills?:number;graceUntil?:number};
   location: LocationId;
   position: { x: number; z: number; yaw: number } | null; // última posición guardada por el servidor; null = punto de inicio
   race: Race;
@@ -125,8 +126,8 @@ export interface RaceDef {
   names: [string[], string[]];
 }
 
-const HUMAN_SKINS = ['#f8ccab', '#ecb68e', '#d9a07a', '#b97f57', '#8e5a3a', '#5f3b28'];
-const HUMAN_SKIN_NAMES = ['Marfil', 'Melocotón', 'Miel', 'Canela', 'Cacao', 'Ébano'];
+const HUMAN_SKINS = ['#f8ccab', '#ecb68e', '#d9a07a', '#b97f57', '#8e5a3a', '#5f3b28', '#c4977c', '#754e40'];
+const HUMAN_SKIN_NAMES = ['Marfil', 'Melocotón', 'Miel', 'Canela', 'Cacao', 'Ébano', 'Almendra', 'Castaña'];
 
 /** Pelajes felinos: color base, nombre y marcas de la cara (tabby = rayas, spots = manchas, mask = antifaz, patch = parches). */
 export type CoatMark = 'tabby' | 'spots' | 'mask' | 'patch' | 'plain';
@@ -140,6 +141,8 @@ export const PELSO_COATS: Coat[] = [
   { base: '#f6f2ea', name: 'Bicolor', mark: 'patch', markColor: '#8f8f98', nose: '#f0a0aa', ear: '#f6c4c4', whisker: '#7a7a82', tail: '#8f8f98' },
   { base: '#d89050', name: 'Carey', mark: 'patch', markColor: '#35292b', nose: '#d4858f', ear: '#e8a8a0', whisker: '#4a3630', tail: '#35292b' },
   { base: '#ad8c64', name: 'Pardo atigrado', mark: 'tabby', markColor: '#5a4128', nose: '#c98a86', ear: '#dba898', whisker: '#4a3626', tail: '#5a4128' },
+  { base: '#dce0e4', name: 'Lince de nieve', mark: 'spots', markColor: '#788492', nose: '#ca94a4', ear: '#e2b8c4', whisker: '#526170', tail: '#788492' },
+  { base: '#f0d9a9', name: 'Crema atigrado', mark: 'tabby', markColor: '#c19a66', nose: '#dd9e9a', ear: '#efc1b2', whisker: '#93724a', tail: '#c19a66' },
 ];
 export const coatMark = (skin: string) => PELSO_COATS.find((c) => c.base === skin);
 
@@ -158,33 +161,33 @@ export const RACES: Record<Race, RaceDef> = {
     feminine: 'Elfa',
     desc: 'Desde hace generaciones, los elfos protegen los bosques que abrazan Brumaluz. Nativos de la Arboleda, su conexión y conocimiento de la naturaleza los han convertido en hábiles alquimistas.',
     bonuses: { ...noBonuses(), intelecto: 2, pericia: 2, agilidad: 1 },
-    skins: ['#fbe0cc', '#f2cdb0', '#e8c4c8', '#c9b4d8', '#9f8fc6', '#d4bc94'],
-    skinNames: ['Alba', 'Pétalo', 'Rosa', 'Lavanda', 'Crepúsculo', 'Trigo'],
-    traitLabel: 'Orejas', traits: ['Largas', 'Cortas', 'Caídas'],
+    skins: ['#fbe0cc', '#f2cdb0', '#e8c4c8', '#c9b4d8', '#9f8fc6', '#d4bc94', '#b1bea3', '#a6b4cc'],
+    skinNames: ['Alba', 'Pétalo', 'Rosa', 'Lavanda', 'Crepúsculo', 'Trigo', 'Liquen', 'Niebla lunar'],
+    traitLabel: 'Orejas', traits: ['Largas', 'Cortas', 'Caídas', 'De hoja', 'Horizontales'],
     names: [['Ae', 'Ela', 'Fae', 'Gal', 'Ith', 'Lae', 'Syl', 'Thal', 'Ny', 'Ara'], ['driel', 'lindra', 'rion', 'wyn', 'thas', 'nora', 'vael', 'neth', 'lia']],
   },
   lagto: {
     label: "Lagto'",
     desc: 'Los Lagto’ hacen su hogar en las montañas pedregosas de Las Cumbres de Cobre, entre grietas estrechas y cavernas donde apenas llega la luz. Recios y pacientes, conocen los pasos ocultos de la roca mejor que nadie.',
     bonuses: { ...noBonuses(), fuerza: 2, corpulencia: 3 },
-    skins: ['#7cc06a', '#4fae94', '#a8c25a', '#e0a050', '#5d93c8', '#c86a5a'],
-    skinNames: ['Junco', 'Laguna', 'Musgo', 'Arena', 'Río', 'Brasa'],
-    traitLabel: 'Cresta', traits: ['Púas', 'Cuernos', 'Aleta', 'Ninguna'],
+    skins: ['#7cc06a', '#4fae94', '#a8c25a', '#e0a050', '#5d93c8', '#c86a5a', '#626979', '#b98258'],
+    skinNames: ['Junco', 'Laguna', 'Musgo', 'Arena', 'Río', 'Brasa', 'Pizarra', 'Cobre viejo'],
+    traitLabel: 'Cresta', traits: ['Púas', 'Cuernos', 'Aleta', 'Ninguna', 'Cuernos cortos', 'Cresta de coral'],
     names: [["Sss'", 'Ka', 'Zith', 'Ish', 'Tol', 'Xa', 'Rek', 'Ssa'], ["'ra", 'ssik', 'tek', "'li", 'zar', 'ko', 'thiss']],
   },
   pelso: {
     label: 'Pelso',
     feminine: 'Pelsa',
-    desc: 'Los Pelso’ siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos hábiles navegantes nativos de la Isla de Luna Argéntea, se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
+    desc: 'Los Pelso siempre encuentran los rincones más cálidos, aunque rara vez se quedan quietos en ellos hábiles navegantes nativos de la Isla de Luna Argéntea, se dejan guiar por la pasión y el impulso: eso los lleva a vivir intensamente y, a veces, a meterse en líos de los que luego salen con una buena historia.',
     bonuses: { ...noBonuses(), fuerza: 1, corpulencia: 1, agilidad: 2, percepcion: 1 },
     skins: PELSO_COATS.map((c) => c.base), skinNames: PELSO_COATS.map((c) => c.name),
-    traitLabel: 'Orejas', traits: ['Puntiagudas', 'Redondas', 'Dobladas'],
+    traitLabel: 'Orejas', traits: ['Puntiagudas', 'Redondas', 'Dobladas', 'De lince', 'Pequeñas'],
     names: [['Mi', 'Nu', 'Pi', 'Ro', 'Ca', 'Mo', 'Tis', 'Lu', 'Fe'], ['sha', 'ru', 'lo', 'mi', 'ki', 'fu', 'sia', 'nya', 'rra']],
   },
 };
 
-export const EYE_COLORS = ['#1c1418', '#5a3420', '#2e66b0', '#2f8a46', '#b07a1a', '#6a3fa0', '#a83030', '#7d8c98'];
-export const EYE_COLOR_NAMES = ['Negro', 'Castaño', 'Azul', 'Verde', 'Ámbar', 'Violeta', 'Rubí', 'Gris'];
+export const EYE_COLORS = ['#1c1418', '#5a3420', '#2e66b0', '#2f8a46', '#b07a1a', '#6a3fa0', '#a83030', '#7d8c98', '#45a6a0', '#b4c995', '#c99548', '#b5b6d8'];
+export const EYE_COLOR_NAMES = ['Negro', 'Castaño', 'Azul', 'Verde', 'Ámbar', 'Violeta', 'Rubí', 'Gris', 'Laguna', 'Salvia', 'Miel', 'Luna'];
 
 export interface ClassDef {
   label: string;
@@ -207,19 +210,19 @@ export const CLASSES: Record<ClassId, ClassDef> = {
 export const raceLabel = (d: Pick<CharData, 'race' | 'sex'>) => (d.sex === 1 && RACES[d.race].feminine) || RACES[d.race].label;
 export const classLabel = (d: Pick<CharData, 'cls' | 'sex'>) => (d.sex === 1 && CLASSES[d.cls].feminine) || CLASSES[d.cls].label;
 
-export const HAIR_COLORS =  ['#2a1d16', '#5a3a22', '#8a5a2b', '#c48a3f', '#e8c97e', '#b23a22', '#e4e0d8', '#3a3a4a', '#5a86c8', '#8a5fb8', '#4f9a6a', '#d8608a'];
-export const HAIR_NAMES = ['Azabache', 'Castaño oscuro', 'Castaño', 'Cobrizo', 'Rubio', 'Pelirrojo', 'Plata', 'Grafito', 'Azul', 'Violeta', 'Verde', 'Rosa'];
+export const HAIR_COLORS =  ['#2a1d16', '#5a3a22', '#8a5a2b', '#c48a3f', '#e8c97e', '#b23a22', '#e4e0d8', '#3a3a4a', '#5a86c8', '#8a5fb8', '#4f9a6a', '#d8608a', '#754338', '#ded2ad', '#315d60', '#afa5c6', '#434b32', '#9e5b73'];
+export const HAIR_NAMES = ['Azabache', 'Castaño oscuro', 'Castaño', 'Cobrizo', 'Rubio', 'Pelirrojo', 'Plata', 'Grafito', 'Azul', 'Violeta', 'Verde', 'Rosa', 'Avellana', 'Lino dorado', 'Petróleo', 'Bruma lila', 'Musgo oscuro', 'Brezo'];
 export const CLOTH = ['#a8302e', '#3a64a8', '#2e8a4e', '#6a4aa8', '#d8a838', '#7a4a2a', '#34343e', '#ece4d0', '#2e8a8a', '#d0642a', '#c43a7a', '#e8a0b4', '#9ed4b8', '#9cc4ec', '#bca8e0', '#f2d6a0', '#c4b49a'];
 export const CLOTH_NAMES = ['Carmesí', 'Azul real', 'Bosque', 'Púrpura', 'Oro', 'Castaño', 'Carbón', 'Lino', 'Turquesa', 'Calabaza', 'Fucsia', 'Rosa palo', 'Menta', 'Cielo', 'Lavanda', 'Crema', 'Arena'];
 
 // El equipo de clase depende de la vocación; el atuendo inicial es el conjunto fijo de aldeano.
 export const CAPES = ['Sin capa', 'Capa corta', 'Capa de mago', 'Capa noble', 'Capa de piel'];
-export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Pasador metálico', 'Broche rúnico'];
-export const HAIR_ACC_VALUES = [0, 1, 2, 3, 4, 7, 8];
-export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda', 'Pañuelo de viajero'];
-export const MAKEUPS = ['Ninguno', 'Pestañas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno'];
-export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036'];
-export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro'];
+export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Pasador metálico', 'Broche rúnico', 'Pasador de hojas', 'Luna creciente', 'Diadema de cuentas'];
+export const HAIR_ACC_VALUES = [0, 1, 2, 3, 4, 7, 8, 9, 10, 11];
+export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda', 'Pañuelo de viajero', 'Aros de cobre', 'Pendientes de luna', 'Gafas de boticario'];
+export const MAKEUPS = ['Ninguno', 'Pestañas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno', 'Polvo de hadas', 'Delineado de bosque', 'Rubor de pétalo'];
+export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036', '#b97850', '#6a8e78', '#729da4', '#caa4a1'];
+export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro', 'Cobre', 'Salvia', 'Bruma', 'Pétalo'];
 
 export function randomName(race: Race, r = Math.random) {
   const [a, b] = RACES[race].names;
@@ -228,7 +231,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], rpg: undefined, enchantState: undefined, partyPeers: 0, potionReadyAt: undefined, combatVisual: undefined, wilderness: undefined,
+    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [], rpg: undefined, enchantState: undefined, partyPeers: 0, potionReadyAt: undefined, combatVisual: undefined, wilderness: undefined,
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
@@ -311,7 +314,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   out.clothA = clamp(out.clothA, CLOTH.length);
   out.clothB = clamp(out.clothB, CLOTH.length);
   const hairAcc = Number(out.hairAcc);
-  out.hairAcc = Number.isInteger(hairAcc) && hairAcc >= 0 && hairAcc <= 4 ? hairAcc : hairAcc === 7 || hairAcc === 8 ? hairAcc : 0;
+  out.hairAcc = HAIR_ACC_VALUES.includes(hairAcc) ? hairAcc : 0;
   out.hairAccColor = clamp(out.hairAccColor, ACC_COLORS.length);
   out.acc = clamp(out.acc, ACCS.length);
   out.makeup = clamp(out.makeup, MAKEUPS.length);
@@ -333,12 +336,12 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    welcome: null, introSeen: false, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [],
+    welcome: null, introSeen: false, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [],
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
-    hair: sex ? pick([3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15]) : pick([0, 1, 2, 7, 5, 11, 12, 13, 14, 15]), hairColor: rnd(HAIR_COLORS.length),
-    beard: sex ? 0 : rnd(BEARDS.length), eyeShape: sex ? rnd(7) : [0, 2, 3, 7, 8][rnd(5)], eyeColor: rnd(EYE_COLORS.length),
+    hair: rnd(HAIR_STYLES.length), hairColor: rnd(HAIR_COLORS.length),
+    beard: sex ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),
     brows: rnd(BROWS.length), nose: rnd(NOSES.length), mouth: rnd(MOUTHS.length), detail: Math.random() < 0.5 ? 0 : rnd(DETAILS.length),
     trait: rnd(Math.max(R.traits.length, 1)),
     cls, primary: rnd(CLOTH.length), secondary: rnd(CLOTH.length),

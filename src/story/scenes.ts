@@ -78,11 +78,29 @@ export async function finishIntro() {
 export function playIntro() {
   const generation = play.playGeneration;
   const entry = groundPoint(INTRO_ENTRY), meet = groundPoint(WELCOME_START), from = groundPoint(INTRO_GNOMI_FROM);
+  // El decorado puede invadir la referencia de salida; resolverlo antes de mostrarlo.
+  from.copy(play.city.collide(from, from.clone()));
+  from.y = play.city.groundY(from.x, from.z);
+  let approachLength = 0, previous = from;
+  for (const point of storyPath(play.city, from, meet)) { approachLength += previous.distanceTo(point); previous = point; }
   const gate = groundPoint(INTRO_GATE), centre = groundPoint({ x: 0, z: 0 });
   const out = gate.clone().sub(meet).setY(0).normalize(), side = new THREE.Vector3(-out.z, 0, out.x);
   const heading = Math.atan2(out.x, out.z);
-  const gnomi = session.registeredNpcs.gnomi.name;
   const up = (v: THREE.Vector3, y: number) => v.clone().setY(v.y + y);
+  const citySweep = orbitShot(centre, [96, 80], [64, 48], [heading - 2.2, heading - 1.25], 2);
+  // Desde el lado de la puerta se ve a ambos sin meter la cámara en las casas.
+  // Se ajusta la separación proyectada, en vez de alejarse sobre los tejados.
+  const meetingShot = () => {
+    const gnomi = story.welcomeWorld.root.position;
+    const middle = holder.position.clone().add(gnomi).multiplyScalar(.5);
+    const aspect = Math.min(1, innerWidth / Math.max(1, innerHeight));
+    const direction = out.clone().addScaledVector(side, .6).normalize();
+    const separation = holder.position.distanceTo(gnomi);
+    const halfWidth = separation * Math.abs(direction.dot(side)) * .5 + 1.15;
+    const nearDepth = separation * Math.abs(direction.dot(out)) * .5;
+    const distance = Math.max(4.8, nearDepth + halfWidth / (Math.tan(THREE.MathUtils.degToRad(25)) * aspect));
+    return { position: up(middle.clone().addScaledVector(direction, distance), 1.5 + distance * .13), target: up(middle, .85) };
+  };
   // Retenido en su sitio desde ya: si no, su lógica normal lo devolvería a su punto de espera.
   story.welcomeWorld.place(from, facingTo(from, meet));
   story.welcomeWorld.walkTo(from, 0);
@@ -92,30 +110,28 @@ export function playIntro() {
   }
   story.playerScript = { target: entry, speed: 2.3 };
   cinematic.play([
-    { duration: 3, line: { text: 'La Puerta del Este', eyebrow: 'Tu historia empieza aquí', detail: 'Un paso al otro lado. Todo un mundo por delante.' },
-      camera: () => ({ position: up(holder.position.clone().addScaledVector(out, 8).addScaledVector(side, 3.4), 4.2), target: up(holder.position, 1.1) }),
+    { id: 'east-gate', duration: 3.2, line: { text: 'La Puerta del Este', eyebrow: 'Brumaluz' },
+      camera: k => ({ position: up(holder.position.clone().addScaledVector(out, 8 - k * 1.2).addScaledVector(side, 3.4), 4.2 - k * .5), target: up(holder.position, 1.1) }),
       update: dt => { walkPlayer(dt); } },
-    { duration: 5.5, line: { text: 'Brumaluz', eyebrow: 'Capital de Pompelín', detail: 'Cada gran historia empieza con algo pequeño.' },
-      camera: orbitShot(centre, [96, 80], [64, 48], [heading - 2.2, heading - 1.25], 2),
+    { id: 'city-overview', duration: 5.2, line: { text: 'Brumaluz', eyebrow: 'Capital de Pompelín' },
+      camera: citySweep,
       update: dt => { walkPlayer(dt); } },
-    { duration: 4, blend: 1.6,
+    { id: 'east-street', duration: 4.6,
       camera: dollyShot(
-        { position: up(centre.clone().addScaledVector(out, 25), 48), target: centre.clone().addScaledVector(out, 80) },
+        citySweep(1),
         { position: up(entry.clone().addScaledVector(out, -7).addScaledVector(side, 4), 4), target: up(entry, 1.1) }),
       update: dt => { walkPlayer(dt); } },
-    { duration: 2, blend: 1,
-      camera: () => ({ position: up(holder.position.clone().addScaledVector(out, -4.8).addScaledVector(side, 1.6), 1.6), target: up(holder.position, 1.25) }),
-      update: dt => { walkPlayer(dt); } },
-    { duration: 7, minimum: 4.5, blend: .9, line: { speaker: gnomi, text: 'Puerta del Este, nueva asignación, bienvenida impecable… Solo falta el distintivo. Ay, Gnomi. El distintivo.' },
-      start: () => { story.playerScript = null; play.char.setGait('idle'); restoreStoryFog(); story.welcomeWorld.walkTo(meet, 1.6, true); },
+    { id: 'gnomi-search', duration: 1.8,
+      start: () => { story.playerScript = null; play.char.setGait('idle'); restoreStoryFog(); story.welcomeWorld.search(); },
+      camera: () => ({ position: up(from.clone().addScaledVector(out, 2.7).addScaledVector(side, -1.6), 1.35), target: up(from, .48) }) },
+    { id: 'gnomi-approach', duration: Math.max(7.6, approachLength / 1.8 + 1), minimum: 1.4, blend: 1,
+      start: () => story.welcomeWorld.walkTo(meet, 1.8, true),
       camera: () => ({ position: up(story.welcomeWorld.root.position.clone().addScaledVector(out, 3).addScaledVector(side, 1.7), 1.5), target: up(story.welcomeWorld.root.position, .55) }),
       update: () => story.welcomeWorld.arrived },
-    { duration: 3.6, blend: .8, line: { speaker: gnomi, text: '¡Ah, ya estás aquí! ¡Te estaba esperando! Mirando al suelo, sí. Pero esperando.' },
-      start: () => { story.welcomeWorld.release(); story.welcomeWorld.greet(); },
-      camera: () => {
-        const middle = holder.position.clone().add(story.welcomeWorld.root.position).multiplyScalar(.5);
-        return { position: up(middle.clone().addScaledVector(side, 3.6).addScaledVector(out, -.6), 1.3), target: up(middle, .75) };
-      } },
+    { id: 'gnomi-greeting', duration: 2, blend: .45,
+      // Mantenerlo guionizado: soltarlo aquí lo recolocaría al punto de espera.
+      start: () => { story.welcomeWorld.walkTo(story.welcomeWorld.root.position, 0); story.welcomeWorld.greet(); },
+      camera: meetingShot },
   ], () => {
     story.playerScript = null;
     if (generation !== play.playGeneration || play.mode !== 'play') return;
@@ -131,12 +147,12 @@ export function playMonsterReveal() {
   story.monsterPreview.name = 'story-shadow-preview';
   castShadows(story.monsterPreview);
   scene.add(story.monsterPreview);
-  const isberto = session.registeredNpcs.isberto.name;
   const look = site.clone().setY(site.y + .7);
   cinematic.play([
-    { duration: 5.2, line: { speaker: isberto, text: 'Ahí la tienes, junto a mi herrería. Se pega al calor de la fragua. Ya he despejado la zona.' },
+    { id: 'smithy', duration: 4.5, line: { speaker:session.registeredNpcs.isberto.name, text: 'Esta mañana no había nada. He salido a por carbón y, al volver, me la he encontrado junto al yunque.', eyebrow: 'Herrería de Isberto', layout: 'caption' },
       camera: orbitShot(site, [7.5, 5.2], [3.4, 1.8], [-.9, -.1], .7) },
-    { duration: 4.2, blend: .6, line: { speaker: isberto, text: 'No sé de dónde ha salido. Sí sé que no se va a quedar. Mírala bien: hasta eso tiene que dejar un hueco al atacar.' },
+    { id: 'creature', duration: 5, blend: .6,
+      line:{speaker:session.registeredNpcs.isberto.name,text:'He intentado espantarla desde la puerta. Me ha lanzado algo que ha dejado la madera negra. Cuidado con acercarte.'},
       start: () => playShadowEnemyAction(story.monsterPreview, 'attack', clock.getElapsedTime()),
       camera: dollyShot({ position: new THREE.Vector3(site.x + 3.4, site.y + 1.2, site.z - 1.6), target: look },
         { position: new THREE.Vector3(site.x + 2.2, site.y + .9, site.z - 1), target: look }) },
@@ -232,17 +248,16 @@ export function updateIsbertoGuide(dt: number) {
 /** Ya dentro de su casa, Isberto enseña la cama y el cofre. */
 export function playHouseTour() {
   const generation = play.playGeneration;
-  const name = session.registeredNpcs.isberto.name;
   const bed = groundPoint(HOUSE_BED), chest = groundPoint(BANK_SPOTS[ISBERTO_HOUSE]);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, play.city.groundY(x, z) + y, z);
   const isberto = npcActors.find(npc => npc.id === 'isberto')?.character.root;
   if (isberto) isberto.rotation.y = facingTo(isberto.position, holder.position);
   cinematic.play([
-    { duration: 4, line: { speaker: name, text: 'Pasa. Y límpiate las botas, que acabo de barrer.' },
+    { id: 'isberto-house', duration: 2.6, line: { text: 'Casa de Isberto', layout: 'caption' },
       camera: dollyShot({ position: at(-3, 2.5, -3.1), target: at(.4, .9, 1.3) }, { position: at(-2.6, 2.2, -2.5), target: at(.5, .9, 1.4) }) },
-    { duration: 4.6, blend: .9, line: { speaker: name, text: 'Esa cama es tuya cuando necesites descansar. Duermes un rato y te levantas como nuevo.' },
+    { id: 'house-bed', duration: 3.2, blend: .9, line: { text: 'Cama de Isberto', detail: 'Recupera toda la vida y la energía.', layout: 'caption' },
       camera: dollyShot({ position: at(1, 1.8, -.2), target: bed.clone().setY(bed.y + .4) }, { position: at(.5, 1.5, -.9), target: bed.clone().setY(bed.y + .4) }) },
-    { duration: 4.6, blend: .9, line: { speaker: name, text: 'Y ese cofre de la esquina es para tus cosas. Lo que guardes ahí, ahí se queda: nadie más lo toca.' },
+    { id: 'house-chest', duration: 3.2, blend: .9, line: { text: 'Cofre personal', detail: 'Guarda tus objetos y pelines en el banco de la cuenta.', layout: 'caption' },
       camera: dollyShot({ position: at(1.4, 1.65, 1.35), target: chest.clone().setY(chest.y + .4) }, { position: at(1.6, 1.45, 1.7), target: chest.clone().setY(chest.y + .4) }) },
   ], () => {
     if (generation === play.playGeneration && play.mode === 'play' && play.city.locationId === ISBERTO_HOUSE) talkTo('isberto');

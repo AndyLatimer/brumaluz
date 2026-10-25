@@ -37,6 +37,7 @@ export function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 
       b.style.background = c;
       b.title = t(ns[i] ?? '');
       b.setAttribute('aria-label', t(ns[i] ?? c));
+      b.setAttribute('aria-pressed', String(session.state[key] === i));
       b.onclick = () => set(key, i);
       el.appendChild(b);
     });
@@ -44,7 +45,9 @@ export function swatches(el: HTMLElement, colors: () => string[], key: 'skin' | 
 }
 export function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 'brows' | 'nose' | 'mouth' | 'detail' | 'cape' | 'hairAcc' | 'acc' | 'makeup', list: () => string[], values?: number[]) {
   const el = $(`.stepper[data-key="${key}"]`);
-  el.innerHTML = `<button aria-label="${t('Anterior')}">‹</button><div class="val"></div><button aria-label="${t('Siguiente')}">›</button>`;
+  el.innerHTML = `<button type="button" aria-label="${t('Anterior')}">‹</button><div class="val"><span></span><small></small><select aria-label="${t('Elegir opción')}"></select></div><button type="button" aria-label="${t('Siguiente')}">›</button>`;
+  const select = el.querySelector('select')!;
+  select.onchange = () => set(key, Number(select.value));
   const [prev, , next] = Array.from(el.children) as HTMLElement[];
   prev.onclick = () => { const l = list(), indices = values ?? l.map((_, i) => i), current = Math.max(0, indices.indexOf(session.state[key])); set(key, indices[(current + l.length - 1) % l.length]); };
   next.onclick = () => { const l = list(), indices = values ?? l.map((_, i) => i), current = Math.max(0, indices.indexOf(session.state[key])); set(key, indices[(current + 1) % l.length]); };
@@ -52,7 +55,13 @@ export function stepper(key: 'face' | 'trait' | 'hair' | 'beard' | 'eyeShape' | 
     const l = list();
     if (!l.length) return;
     const indices = values ?? l.map((_, i) => i), current = Math.max(0, indices.indexOf(session.state[key]));
-    (el.querySelector('.val') as HTMLElement).innerHTML = `${t(l[current])}<small>${current + 1} / ${l.length}</small>`;
+    el.querySelector('.val span')!.textContent = t(l[current]);
+    el.querySelector('.val small')!.textContent = `${current + 1} / ${l.length}`;
+    const labels = l.map((label) => t(label));
+    if (select.options.length !== labels.length || labels.some((label, i) => select.options[i].textContent !== label)) {
+      select.replaceChildren(...labels.map((label, i) => new Option(label, String(indices[i]))));
+    }
+    select.value = String(indices[current]);
   };
 }
 export const renders = [
@@ -140,7 +149,7 @@ export function refreshUI() {
   const R = RACES[session.state.race];
   $('#traitBox').hidden = !R.traitLabel;
   $('#noseBox').hidden = session.state.race === 'pelso' || session.state.race === 'lagto';
-  $('#makeupColorBox').hidden = ![2, 3, 4].includes(session.state.makeup);
+  $('#makeupColorBox').hidden = ![2, 3, 4, 7, 8, 9].includes(session.state.makeup);
   if (R.traitLabel) $('#traitLabel').textContent = session.state.race === 'lagto' ? t('Cresta del linaje') : t(R.traitLabel);
   $('#hairNote').textContent = '';
   if (document.activeElement !== nameInput) nameInput.value = session.state.name;
@@ -174,11 +183,6 @@ export function installCreator() {
   document.querySelectorAll<HTMLButtonElement>('#sex button').forEach((b) => {
     b.onclick = () => {
       const sex = Number(b.dataset.v) as 0 | 1;
-      // al cambiar de sexo se aplica una personalización de partida acorde (todo se puede cambiar después)
-      if (sex !== session.state.sex) {
-        if (sex === 1) Object.assign(session.state, { face: 0, hair: 3, beard: 0, eyeShape: 1, brows: 0, makeup: Math.max(session.state.makeup, 1) });
-        else Object.assign(session.state, { face: 3, hair: 2, eyeShape: 7, brows: 2, makeup: 0 });
-      }
       set('sex', sex, true);
     };
   });

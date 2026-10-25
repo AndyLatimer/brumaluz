@@ -197,6 +197,9 @@ export function buildCollision(
     if (platform) platforms.push(platform);
   }
   for (const marker of doc.markers as MapMarker[]) {
+    // Gnomi es un acompañante personal, no un NPC fijo del mapa. Su marcador
+    // no puede dejar un obstáculo invisible justo en el destino de su llegada.
+    if (marker.type === 'npc' && marker.npcId === 'gnomi') continue;
     if (marker.type === 'npc' && !hiddenLayers.has(marker.layer)) shapes.push({ x: marker.position[0], z: marker.position[2], r: 0.5, source: 'marker', sourceId: marker.id });
   }
   const ME = CHARACTER_RADIUS;

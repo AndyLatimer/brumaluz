@@ -85,7 +85,7 @@ export function validateNpc(value: unknown): NpcDefinition {
   for (const [key, length] of Object.entries(lists)) number(appearance[key], key, 0, length - 1);
   number(appearance.height, 'Altura', 0, 1, false);
   number(appearance.build, 'Complexión', 0, 1, false);
-  if (!HAIR_ACC_VALUES.includes(number(appearance.hairAcc, 'Adorno', 0, 8))) throw new Error('Adorno de pelo no válido.');
+  if (!HAIR_ACC_VALUES.includes(number(appearance.hairAcc, 'Adorno', 0, Math.max(...HAIR_ACC_VALUES)))) throw new Error('Adorno de pelo no válido.');
   const stats = record(npc.stats, 'Estadísticas');
   keys(stats, ['level', 'maxHealth', 'health', 'attributes'], 'Estadísticas');
   number(stats.level, 'Nivel', 1, 10000);

@@ -7,6 +7,9 @@ export class AmbientSoundscape {
   private level = 1;
   private generation = 0;
   private connected = false;
+  private hour=12;
+  private indoors=false;
+  setWorldTime(hour:number,indoors=false){this.hour=Number.isFinite(hour)?((hour%24)+24)%24:12;this.indoors=indoors;}
 
   get enabled() {
     return this.active;
@@ -121,7 +124,7 @@ export class AmbientSoundscape {
   private scheduleBirds() {
     if (!this.active || !this.context) return;
     this.birdsTimer = window.setTimeout(() => {
-      this.chirp();
+      if(!this.indoors&&this.hour>=5&&this.hour<20.5)this.chirp();
       this.scheduleBirds();
     }, 2200 + Math.random() * 5200);
     if (this.bellTimer === undefined) this.scheduleBell();
@@ -137,19 +140,20 @@ export class AmbientSoundscape {
   }
 
   private ringBell() {
-    if (!this.context || !this.master) return;
+    if (!this.context || !this.master||this.indoors) return;
     const context = this.context;
-    const count = Math.random() < 0.3 ? 2 : 1;
+    const night=this.hour<5||this.hour>=21;
+    const count = !night&&Math.random() < 0.3 ? 2 : 1;
     for (let strike = 0; strike < count; strike++) {
       const start = context.currentTime + strike * 1.4;
-      const fundamental = 440 + Math.floor(Math.random() * 4) * 55;
+      const fundamental = [220,293.6648,440][Math.floor(Math.random()*3)];
       for (const [partial, amplitude] of [[1, 0.055], [2.76, 0.022], [5.4, 0.01]]) {
         const oscillator = context.createOscillator();
         const envelope = context.createGain();
         oscillator.type = 'sine';
         oscillator.frequency.value = fundamental * partial;
         envelope.gain.setValueAtTime(0.0001, start);
-        envelope.gain.exponentialRampToValueAtTime(amplitude, start + 0.02);
+        envelope.gain.exponentialRampToValueAtTime(amplitude*(night?.4:1), start + 0.02);
         envelope.gain.exponentialRampToValueAtTime(0.0001, start + 2.8 / partial);
         oscillator.connect(envelope).connect(this.master);
         oscillator.start(start);

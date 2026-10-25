@@ -76,7 +76,7 @@ function guessCategory(name: string) {
 export function defaultScale(info: MapAssetInfo): Vec3 {
   if (info.group === 'city') return info.tile ? [4, 1.12, 4] : [4, 4, 4];
   if (info.group === 'builtin') return [1, 1, 1];
-  if (info.group === 'brumaluz-hamlet') return [1, 1, 1];
+  if (info.group === 'brumaluz-hamlet' || info.group === 'brumaluz-arboleda') return [1, 1, 1];
   if (info.group === 'medieval-builder') return info.tile ? [4, 1.12, 4] : [4, 4, 4];
   if (info.group === 'kenney-hexagon') return [8, 8, 8];
   return [0.65, 0.65, 0.65];

@@ -13,7 +13,7 @@ import { TEST, playerVel, holder, camera, camTarget, layout, keys, marker } from
 import { $ } from '../ui/dom';
 import { updateHud } from './hud';
 import { resetFoodTimer, setFoodRunning } from './vitals';
-import { menuMusic, setAmbientEnabled, ambientSoundscape } from './audio';
+import { menuMusic, setAmbientEnabled, ambientSoundscape,worldMusic } from './audio';
 import { rebuildNow } from './avatar';
 import { errorMessage } from './server';
 import { refreshWorldStatus, stopMultiplayer } from './worldClient';
@@ -114,6 +114,7 @@ export function exitPlay() {
   if (session.state.health === 0) session.state.health = -1;
   play.mode = 'create';
   void ambientSoundscape.setEnabled(false);
+  worldMusic.update({playing:false,hour:12});
   setGameMenuOpen(false, false);
   setPlayerMenuOpen(false, false);
   setWorldMenuOpen(false, false);

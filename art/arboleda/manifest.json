@@ -1,0 +1,398 @@
+{
+  "version": 1,
+  "title": "Arboleda · Cuna de los Elfos",
+  "author": "Brumaluz",
+  "description": "Arte original de Blender: arquitectura de madera viva, hojas, piedra lunar y alquimia botánica. Escala métrica. GLB +Y arriba, +Z frente.",
+  "assets": [
+    {
+      "name": "house_leafhaven",
+      "label": "Casa Brote del Alba",
+      "category": "Edificios",
+      "description": "Vivienda élfica circular con tejado de hojas solapadas, ventanales ojivales y raíces habitables.",
+      "triangles": 14584,
+      "parts": 240,
+      "galleryPosition": [
+        -9,
+        8,
+        0
+      ]
+    },
+    {
+      "name": "laboratory_dew",
+      "label": "Alquimería del Rocío",
+      "category": "Edificios",
+      "description": "Laboratorio arbóreo de dos alturas, alambique exterior, balcón y cubierta vegetal.",
+      "triangles": 12752,
+      "parts": 144,
+      "galleryPosition": [
+        0,
+        8,
+        0
+      ]
+    },
+    {
+      "name": "pavilion_moonwell",
+      "label": "Pabellón del Manantial",
+      "category": "Edificios",
+      "description": "Santuario abierto con seis columnas ramificadas y rosetón vegetal.",
+      "triangles": 8708,
+      "parts": 92,
+      "galleryPosition": [
+        8,
+        8,
+        0
+      ]
+    },
+    {
+      "name": "tower_starwatch",
+      "label": "Atalaya de las Copas",
+      "category": "Edificios",
+      "description": "Torre de vigía de madera viva, escalera helicoidal y mirador de hojas.",
+      "triangles": 9876,
+      "parts": 140,
+      "galleryPosition": [
+        -5,
+        17,
+        0
+      ]
+    },
+    {
+      "name": "greenhouse_moonfern",
+      "label": "Invernadero de Lunhelecho",
+      "category": "Edificios",
+      "description": "Invernadero octogonal de cristal de jade con nervaduras, parterres y flores lunares.",
+      "triangles": 8900,
+      "parts": 205,
+      "galleryPosition": [
+        4,
+        17,
+        0
+      ]
+    },
+    {
+      "name": "gateway_twining",
+      "label": "Umbral de las Dos Ramas",
+      "category": "Construcción",
+      "description": "Gran arco transitable de ramas entrelazadas, hojas y faroles de luciérnaga.",
+      "triangles": 3792,
+      "parts": 46,
+      "galleryPosition": [
+        -9,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "bridge_rootwoven",
+      "label": "Puente de Raíz Trenzada",
+      "category": "Construcción",
+      "description": "Pasarela arqueada de cinco metros con tablas separadas y barandillas entrelazadas.",
+      "triangles": 5080,
+      "parts": 44,
+      "galleryPosition": [
+        -2,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "fence_vinepanel",
+      "label": "Valla de Sarmientos · 2 m",
+      "category": "Construcción",
+      "description": "Módulo de dos metros con extremos encajables y hojas de latón.",
+      "triangles": 1408,
+      "parts": 13,
+      "galleryPosition": [
+        5,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "table_alchemist",
+      "label": "Mesa de la Transmutación",
+      "category": "Alquimia",
+      "description": "Mesa de trabajo con herbario abierto, matraces, mortero, retorta y diagrama alquímico.",
+      "triangles": 3008,
+      "parts": 36,
+      "galleryPosition": [
+        -10.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "chair_leafback",
+      "label": "Silla Hoja de Laurel",
+      "category": "Mobiliario",
+      "description": "Silla con respaldo lanceolado, incrustación vegetal y cojín verde.",
+      "triangles": 568,
+      "parts": 10,
+      "galleryPosition": [
+        -7.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "bench_bough",
+      "label": "Banco de Ramas Gemelas",
+      "category": "Mobiliario",
+      "description": "Banco de jardín con asiento entablado, brazos curvos y respaldo trenzado.",
+      "triangles": 1144,
+      "parts": 13,
+      "galleryPosition": [
+        -4.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "bed_ferncanopy",
+      "label": "Lecho del Sueño Verde",
+      "category": "Mobiliario",
+      "description": "Cama con dosel de hojas, sábanas de lino, manta cosida y cuatro postes orgánicos.",
+      "triangles": 2244,
+      "parts": 39,
+      "galleryPosition": [
+        -1.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "cabinet_seedkeeper",
+      "label": "Armario del Guardasemillas",
+      "category": "Mobiliario",
+      "description": "Armario ojival con puertas talladas, cajones, herrajes de latón y pequeñas semillas de cristal.",
+      "triangles": 1772,
+      "parts": 30,
+      "galleryPosition": [
+        2.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "shelf_herbarium",
+      "label": "Estantería del Herbario",
+      "category": "Alquimia",
+      "description": "Estantes curvos con libros encuadernados, frascos de colores y plantas medicinales.",
+      "triangles": 7290,
+      "parts": 127,
+      "galleryPosition": [
+        5.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "cauldron_bloom",
+      "label": "Caldero de Savia Lunar",
+      "category": "Alquimia",
+      "description": "Caldero abierto con infusión luminosa, hojas flotantes y soporte de raíces.",
+      "triangles": 1904,
+      "parts": 14,
+      "galleryPosition": [
+        8.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "distiller_spiral",
+      "label": "Alambique de la Espiral",
+      "category": "Alquimia",
+      "description": "Alambique completo con retorta de cobre, serpentín helicoidal, baño refrigerante y matraz receptor.",
+      "triangles": 3492,
+      "parts": 13,
+      "galleryPosition": [
+        11.0,
+        -5.0,
+        0
+      ]
+    },
+    {
+      "name": "lantern_budpost",
+      "label": "Farola Capullo de Luciérnagas",
+      "category": "Decoración",
+      "description": "Farola vegetal de pie con jaula de seis pétalos y remate de hojas.",
+      "triangles": 1404,
+      "parts": 15,
+      "galleryPosition": [
+        -10.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "fountain_lotus",
+      "label": "Fuente del Loto Esmeralda",
+      "category": "Decoración",
+      "description": "Fuente de dos niveles con receptáculo abierto, pétalos tallados y agua turquesa.",
+      "triangles": 2690,
+      "parts": 27,
+      "galleryPosition": [
+        -7.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "waystone_leafrune",
+      "label": "Menhir del Pacto Verde",
+      "category": "Decoración",
+      "description": "Monolito facetado de piedra clara, runas talladas, medallón y musgo.",
+      "triangles": 990,
+      "parts": 13,
+      "galleryPosition": [
+        -4.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "armillary_moon",
+      "label": "Esfera de las Tres Lunas",
+      "category": "Alquimia",
+      "description": "Instrumento astral con tres aros inclinados, esfera central y base tallada.",
+      "triangles": 2600,
+      "parts": 9,
+      "galleryPosition": [
+        -1.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "rack_dryingherbs",
+      "label": "Secadero de Hierbas",
+      "category": "Alquimia",
+      "description": "Bastidor con cinco manojos de plantas suspendidos de cuerdas de lino.",
+      "triangles": 7554,
+      "parts": 115,
+      "galleryPosition": [
+        2.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "planter_moonlily",
+      "label": "Jardinera de Flores Lunares",
+      "category": "Decoración",
+      "description": "Macetero de cerámica verde con borde dorado, helechos y flores de cinco pétalos.",
+      "triangles": 5362,
+      "parts": 104,
+      "galleryPosition": [
+        5.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "potion_tray",
+      "label": "Bandeja de Elixires",
+      "category": "Alquimia",
+      "description": "Bandeja de latón con cinco frascos etiquetados de distintos tamaños y colores.",
+      "triangles": 2456,
+      "parts": 21,
+      "galleryPosition": [
+        8.0,
+        -9.0,
+        0
+      ]
+    },
+    {
+      "name": "tree_ancient_oak",
+      "label": "Roble Ancestral",
+      "category": "Naturaleza",
+      "description": "Árbol de copa escalonada, tronco retorcido, raíces expuestas y hojas de silueta.",
+      "triangles": 10210,
+      "parts": 242,
+      "galleryPosition": [
+        14.0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "tree_weeping_willow",
+      "label": "Sauce de la Memoria",
+      "category": "Naturaleza",
+      "description": "Sauce con ramas arqueadas, cortinas de hojas individuales y raíces sinuosas.",
+      "triangles": 11662,
+      "parts": 240,
+      "galleryPosition": [
+        19.5,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "tree_young_rowan",
+      "label": "Serbal de los Brotes",
+      "category": "Naturaleza",
+      "description": "Árbol joven de tres metros con follaje claro y bayas doradas.",
+      "triangles": 2632,
+      "parts": 53,
+      "galleryPosition": [
+        25.0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "fern_cluster",
+      "label": "Macizo de Helechos",
+      "category": "Naturaleza",
+      "description": "Tres helechos con frondes arqueadas y foliolos modelados, sin planos de transparencia.",
+      "triangles": 8106,
+      "parts": 231,
+      "galleryPosition": [
+        14.0,
+        7,
+        0
+      ]
+    },
+    {
+      "name": "mushrooms_mooncap",
+      "label": "Setas de Luna",
+      "category": "Naturaleza",
+      "description": "Grupo de siete setas con sombrerillos de jade, motas claras y láminas radiales.",
+      "triangles": 4648,
+      "parts": 105,
+      "galleryPosition": [
+        19.5,
+        7,
+        0
+      ]
+    },
+    {
+      "name": "crystals_dewstone",
+      "label": "Cristales de Rocío",
+      "category": "Naturaleza",
+      "description": "Drusa de cuarzo verde con puntas facetadas, vetas doradas y base musgosa.",
+      "triangles": 2394,
+      "parts": 68,
+      "galleryPosition": [
+        25.0,
+        7,
+        0
+      ]
+    },
+    {
+      "name": "flowers_starmeadow",
+      "label": "Flores Estrella del Claro",
+      "category": "Naturaleza",
+      "description": "Rodal de nueve flores blancas y malvas, con hojas y alturas variadas.",
+      "triangles": 5454,
+      "parts": 81,
+      "galleryPosition": [
+        14.0,
+        14,
+        0
+      ]
+    }
+  ]
+}

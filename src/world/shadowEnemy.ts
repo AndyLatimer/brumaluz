@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-type ShadowEnemyAction = 'idle' | 'attack' | 'hit' | 'death';
+type ShadowEnemyAction = 'idle' | 'prepare' | 'attack' | 'hit' | 'death';
 
 interface ShadowEnemyRig {
   model: THREE.Group;
@@ -17,19 +17,18 @@ interface ShadowEnemyRig {
   groundShadow: THREE.Mesh;
   chestSigil: THREE.Mesh;
   waistCharm: THREE.Mesh;
-  chestLight: THREE.PointLight;
   aura: THREE.Mesh;
   auraMaterial: THREE.ShaderMaterial;
   shadowRibbons: THREE.Mesh[];
   deathPuff: THREE.Mesh[];
   deathPuffRing: THREE.Mesh;
-  deathPuffLight: THREE.PointLight;
   impactRing: THREE.Mesh;
   attackSlashes: THREE.Mesh[];
   motes: THREE.Mesh[];
   action: ShadowEnemyAction;
   actionStarted: number;
   actionDuration: number;
+  hitStarted: number;
 }
 
 const purple = new THREE.Color('#a45aff');
@@ -121,9 +120,6 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
   deathPuffRing.visible = false;
   deathPuffRing.castShadow = false;
   root.add(deathPuffRing);
-  const deathPuffLight = new THREE.PointLight('#9d4cff', 0, 2.6, 2);
-  deathPuffLight.position.y = 0.45;
-  root.add(deathPuffLight);
 
   const model = new THREE.Group();
   model.name = 'shadow-enemy-model';
@@ -238,9 +234,6 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
   const chestSigil = addMesh(cloak, new THREE.IcosahedronGeometry(0.13, 1), violetMetal,
     new THREE.Vector3(0, 0.77, 0.371), new THREE.Vector3(0.72, 1.12, 0.56));
   chestSigil.rotation.z = Math.PI / 4;
-  const chestLight = new THREE.PointLight('#a04fff', 1.2, 3.4, 2);
-  chestLight.position.set(0, 0.78, 0.54);
-  cloak.add(chestLight);
   const impactRing = addMesh(cloak, new THREE.TorusGeometry(0.17, 0.016, 7, 28),
     new THREE.MeshBasicMaterial({ color: '#d4a8ff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
     new THREE.Vector3(0, 0.77, 0.48));
@@ -308,7 +301,7 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
       float smoke(vec3 p) {
         float value = 0.0;
         float amplitude = 0.55;
-        for (int octave = 0; octave < 4; octave++) {
+        for (int octave = 0; octave < 2; octave++) {
           value += noise3(p) * amplitude;
           p *= 2.03;
           amplitude *= 0.5;
@@ -331,7 +324,7 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
     `,
     transparent: true,
     depthWrite: false,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
     blending: THREE.NormalBlending,
   });
   const aura = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), auraMaterial);
@@ -340,7 +333,7 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
   aura.scale.set(0.88, 1.2, 0.82);
   aura.renderOrder = 2;
   aura.castShadow = false;
-  aura.frustumCulled = false;
+  aura.frustumCulled = true;
   model.add(aura);
   const shadowRibbons: THREE.Mesh[] = [];
   for (let index = 0; index < 3; index++) {
@@ -430,20 +423,21 @@ export function buildShadowEnemy(x: number, z: number, groundY: number): THREE.G
   root.position.set(x, groundY, z);
   root.userData.shadowEnemyRig = {
     model, cloak, head, leftArm, rightArm, tendrils, eyes, eyeGlows, eyeMaterials, flashMaterials, ring, groundShadow,
-    chestSigil, waistCharm, chestLight, aura, auraMaterial, shadowRibbons, deathPuff, deathPuffRing, deathPuffLight,
+    chestSigil, waistCharm, aura, auraMaterial, shadowRibbons, deathPuff, deathPuffRing,
     impactRing, attackSlashes, motes,
-    action: 'idle', actionStarted: 0, actionDuration: 0,
+    action: 'idle', actionStarted: 0, actionDuration: 0, hitStarted:-Infinity,
   } satisfies ShadowEnemyRig;
   return root;
 }
 
-export function playShadowEnemyAction(root: THREE.Group | null, action: Exclude<ShadowEnemyAction, 'idle'>, time: number) {
+export function playShadowEnemyAction(root: THREE.Group | null, action: Exclude<ShadowEnemyAction, 'idle'>, time: number, duration?: number) {
   const actor=root?.userData.wildernessActor;if(actor){if(action==='hit')actor.hit();else if(action==='death')actor.die();else actor.attack();return;}
   const rig = root?.userData.shadowEnemyRig as ShadowEnemyRig | undefined;
   if (!rig || rig.action === 'death') return;
+  if(action==='hit'){rig.hitStarted=time;if(rig.action==='prepare'||rig.action==='attack')return;}
   rig.action = action;
   rig.actionStarted = time;
-  rig.actionDuration = action === 'death' ? 1.9 : action === 'attack' ? 0.88 : 0.56;
+  rig.actionDuration = duration ?? (action === 'death' ? 1.9 : action === 'attack' ? 0.88 : 0.56);
 }
 
 export function resetShadowEnemy(root: THREE.Group, time: number) {
@@ -452,6 +446,7 @@ export function resetShadowEnemy(root: THREE.Group, time: number) {
   rig.action = 'idle';
   rig.actionStarted = time;
   rig.actionDuration = 0;
+  rig.hitStarted=-Infinity;
   root.rotation.set(0, 0, 0);
   root.scale.setScalar(1);
   rig.model.position.set(0, 0.12, 0);
@@ -463,7 +458,6 @@ export function resetShadowEnemy(root: THREE.Group, time: number) {
   rig.rightArm.rotation.set(0, 0, 0);
   rig.ring.visible = false;
   rig.deathPuffRing.visible = false;
-  rig.deathPuffLight.intensity = 0;
   rig.deathPuff.forEach((cloud) => { cloud.visible = false; });
   rig.attackSlashes.forEach((slash) => { slash.visible = false; });
   rig.impactRing.scale.setScalar(0.65);
@@ -486,16 +480,21 @@ export function updateShadowEnemy(root: THREE.Group, time: number, dt: number, t
     root.rotation.y += difference * (1 - Math.exp(-dt * 4.5));
   }
 
+  if(rig.action === 'prepare' && time >= rig.actionStarted + rig.actionDuration){
+    rig.actionStarted += rig.actionDuration - .88 * .48;
+    rig.actionDuration = .88; rig.action = 'attack';
+  }
   const phase = time - rig.actionStarted;
   const progress = rig.actionDuration > 0 ? THREE.MathUtils.clamp(phase / rig.actionDuration, 0, 1) : 0;
   if (rig.action !== 'idle' && progress >= 1 && rig.action !== 'death') rig.action = 'idle';
   const attacking = rig.action === 'attack';
-  const windUp = attacking
+  const windUp = rig.action === 'prepare' ? THREE.MathUtils.smoothstep(progress, 0, .45) : attacking
     ? THREE.MathUtils.smoothstep(progress, 0.02, 0.28) * (1 - THREE.MathUtils.smoothstep(progress, 0.28, 0.48)) : 0;
   const strikeProgress = THREE.MathUtils.clamp((progress - 0.32) / 0.34, 0, 1);
   const strike = attacking && progress >= 0.32 && progress <= 0.66 ? Math.sin(strikeProgress * Math.PI) : 0;
   const attack = Math.max(windUp * 0.78, strike);
-  const hit = rig.action === 'hit' ? Math.sin(Math.sqrt(progress) * Math.PI) * (1 - progress * 0.28) : 0;
+  const flashAge=(time-rig.hitStarted)/.24;
+  const hit = Math.max(rig.action === 'hit' ? Math.sin(Math.sqrt(progress) * Math.PI) * (1 - progress * 0.28) : 0,flashAge>=0&&flashAge<1?Math.sin(flashAge*Math.PI):0);
   const death = rig.action === 'death' ? THREE.MathUtils.smoothstep(progress, 0, 1) : 0;
   const fall = rig.action === 'death' ? THREE.MathUtils.smoothstep(progress, 0, 0.64) : 0;
   const puffProgress = rig.action === 'death' ? THREE.MathUtils.clamp((progress - 0.64) / 0.36, 0, 1) : 0;
@@ -542,7 +541,6 @@ export function updateShadowEnemy(root: THREE.Group, time: number, dt: number, t
   rig.chestSigil.rotation.z = Math.PI / 4 + Math.sin(time * 1.5) * 0.08;
   rig.waistCharm.rotation.y = time * 0.9;
   rig.waistCharm.rotation.z = Math.PI / 4 + Math.sin(time * 2) * 0.08;
-  rig.chestLight.intensity = (0.8 + Math.sin(time * 3.5) * 0.18 + strike * 1.4 + hit * 1.3) * living;
   rig.auraMaterial.uniforms.uTime.value = time;
   rig.auraMaterial.uniforms.uAttack.value = strike;
   rig.auraMaterial.uniforms.uHit.value = hit;
@@ -568,7 +566,6 @@ export function updateShadowEnemy(root: THREE.Group, time: number, dt: number, t
   rig.deathPuffRing.visible = puff > 0.015;
   rig.deathPuffRing.scale.setScalar(0.15 + puffProgress * 2.6);
   (rig.deathPuffRing.material as THREE.MeshBasicMaterial).opacity = puff * 0.88;
-  rig.deathPuffLight.intensity = puff * 3.2;
   rig.impactRing.scale.setScalar(0.65 + hit * 4.2);
   (rig.impactRing.material as THREE.MeshBasicMaterial).opacity = hit * 0.82;
   for (const slash of rig.attackSlashes) {

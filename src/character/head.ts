@@ -23,13 +23,13 @@ import { buildAccessories } from './head/accessories';
 
 export type { HeadKit, HeadSource, CreatorParts, HeadOptions, HeadResult } from './head/types';
 
-export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado', 'Melena de explorador', 'Flequillo de viajero'];
-export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla y bigote', 'Bigote', 'Perilla'];
-export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados'];
-export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas'];
-export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón'];
-export const MOUTHS = ['Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo'];
-export const DETAILS = ['Ninguno', 'Rubor', 'Pecas', 'Cicatriz', 'Pintura de guerra', 'Lunar'];
+export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado', 'Melena de explorador', 'Flequillo de viajero', 'Trenza lateral', 'Trenzas de la Arboleda', 'Moño de artesano', 'Coleta de aventurero', 'Ondas de Bruma', 'Corona trenzada'];
+export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla y bigote', 'Bigote', 'Perilla', 'Patillas', 'Barba de tres días', 'Bigote de artesano'];
+export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados', 'Almendrados', 'Curiosos', 'Serenos', 'Vivaces'];
+export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas', 'Arqueadas', 'Rectas', 'Suaves'];
+export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón', 'Recta', 'Redondeada', 'Delicada'];
+export const MOUTHS = ['Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo', 'Sonrisa tímida', 'Dos colmillos', 'Sonrisa de lado'];
+export const DETAILS = ['Ninguno', 'Rubor', 'Pecas', 'Cicatriz', 'Pintura de guerra', 'Lunar', 'Pecas de sol', 'Constelación', 'Marca de hoja', 'Cicatriz de ceja', 'Runas de la Arboleda'];
 export const FACE_LABELS: Record<HeadKit, string> = { Mage: 'Serio', Knight: 'Noble', Rogue: 'Dulce', Barbarian: 'Cuadrada' };
 export const FACE_KITS: HeadKit[] = ['Rogue', 'Mage', 'Knight', 'Barbarian'];
 
@@ -55,7 +55,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   const { topRay, topAt, finalHair, crest } = buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, headAt, skinParts });
 
-  const { makeupCol, tops, onHair } = buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, frontZ, onFace, parts, pushOut, beast, blushMat, facing, topAt });
+  const { makeupCol, tops, onHair } = buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, frontZ, onFace, parts, pushOut, beast, blushMat, facing, topAt, conform });
 
   // ---------- Montaje en el espacio del hueso ----------
   const finish = (m: THREE.Mesh) => { m.geometry.applyMatrix4(toBone); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
@@ -119,6 +119,22 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     d.castShadow = false;
     group.add(d);
   }
+  // Las geometrías compartidas con los proxies ya están en espacio del hueso.
+  // Los anclajes consultados después del montaje siguen recibiendo coordenadas
+  // originales: compensar esa conversión también en las superficies de raycast.
+  const fromBone = toBone.clone().invert();
+  for (const proxy of [topRay, headRay]) {
+    proxy.matrixAutoUpdate = false;
+    proxy.matrix.copy(fromBone);
+    proxy.updateMatrixWorld(true);
+  }
+  headRay.material.dispose();
+  // Incluye materiales locales de lentes, rubor y maquillaje en el ciclo de vida.
+  group.traverse(node => {
+    if (!(node instanceof THREE.Mesh)) return;
+    for (const mat of Array.isArray(node.material) ? node.material : [node.material])
+      if (!ownedMaterials.includes(mat)) ownedMaterials.push(mat);
+  });
   return {
     group,
     ownedMaterials,

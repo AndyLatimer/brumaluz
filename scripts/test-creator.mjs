@@ -69,7 +69,7 @@ after(async () => {
   }
 });
 
-test('creator options, colors, head attachments and animations work across all races and faces', { timeout: 180000 }, async () => {
+test('creator options, colors, head attachments and animations work across all races and faces', { timeout: 300000 }, async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage(), errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -148,7 +148,38 @@ test('creator options, colors, head attachments and animations work across all r
       const helper = new Character({ ...base.d, hair: 15, acc: 7 }, { outfit: false, wardrobe: 'helpers' });
       check(!!helper.root.getObjectByName('character-hair'), 'Helper cap fitting');
       helper.dispose();
-      for (let hair = 0; hair < 16; hair++) {
+      // New features must build on every skull and lineage, survive animation,
+      // and keep their selected IDs through the production sanitizer.
+      for (const race of ['humano', 'elfo', 'pelso', 'lagto']) for (let variant = 0; variant < 13; variant++) {
+        const appearance = { race, trait: race === 'humano' ? 0 : variant % (race === 'lagto' ? 6 : 5),
+          face: variant % 4, hair: 16 + variant % 6, beard: 6 + variant % 3,
+          eyeShape: 9 + variant % 4, brows: 6 + variant % 3, nose: 6 + variant % 3,
+          mouth: 6 + variant % 3, detail: 6 + variant % 5, hairAcc: [9, 10, 11][variant % 3],
+          makeup: 7 + variant % 3, acc: variant % 11, hairColor: 12 + variant % 6, eyeColor: 8 + variant % 4,
+          height: variant % 2, build: 1 - variant % 2 };
+        window.brumaluz.set(appearance);
+        const actor = window.brumaluz.char();
+        for (const [key, value] of Object.entries(appearance)) check(actor.d[key] === value, `${race}/${variant}: preserved ${key}`);
+        const neck = [];
+        actor.root.traverse(node => {
+          if (node.name === 'character-neck-accessory') neck.push(node);
+          if (node.isMesh) check(node.geometry.attributes.position.array.every(Number.isFinite), `${race}/${variant}: finite geometry`);
+        });
+        for (const node of neck) check(node.parent === actor.bones.get('chest'), `${race}/${variant}: neck follows chest`);
+        let animationTime = performance.now() / 1000;
+        for (const animation of ['Idle_B', 'Running_A', 'Hit_B']) {
+          animationTime += .25;
+          actor.play(animation); actor.update(animationTime); actor.root.updateMatrixWorld(true);
+          for (const node of neck) check(node.matrixWorld.elements.every(Number.isFinite), `${race}/${variant}: animated neck`);
+        }
+        if ([1, 6, 10].includes(appearance.acc)) {
+          const lenses = [];
+          actor.root.traverse(node => { if (node.name === 'character-glasses-lens') lenses.push(node); });
+          check(lenses.length === 2 && !!actor.root.getObjectByName('character-glasses-bridge')
+            && !!actor.root.getObjectByName('character-glasses-arm'), `${race}/${variant}: complete glasses`);
+        }
+      }
+      for (let hair = 0; hair < 22; hair++) {
         window.brumaluz.set({ hair });
         check(window.brumaluz.char().d.hair === hair, `Saved hair ID ${hair} is preserved by sanitization`);
       }
@@ -157,16 +188,18 @@ test('creator options, colors, head attachments and animations work across all r
     assert.deepEqual(failures, []);
     await page.evaluate(() => { window.brumaluz.tab('cabello'); window.brumaluz.set({ hair: 13, acc: 7, beard: 2, race: 'humano', face: 1 }); });
     const hair = page.locator('.stepper[data-key="hair"]');
-    assert.match(await hair.innerText(), /Corto pegado.*14 \/ 16/s);
+    assert.match(await hair.innerText(), /Corto pegado.*14 \/ 22/s);
     await hair.locator('button').last().click();
-    assert.match(await hair.innerText(), /Melena de explorador.*15 \/ 16/s);
+    assert.match(await hair.innerText(), /Melena de explorador.*15 \/ 22/s);
     await hair.locator('button').last().click();
-    assert.match(await hair.innerText(), /Flequillo de viajero.*16 \/ 16/s);
+    assert.match(await hair.innerText(), /Flequillo de viajero.*16 \/ 22/s);
     await page.waitForFunction(() => window.brumaluz.char().d.hair === 15);
+    await hair.locator('select').selectOption('21');
+    await page.waitForFunction(() => window.brumaluz.char().d.hair === 21);
     await hair.locator('button').last().click();
-    assert.match(await hair.innerText(), /Rapado.*1 \/ 16/s);
+    assert.match(await hair.innerText(), /Rapado.*1 \/ 22/s);
     const maskChoice = page.locator('.stepper[data-key="acc"]');
-    assert.match(await maskChoice.innerText(), /Pañuelo de viajero.*8 \/ 8/s);
+    assert.match(await maskChoice.innerText(), /Pañuelo de viajero.*8 \/ 11/s);
     await page.evaluate(() => window.brumaluz.set({ acc: 0 }));
     assert.equal(await page.evaluate(() => {
       const actor = window.brumaluz.char();

@@ -18,9 +18,9 @@ begin
  if not public.game_rpg_sight(c.data->>'location',(w.position->>'x')::numeric,(w.position->>'z')::numeric,(other.position->>'x')::numeric,(other.position->>'z')::numeric) then raise exception 'El aliado no está en tu línea de visión.';end if;
  target.data:=public.game_food_data(target.id,public.game_party_data(target.id,target.data));hp:=public.game_health(target.data);room:=public.game_max_health(target.data)-hp;
  if hp<=0 or room<=0 then raise exception 'El aliado no necesita curación o está derrotado.';end if;
- cost:=12*(1-(public.game_set_bonuses(c.data)->>'skillCost')::numeric);
+ cost:=12*(1-(public.game_set_bonuses(c.data)->>'skillCost')::numeric)*public.game_intellect_efficiency(c.data);
  if (public.game_public_vitals(c.data)->>'resource')::numeric<cost then raise exception 'COMBAT_NOT_ENOUGH_RESOURCE';end if;
- amount:=(public.game_equipment_stat(c.data,'healing')+4*(public.game_skill_rank(c.data)-1))*public.game_power_multiplier(c.data)*(1+(public.game_set_bonuses(c.data)->>'healing')::numeric)*(1+(public.game_set_bonuses(c.data)->>'skillPower')::numeric);
+ amount:=(public.game_equipment_stat(c.data,'healing')+4*(public.game_skill_rank(c.data)-1))*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(public.game_set_bonuses(c.data)->>'healing')::numeric)*(1+(public.game_set_bonuses(c.data)->>'skillPower')::numeric);
  amount:=amount+coalesce((target.data->>'health_regen')::numeric,0);fraction:=case when amount>=room then 0 else amount-floor(amount) end;amount:=least(room,floor(amount));
  cost:=cost+coalesce((c.data->>'resourceCostFraction')::numeric,0);
  c.data:=c.data||jsonb_build_object('resource',(public.game_public_vitals(c.data)->>'resource')::numeric-floor(cost),'resourceCostFraction',cost-floor(cost),'combatNextSkill',stamp+6,'combatVisual',jsonb_build_object('at',stamp,'action','heal'),'combat_at',stamp);

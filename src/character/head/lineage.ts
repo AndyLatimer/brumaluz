@@ -29,7 +29,7 @@ export function buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, 
   const finalHair: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
   for (const [kit, gs] of byKit) {
     const g = mergeGeoms(gs);
-    if (g) finalHair.push({ geo: smoothNormals(pushOut(subdiv(g, 70, 0.003), 0.012), 70), kit });
+    if (g) finalHair.push({ geo: smoothNormals(pushOut(subdiv(g, 70, 0.003), o.hair === 7 ? -0.012 : 0.012), 70), kit });
   }
   const hairGeos = [...finalHair, ...extras].map((h) => h.geo);
   const topRay = new THREE.Group();

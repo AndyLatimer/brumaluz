@@ -48,8 +48,8 @@ export function talkGnomi() {
       speaker:session.registeredNpcs.gnomi.name, subtitle:session.registeredNpcs.gnomi.subtitle, emblem:'guild', start:'intro',
       nodes:{
         intro: session.state.shadowQuest === 'returned'
-          ? {text:'Ya tienes techo. Eso es un buen comienzo. Yo sigo aquí para lo demás: buscar tu oficio, conocer la ciudad… y averiguar qué demonios rondaba la fragua. Un paso cada vez. Promesa de ayudante.'}
-          : {text:'Sigue a Isberto. Su casa está junto a la herrería, al sur. Cuando dice «vente», la invitación va en serio. Yo te espero en la plaza del pozo. Si necesitas a tu ayudante, busca el gorro.'},
+          ? {text:'¡Qué bien verte! ¿Has descansado? Isberto tiene cara de pocos amigos, pero no le abre su casa a cualquiera.\n\nYo estaré por la plaza del pozo. Cuando salgas a conocer la ciudad, pásate a verme. Me gustará saber cómo te va.'}
+          : {text:'Ve con Isberto; su casa está junto al camino de la herrería. Y entra, que si tiene que invitarte dos veces se le acaba la paciencia.\n\nYo me vuelvo a la plaza del pozo. Gracias por hoy… por el distintivo y por dejarme acompañarte.'},
       },
     });
     return;
@@ -57,7 +57,7 @@ export function talkGnomi() {
   if (!session.state.welcome) {
     beginConversation(story.welcomeWorld.root, {
       speaker:session.registeredNpcs.gnomi.name,subtitle:session.registeredNpcs.gnomi.subtitle,emblem:'guild',start:'intro',
-      nodes:{intro:{text:'¡Hola! Soy Gnomi, del Gremio de Ayudantes. Ahora mismo no tengo ningún encargo para ti, pero seguro que nos cruzamos pronto.'}},
+      nodes:{intro:{text:'¡Hola! Soy Gnomi, del Gremio de Ayudantes. Si necesitas que te eche una mano, pregunta. Las dos están libres; lo que llevaba ya se me ha caído.'}},
     });
     return;
   }
@@ -171,13 +171,13 @@ export function updateWelcome(dt: number, time: number) {
   const distance = Math.hypot(target.x - holder.position.x, target.z - holder.position.z);
   if (session.state.welcome.stage === 'active' && !story.welcomeTravelSaid && Math.hypot(holder.position.x - WELCOME_START.x, holder.position.z - WELCOME_START.z) > 5 && distance > 8) {
     story.welcomeTravelSaid = true;
-    const line = t('El mercado queda por aquí. Yo venía mirando los puestos… Tendría que haber mirado también el distintivo.');
+    const line = t('El mercado queda por aquí. Me paré junto a los puestos antes de ir a la puerta. Lo llevaba puesto entonces… creo.');
     chatNpc(session.registeredNpcs.gnomi.name, line);
     story.welcomeWorld.speak(speechSeconds(line));
   }
   if (session.state.welcome.stage === 'active' && distance < 8 && !story.welcomeHintSaid) {
     story.welcomeHintSaid = true;
-    chatNpc(session.registeredNpcs.gnomi.name, t('Por aquí estuve mirando los puestos. ¡A ver si mi distintivo también se quedó mirando!'));
+    chatNpc(session.registeredNpcs.gnomi.name, t('Por aquí estuve. Espera… ¿no ves algo que brilla junto al puesto?'));
     story.welcomeWorld.speak(5);
   }
   if (session.state.welcome.stage !== 'active') { story.welcomeHintSaid = false; story.welcomeTravelSaid = false; }

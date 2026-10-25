@@ -229,8 +229,13 @@ deben coincidir con las comprobaciones de `welcome_action` en
 
 El personaje nuevo aparece en la Puerta del Este (177,0), mirando hacia la
 ciudad. Primero se ve entrar al personaje; después se recorre Brumaluz desde
-el aire y se vuelve a él. Gnomi llega andando, preocupado por el distintivo,
-y comienza la bienvenida. Los controles quedan bloqueados durante la escena.
+el aire y se vuelve a él. El descenso parte del último encuadre del vuelo,
+sin saltar lateralmente de cámara. Gnomi registra el suelo, llega andando
+buscando su distintivo y saluda antes de comenzar la conversación. El saludo
+mantiene su posición guionizada hasta el final para evitar recolocaciones.
+Los rótulos solo identifican lugares; no hay lemas ni frases habladas en las
+cinemáticas. La visita a casa muestra además el uso de la cama y el cofre.
+Los controles quedan bloqueados durante la escena.
 Saltar con Esc o el botón deja al jugador en (156.5,0), junto a Gnomi.
 
 `welcome_action(arrive)` guarda `introSeen` en el personaje y actualiza la

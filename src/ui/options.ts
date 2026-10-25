@@ -6,7 +6,7 @@ import { playerInteractions } from '../game/interaction';
 import { refreshOverlayHud, setGameMenuOpen, setWorldMenuOpen } from './menus';
 import { $ } from './dom';
 import { keys } from '../game/stage';
-import { refreshAmbientControls, setAmbientEnabled, settings, applyVolumes } from '../game/audio';
+import { refreshAmbientControls, setAmbientEnabled,setWorldMusicEnabled, settings, applyVolumes } from '../game/audio';
 
 // ---------------- Ventana de opciones ----------------
 
@@ -36,14 +36,15 @@ export function installOptions() {
   $('#options-close').onclick = () => setOptionsOpen(false);
   $('#options-backdrop').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget) setOptionsOpen(false); });
   $('#opt-ambient').onclick = () => { void setAmbientEnabled(!play.ambientEnabled); };
+  $('#opt-music').onclick=()=>setWorldMusicEnabled(!settings.musicEnabled);
   $('#opt-nameplates').onclick = () => {
     settings.nameplates = !settings.nameplates;
     saveSettings(settings);
     refreshAmbientControls();
   };
-  for (const id of ['ambient', 'master'] as const) {
+  for (const id of ['ambient', 'music','master'] as const) {
     $<HTMLInputElement>(`#opt-${id}-volume`).oninput = (e) => {
-      settings[id === 'ambient' ? 'ambientVolume' : 'masterVolume'] = Number((e.target as HTMLInputElement).value);
+      settings[id === 'ambient' ? 'ambientVolume' : id==='music'?'musicVolume':'masterVolume'] = Number((e.target as HTMLInputElement).value);
       saveSettings(settings);
       applyVolumes();
       refreshAmbientControls();

@@ -29,11 +29,11 @@ function createTrackButton(tracking: QuestTracking, questId: QuestId): HTMLButto
 export function welcomeConversation(data: CharData, act: (action: WelcomeAction, origin?: number) => Promise<boolean>): Conversation {
   const progress = data.welcome;
   const conversation: Conversation = { speaker: 'Gnomi', subtitle: 'Ayudante de bienvenida', emblem: 'guild', start: 'intro', nodes: {} };
-  const offer = 'Hay un pequeño contratiempo con tu ayudante del Gremio de Ayudantes: he perdido el distintivo. ¡Otra vez! Sin él parezco un gnomo que te sigue por la calle dando consejos sin permiso.\n\nLo llevaba junto al mercado de la plaza del Levante. Si David, mi jefe, pregunta, estamos reconociendo el barrio. ¿Me ayudas a buscarlo? Luego me toca a mí echarte una mano. Trato de ayudantes.';
+  const offer = 'Antes de enseñarte nada… ¿ves el hueco del peto? Ahí iba mi distintivo. Lo llevaba al pasar junto a los puestos de la plaza del Levante, aquí al lado.\n\nEs redondo, dorado y está un poco abollado. En el gremio tienen otros más lustrosos, pero este es el mío. ¿Me ayudas a encontrarlo? Me quedaría mucho más tranquilo si lo llevase puesto.';
   const accept = { text: 'Aceptar misión', action: () => act('accept') };
-  const offerChoices = [accept, { text: '¿Qué hace un ayudante asignado?', next: 'guild' }];
+  const offerChoices = [accept, { text: '¿En qué vas a ayudarme?', next: 'guild' }];
   conversation.nodes.guild = {
-    text: 'Te ayuda a encontrar tu sitio. Un oficio, una calle, alguien de fiar… Brumaluz parece enorme cuando no conoces a nadie.\n\nDavid me ha asignado a ti. No al siguiente que cruce la puerta: a ti. Así que iremos a tu ritmo. Y si nos perdemos, preguntar también cuenta como trabajo de gremio.',
+    text: 'En lo que vayas necesitando: orientarte por la ciudad, presentarte a los vecinos, conocer los oficios…\n\nA mí suelen dejarme los recados y recoger lo que se les cae a otros. Bueno, a otros y a mí. Hoy me han dejado acompañarte. Me gustaría hacerlo bien. Y si algo no lo sé, lo preguntamos juntos.',
     next: 'offer',
   };
   const quest = {
@@ -43,10 +43,10 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
   };
   conversation.nodes.offer = { text: offer, quest, choices: offerChoices };
   if (!progress) {
-    conversation.nodes.intro = { text: '¡Buen camino! Si alguien necesita una mano por aquí, procuraré que encuentre dos.' };
+    conversation.nodes.intro = { text: '¡Buen camino! Si necesitas ayuda con algo, estaré por aquí. Para alcanzar los estantes altos tendremos que buscar a otro, eso sí.' };
   } else if (progress.origin === null) {
     conversation.nodes.intro = {
-      text: '¡Te doy la bienvenida a Brumaluz! Tú debes de ser mi nueva asignación. Soy Gnomi, tu ayudante de bienvenida del Gremio de Ayudantes. David me ha encargado que te ayude a empezar aquí.\n\nTenía preparada una reverencia, pero se me ha enganchado el gorro. Mejor empezamos hablando: ¿qué te trae por la capital?',
+      text: '¡Te doy la bienvenida a Brumaluz! Soy Gnomi, del Gremio de Ayudantes. Voy a ser tu ayudante de bienvenida. Los demás ya tenían encargo y yo… bueno, yo estaba libre.\n\nNo suelo llevar una bienvenida entera, pero me hace mucha ilusión. Espera, que me sacuda las rodillas… Ya. ¿Qué te trae por aquí?',
       choices: ORIGINS[data.race].map((text, i) => ({ text, action: () => act('origin', i), next: `offer-${i}` })),
     };
     ORIGINS[data.race].forEach((_, i) => {
@@ -61,21 +61,21 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
       choices: offerChoices };
   } else if (progress.stage === 'active') {
     conversation.nodes.intro = {
-      text: 'La plaza del Levante está aquí al lado. Vamos mirando el suelo, sobre todo junto a los puestos. Es redondo, dorado y tiene una abolladura muy profesional.\n\nVoy contigo. Un ayudante asignado no abandona su puesto. Aunque su puesto esté buscando una cosa que se le ha caído.',
+      text: 'La plaza del Levante está aquí al lado. Mira junto a los puestos; es redondo, dorado y tiene una abolladura en el borde.\n\nYo miraré por debajo. Tú ves más lejos; yo veo mejor lo que se cae.',
       choices: [{ text: 'Vamos a encontrarlo.' }, { text: '¿Y si no aparece?', next: 'worry' }],
     };
-    conversation.nodes.worry = { text: 'Pues se lo contaré a David. Me pondrá esa cara suya de «Gnomi, otra vez», y tendrá razón.\n\nPero tú seguirás teniendo ayudante. El distintivo dice dónde trabajo; no decide a quién ayudo. Ahora… preferiría muchísimo encontrarlo.' };
+    conversation.nodes.worry = { text: 'David, mi jefe, ya me riñó la última vez. Esta vez… mejor no darle otro motivo.\n\nPero no es solo por la bronca. Me gusta que los vecinos vean el distintivo y sepan que pueden pedirme ayuda. A veces hasta me llaman por mi nombre.' };
   } else if (progress.stage === 'found') {
     conversation.nodes.intro = {
-      text: '¡Ese brillo! ¡Mi distintivo! Mira, la abolladura de siempre. No hay otro igual, aunque David dice que lo intento.\n\n¿Me lo devuelves? Voy a cerrar el broche, comprobar el broche y dejar de tocar el broche. En ese orden.',
+      text: '¡Lo tienes! Ese es, con su abolladura. Me daba mucha pena pensar que se quedara ahí, entre las patas de los puestos.\n\n¿Me lo das? Esta vez voy a cerrar bien el broche. Mira que siempre me digo lo mismo…',
       quest: { ...quest, objective: 'Devuelve a Gnomi su distintivo del Gremio de Ayudantes.', turnIn: true },
       choices: [{ text: 'Completar misión', action: () => act('claim'), next: 'thanks' }],
     };
     conversation.nodes.thanks = {
-      text: 'Ahora sí: bien sujeto. Yo tenía que ayudarte a empezar y has empezado ayudándome tú. Me lo apunto.\n\nYa conoces a alguien en Brumaluz. Alguien con gorro, con distintivo y de tu parte. Y ahora, tu primera visita… Un momento. ¿Oyes esas botas? Solo conozco a un herrero que corra así.',
+      text: 'Ahí… bien sujeto. Gracias, de veras. Yo venía a echarte una mano y al final me la has echado tú.\n\nCuando te haga falta algo, ven a buscarme. Aunque no sea cosa del gremio.\n\nAhora podemos… Espera. ¿Oyes esas botas? Me parece que viene Isberto.',
     };
   } else if (progress.stage === 'completed') {
-    conversation.nodes.intro = { text: 'Distintivo en su sitio, ayudante en su puesto. Vamos mejorando. Isberto quería hablar contigo sobre su herrería.\n\nYo sigo asignado a ti. Lo de encontrar tu camino por Brumaluz no se resuelve con un broche; iremos paso a paso.' };
+    conversation.nodes.intro = { text: 'Isberto quiere hablar contigo. Es el herrero que vive al sur, cerca de la fragua. Gruñe un poco, pero escucha lo que tenga que decirte.\n\nYo voy contigo. Y el distintivo también; esta vez no se escapa.' };
   } else conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces.' };
   return conversation;
 }
@@ -203,7 +203,7 @@ export function renderQuestJournal(container: HTMLElement, data: CharData, track
     header.append(left);
     if (!completed) header.append(createTrackButton(tracking, WELCOME_QUEST_KEY));
     const text = document.createElement('p');
-    text.textContent = t('Gnomi ha vuelto a perder su distintivo del Gremio de Ayudantes. Ayúdalo a encontrarlo cerca del mercado antes de que se entere David, su jefe.');
+    text.textContent = t('Gnomi es tu ayudante de bienvenida. Ha perdido el distintivo del gremio cerca del mercado y, aunque esté abollado, le tiene mucho cariño. Ayúdalo a recuperarlo.');
     const objective = document.createElement('section'); objective.className = 'quest-objective';
     const objectiveLabel = document.createElement('small'); objectiveLabel.textContent = t(completed ? 'Completada' : 'Siguiente paso');
     const objectiveText = document.createElement('p'); objectiveText.textContent = t(welcomeObjective(progress));

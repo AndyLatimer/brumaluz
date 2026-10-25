@@ -26,9 +26,13 @@ export function buildMouth({ rayHead, nose, o }: { rayHead: (o: THREE.Vector3, d
     case 2: mouth.push(piece(new THREE.CapsuleGeometry(0.011, 0.08, 3, 6).rotateZ(PI / 2), C_DARK, compose(mp, mr, V(1, 1, 0.5)))); break;
     case 3: mouth.push(piece(new THREE.TorusGeometry(0.034, 0.012, 5, 14), C_DARK, compose(mp, mr, V(0.85, 1.05, 0.5)))); break;
     case 4: mouth.push(piece(arc(0.06, 0.012, PI * 1.25, PI * 1.85), C_DARK, compose(mp.clone().add(V(0.02, 0.05, 0)), new THREE.Euler(mr.x, mr.y, 0.22), V(1, 0.8, 0.4)))); break;
+    case 6: mouth.push(piece(arc(0.044, 0.01, PI * 1.22, PI * 1.78), C_DARK, compose(mp.clone().add(V(0, 0.034, 0)), mr, V(1, 0.65, 0.4)))); break;
+    case 8: mouth.push(piece(arc(0.06, 0.011, PI * 1.18, PI * 1.72), C_DARK, compose(mp.clone().add(V(-0.012, 0.04, 0)), new THREE.Euler(mr.x, mr.y, -0.28), V(1, 0.8, 0.4)))); break;
+    case 7:
     case 5:
       mouth.push(piece(arc(0.06, 0.014, PI * 1.2, PI * 1.8), C_DARK, compose(mp.clone().add(V(0, 0.05, 0)), mr, V(1, 0.85, 0.4))));
       teeth.push(piece(new THREE.ConeGeometry(0.018, 0.04, 4).rotateX(PI), C_WHITE, compose(onFace(0.04, mouthY - 0.012, 0.012), mr, V(1, 1, 0.6)), 0.1, 0.1));
+      if (o.mouth === 7) teeth.push(piece(new THREE.ConeGeometry(0.018, 0.04, 4).rotateX(PI), C_WHITE, compose(onFace(-0.04, mouthY - 0.012, 0.012), mr, V(1, 1, 0.6)), 0.1, 0.1));
       break;
   }
   return { mouthY, facing, onFace, surface, mouthZ, mp, mouth, teeth, mr };

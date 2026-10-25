@@ -1,0 +1,946 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "brumaluz-arboleda",
+      "label": "Arboleda · Cuna de los Elfos",
+      "author": "Brumaluz",
+      "description": "Arte original de Blender: arquitectura de madera viva, hojas, piedra lunar y alquimia botánica. Escala métrica. GLB +Y arriba, +Z frente.",
+      "count": 30,
+      "source": "art/arboleda/brumaluz-arboleda.blend",
+      "license": null
+    }
+  ],
+  "assets": [
+    {
+      "id": "brumaluz-arboleda/objects/house_leafhaven",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "house_leafhaven",
+      "label": "Casa Brote del Alba",
+      "category": "Edificios",
+      "description": "Vivienda élfica circular con tejado de hojas solapadas, ventanales ojivales y raíces habitables.",
+      "path": "brumaluz-arboleda/objects/house_leafhaven.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#house_leafhaven",
+      "bytes": 952820,
+      "sha256": "44805737f0679f083e4c6f0d2a62aca2d4277760bd7f5ba63bb3f45fa2f8fe1a",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.315520763397217,
+          0,
+          -2.315520763397217
+        ],
+        "max": [
+          2.315520763397217,
+          5.570000171661377,
+          2.325000047683716
+        ]
+      },
+      "triangles": 14584,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/laboratory_dew",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "laboratory_dew",
+      "label": "Alquimería del Rocío",
+      "category": "Edificios",
+      "description": "Laboratorio arbóreo de dos alturas, alambique exterior, balcón y cubierta vegetal.",
+      "path": "brumaluz-arboleda/objects/laboratory_dew.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#laboratory_dew",
+      "bytes": 794148,
+      "sha256": "21427d3acd3773080be05ddb055d1e97290f8ce70b9717d1bcf4316f2e5aacfa",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.4084882736206055,
+          0,
+          -2.4560205936431885
+        ],
+        "max": [
+          3.0299999713897705,
+          6.949999809265137,
+          2.360463857650757
+        ]
+      },
+      "triangles": 12752,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "pavilion_moonwell",
+      "label": "Pabellón del Manantial",
+      "category": "Edificios",
+      "description": "Santuario abierto con seis columnas ramificadas y rosetón vegetal.",
+      "path": "brumaluz-arboleda/objects/pavilion_moonwell.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#pavilion_moonwell",
+      "bytes": 638136,
+      "sha256": "f558d1a38b9dab571e4ede9693eada19a8a25621cf2fd58a1e543d0d03c9f574",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.5999999046325684,
+          0,
+          -2.5999999046325684
+        ],
+        "max": [
+          2.5999999046325684,
+          5.389999866485596,
+          2.5999999046325684
+        ]
+      },
+      "triangles": 8708,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tower_starwatch",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "tower_starwatch",
+      "label": "Atalaya de las Copas",
+      "category": "Edificios",
+      "description": "Torre de vigía de madera viva, escalera helicoidal y mirador de hojas.",
+      "path": "brumaluz-arboleda/objects/tower_starwatch.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#tower_starwatch",
+      "bytes": 744312,
+      "sha256": "ae2709cb17cc25276ca981a15dcc0233c23a5c7d66b79126afd625ee0409d52b",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.9486517906188965,
+          0,
+          -1.888971209526062
+        ],
+        "max": [
+          1.9486517906188965,
+          8.219676971435547,
+          1.888971209526062
+        ]
+      },
+      "triangles": 9876,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/greenhouse_moonfern",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "greenhouse_moonfern",
+      "label": "Invernadero de Lunhelecho",
+      "category": "Edificios",
+      "description": "Invernadero octogonal de cristal de jade con nervaduras, parterres y flores lunares.",
+      "path": "brumaluz-arboleda/objects/greenhouse_moonfern.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#greenhouse_moonfern",
+      "bytes": 689724,
+      "sha256": "bb02295282f08a06ba641543bbe3e50558c0a21254953a3e62c4f8f4c9119f41",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.049999952316284,
+          0,
+          -2.049999952316284
+        ],
+        "max": [
+          2.049999952316284,
+          4.349999904632568,
+          2.049999952316284
+        ]
+      },
+      "triangles": 8900,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/gateway_twining",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "gateway_twining",
+      "label": "Umbral de las Dos Ramas",
+      "category": "Construcción",
+      "description": "Gran arco transitable de ramas entrelazadas, hojas y faroles de luciérnaga.",
+      "path": "brumaluz-arboleda/objects/gateway_twining.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#gateway_twining",
+      "bytes": 325632,
+      "sha256": "6d114c20df0936c00bd997e0620d22d92e0a00e36ccbfc76f4892146bee80b8d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.0977652072906494,
+          0,
+          -0.44999998807907104
+        ],
+        "max": [
+          2.0977654457092285,
+          4.183281898498535,
+          0.44999998807907104
+        ]
+      },
+      "triangles": 3792,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/bridge_rootwoven",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "bridge_rootwoven",
+      "label": "Puente de Raíz Trenzada",
+      "category": "Construcción",
+      "description": "Pasarela arqueada de cinco metros con tablas separadas y barandillas entrelazadas.",
+      "path": "brumaluz-arboleda/objects/bridge_rootwoven.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#bridge_rootwoven",
+      "bytes": 353672,
+      "sha256": "8f31410351b6a57b741cb0a153da18a9f8eadcf1a87072f95d3ea7a21bae93b9",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.554999828338623,
+          -1.6391277313232422e-7,
+          -1.0199999809265137
+        ],
+        "max": [
+          2.5550003051757812,
+          1.826668381690979,
+          1.0199999809265137
+        ]
+      },
+      "triangles": 5080,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/fence_vinepanel",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "fence_vinepanel",
+      "label": "Valla de Sarmientos · 2 m",
+      "category": "Construcción",
+      "description": "Módulo de dos metros con extremos encajables y hojas de latón.",
+      "path": "brumaluz-arboleda/objects/fence_vinepanel.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#fence_vinepanel",
+      "bytes": 203608,
+      "sha256": "5d004a2d50f7a271cba7bb4b74d8d9570ab889d1b5fb71f64678cdbc8e200d2d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.159999966621399,
+          0,
+          -0.15216904878616333
+        ],
+        "max": [
+          1.1600000858306885,
+          1.3899999856948853,
+          0.15216904878616333
+        ]
+      },
+      "triangles": 1408,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/table_alchemist",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "table_alchemist",
+      "label": "Mesa de la Transmutación",
+      "category": "Alquimia",
+      "description": "Mesa de trabajo con herbario abierto, matraces, mortero, retorta y diagrama alquímico.",
+      "path": "brumaluz-arboleda/objects/table_alchemist.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#table_alchemist",
+      "bytes": 304484,
+      "sha256": "98481bc1e281de306d15795feda3d9c44177ffcd91faa260391bee522f95d405",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0750000476837158,
+          0,
+          -0.4754999876022339
+        ],
+        "max": [
+          1.0750000476837158,
+          1.4812095165252686,
+          0.4754999876022339
+        ]
+      },
+      "triangles": 3008,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/chair_leafback",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "chair_leafback",
+      "label": "Silla Hoja de Laurel",
+      "category": "Mobiliario",
+      "description": "Silla con respaldo lanceolado, incrustación vegetal y cojín verde.",
+      "path": "brumaluz-arboleda/objects/chair_leafback.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#chair_leafback",
+      "bytes": 163880,
+      "sha256": "234e1c59b350ea6bcf72d5c70aaab9e74ff355e4ff252e0612df7ef85a0ef175",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.33054158091545105,
+          0,
+          -0.3143758773803711
+        ],
+        "max": [
+          0.33054158091545105,
+          1.5511517524719238,
+          0.3143758773803711
+        ]
+      },
+      "triangles": 568,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/bench_bough",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "bench_bough",
+      "label": "Banco de Ramas Gemelas",
+      "category": "Mobiliario",
+      "description": "Banco de jardín con asiento entablado, brazos curvos y respaldo trenzado.",
+      "path": "brumaluz-arboleda/objects/bench_bough.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#bench_bough",
+      "bytes": 185004,
+      "sha256": "ba09eebe0ec9a44b2a5488b9bfef93a98e346c22d455dbf1157cb3f2f97c3036",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9750000238418579,
+          0,
+          -0.32106339931488037
+        ],
+        "max": [
+          0.9750000238418579,
+          1.2173619270324707,
+          0.32106339931488037
+        ]
+      },
+      "triangles": 1144,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/bed_ferncanopy",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "bed_ferncanopy",
+      "label": "Lecho del Sueño Verde",
+      "category": "Mobiliario",
+      "description": "Cama con dosel de hojas, sábanas de lino, manta cosida y cuatro postes orgánicos.",
+      "path": "brumaluz-arboleda/objects/bed_ferncanopy.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#bed_ferncanopy",
+      "bytes": 263416,
+      "sha256": "26fab233c8493492cd13b51520b997b2155941a09abadee611224f856ba63356",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7699668407440186,
+          0,
+          -1.149999976158142
+        ],
+        "max": [
+          0.7699668407440186,
+          2.618844985961914,
+          1.149999976158142
+        ]
+      },
+      "triangles": 2244,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/cabinet_seedkeeper",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "cabinet_seedkeeper",
+      "label": "Armario del Guardasemillas",
+      "category": "Mobiliario",
+      "description": "Armario ojival con puertas talladas, cajones, herrajes de latón y pequeñas semillas de cristal.",
+      "path": "brumaluz-arboleda/objects/cabinet_seedkeeper.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#cabinet_seedkeeper",
+      "bytes": 249456,
+      "sha256": "aaadf898a6d9c9ab3856b10c04af651f62978e4a12cd1ebe36b420b1fc532975",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5799999833106995,
+          0,
+          -0.2946834862232208
+        ],
+        "max": [
+          0.5799999833106995,
+          2.2577288150787354,
+          0.41499999165534973
+        ]
+      },
+      "triangles": 1772,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/shelf_herbarium",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "shelf_herbarium",
+      "label": "Estantería del Herbario",
+      "category": "Alquimia",
+      "description": "Estantes curvos con libros encuadernados, frascos de colores y plantas medicinales.",
+      "path": "brumaluz-arboleda/objects/shelf_herbarium.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#shelf_herbarium",
+      "bytes": 579620,
+      "sha256": "a94be33e153c298d65f8050d15a0ed1fe9a40043c07ff5376fc0135b72a7a800",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7888367772102356,
+          0,
+          -0.2535178065299988
+        ],
+        "max": [
+          0.7846854329109192,
+          2.2249279022216797,
+          0.2535178065299988
+        ]
+      },
+      "triangles": 7290,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/cauldron_bloom",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "cauldron_bloom",
+      "label": "Caldero de Savia Lunar",
+      "category": "Alquimia",
+      "description": "Caldero abierto con infusión luminosa, hojas flotantes y soporte de raíces.",
+      "path": "brumaluz-arboleda/objects/cauldron_bloom.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#cauldron_bloom",
+      "bytes": 240956,
+      "sha256": "bf0bfb35a8de0fdb1dd079189138fe0fdda098cec9ecc5a693ba47ebe8f2b5c2",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6829999685287476,
+          0,
+          -0.5838745832443237
+        ],
+        "max": [
+          0.7072010040283203,
+          1.4305498600006104,
+          0.5838745832443237
+        ]
+      },
+      "triangles": 1904,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/distiller_spiral",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "distiller_spiral",
+      "label": "Alambique de la Espiral",
+      "category": "Alquimia",
+      "description": "Alambique completo con retorta de cobre, serpentín helicoidal, baño refrigerante y matraz receptor.",
+      "path": "brumaluz-arboleda/objects/distiller_spiral.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#distiller_spiral",
+      "bytes": 282764,
+      "sha256": "ad53c113bbfe8cac527beba91fc92d0675463cfdccccb117a89f79aa0f37cb07",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.925000011920929,
+          0,
+          -0.4099999964237213
+        ],
+        "max": [
+          0.925000011920929,
+          2.02677321434021,
+          0.4099999964237213
+        ]
+      },
+      "triangles": 3492,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/lantern_budpost",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "lantern_budpost",
+      "label": "Farola Capullo de Luciérnagas",
+      "category": "Decoración",
+      "description": "Farola vegetal de pie con jaula de seis pétalos y remate de hojas.",
+      "path": "brumaluz-arboleda/objects/lantern_budpost.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#lantern_budpost",
+      "bytes": 203192,
+      "sha256": "a00b322317923ac4b19e835031a3a438ba5c8cba593bfb04692d2e8bdaa31891",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.49709850549697876,
+          0,
+          -0.28999999165534973
+        ],
+        "max": [
+          0.782511830329895,
+          2.430626392364502,
+          0.28999999165534973
+        ]
+      },
+      "triangles": 1404,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/fountain_lotus",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "fountain_lotus",
+      "label": "Fuente del Loto Esmeralda",
+      "category": "Decoración",
+      "description": "Fuente de dos niveles con receptáculo abierto, pétalos tallados y agua turquesa.",
+      "path": "brumaluz-arboleda/objects/fountain_lotus.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#fountain_lotus",
+      "bytes": 297300,
+      "sha256": "a98fa7f6a4af2e448e9b1e0fc911c63d19409ca91414cc665777d18cc48863f3",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.25,
+          0,
+          -1.25
+        ],
+        "max": [
+          1.25,
+          1.8600000143051147,
+          1.25
+        ]
+      },
+      "triangles": 2690,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/waystone_leafrune",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "waystone_leafrune",
+      "label": "Menhir del Pacto Verde",
+      "category": "Decoración",
+      "description": "Monolito facetado de piedra clara, runas talladas, medallón y musgo.",
+      "path": "brumaluz-arboleda/objects/waystone_leafrune.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#waystone_leafrune",
+      "bytes": 183312,
+      "sha256": "3866670835dcaf5540f414b4634ad2540d58bd23f75f2f23073cb0524ed513e4",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.44500651955604553,
+          0,
+          -0.46796801686286926
+        ],
+        "max": [
+          0.5099407434463501,
+          2.390000104904175,
+          0.46796801686286926
+        ]
+      },
+      "triangles": 990,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/armillary_moon",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "armillary_moon",
+      "label": "Esfera de las Tres Lunas",
+      "category": "Alquimia",
+      "description": "Instrumento astral con tres aros inclinados, esfera central y base tallada.",
+      "path": "brumaluz-arboleda/objects/armillary_moon.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#armillary_moon",
+      "bytes": 253708,
+      "sha256": "b77c7ab451a2c241b37f931af5e20b67dd69e9e3812b5bbe561d69fe1cfbda09",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6133826375007629,
+          0,
+          -0.6133826375007629
+        ],
+        "max": [
+          0.6133458614349365,
+          2.0870795249938965,
+          0.6133826375007629
+        ]
+      },
+      "triangles": 2600,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/rack_dryingherbs",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "rack_dryingherbs",
+      "label": "Secadero de Hierbas",
+      "category": "Alquimia",
+      "description": "Bastidor con cinco manojos de plantas suspendidos de cuerdas de lino.",
+      "path": "brumaluz-arboleda/objects/rack_dryingherbs.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#rack_dryingherbs",
+      "bytes": 615072,
+      "sha256": "ae502a40107ad99448703827ae3c73890bb3376ef512f85f04013038f7cf8022",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8449826836585999,
+          1.9067982748310897e-9,
+          -0.3400000035762787
+        ],
+        "max": [
+          0.8449826836585999,
+          1.8799999952316284,
+          0.3400000035762787
+        ]
+      },
+      "triangles": 7554,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/planter_moonlily",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "planter_moonlily",
+      "label": "Jardinera de Flores Lunares",
+      "category": "Decoración",
+      "description": "Macetero de cerámica verde con borde dorado, helechos y flores de cinco pétalos.",
+      "path": "brumaluz-arboleda/objects/planter_moonlily.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#planter_moonlily",
+      "bytes": 474420,
+      "sha256": "b6b7bebe5ba243de71167f150193cf8998247451036a4211071d9287183ea533",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4300000071525574,
+          0,
+          -0.4300000071525574
+        ],
+        "max": [
+          0.4300000071525574,
+          1.2186535596847534,
+          0.4300000071525574
+        ]
+      },
+      "triangles": 5362,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/potion_tray",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "potion_tray",
+      "label": "Bandeja de Elixires",
+      "category": "Alquimia",
+      "description": "Bandeja de latón con cinco frascos etiquetados de distintos tamaños y colores.",
+      "path": "brumaluz-arboleda/objects/potion_tray.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#potion_tray",
+      "bytes": 268956,
+      "sha256": "f703211bd47e05cd52e4425aee03901aeafcb02189561af2b54bee1651a67e1d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4399999976158142,
+          0,
+          -0.4399999976158142
+        ],
+        "max": [
+          0.4399999976158142,
+          0.5024999976158142,
+          0.4399999976158142
+        ]
+      },
+      "triangles": 2456,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tree_ancient_oak",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "tree_ancient_oak",
+      "label": "Roble Ancestral",
+      "category": "Naturaleza",
+      "description": "Árbol de copa escalonada, tronco retorcido, raíces expuestas y hojas de silueta.",
+      "path": "brumaluz-arboleda/objects/tree_ancient_oak.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#tree_ancient_oak",
+      "bytes": 789464,
+      "sha256": "68c68acb7d22c79f71a35787a925cd727c3196caeb202d2e175b3eae2b4d448d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -3.5552077293395996,
+          0,
+          -4.214548587799072
+        ],
+        "max": [
+          3.4857189655303955,
+          7.184896945953369,
+          4.482388496398926
+        ]
+      },
+      "triangles": 10210,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tree_weeping_willow",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "tree_weeping_willow",
+      "label": "Sauce de la Memoria",
+      "category": "Naturaleza",
+      "description": "Sauce con ramas arqueadas, cortinas de hojas individuales y raíces sinuosas.",
+      "path": "brumaluz-arboleda/objects/tree_weeping_willow.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#tree_weeping_willow",
+      "bytes": 899552,
+      "sha256": "387191c91684648a8df7493cd0174030d404cd8781581f59c0871c23a302e98a",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.942816972732544,
+          0,
+          -3.488579034805298
+        ],
+        "max": [
+          2.8854281902313232,
+          5.946121692657471,
+          3.710118293762207
+        ]
+      },
+      "triangles": 11662,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/tree_young_rowan",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "tree_young_rowan",
+      "label": "Serbal de los Brotes",
+      "category": "Naturaleza",
+      "description": "Árbol joven de tres metros con follaje claro y bayas doradas.",
+      "path": "brumaluz-arboleda/objects/tree_young_rowan.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#tree_young_rowan",
+      "bytes": 323892,
+      "sha256": "e5a0b245af0ecab6c37ddbdefcc06a9cee7e77789175113697bfb265da5957a3",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.002779960632324,
+          0,
+          -1.7957900762557983
+        ],
+        "max": [
+          1.5887999534606934,
+          3.270366907119751,
+          1.5887999534606934
+        ]
+      },
+      "triangles": 2632,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/fern_cluster",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "fern_cluster",
+      "label": "Macizo de Helechos",
+      "category": "Naturaleza",
+      "description": "Tres helechos con frondes arqueadas y foliolos modelados, sin planos de transparencia.",
+      "path": "brumaluz-arboleda/objects/fern_cluster.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#fern_cluster",
+      "bytes": 640892,
+      "sha256": "b08662bf0021bb01f620f0d92bb5b815ad6287babe3c6466d3274052b59e4365",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9069427251815796,
+          0,
+          -0.6322935819625854
+        ],
+        "max": [
+          0.8125940561294556,
+          0.4318867623806,
+          0.6993433237075806
+        ]
+      },
+      "triangles": 8106,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/mushrooms_mooncap",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "mushrooms_mooncap",
+      "label": "Setas de Luna",
+      "category": "Naturaleza",
+      "description": "Grupo de siete setas con sombrerillos de jade, motas claras y láminas radiales.",
+      "path": "brumaluz-arboleda/objects/mushrooms_mooncap.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#mushrooms_mooncap",
+      "bytes": 489432,
+      "sha256": "534dd9eb1e6563a9c372fd6e5e5e8aba85edca17fb8cdc5a2f4b347c9de5ad5a",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5943681001663208,
+          0,
+          -0.6772247552871704
+        ],
+        "max": [
+          0.5479999780654907,
+          0.8959999680519104,
+          0.6772247552871704
+        ]
+      },
+      "triangles": 4648,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/crystals_dewstone",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "crystals_dewstone",
+      "label": "Cristales de Rocío",
+      "category": "Naturaleza",
+      "description": "Drusa de cuarzo verde con puntas facetadas, vetas doradas y base musgosa.",
+      "path": "brumaluz-arboleda/objects/crystals_dewstone.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#crystals_dewstone",
+      "bytes": 287708,
+      "sha256": "819a153372c722c3052d4ce4b67905eac0a07519cb27ee5d8ae2fc48846be6d0",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5972952842712402,
+          0,
+          -0.4899999797344208
+        ],
+        "max": [
+          0.589655876159668,
+          1.1103389263153076,
+          0.4899999797344208
+        ]
+      },
+      "triangles": 2394,
+      "materials": 1
+    },
+    {
+      "id": "brumaluz-arboleda/objects/flowers_starmeadow",
+      "pack": "brumaluz-arboleda",
+      "kind": "objects",
+      "name": "flowers_starmeadow",
+      "label": "Flores Estrella del Claro",
+      "category": "Naturaleza",
+      "description": "Rodal de nueve flores blancas y malvas, con hojas y alturas variadas.",
+      "path": "brumaluz-arboleda/objects/flowers_starmeadow.glb",
+      "source": "art/arboleda/brumaluz-arboleda.blend#flowers_starmeadow",
+      "bytes": 510548,
+      "sha256": "80887fd102394a68e6c6515fa89aea66ad83e86132fd2565858b9e6cf9b40c78",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5008816719055176,
+          0,
+          -0.37214383482933044
+        ],
+        "max": [
+          0.6446354985237122,
+          0.5745226144790649,
+          0.6790354251861572
+        ]
+      },
+      "triangles": 5454,
+      "materials": 1
+    }
+  ]
+}

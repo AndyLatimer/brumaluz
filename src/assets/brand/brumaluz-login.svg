@@ -1,0 +1,209 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="360" y1="0" x2="360" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101b30"/>
+      <stop offset=".48" stop-color="#28384b"/>
+      <stop offset=".78" stop-color="#80563e"/>
+      <stop offset="1" stop-color="#c28b4e"/>
+    </linearGradient>
+    <radialGradient id="moonlight" cx="0" cy="0" r="1" gradientTransform="matrix(0 245 -245 0 505 180)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f5cc82" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#f5cc82" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moon" cx="0" cy="0" r="1" gradientTransform="matrix(51 73 -73 51 524 128)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff0c5"/>
+      <stop offset=".7" stop-color="#e8c27e"/>
+      <stop offset="1" stop-color="#bd8955"/>
+    </radialGradient>
+    <linearGradient id="mountain" x1="360" y1="225" x2="360" y2="580" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35434d"/>
+      <stop offset="1" stop-color="#202b37"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="360" y1="365" x2="360" y2="745" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#887057"/>
+      <stop offset=".45" stop-color="#64513f"/>
+      <stop offset="1" stop-color="#42372f"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="360" y1="340" x2="360" y2="445" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b36c42"/>
+      <stop offset="1" stop-color="#683d32"/>
+    </linearGradient>
+    <linearGradient id="road" x1="360" y1="515" x2="360" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d0a16a"/>
+      <stop offset="1" stop-color="#604a3c"/>
+    </linearGradient>
+    <radialGradient id="gate-glow" cx="0" cy="0" r="1" gradientTransform="matrix(0 215 -176 0 360 544)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f6d48d" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#d49b59" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lantern" cx="0" cy="0" r="1" gradientTransform="matrix(0 28 -20 0 0 0)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff2bd"/>
+      <stop offset=".35" stop-color="#f0bd67"/>
+      <stop offset="1" stop-color="#df9d4d" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="stone-lines" width="72" height="42" patternUnits="userSpaceOnUse">
+      <path d="M0 1h71M35 1v20M0 21h71M18 21v20" stroke="#d8bb8a" stroke-opacity=".19" stroke-width="1"/>
+      <path d="M2 4h28m10 0h28m-64 20h11m8 0h43" stroke="#f0d7a5" stroke-opacity=".1" stroke-width="1"/>
+    </pattern>
+    <pattern id="roof-tiles" width="34" height="19" patternUnits="userSpaceOnUse">
+      <path d="M0 1h33M17 1v9M0 10h33M8 10v9" stroke="#efb478" stroke-opacity=".38" stroke-width="1"/>
+      <path d="M3 4h10m9 0h8m-27 9h4m5 0h12m4 0h5" stroke="#4b2f2b" stroke-opacity=".45"/>
+    </pattern>
+    <filter id="soft-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="small-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3.5"/>
+    </filter>
+    <clipPath id="scene-clip">
+      <path d="M0 0h720v900H0z"/>
+    </clipPath>
+    <g id="window">
+      <path d="M-12 18V-2a12 12 0 0 1 24 0v20h-24Z" fill="#282b31" stroke="#372f2c" stroke-width="3"/>
+      <path d="M-8 13V-2a8 8 0 0 1 16 0v15" fill="#d69c57"/>
+      <path d="M0-10v28M-9 3H9" stroke="#604338" stroke-width="2"/>
+      <path d="M-11 19h22" stroke="#c09a68" stroke-width="3"/>
+    </g>
+    <g id="lantern">
+      <path d="M0 0v67m-12 0h24" stroke="#292b2b" stroke-width="5" stroke-linecap="round"/>
+      <path d="M-11 9h22l-3 25H-8L-11 9Z" fill="#292a2b" stroke="#bd9660" stroke-width="2"/>
+      <path d="M-6 13h12l-2 16h-8l-2-16Z" fill="#f2c76e"/>
+      <path d="M-8 6v5m16-5v5M-8 34h16" stroke="#deb47a" stroke-width="2"/>
+      <circle class="lamp-halo" cy="21" r="24" fill="url(#lantern)" filter="url(#soft-glow)"/>
+    </g>
+  </defs>
+  <style>
+    .cloud { animation: cloud-drift 46s ease-in-out infinite alternate; }
+    .cloud.far { animation-duration: 68s; animation-direction: alternate-reverse; }
+    .star { animation: star-glint 3.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .star.slow { animation-delay: -2.1s; animation-duration: 5.2s; }
+    .lamp-halo { animation: lantern-breathe 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .lamp-halo.second { animation-delay: -1.6s; }
+    .firefly { animation: firefly-drift 7s ease-in-out infinite; }
+    .firefly.f2 { animation-delay: -2.5s; animation-duration: 8.5s; }
+    .firefly.f3 { animation-delay: -4.7s; animation-duration: 6.5s; }
+    .flag { animation: flag-sway 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: left center; }
+    @keyframes cloud-drift { from { transform: translateX(-9px); } to { transform: translateX(13px); } }
+    @keyframes star-glint { 0%, 100% { opacity: .38; transform: scale(.82); } 50% { opacity: 1; transform: scale(1.08); } }
+    @keyframes lantern-breathe { 0%, 100% { opacity: .58; transform: scale(.88); } 50% { opacity: 1; transform: scale(1.08); } }
+    @keyframes firefly-drift { 0%, 100% { opacity: .15; transform: translate(0, 4px); } 30% { opacity: .95; } 55% { transform: translate(9px, -11px); } 75% { opacity: .5; } }
+    @keyframes flag-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+  <g clip-path="url(#scene-clip)">
+    <path fill="url(#sky)" d="M0 0h720v900H0z"/>
+    <path fill="url(#moonlight)" d="M0 0h720v900H0z"/>
+    <g opacity=".84">
+      <circle cx="520" cy="156" r="94" fill="#eac27b" opacity=".13"/>
+      <circle cx="520" cy="156" r="69" fill="url(#moon)" stroke="#f4d797" stroke-opacity=".6" stroke-width="2"/>
+      <path d="M482 127c17-18 39-23 61-17m-51 69c20 8 41 5 59-7" stroke="#fff0c2" stroke-opacity=".32" stroke-width="2" stroke-linecap="round"/>
+      <path d="m476 150 7-3m72 26 6 3m-53-73 2-5m30 111 2-5" stroke="#9b714b" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g fill="#f4dfb2">
+      <path class="star" d="m89 114 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z"/>
+      <path class="star slow" d="m213 72 2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z"/>
+      <path class="star slow" d="m622 286 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/>
+      <circle class="star" cx="150" cy="191" r="2"/>
+      <circle class="star slow" cx="357" cy="109" r="2"/>
+      <circle class="star" cx="430" cy="245" r="1.6"/>
+      <circle class="star slow" cx="276" cy="236" r="1.7"/>
+      <circle class="star" cx="655" cy="104" r="1.5"/>
+      <circle class="star slow" cx="52" cy="273" r="1.6"/>
+      <circle class="star" cx="579" cy="72" r="1.4"/>
+    </g>
+    <g class="cloud far" fill="#d2b386" opacity=".12">
+      <path d="M-30 255c24-23 52-27 78-12 21-31 62-34 88-8 28-10 49 1 61 20H-30Zm394-117c18-18 40-21 59-9 16-25 49-27 69-7 22-8 39 2 48 16H364Z"/>
+    </g>
+    <path d="m0 401 74-103 44 48 102-132 69 100 66-71 69 75 82-110 77 105 58-73 79 78v234H0V401Z" fill="#283644"/>
+    <path d="m0 450 91-99 58 70 92-91 74 86 84-94 88 79 70-80 77 56 86-66v221H0V450Z" fill="url(#mountain)"/>
+    <path d="m185 397 56-67 25 30-30-7-24 34Zm211-44 45-48 34 37-34-17-22 25Zm174-21 34-44 29 38-27-16-20 27Z" fill="#829092" opacity=".19"/>
+    <path d="M0 485h720v260H0z" fill="#28332f"/>
+    <path d="M0 512c102-57 175-47 269-13 76-42 169-53 251-11 77-39 141-35 200-8v265H0V512Z" fill="#354039"/>
+    <g fill="#26312e" stroke="#756045" stroke-width="3">
+      <path d="M22 472v-75l39-34 40 34v75H22Z"/>
+      <path d="m12 398 49-50 50 50H12Z" fill="url(#roof)"/>
+      <path d="M590 478v-87l40-35 40 35v87h-80Z"/>
+      <path d="m579 395 51-48 52 48h-103Z" fill="url(#roof)"/>
+      <path d="M115 456v-53l29-25 30 25v53h-59Z"/>
+      <path d="m106 405 38-40 40 40h-78Z" fill="url(#roof)"/>
+      <path d="M534 454v-59l30-26 31 26v59h-61Z"/>
+      <path d="m524 399 40-41 41 41h-81Z" fill="url(#roof)"/>
+    </g>
+    <g opacity=".78">
+      <use href="#window" transform="translate(61 414) scale(.8)"/>
+      <use href="#window" transform="translate(630 414) scale(.82)"/>
+      <use href="#window" transform="translate(144 419) scale(.68)"/>
+      <use href="#window" transform="translate(564 413) scale(.68)"/>
+    </g>
+    <path d="M0 534h720v223H0z" fill="url(#stone)" stroke="#302b28" stroke-width="6"/>
+    <path d="M0 534h720v223H0z" fill="url(#stone-lines)"/>
+    <path d="M0 563h720m-720 42h720m-720 42h720m-720 42h720m-720 42h720" stroke="#2e2b2a" stroke-opacity=".4" stroke-width="2"/>
+    <path d="M48 535V454h84v81m456 0v-81h84v81" fill="#62503f" stroke="#302b28" stroke-width="6"/>
+    <path d="m35 462 55-60 56 60H35Zm456 0 55-60 56 60H491Z" fill="url(#roof)" stroke="#302b28" stroke-width="6"/>
+    <path d="m42 459 48-49 49 49m359 0 49-49 49 49" fill="url(#roof-tiles)" opacity=".8"/>
+    <path d="M55 535V468h70v67m378 0v-67h70v67" fill="url(#stone)" stroke="#302b28" stroke-width="5"/>
+    <path d="M64 529v-57h52v57m396 0v-57h52v57" fill="#28323a" stroke="#ad8756" stroke-width="3"/>
+    <path d="M72 522v-47h36v47m404 0v-47h36v47" fill="#d39451"/>
+    <path d="M90 476v49m404-49v49" stroke="#604438" stroke-width="3"/>
+    <path d="M0 534h720v26H0z" fill="#4b3e34"/>
+    <path d="M0 536h720v6H0z" fill="#c6a26d"/>
+    <path d="M222 476v-79c0-74 61-134 138-134s138 60 138 134v79h-38v-79c0-53-44-96-100-96s-100 43-100 96v79h-38Z" fill="#352e2b" stroke="#282725" stroke-width="8"/>
+    <path d="M235 474v-77c0-68 56-122 125-122s125 54 125 122v77h-18v-77c0-58-48-105-107-105s-107 47-107 105v77h-18Z" fill="url(#stone)" stroke="#d0ad74" stroke-width="5"/>
+    <path d="M260 478v-80c0-54 44-97 100-97s100 43 100 97v80H260Z" fill="#182534" stroke="#42372e" stroke-width="7"/>
+    <path d="M277 469v-72c0-45 37-80 83-80s83 35 83 80v72" stroke="#f1c77e" stroke-opacity=".56" stroke-width="3"/>
+    <path d="M282 535v-74c0-43 35-78 78-78s78 35 78 78v74" fill="#222b31" stroke="#4b3a2e" stroke-width="6"/>
+    <path d="M293 535v-73c0-37 30-67 67-67s67 30 67 67v73" fill="#152538"/>
+    <path d="M307 535v-71c0-29 24-53 53-53s53 24 53 53v71" fill="#1b2933" stroke="#b88b55" stroke-width="4"/>
+    <path d="M307 535v-71c0-29 24-53 53-53v124h-53Z" fill="#76503a" stroke="#d0a368" stroke-width="3"/>
+    <path d="M360 418v117m-53-57h106m-63-27h6" stroke="#3d3029" stroke-width="3"/>
+    <circle cx="350" cy="479" r="3" fill="#e8bd70"/>
+    <circle cx="370" cy="479" r="3" fill="#e8bd70"/>
+    <g fill="#493b31" stroke="#d0ad74" stroke-width="3">
+      <path d="M192 501h28v34h-28z"/>
+      <path d="M500 501h28v34h-28z"/>
+      <path d="M188 500h36v7h-36zm308 0h36v7h-36z" fill="#c2995d"/>
+      <path d="m193 500 13-19 13 19m281 0 13-19 13 19" fill="#75513a"/>
+    </g>
+    <g class="flag">
+      <path d="M516 418v-48" stroke="#d6b57c" stroke-width="3"/>
+      <path d="M518 371h37l-9 13 9 13h-37z" fill="#8c4638" stroke="#d3ae70" stroke-width="2"/>
+      <path d="M524 377h21m-21 6h14m-14 6h19" stroke="#e5c68e" stroke-opacity=".7" stroke-width="2"/>
+    </g>
+    <path d="M187 534c15-38 47-57 83-59m263 59c-15-38-47-57-83-59" fill="none" stroke="#f6d48d" stroke-opacity=".33" stroke-width="20" filter="url(#soft-glow)"/>
+    <path d="M0 900c100-113 173-154 238-240 52-69 66-114 122-126 57 12 71 57 122 126 65 86 138 127 238 240H0Z" fill="url(#road)"/>
+    <path d="M0 900c100-113 173-154 238-240 52-69 66-114 122-126 57 12 71 57 122 126 65 86 138 127 238 240" stroke="#e6bd78" stroke-opacity=".3" stroke-width="4"/>
+    <path d="m325 573-9 31m62-31 9 31m-94 39-15 20m133-20 15 20m-180 38-19 18m246-18 19 18m-326 43-17 17m421-17 17 17" stroke="#edc887" stroke-opacity=".34" stroke-width="3" stroke-linecap="round"/>
+    <g transform="translate(163 565)">
+      <use href="#lantern"/>
+      <circle class="lamp-halo second" cy="21" r="18" fill="url(#lantern)" filter="url(#small-glow)"/>
+    </g>
+    <g transform="translate(557 565)">
+      <use href="#lantern"/>
+      <circle class="lamp-halo second" cy="21" r="18" fill="url(#lantern)" filter="url(#small-glow)"/>
+    </g>
+    <g class="firefly" fill="#ffdfa0">
+      <circle cx="128" cy="625" r="2.2"/>
+      <circle cx="128" cy="625" r="8" opacity=".2" filter="url(#small-glow)"/>
+    </g>
+    <g class="firefly f2" fill="#ffe7ae">
+      <circle cx="590" cy="687" r="2"/>
+      <circle cx="590" cy="687" r="8" opacity=".2" filter="url(#small-glow)"/>
+    </g>
+    <g class="firefly f3" fill="#ffe7ae">
+      <circle cx="235" cy="758" r="1.8"/>
+      <circle cx="235" cy="758" r="7" opacity=".22" filter="url(#small-glow)"/>
+    </g>
+    <g fill="#343b34" stroke="#242c2b" stroke-width="3">
+      <path d="m46 702 20-59 20 59H46Zm-8 0h56m-48 10h40m-32 10h24m-16 0v54m8-54v54"/>
+      <path d="m614 708 24-69 24 69h-48Zm-8 0h64m-55 10h46m-37 10h28m-19 0v48m10-48v48"/>
+    </g>
+    <g fill="#859063" opacity=".8">
+      <path d="m31 900 23-47 4 47m18 0 16-36 3 36m527 0 22-53 5 53m20 0 16-35 2 35"/>
+      <path d="m107 900 12-29 5 29m475 0 14-33 3 33"/>
+    </g>
+    <rect x="9" y="9" width="702" height="882" rx="8" stroke="#f0d391" stroke-opacity=".22" stroke-width="2"/>
+    <path d="M16 63v-31a16 16 0 0 1 16-16h31m641 47V32a16 16 0 0 0-16-16h-31M16 837v31a16 16 0 0 0 16 16h31m641-47v31a16 16 0 0 1-16 16h-31" stroke="#f0d391" stroke-opacity=".43" stroke-width="2"/>
+  </g>
+</svg>

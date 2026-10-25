@@ -5,12 +5,14 @@ import { attributeTotal } from './stats';
 import { setBonuses } from './sets';
 import { basicEnchantment } from './enchantments';
 import cadence from './combatCadence.json';
+import duration from './combatDuration.json';
+import { strengthPower,expertisePower,intellectEfficiency,agilityTempo } from './attributeCombat';
 
 export const primaryAttribute = (cls: ClassId) => cls === 'guerrero' ? 'fuerza' : cls === 'mago' || cls === 'clerigo' ? 'intelecto' : 'agilidad';
 export const powerMultiplier = (d: CharData) => (1 + .01 * attributeTotal(d,primaryAttribute(d.cls))) * (1 + .02 * (d.level - 1));
 export const weaponTempo = (id: string | undefined) => id && /sable|daga_luna|daga_espina/.test(id) ? .85 : id && /meteoro|forja|solar/.test(id) ? 1.15 : 1;
-export const attackInterval = (cls: ClassId, equipment?: Equipment) => COMBAT_KITS[cls].interval * weaponTempo(equipment?.weapon?.id);
-export const skillCost = (d: CharData) => COMBAT_KITS[d.cls].skill.cost * (1 - setBonuses(d.cls,d.equipment).skillCost);
+export const attackInterval = (cls: ClassId, equipment?: Equipment,data?:CharData) => Math.max(duration[cls].basic+.04,COMBAT_KITS[cls].interval * weaponTempo(equipment?.weapon?.id)*(data?agilityTempo(data):1));
+export const skillCost = (d: CharData) => COMBAT_KITS[d.cls].skill.cost * (1 - setBonuses(d.cls,d.equipment).skillCost)*intellectEfficiency(d);
 
 export type SkillId = 'heavy_strike' | 'arcane_discharge' | 'double_slash' | 'healing' | 'precise_shot';
 export const MAX_SKILL_RANK = 5;
@@ -72,7 +74,7 @@ export function upgradeSkill(data: SkillProgress, id: SkillId, expectedRank: num
 export function skillPower(cls: ClassId, rank = 1, equipment?: Equipment, data?: CharData) {
   const kit = COMBAT_KITS[cls];
   const bonus = equipment ? setBonuses(cls,equipment) : {power:0,healing:0,skillPower:0};
-  const multiplier = (data ? powerMultiplier(data) : 1) * (1 + (kit.skill.healing ? bonus.healing : bonus.power)) * (1 + bonus.skillPower);
+  const multiplier = (data ? powerMultiplier(data)*expertisePower(data) : 1) * (1 + (kit.skill.healing ? bonus.healing : bonus.power)) * (1 + bonus.skillPower);
   if (equipment) {
     const main = equippedWeapon(cls, equipment, 'weapon');
     const offhand = equippedWeapon(cls, equipment, 'offhand');
@@ -86,7 +88,7 @@ export function skillPower(cls: ClassId, rank = 1, equipment?: Equipment, data?:
 
 export const basicAttackDamage = (cls: ClassId, level = 1, equipment?: Equipment, data?: CharData) =>
   (equipment ? equippedWeapon(cls, equipment, 'weapon')?.power ?? 0 : COMBAT_KITS[cls].damage) * weaponTempo(equipment?.weapon?.id)
-    * (data ? powerMultiplier(data) : 1 + .02 * (level - 1)) * (1 + (equipment ? setBonuses(cls,equipment).power : 0));
+    * (data ? powerMultiplier(data)*strengthPower(data) : 1 + .02 * (level - 1)) * (1 + (equipment ? setBonuses(cls,equipment).power : 0));
 
 export function starterEquipment(cls: ClassId): Equipment {
   const kit = COMBAT_KITS[cls], equipment = emptyEquipment();
@@ -112,8 +114,8 @@ export interface CombatResult {
 
 export const REGENERATION = { health: .01, combatHealth: .0025, mana: .02, stamina: .04, combatGrace: 5 };
 
-export function isInCombat(encounter: { status: string; engaged: boolean } | null | undefined): boolean {
-  return encounter?.status === 'active' && encounter.engaged;
+export function isInCombat(encounter: { status: string; engaged: boolean;attackers?:number } | null | undefined): boolean {
+  return (encounter?.attackers??0)>0 || encounter?.status === 'active' && encounter.engaged;
 }
 
 /** Fractional values are retained so low rates do not disappear between frames. */
@@ -156,7 +158,7 @@ export function resolveCombat(
   if (skill) {
     next.resource -= cost;
     next.nextSkill = now + skill.cooldown;
-  } else next.nextAttack = now + attackInterval(cls,equipment);
+  } else next.nextAttack = now + attackInterval(cls,equipment,data);
   const damage: number[] = [];
   let healing = 0;
   if (skill?.healing) {

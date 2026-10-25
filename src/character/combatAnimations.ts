@@ -1,7 +1,11 @@
 import * as THREE from 'three';
+import combatDuration from '../data/combatDuration.json';
+const refinedCache=new WeakMap<THREE.AnimationClip,{signature:string;clips:THREE.AnimationClip[]}>();
 
 /** Retimed clips preserve the authored KayKit rig, with clear preparation, impact and recovery. */
 export function refinedCombatClips(clips:THREE.AnimationClip[]){
+ const key=clips[0],signature=clips.map(clip=>clip.uuid).join(':');
+ const cached=key?refinedCache.get(key):undefined;if(cached?.signature===signature)return cached.clips;
  const source=(name:string)=>clips.find(c=>c.name===name);
  const result:THREE.AnimationClip[]=[];
  const retime=(name:string,from:string,duration:number,double=false)=>{
@@ -22,14 +26,16 @@ export function refinedCombatClips(clips:THREE.AnimationClip[]){
    const out=track.clone();out.times=new Float32Array(times);out.values=new Float32Array(values);return out;
   });result.push(new THREE.AnimationClip(name,duration,tracks));
  };
- retime('Combat_Slash','1H_Melee_Attack_Slice_Diagonal',.68);
- retime('Combat_Heavy','1H_Melee_Attack_Slice_Diagonal',.9);
- retime('Combat_Double','1H_Melee_Attack_Slice_Diagonal',.75,true);
- retime('Combat_Cast','Spellcasting',.55);
- retime('Combat_Discharge','Spellcast_Raise',.95);
+ retime('Combat_Slash','1H_Melee_Attack_Slice_Diagonal',combatDuration.guerrero.basic);
+ retime('Combat_Backhand','Melee_1H_Attack_Slice_Horizontal',combatDuration.guerrero.basic);
+ retime('Combat_Thrust','Melee_1H_Attack_Stab',combatDuration.guerrero.basic);
+ retime('Combat_Heavy','Melee_1H_Attack_Chop',combatDuration.guerrero.skill);
+ retime('Combat_Double','1H_Melee_Attack_Slice_Diagonal',combatDuration.picaro.skill,true);
+ retime('Combat_Cast','Spellcasting',combatDuration.mago.basic);
+ retime('Combat_Discharge','Spellcast_Raise',combatDuration.mago.skill);
  // The medium ranged rig shares the Adventurers bind pose. Compose its authored
  // aiming, shooting and reloading clips rather than imitating a spell cast.
- for(const [name,duration,aimTime]of [['Combat_Aim',.78,.2],['Combat_Precise',1.05,.4]] as const){
+ for(const [name,duration,aimTime]of [['Combat_Aim',combatDuration.explorador.basic,.2],['Combat_Precise',combatDuration.explorador.skill,.4]] as const){
   const aim=source('Ranged_1H_Aiming'),shoot=source('Ranged_1H_Shoot'),reload=source('Ranged_1H_Reload');
   if(!aim||!shoot||!reload)throw new Error('Faltan las animaciones de ballesta.');
   const names=new Set([...aim.tracks,...shoot.tracks,...reload.tracks].map(track=>track.name));
@@ -54,5 +60,6 @@ export function refinedCombatClips(clips:THREE.AnimationClip[]){
   }
   result.push(new THREE.AnimationClip(name,duration,tracks));
  }
+ if(key)refinedCache.set(key,{signature,clips:result});
  return result;
 }

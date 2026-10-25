@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { stripVTControlCharacters } from 'node:util';
+import { join } from 'node:path';
 import { before, after, test } from 'node:test';
 import { chromium } from 'playwright';
 
@@ -38,6 +39,8 @@ test('notices wait for dialogue, prioritise errors, preserve reading time and dr
     });
     await page.goto(`${url}/?test&graphics=compatible`);
     await page.waitForFunction(() => !!window.brumaluz, null, { timeout: 60000 });
+    await page.bringToFront();
+    await page.evaluate(() => window.brumaluz.play());
     await page.evaluate(async () => {
       const { toast, clearToasts } = await import('/src/ui/toast.ts');
       const { openConversation } = await import('/src/ui/dialog.ts');
@@ -61,6 +64,7 @@ test('notices wait for dialogue, prioritise errors, preserve reading time and dr
     }
     await page.evaluate(async () => (await import('/src/ui/dialog.ts')).closeDialog());
     await page.locator('#toast.show h2').filter({ hasText: 'Primer encargo' }).waitFor();
+    if (process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.PLAYWRIGHT_SCREENSHOT_DIR, 'notice-quest.png') });
     await page.evaluate(async () => (await import('/src/ui/dialog.ts')).openConversation({
       speaker: 'Gnomi', start: 'intro', nodes: { intro: { text: 'Vamos a terminar de hablar.' } },
     }));
@@ -71,6 +75,7 @@ test('notices wait for dialogue, prioritise errors, preserve reading time and dr
     await page.locator('#toast.show h2').filter({ hasText: 'Primer encargo' }).waitFor();
     await page.locator('#toast.show h2').filter({ hasText: 'Una recompensa' }).waitFor();
     assert.equal(await page.locator('#toast').getAttribute('data-kind'), 'reward');
+    if (process.env.PLAYWRIGHT_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.PLAYWRIGHT_SCREENSHOT_DIR, 'notice-reward.png') });
     await page.evaluate(async () => (await import('/src/ui/i18n.ts')).setLanguage('en'));
     assert.equal(await page.locator('.toast-body > small').textContent(), 'Quest complete');
     await page.locator('#toast.show').waitFor({ state: 'hidden' });

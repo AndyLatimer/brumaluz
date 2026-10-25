@@ -8,7 +8,8 @@ import { t } from '../ui/i18n';
 import { closeDialog } from '../ui/dialog';
 import { beginMapTransition } from '../ui/transitionLoading';
 import { locationName, MAX_LEVEL, unspentAttributePoints } from '../data/data';
-import { collectCoinBag } from '../services/account';
+import { collectCoinBag, collectFairyDust } from '../services/account';
+import { addItem } from '../services/devActions';
 import { updateHud } from './hud';
 import { setWindow, setGameMenuOpen, setPlayerMenuOpen, setWorldMenuOpen } from '../ui/menus';
 import { serverAction, errorMessage, runOnServer } from './server';
@@ -220,6 +221,26 @@ export async function pickUpCoinBag(bagId: string) {
   floatText(`+${amount} ${t('Pelines')}`, 'xp');
   chatSystem(t('Has encontrado {amount} pelines.', { amount }));
   sparkBurst(10, 'xp', '●');
+  if (ui.openWindow === 'inventory') setWindow('inventory', false);
+  else if (ui.openWindow === 'collections') setWindow('collections', false);
+}
+/** Recoge un montón de polvos de hada del mundo: el servidor sortea la cantidad y lo marca como recogido. */
+export async function pickUpFairyDust(dustId: string) {
+  keys.clear();
+  play.moveTarget = null;
+  marker.visible = false;
+  const amount = 1 + Math.floor(Math.random() * 5);
+  const collected = await runOnServer(id => collectFairyDust(id, dustId), () => {
+    const fairyDust = session.state.fairyDust ?? [];
+    if (fairyDust.includes(dustId)) throw new Error(t('Ya has recogido estos polvos de hada.'));
+    session.state.fairyDust = [...fairyDust, dustId];
+    for (let i = 0; i < amount; i++) addItem(session.state, 'polvo_de_hada');
+  });
+  if (!collected) return;
+  play.char.pickUp();
+  floatText(`+${amount} ${t('Polvo de hada')}`, 'item');
+  chatSystem(t('Has encontrado {n} {item}.', { n: amount, item: t('Polvo de hada') }));
+  sparkBurst(10, 'item', '✦');
   if (ui.openWindow === 'inventory') setWindow('inventory', false);
   else if (ui.openWindow === 'collections') setWindow('collections', false);
 }

@@ -39,24 +39,24 @@ export function isbertoConversation(): Conversation {
     nodes:{ intro:{ text:'Buen golpe. Ahora registra los restos antes de que se deshagan. Una pelea no termina hasta que sabes qué te ha atacado.' } } };
   if (session.state.shadowQuest === 'defeated') return { ...isberto, nodes:{
     intro:{ text:'Buen trabajo. Has mantenido el tipo cuando se te ha echado encima. Eso vale más que llevar un arma bonita.\n\nAhora enséñame qué has encontrado. He cruzado medio Pompelín y esto no me gusta nada.', next:gnomiHere ? 'gnomi' : 'isberto' },
-    gnomi:{ ...gnomi, text:'En el gremio tenemos un registro de criaturas. Con dibujos, incluso. Esta no sale.\n\nY antes de que preguntes: sí, Isberto, he leído también las páginas sin dibujos.', next:'isberto' },
-    isberto:{ text:'Entonces mañana buscaremos a quien sepa más. Guarda esos restos. Hasta tener respuestas, esto se queda entre nosotros. No quiero a medio mercado pinchando sombras con un tenedor.', next:'offer' },
+    gnomi:{ ...gnomi, text:'¿Estás bien? Cuando se te ha echado encima casi se me sale el corazón.\n\nNo había visto una criatura así. Isberto, ¿tú reconoces eso que ha dejado?', next:'isberto' },
+    isberto:{ text:'No. Y no voy a ponerle nombre a ojo. Guarda lo que has encontrado; quizá alguien sepa qué es.\n\nPor hoy la herrería está despejada. Con eso me basta.', next:'offer' },
     offer:gnomiHere
       ? { text:'Te has ganado un techo. Tengo una cama libre y un cofre que cierra como es debido. Vente a casa.\n\nY no pongas esa cara. Has defendido mi fragua; no voy a pagártelo señalándote un banco en la plaza.', next:'farewell' }
       : { text:'Te has ganado un techo. Tengo una cama libre y un cofre que cierra como es debido. Vente a casa.\n\nY no pongas esa cara. Has defendido mi fragua; no voy a pagártelo señalándote un banco en la plaza.', choices:follow },
-    farewell:{ ...gnomi, text:'Una cama, un cofre y una invitación sin gruñido. Voy a tener que corregir mi guía de Brumaluz.\n\nDescansa. Te espero en la plaza del pozo; sigo siendo tu ayudante asignado. Isberto puede prestarte una cama, pero el gorro lo pongo yo.', choices:follow },
+    farewell:{ ...gnomi, text:'Gracias, Isberto. Sabía que no ibas a dejarle a la intemperie.\n\nVe a descansar. Yo me vuelvo a la plaza del pozo. Cuando salgas, pásate a verme. Me gustará saber cómo te va.', choices:follow },
   } };
   if (session.state.shadowQuest === 'returning') return play.city.locationId === ISBERTO_HOUSE
     ? { ...isberto, nodes:{
       intro:{ text:'Aquí puedes descansar y dejar tus cosas. El cerrojo es bueno: lo hice yo.\n\nHas respondido cuando hacía falta. En mi casa eso cuenta. Ponte cómodo.',
         choices:[{ text:'Gracias, Isberto.', action:()=>performShadow('return'), next:'rest' }] },
-      rest:{ text:'Descansa. Mañana seguiremos el rastro de esa cosa. Y si vuelve a acercarse a mi fragua, nos encontrará preparados.' },
+      rest:{ text:'Descansa. Mañana ya tendrás tiempo de decidir por dónde seguir. Por hoy, bastante trote llevas.' },
     } }
     : { ...isberto, nodes:{ intro:{ text:'Mi casa es esa, la de la puerta junto al camino. Vamos, entra.' } } };
   if (session.state.shadowQuest === 'returned') return { ...isberto,
     nodes:{ intro:{ text:'La cama y el cofre son tuyos mientras los necesites. Si sales, vuelve con todas las piezas. Las tuyas; las del equipo ya las arreglo yo.' } } };
-  const text = session.state.shadowQuest === 'active' ? 'Sigue junto a la herrería, al sur. Mantén los pies firmes, busca el hueco y golpea con intención. Yo me ocupo de que nadie se meta en medio.'
-    : `${gnomiHere ? t('Gnomi, mantén a la gente lejos de la herrería. Y tú, escúchame.') + '\n\n' : ''}${t('He sacado a todos de la fragua y cerrado el paso del sur. Esa cosa sigue dentro y no voy a dejar que llegue al mercado.\n\nLlevas un arma. Bien. Ahora hay que usarla con cabeza. Tú ve a por la criatura; yo cubro el camino. ¿Puedo contar contigo?')}`;
+  const text = session.state.shadowQuest === 'active' ? 'Sigue junto a la herrería, al sur. Fija a la sombra para empezar. Cuando marque el suelo, sal del círculo: primero los pies, después el golpe. Yo vigilo el camino.'
+    : `${gnomiHere ? t('Gnomi, quédate junto al camino. Si viene alguien, que espere. Y tú, escúchame.') + '\n\n' : ''}${t('Hay una criatura junto a mi herrería. No la reconozco, y no pienso dejarla rondando mis herramientas.\n\nLlevas un arma. Bien. Te iré guiando: elige tu objetivo, prueba tu habilidad y mantente fuera de sus ataques. Si marca el suelo, apártate antes del golpe. Yo vigilo el camino. ¿Me echas una mano?')}`;
   const offer = !session.state.shadowQuest;
   return {
     ...isberto,

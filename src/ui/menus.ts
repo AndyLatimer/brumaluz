@@ -129,9 +129,10 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('wide', win === 'sheet' || win === 'vendor' || win === 'bank' || win === 'social' || win === 'skills' || win === 'collections');
   $('#window-backdrop .game-window').classList.toggle('xl', win === 'inventory' || win === 'sheet' || win === 'vendor' || win === 'bank');
   if (win === 'loot') {
+    const corpse=fight.lootEncounter??fight.combatEncounter;
     play.moveTarget = null; play.pendingTalk = null; marker.visible = false; playerVel.set(0, 0, 0);
-    $('#window-title').textContent = fight.combatEncounter?.kind==='wilderness'?`${t('Botín')}: ${fight.combatEncounter.label}`:t('Botín de la criatura');
-    if (fight.combatEncounter?.status === 'defeated' && !fight.combatEncounter.looted) renderLoot(body, fight.combatEncounter, collectCorpseLoot);
+    $('#window-title').textContent = corpse?.kind==='wilderness'?`${t('Botín')}: ${corpse.label}`:t('Botín de la criatura');
+    if (corpse?.status === 'defeated' && !corpse.looted) renderLoot(body, corpse, collectCorpseLoot);
     else { setWindow(null); return; }
   }
   else if(win==='professions') {$('#window-title').textContent=t('Profesiones');renderProfessions(body,session.state);}
@@ -162,7 +163,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
     renderQuestJournal(body, session.state, questTracking, journalCompleted, corpseLooted());
     for (const entry of body.querySelectorAll<HTMLDetailsElement>('details.quest-completed')) entry.open = expandedQuests.includes(entry.dataset.quest);
   }
-  else if (win === 'collections') renderCollections(body, session.state.coinBags);
+  else if (win === 'collections') renderCollections(body, session.state.coinBags, session.state.fairyDust ?? []);
   else if (win === 'vendor') renderVendor(body, session.state, ui.vendor!.id, { onBuy: (item) => void buyItem(item), onSell: (slot) => void sellItem(slot) });
   else if (win === 'bank') renderBank(body, session.state, ui.bankState, {
     onDeposit: (slot, target) => { const item = session.state.inventory[slot]; if (item) void bankTransaction('deposit', slot, item, target ?? null); },

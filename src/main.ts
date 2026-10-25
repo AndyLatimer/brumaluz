@@ -1,6 +1,7 @@
 // Arranque del juego: conecta la interfaz, carga personajes y mapa, prepara la historia y lanza el bucle de render.
 // Cada parte vive en su módulo (src/game, src/story, src/ui); el estado compartido está en src/game/state.ts.
 import { createCoinBags } from './world/coinBags';
+import { createFairyDust } from './world/fairyDust';
 import { createDestinationIndicator } from './ui/destinationIndicator';
 import { t } from './ui/i18n';
 import { loadKits } from './character/character';
@@ -79,6 +80,7 @@ try {
 scene.add(play.city.root);
 story.welcomeWorld = createWelcomeWorld(scene, () => play.city, session.worldCharacters.gnomi, session.registeredNpcs.gnomi.name);
 story.coinBags = createCoinBags(scene, () => play.city);
+story.fairyDust = createFairyDust(scene, () => play.city);
 ui.questTracker = createQuestTracker(() => setWindow('quests'), questTracking);
 ui.welcomePlate = document.createElement('div');
 ui.welcomePlate.className = 'nameplate npc welcome-nameplate';
@@ -87,12 +89,12 @@ ui.welcomePlate.hidden = true;
 document.body.append(ui.welcomePlate);
 ui.questIndicator = createDestinationIndicator('quest-objective-marker', 'quest');
 ui.waypointIndicator = createDestinationIndicator('waypoint-objective-marker', 'waypoint');
-if (import.meta.hot) import.meta.hot.dispose(() => { story.welcomeWorld.dispose(); story.coinBags.dispose(); });
+if (import.meta.hot) import.meta.hot.dispose(() => { story.welcomeWorld.dispose(); story.coinBags.dispose(); story.fairyDust.dispose(); });
 refreshCityMinimap();
 story.NPCS = createNpcDefinitions();
 placeCityNpcs();
 installNpcBarks();
-ui.targetFrame = createTargetFrame(canvas, camera, () => play.city.root);
+ui.targetFrame = createTargetFrame(canvas, camera, () => play.city.root, (from, to) => play.city.lineOfSight?.(from, to) ?? true);
 holder.position.copy(play.city.spawn);
 holder.rotation.y = play.city.spawnYaw - 0.3;
 rebuildNow();

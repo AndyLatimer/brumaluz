@@ -84,9 +84,18 @@ test('mission encounters allow travel until either side actually attacks', { tim
     assert.equal(attacked.encounter.health,90);
     await rejected('world_travel',[id,session,portal],/IN_COMBAT/);
     await at(site.x+2,{combatEncounter:{...started.encounter,enemyAttackAt:0}});
+    const warning = await rpc('world_sync',[id,session,motion(site.x+2)]);
+    assert.equal(warning.vitals.health,100,'The shadow announces its attack before dealing damage');
+    assert.ok(warning.encounter.windup>Date.now()/1000);
+    await at(site.x+2,{combatEncounter:{...warning.encounter,windup:Date.now()/1000-1}});
     const hit = await rpc('world_sync',[id,session,motion(site.x+2)]);
     assert.equal(hit.encounter.engaged,true,'Enemy damage also enters combat');
     assert.ok(hit.vitals.health<100);
+    const health=hit.vitals.health;
+    await at(site.x-1,{combatEncounter:{...warning.encounter,windup:Date.now()/1000-1}});
+    const dodged=await rpc('world_sync',[id,session,motion(site.x-1)]);
+    assert.equal(dodged.vitals.health,health,'Moving outside the frozen aim avoids damage');
+    assert.equal(dodged.encounter.windup,null,'A miss also ends the preparation');
     await rejected('world_travel',[id,session,portal],/IN_COMBAT/);
     await rpc('combat_stop',[id]);
     assert.equal((await rpc('world_travel',[id,session,portal])).location,destination,'Fleeing ends real combat without finishing the quest');

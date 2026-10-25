@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import type { Character } from '../character/character';
 import { closeDialog } from '../ui/dialog';
-import { play, view, talk, session } from '../game/state';
+import { play, view, talk } from '../game/state';
 import { t } from '../ui/i18n';
 import { talkTo } from '../game/interaction';
 import { setWindow, setGameMenuOpen, setPlayerMenuOpen, setWorldMenuOpen } from '../ui/menus';
@@ -59,10 +59,7 @@ export function beginIsbertoArrival(character: Character, then: () => void = () 
   arrivalOverlay.hidden = false;
   document.body.classList.add('conversation-open');
   const generation = play.playGeneration;
-  cinematic.play([{ duration: Math.max(4, path.length * .25 / 3 + 1), minimum: 3.5,
-    line: { speaker: session.registeredNpcs.isberto.name, text: session.state.shadowQuest === 'defeated'
-      ? 'Bien rematado. Ahora veamos qué nos ha dejado esa cosa.'
-      : '¡Gnomi! Hay trabajo. Algo se ha metido en mi fragua y vamos a sacarlo.' },
+  cinematic.play([{ id: 'isberto-arrival', duration: Math.max(2.6, path.length * .25 / 3 + .5), minimum: 1.5,
     update: () => !talk.isbertoArrival?.path.length }], () => {
     const next = talk.isbertoArrival?.then;
     endIsbertoArrival();

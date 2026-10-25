@@ -1,6 +1,7 @@
 import { buildCity, worldToHex, S, COMBAT_SITE } from '../../world/city';
 import { catalog } from '../../art/library';
 import { COIN_BAGS } from '../../data/coinBags';
+import { FAIRY_DUST_SPOTS } from '../../data/fairyDust';
 import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN } from '../../data/quests';
 import { brumaluzGateMarkers } from '../../data/pompelin';
 import {
@@ -123,6 +124,7 @@ export async function pompelinTemplate(id = 'brumaluz', name = 'Brumaluz'): Prom
   ];
   for (const [markerId, label, point, radius] of quests) marker({ id: markerId, type: 'zone', name: label, position: [point.x, ground(point.x, point.z), point.z], radius, color: '#c77dd8' });
   for (const bag of COIN_BAGS) marker({ id: `coins_${bag.id}`, type: 'interaction', name: `Bolsa de pelines: ${bag.id}`, text: 'coin-bag', position: [bag.x, ground(bag.x, bag.z), bag.z], rotationY: bag.yaw, radius: 2.2, color: '#f2d36b' });
+  for (const dust of FAIRY_DUST_SPOTS) marker({ id: `dust_${dust.id}`, type: 'interaction', name: `Polvos de hada: ${dust.id}`, text: 'fairy-dust', position: [dust.x, ground(dust.x, dust.z), dust.z], rotationY: dust.yaw, radius: 2.2, color: '#a8d8ff' });
   for (let i = 0; i < 6; i++) {
     const angle = (i / 6) * Math.PI * 2 + Math.PI / 6, x = Math.cos(angle) * 6.2, z = Math.sin(angle) * 6.2;
     marker({ id: `light_farol_${i + 1}`, type: 'light', name: `Luz del farol ${i + 1}`, position: [x, ground(x, z) + 2.75, z], radius: 7, color: '#ffb24a' });

@@ -29,13 +29,19 @@ contenido del juego relacionado.
 - Gnomi es **ayudante de bienvenida**: hace tareas pequeñas y le dejan pocas
   responsabilidades. Al principio se sugiere que otros gnomos lo menosprecian;
   su situación se conocerá poco a poco, conforme se gana confianza.
+- A Gnomi **se lo asignan al jugador** cuando los demás ayudantes ya tienen
+  sus encargos. La presentación deja entrever que suelen reservarle tareas
+  pequeñas y que no era la primera opción del gremio. Él se toma esta ocasión
+  con ilusión: su torpeza resulta entrañable, sin humillarlo ni contar de golpe
+  toda su situación. El vínculo se construye ayudándose mutuamente.
 - Trabaja en el **Gremio de Ayudantes**, dedicado a ayudar a los demás:
   es el oficio habitual de los gnomos. Su jefe es **David**, también gnomo.
   Gnomi ha perdido su distintivo del gremio más de una vez y teme que David
   se enfade de verdad si se entera de esta nueva pérdida. Su torpeza se
   presenta con cariño: no resta valor a su generosidad ni a sus ganas de ayudar.
 - David es solo un guiño mencionado en el diálogo, no un personaje que vaya
-  a aparecer ni una futura visita al jefe del gremio.
+  a aparecer ni una futura visita al jefe del gremio. Se reserva para una
+  pregunta opcional; no se repite en el saludo, el encargo, el diario y la despedida.
 - Gnomi llega aproximadamente a medio muslo de un jugador humano, contando
   el gorro. Su cara es mofletuda y dulce, con nariz de botón y barbita corta
   clara. Reutiliza el esqueleto y animaciones de KayKit, con vestuario propio,
@@ -78,6 +84,10 @@ contenido del juego relacionado.
   referencia el personaje existente de ese nombre indicado por el creador;
   no se copia ni modifica su personaje de jugador. Su pasado como personaje
   de pruebas es un guiño, no una explicación literal dentro del mundo.
+- Isberto conserva **aplomo y carácter de veterano**: está harto de
+  complicaciones, pero no se achanta ante la criatura. Su generosidad es
+  práctica y algo refunfuñona. El incidente sigue siendo local, sin afirmar
+  que peligre el mercado ni prometer una investigación posterior ya definida.
 - La criatura tendrá un diseño original de sombra/vacío, de aire demoníaco
   y malévolo pero adorable, sin resultar terrorífica. Se proponen ojos morados,
   todavía sin fijar ese detalle. La referencia de tono facilitada es la de
@@ -131,13 +141,18 @@ contenido del juego relacionado.
   preocupado su distintivo, hasta que se topa con el jugador, le da la
   bienvenida y se presenta. La escena se ve una vez por personaje y se puede
   saltar.
+- Las cinemáticas presentan la acción con **gestos, movimiento y encuadres**.
+  Gnomi registra el suelo, se acerca buscando y saluda al reparar en el jugador.
+  Sus conversaciones empiezan después. Los únicos textos de las escenas son
+  rótulos descriptivos de lugares e indicaciones útiles sobre la cama y el cofre;
+  no llevan lemas, frases de narrador ni comentarios hablados superpuestos.
 - El distintivo se perdió junto al puesto del mercado de la **plaza del
   Levante**, a pocos pasos de la puerta.
 - La recompensa de esta primera misión será de **40 puntos de experiencia
   y 5 pelines**.
 - Justo después de completar la misión de Gnomi se ve a **Isberto** acercarse
-  andando en una breve escena, seguida de un plano de **la criatura junto a su
-  herrería**, al sur; después le pide ayuda al jugador. Derrotarla
+  corriendo y frenar al llegar en una breve escena, seguida de un plano de
+  **la criatura junto a su herrería**, al sur; después le pide ayuda al jugador. Derrotarla
   deja un cadáver saqueable con una **Esencia sombría** garantizada. Su
   significado y uso no se conocen todavía.
 - Al registrar los restos, **Isberto vuelve** en otra escena. Gnomi interviene

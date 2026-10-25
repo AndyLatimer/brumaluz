@@ -29,8 +29,13 @@ create or replace function public.game_power_multiplier(d jsonb) returns numeric
  select (1+.01*public.game_attr_total(d,case d->>'cls' when 'guerrero' then 'fuerza' when 'picaro' then 'agilidad' when 'explorador' then 'agilidad' else 'intelecto' end))*(1+.02*(public.game_level(d)-1))
 $$;
 create or replace function public.game_guard_multiplier(d jsonb) returns numeric language sql immutable set search_path='' as $$
- with g as(select public.game_equipment_stat(d,'guard')*(1+(public.game_set_bonuses(d)->>'guard')::numeric) as n) select 1-least(.6,n/(n+20)) from g
+ with g as(select public.game_equipment_stat(d,'guard')*(1+(public.game_set_bonuses(d)->>'guard')::numeric) as n) select (1-least(.6,n/(n+20)))*greatest(.85,1/(1+.003*greatest(0,public.game_attr_total(d,'percepcion')-5))) from g
 $$;
+create or replace function public.game_strength_power(d jsonb) returns numeric language sql immutable set search_path='' as $$ select 1+.003*greatest(0,public.game_attr_total(d,'fuerza')-5) $$;
+create or replace function public.game_expertise_power(d jsonb) returns numeric language sql immutable set search_path='' as $$ select 1+.004*greatest(0,public.game_attr_total(d,'pericia')-5) $$;
+create or replace function public.game_intellect_efficiency(d jsonb) returns numeric language sql immutable set search_path='' as $$ select greatest(.75,1/(1+.004*greatest(0,public.game_attr_total(d,'intelecto')-5))) $$;
+create or replace function public.game_agility_tempo(d jsonb) returns numeric language sql immutable set search_path='' as $$ select greatest(.75,1/(1+.004*greatest(0,public.game_attr_total(d,'agilidad')-5))) $$;
+revoke all on function public.game_strength_power(jsonb),public.game_expertise_power(jsonb),public.game_intellect_efficiency(jsonb),public.game_agility_tempo(jsonb) from public,anon,authenticated;
 create or replace function public.game_weapon_tempo(d jsonb) returns numeric language sql immutable set search_path='' as $$
  select case when d->'equipment'->'weapon'->>'id' ~ 'sable|daga_luna|daga_espina' then .85 when d->'equipment'->'weapon'->>'id' ~ 'meteoro|forja|solar' then 1.15 else 1 end
 $$;
@@ -42,7 +47,7 @@ create or replace function public.game_max_health(d jsonb) returns int language 
  +public.game_rpg_food_bonus(d,'maxHealth')
 $$;
 create or replace function public.game_rpg_resource_max(d jsonb) returns int language sql immutable set search_path='' as $$
- select floor(((public.game_level(d)-1)*6+case when d->>'cls' in('mago','clerigo') then 30+public.game_attr_total(d,'intelecto')*7 else 50+public.game_attr_total(d,'agilidad')*3+public.game_attr_total(d,'corpulencia')*3 end+public.game_equipment_stat(d,'maxResource'))*(1+(public.game_set_bonuses(d)->>'maxResource')::numeric)*(1+least(greatest(coalesce((d->>'partyPeers')::int,0),0),3)*.015))::int
+ select floor(((public.game_level(d)-1)*6+case when d->>'cls' in('mago','clerigo') then 25+public.game_attr_total(d,'intelecto')*7 else 45+public.game_attr_total(d,'agilidad')*3+public.game_attr_total(d,'corpulencia')*3 end+public.game_attr_total(d,'presencia')+public.game_equipment_stat(d,'maxResource'))*(1+(public.game_set_bonuses(d)->>'maxResource')::numeric)*(1+least(greatest(coalesce((d->>'partyPeers')::int,0),0),3)*.015))::int
  +public.game_rpg_food_bonus(d,'maxResource')
 $$;
 create or replace function public.game_public_vitals(d jsonb) returns jsonb language sql stable set search_path='' as $$

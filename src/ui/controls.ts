@@ -24,6 +24,7 @@ export const CONTROLS: ControlBinding[] = [
   { keys: ['ShiftLeft', 'ShiftRight'], caption: 'Mayús', label: 'Alternar correr / caminar', group: 'move' },
   { keys: ['Space'], caption: 'Espacio', label: 'Saltar', group: 'action' },
   { keys: ['KeyF'], caption: 'F', label: 'Fijar enemigo visible y atacar automáticamente', group: 'action' },
+  { keys: ['ShiftLeft', 'ShiftRight', 'KeyF'], caption: 'Mayús + F', label: 'Cambiar al siguiente enemigo cercano', group: 'action' },
   { keys: ['Escape'], caption: 'Esc', label: 'Soltar objetivo de combate', group: 'action' },
   { keys: Array.from({ length: 10 }, (_, i) => `Digit${i}`), caption: '1–0', label: 'Usar objeto o habilidad de la barra rápida', group: 'action' },
   { keys: ['KeyZ'], caption: 'Z', label: 'Cambiar de barra', group: 'action' },
@@ -43,7 +44,7 @@ export const CONTROLS: ControlBinding[] = [
   { keys: ['KeyO'], caption: 'O', label: 'Abrir / cerrar las opciones', group: 'system' },
   { keys: ['Backquote'], caption: 'º', label: 'Mostrar / ocultar el minimapa', group: 'system' },
   { mouse: 'click', label: 'Ir al punto', group: 'move' },
-  { mouse: 'drag', label: 'Mover la cámara', group: 'camera' },
+  { mouse: 'drag', label: 'Arrastrar con botón derecho o izquierdo para girar la cámara', group: 'camera' },
   { mouse: 'wheel', label: 'Acercar / alejar', group: 'camera' },
 ];
 

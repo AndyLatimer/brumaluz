@@ -26,8 +26,8 @@ export interface StatFormula {
 
 export const MAX_HEALTH: StatFormula = { base: 60, perLevel: 12, attributes: {} };
 export const MAX_RESOURCE: Record<ResourceKind, StatFormula> = {
-  mana: { base: 30, perLevel: 6, attributes: { intelecto: 7 } },
-  stamina: { base: 50, perLevel: 6, attributes: { agilidad: 3, corpulencia: 3 } },
+  mana: { base: 25, perLevel: 6, attributes: { intelecto: 7,presencia:1 } },
+  stamina: { base: 45, perLevel: 6, attributes: { agilidad: 3, corpulencia: 3,presencia:1 } },
 };
 
 /** Experiencia para pasar del nivel L al L+1: round(base × L ^ exponent). */

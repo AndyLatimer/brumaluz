@@ -192,6 +192,7 @@ export function buildSkull({ o, A, material }: { o: HeadOptions; A: Analysis; ma
     const NS: [number, number, number, number][] = [ // ancho, alto, fondo, giro
       [0.042, 0.036, 0.034, 0], [0.062, 0.055, 0.05, 0], [0.045, 0.04, 0.038, -0.45],
       [0.07, 0.04, 0.04, 0], [0.042, 0.058, 0.05, 0.35], [0.05, 0.048, 0.045, 0],
+      [0.035, 0.055, 0.035, 0], [0.057, 0.043, 0.048, -0.12], [0.029, 0.033, 0.028, -0.2],
     ];
     const [nw, nh, nd, nr] = NS[o.nose] ?? NS[0];
     const g = new THREE.SphereGeometry(1, 20, 14);

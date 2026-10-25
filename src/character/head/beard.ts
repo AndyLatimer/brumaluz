@@ -1,7 +1,7 @@
 // Barbas y bigotes, ajustados a la cara.
 import * as THREE from 'three';
 import type { HeadOptions } from './types';
-import { V, HEAD_C, paintCell } from './geometry';
+import { V, HEAD_C, paintCell, piece, compose, mergeGeoms } from './geometry';
 
 /** Barba de la cabeza (parte de buildHead). */
 export function buildBeard({ o, mouthY, rayHead, headR, hairCell }: { o: HeadOptions; mouthY: number; rayHead: (o: THREE.Vector3, d: THREE.Vector3) => { point: THREE.Vector3; normal: THREE.Vector3; } | null; headR: (d: THREE.Vector3) => number; hairCell: number }) {
@@ -123,6 +123,27 @@ export function buildBeard({ o, mouthY, rayHead, headR, hairCell }: { o: HeadOpt
         break;
       case 5:
         beardPatch(goatee);
+        break;
+      case 6:
+        beardPatch((x, y) => Math.min(0.045 - Math.abs(Math.abs(x) - 0.36), y - (my - 0.09), my + 0.22 - y), true);
+        break;
+      case 7: {
+        const dots: THREE.BufferGeometry[] = [];
+        for (let row = 0; row < 16; row++) for (let col = 0; col < 29; col++) {
+          const x = (col - 14) * 0.019 + (row % 2) * 0.009, y = my + 0.063 - row * 0.019;
+          if (Math.max(jaw(x, y, 0.025, 0.29), stache(x, y)) < 0) continue;
+          const hit = rayHead(V(x, y, 2), V(0, 0, -1));
+          if (!hit) continue;
+          const rot = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), hit.normal));
+          dots.push(piece(new THREE.CircleGeometry(0.0028, 5), hairCell, compose(hit.point.addScaledVector(hit.normal, 0.004), rot, V(1, 1, 1)), 0.6, 0.6));
+        }
+        const geometry = mergeGeoms(dots);
+        if (geometry) beardGeos.push(geometry);
+        dots.forEach(dot => dot.dispose());
+        break;
+      }
+      case 8:
+        beardPatch((x, y) => Math.min(0.23 - Math.abs(x), 0.02 - Math.abs(y - (my + 0.04 + Math.pow(Math.abs(x) * 1.5, 2)))));
         break;
     }
   }

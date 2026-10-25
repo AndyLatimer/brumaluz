@@ -6,12 +6,14 @@ export interface CinematicFrame { position: THREE.Vector3; target: THREE.Vector3
 
 /** Un plano de una cinemática. */
 export interface CinematicShot {
+  /** Identificador del plano para inspeccionar la secuencia durante el desarrollo. */
+  id?: string;
   /** Duración máxima, en segundos. */
   duration: number;
   /** El plano no termina antes de este tiempo aunque `update` diga que ya está. */
   minimum?: number;
   /** Subtítulo (en español; se traduce al mostrarlo). Sin `speaker`, es un rótulo. */
-  line?: { speaker?: string; text: string; eyebrow?: string; detail?: string };
+  line?: { speaker?: string; text: string; eyebrow?: string; detail?: string; layout?: 'title' | 'caption' };
   start?(): void;
   /** Cámara según el avance `k` (0→1, ya suavizado). Sin ella manda la cámara de conversación. */
   camera?(k: number, elapsed: number): CinematicFrame;
@@ -67,11 +69,12 @@ export function createCinematics() {
   function begin(i: number) {
     index = i; elapsed = 0;
     const shot = shots[i];
+    root.dataset.shot = shot.id ?? String(i);
     from = current ? { position: current.position.clone(), target: current.target.clone() } : null;
     shot.start?.();
     if (shot.camera) focus.copy(shot.camera(0, 0).target);
     if (shot.line) {
-      line.classList.toggle('title', !shot.line.speaker);
+      line.classList.toggle('title', !shot.line.speaker && shot.line.layout !== 'caption');
       line.querySelector('strong')!.textContent = shot.line.speaker ?? '';
       line.querySelector('span')!.textContent = t(shot.line.text);
       line.querySelector('small')!.textContent = t(shot.line.eyebrow ?? '');
@@ -85,6 +88,7 @@ export function createCinematics() {
   function end(skipped: boolean, notify = true) {
     const done = finish;
     shots = []; index = -1; finish = null; current = null; from = null;
+    delete root.dataset.shot;
     root.hidden = true;
     document.body.classList.remove('cinematic-open');
     if (notify) done?.(skipped);

@@ -1,15 +1,34 @@
 // Cámara de exploración: seguimiento del personaje, paredes que no tapan y sacudidas.
 import * as THREE from 'three';
-import { talk, view, play, vitals } from './state';
+import { talk, view, play, vitals, fight } from './state';
 import { isDialogOpen } from '../ui/dialog';
 import { cinematic } from '../story/scenes';
 import { camera, camTarget, tmp, holder, playerVel, camPos, clock } from './stage';
 import { updateConversationCamera } from './conversation';
 import { $ } from '../ui/dom';
 
+const followLead = new THREE.Vector3();
+const combatFrame = new THREE.Vector3();
+const wantedFrame = new THREE.Vector3();
+const cameraOffset = new THREE.Vector3();
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let lastManualControl = -Infinity;
+let cameraPlayKey = '';
+
+/** Un gesto manual retoma el encuadre tras la escena, sin arrastrar su desplazamiento. */
+export function noteCameraControl() {
+  lastManualControl = performance.now();
+  view.spinVel = 0;
+  if (play.mode !== 'play' || isDialogOpen()) return;
+  talk.returningFromConversation = false;
+  talk.conversationOffset = 0;
+  camera.clearViewOffset();
+}
+
 export function updatePlayCamera(dt: number) {
   const shot = cinematic.active ? cinematic.frame(dt) : null;
   if (shot) {
+    followLead.set(0, 0, 0); combatFrame.set(0, 0, 0);
     camera.clearViewOffset(); talk.conversationOffset = 0;
     camera.position.copy(shot.position);
     camTarget.copy(shot.target);
@@ -17,14 +36,38 @@ export function updatePlayCamera(dt: number) {
     talk.returningFromConversation = true;
     return;
   }
-  if (talk.conversationActor && (isDialogOpen() || talk.isbertoArrival)) { updateConversationCamera(dt); return; }
+  if (talk.conversationActor && (isDialogOpen() || talk.isbertoArrival)) {
+    followLead.set(0, 0, 0); combatFrame.set(0, 0, 0);
+    updateConversationCamera(dt); return;
+  }
   // el objetivo se adelanta un poco en la dirección de marcha y la cámara lo sigue con holgura
-  const target = tmp.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0)).addScaledVector(playerVel, 0.12);
-  const k = 1 - Math.exp(-dt * 5);
-  camTarget.lerp(target, k);
+  const playKey = `${play.playGeneration}:${play.city.locationId}`;
+  if (cameraPlayKey !== playKey) {
+    cameraPlayKey = playKey; followLead.set(0, 0, 0); combatFrame.set(0, 0, 0);
+  }
+  // Anticipación suave al desplazarse; los saltos apenas mueven la cámara en vertical.
+  followLead.lerp(playerVel, 1 - Math.exp(-dt * 7));
+  const target = tmp.copy(holder.position).addScaledVector(followLead, .09);
+  target.y += 1.3 - play.jumpHeight * .65;
+  wantedFrame.set(0, 0, 0);
+  if (!view.dragging && performance.now() - lastManualControl > 1200 && !play.dead && fight.lockedEnemy
+    && fight.combatEncounter?.status === 'active' && fight.combatTargetRoot) {
+    wantedFrame.subVectors(fight.combatTargetRoot.position, holder.position);
+    wantedFrame.y = 0;
+    if (wantedFrame.lengthSq() < 144) wantedFrame.multiplyScalar(.16).clampLength(0, .7);
+    else wantedFrame.set(0, 0, 0);
+  }
+  // Encuadre limitado: conserva el giro y el zoom elegidos por el jugador.
+  combatFrame.lerp(wantedFrame, 1 - Math.exp(-dt * 4));
+  target.add(combatFrame);
+  if (!talk.returningFromConversation && camTarget.distanceToSquared(target) > 35 * 35) camTarget.copy(target);
+  const horizontal = 1 - Math.exp(-dt * 9), vertical = 1 - Math.exp(-dt * 5.5);
+  camTarget.x += (target.x - camTarget.x) * horizontal;
+  camTarget.z += (target.z - camTarget.z) * horizontal;
+  camTarget.y += (target.y - camTarget.y) * vertical;
   view.followDist += (view.zoomTarget - view.followDist) * (1 - Math.exp(-dt * 8));
-  const off = new THREE.Vector3(Math.sin(view.yaw) * Math.cos(view.pitch), Math.sin(view.pitch), Math.cos(view.yaw) * Math.cos(view.pitch)).multiplyScalar(view.followDist);
-  camPos.copy(camTarget).add(off);
+  cameraOffset.set(Math.sin(view.yaw) * Math.cos(view.pitch), Math.sin(view.pitch), Math.cos(view.yaw) * Math.cos(view.pitch)).multiplyScalar(view.followDist);
+  camPos.copy(camTarget).add(cameraOffset);
   camPos.y = Math.max(camPos.y, play.city.groundY(camPos.x, camPos.z) + 0.6);
   // Ni bajo el agua: la cámara se queda siempre por encima de la superficie.
   const cameraWater = play.city.waterAt?.(camPos.x, camPos.z);
@@ -88,8 +131,8 @@ export function clearScreenEffects() {
 }
 export function applyCameraShake() {
   const left = view.shakeUntil - clock.getElapsedTime();
-  if (left <= 0) return;
-  const k = left / 0.35, t = clock.getElapsedTime() * 70;
-  camera.position.x += Math.sin(t) * 0.07 * k;
-  camera.position.y += Math.cos(t * 1.3) * 0.07 * k;
+  if (left <= 0 || reducedMotion.matches) return;
+  const k = Math.min(1, left / .35) ** 2, t = clock.getElapsedTime() * 70;
+  camera.position.x += Math.sin(t) * .045 * k;
+  camera.position.y += Math.cos(t * 1.3) * .035 * k;
 }

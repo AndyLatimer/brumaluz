@@ -158,13 +158,14 @@ function render() {
     list.replaceChildren(...choices.map((c, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'dialog-choice' + (c.exit ? ' exit' : '') + (i === selected ? ' selected' : '');
+      const question = !!node?.quest && !!c.choice?.next && !c.choice.action;
+      b.className = 'dialog-choice' + (c.exit ? ' exit' : '') + (question ? ' question' : '') + (i === selected ? ' selected' : '');
       b.disabled = busy;
       const label = t(c.exit && node?.quest ? 'Cerrar' : c.text);
       const marker = document.createElement('span');
       marker.className = 'dialog-choice-mark';
       marker.setAttribute('aria-hidden', 'true');
-      marker.textContent = c.exit ? '↩' : node?.quest ? '✓' : `${i + 1}.`;
+      marker.textContent = c.exit ? '↩' : question ? '?' : node?.quest ? '✓' : `${i + 1}.`;
       const text = document.createElement('span');
       text.textContent = c.exit && !node?.quest ? `[${label}]` : label;
       b.append(marker, text);

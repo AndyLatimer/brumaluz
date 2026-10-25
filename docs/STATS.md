@@ -30,10 +30,10 @@ valor = base + (nivel - 1) × perLevel + Σ (atributo × peso)
 | Estadística | base | perLevel | Pesos por atributo |
 |---|---|---|---|
 | Vida base (`MAX_HEALTH`) | 60 | 12 | Sin suma plana por atributo |
-| Maná máximo (`MAX_RESOURCE.mana`) | 30 | 6 | Intelecto ×7 |
-| Estamina máxima (`MAX_RESOURCE.stamina`) | 50 | 6 | Agilidad ×3, Corpulencia ×3 |
+| Maná máximo (`MAX_RESOURCE.mana`) | 25 | 6 | Intelecto ×7, Presencia ×1 |
+| Estamina máxima (`MAX_RESOURCE.stamina`) | 45 | 6 | Agilidad ×3, Corpulencia ×3, Presencia ×1 |
 
-Ejemplo: mago de nivel 2 con Intelecto 8 → 30 + 6 + 8×7 = **92** de maná.
+Ejemplo: mago de nivel 2 con Intelecto 8 y Presencia 5 → 25 + 6 + 8×7 + 5 = **92** de maná.
 
 Después se añaden equipo y multiplicadores:
 
@@ -42,7 +42,21 @@ vida = floor((vida base + vida de equipo) × (1 + 0,02 × Corpulencia) × (1 + b
 recurso = floor((recurso base + recurso de equipo) × (1 + bono de recurso del conjunto) × grupo) + comida
 ```
 
-La potencia usa `(1 + 0,01 × atributo principal) × (1 + 0,02 × (nivel − 1))`, una sola vez para básicos, habilidades y curación. Guardia mitiga `min(0,60; Guardia / (Guardia + 20))`; no resta daño plano. Pericia, Presencia y Percepción no conceden todavía bonificaciones generales.
+La potencia usa `(1 + 0,01 × atributo principal) × (1 + 0,02 × (nivel − 1))`, una sola vez para básicos, habilidades y curación. Guardia mitiga `min(0,60; Guardia / (Guardia + 20))`; no resta daño plano.
+
+Desde el 25 de octubre, todos los atributos tienen una utilidad de combate en todas las clases. Las bonificaciones secundarias usan `extra = max(0, atributo − 5)`, salvo Presencia y Corpulencia, que usan el total:
+
+| Atributo | Beneficio universal |
+|---|---|
+| Fuerza | Básicos × `(1 + 0,003 × extra)` |
+| Intelecto | Coste de habilidad × `max(0,75; 1 / (1 + 0,004 × extra))` |
+| Corpulencia | Vida máxima × `(1 + 0,02 × total)` |
+| Agilidad | Cadencia × `max(0,75; 1 / (1 + 0,004 × extra))`, sin bajar de la duración de animación + 40 ms |
+| Pericia | Potencia de habilidad o curación × `(1 + 0,004 × extra)` |
+| Presencia | +1 de maná o estamina máximo por punto |
+| Percepción | Daño recibido tras Guardia × `max(0,85; 1 / (1 + 0,003 × extra))` |
+
+Fuerza sigue siendo el atributo principal del guerrero; Intelecto, de mago y clérigo; Agilidad, de pícaro y explorador. Las nuevas utilidades no igualan sus especializaciones. Cliente, daño exterior, sombra y curación de aliados comparten las mismas fórmulas SQL.
 
 ### Recurso por clase
 

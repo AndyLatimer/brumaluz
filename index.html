@@ -68,52 +68,68 @@
   </aside>
   <main id="account-gate" aria-live="polite">
     <section id="auth-screen" class="account-card frame">
-      <div class="account-brand"><span class="account-crest">✦</span><span>Crónicas de Brumaluz</span></div>
-      <h2 id="auth-title">Un nuevo capítulo</h2>
-      <p id="auth-intro" class="account-intro">Inicia sesión o crea una cuenta para entrar en el mundo de Brumaluz.</p>
-      <div id="auth-config-error" class="account-message error" hidden></div>
-      <div class="auth-switch" role="tablist" aria-label="Acceso a la cuenta">
-        <button type="button" class="active" data-auth-mode="login" role="tab" aria-selected="true">Iniciar sesión</button>
-        <button type="button" data-auth-mode="register" role="tab" aria-selected="false">Crear cuenta</button>
+      <div class="account-brand auth-brand">
+        <span class="account-crest" aria-hidden="true">✦</span>
+        <span>Crónicas de Brumaluz</span>
       </div>
-      <form id="auth-form">
-        <div id="username-field" hidden>
-          <label for="auth-username">Nombre de usuario</label>
-          <input id="auth-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" />
+      <aside class="auth-story-panel">
+        <div class="auth-scene-frame">
+          <img class="auth-scene-image" src="./src/assets/brand/brumaluz-login.svg" alt="Vista ilustrada de Brumaluz bajo la luna" />
         </div>
-        <label for="auth-email">Correo electrónico</label>
-        <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254" />
-        <label for="auth-password">Contraseña</label>
-        <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="8" />
-        <label id="remember-email-field" for="auth-remember">
-          <input id="auth-remember" name="remember" type="checkbox" />
-          <span>Recuérdame</span>
-        </label>
-        <div id="confirm-password-field" hidden>
-          <label for="auth-confirm-password">Repite la contraseña</label>
-          <input id="auth-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" />
+        <span class="auth-scene-index">Crónica I <i></i> Brumaluz</span>
+        <p class="auth-world-motto"><span aria-hidden="true">✦</span> Explora <i></i> Lucha <i></i> Deja tu huella</p>
+      </aside>
+      <div class="auth-form-panel">
+        <div class="auth-form-heading">
+          <p class="auth-form-kicker">Tu próxima aventura empieza aquí</p>
+          <h2 id="auth-title">Un nuevo capítulo</h2>
+          <p id="auth-intro" class="account-intro">Inicia sesión o crea una cuenta para entrar en el mundo de Brumaluz.</p>
         </div>
-        <p id="auth-message" class="account-message" role="status"></p>
-        <button id="auth-submit" class="btn gold account-submit" type="submit">Iniciar sesión</button>
-        <button id="forgot-password" class="text-button" type="button">¿Olvidaste tu contraseña?</button>
-      </form>
-      <form id="recovery-request-form" class="recovery-form" hidden>
-        <p class="account-intro">Te enviaremos un enlace para restablecer la contraseña de tu cuenta.</p>
-        <label for="recovery-email">Correo electrónico</label>
-        <input id="recovery-email" name="email" type="email" autocomplete="email" required maxlength="254" />
-        <p id="recovery-request-message" class="account-message" role="status"></p>
-        <button id="recovery-request-submit" class="btn gold account-submit" type="submit">Enviar enlace</button>
-        <button id="recovery-back-to-login" class="text-button" type="button">Volver a iniciar sesión</button>
-      </form>
-      <form id="password-update-form" class="recovery-form" hidden>
-        <p class="account-intro">Elige una contraseña nueva para tu cuenta.</p>
-        <label for="new-password">Nueva contraseña</label>
-        <input id="new-password" name="newPassword" type="password" autocomplete="new-password" required minlength="8" />
-        <label for="confirm-new-password">Repite la nueva contraseña</label>
-        <input id="confirm-new-password" name="confirmNewPassword" type="password" autocomplete="new-password" required minlength="8" />
-        <p id="password-update-message" class="account-message" role="status"></p>
-        <button id="password-update-submit" class="btn gold account-submit" type="submit">Cambiar contraseña</button>
-      </form>
+        <div id="auth-config-error" class="account-message error" hidden></div>
+        <div class="auth-switch" role="tablist" aria-label="Acceso a la cuenta">
+          <button type="button" class="active" data-auth-mode="login" role="tab" aria-selected="true">Iniciar sesión</button>
+          <button type="button" data-auth-mode="register" role="tab" aria-selected="false">Crear cuenta</button>
+        </div>
+        <form id="auth-form">
+          <div id="username-field" hidden>
+            <label for="auth-username">Nombre de usuario</label>
+            <input id="auth-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" />
+          </div>
+          <label for="auth-email">Correo electrónico</label>
+          <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+          <label for="auth-password">Contraseña</label>
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="8" />
+          <label id="remember-email-field" for="auth-remember">
+            <input id="auth-remember" name="remember" type="checkbox" />
+            <span>Recuérdame</span>
+          </label>
+          <div id="confirm-password-field" hidden>
+            <label for="auth-confirm-password">Repite la contraseña</label>
+            <input id="auth-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" />
+          </div>
+          <p id="auth-message" class="account-message" role="status"></p>
+          <button id="auth-submit" class="btn gold account-submit" type="submit">Iniciar sesión</button>
+          <button id="forgot-password" class="text-button" type="button">¿Olvidaste tu contraseña?</button>
+        </form>
+        <form id="recovery-request-form" class="recovery-form" hidden>
+          <p class="account-intro">Te enviaremos un enlace para restablecer la contraseña de tu cuenta.</p>
+          <label for="recovery-email">Correo electrónico</label>
+          <input id="recovery-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+          <p id="recovery-request-message" class="account-message" role="status"></p>
+          <button id="recovery-request-submit" class="btn gold account-submit" type="submit">Enviar enlace</button>
+          <button id="recovery-back-to-login" class="text-button" type="button">Volver a iniciar sesión</button>
+        </form>
+        <form id="password-update-form" class="recovery-form" hidden>
+          <p class="account-intro">Elige una contraseña nueva para tu cuenta.</p>
+          <label for="new-password">Nueva contraseña</label>
+          <input id="new-password" name="newPassword" type="password" autocomplete="new-password" required minlength="8" />
+          <label for="confirm-new-password">Repite la nueva contraseña</label>
+          <input id="confirm-new-password" name="confirmNewPassword" type="password" autocomplete="new-password" required minlength="8" />
+          <p id="password-update-message" class="account-message" role="status"></p>
+          <button id="password-update-submit" class="btn gold account-submit" type="submit">Cambiar contraseña</button>
+        </form>
+        <p class="auth-form-footer"><span aria-hidden="true">❖</span> Un mundo de historias te aguarda</p>
+      </div>
     </section>
     <section id="character-screen" class="account-card frame" hidden>
       <div class="account-brand">
@@ -442,6 +458,16 @@
         </div>
       </div>
       <div class="options-pane" data-pane="sound" role="tabpanel" hidden>
+        <div class="options-row">
+          <span class="options-label">Música ambiental</span>
+          <button id="opt-music" class="switch" type="button" role="switch" aria-checked="true" aria-label="Música ambiental"><i></i></button>
+        </div>
+        <div class="options-row slider-row">
+          <label class="options-label" for="opt-music-volume">Volumen de música</label>
+          <input id="opt-music-volume" class="opt-slider" type="range" min="0" max="100" step="1" />
+          <output id="opt-music-value" for="opt-music-volume"></output>
+        </div>
+        <p class="options-hint">La música acompaña el amanecer, el día, el atardecer y la noche del mundo.</p>
         <div class="options-row">
           <span class="options-label">Sonido ambiental</span>
           <button id="opt-ambient" class="switch" type="button" role="switch" aria-checked="true" aria-label="Sonido ambiental"><i></i></button>

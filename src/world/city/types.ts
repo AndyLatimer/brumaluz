@@ -53,6 +53,7 @@ export interface City {
   /** Corrige un movimiento para no atravesar edificios ni agua. */
   collide(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3;
   groundY(x: number, z: number): number;
+  lineOfSight?(from: THREE.Vector3, to: THREE.Vector3): boolean;
   /** Superficie elevada de objetos bajos, si el punto cae sobre una plataforma. */
   platformY(x: number, z: number): number | null;
   spawn: THREE.Vector3;
@@ -63,6 +64,8 @@ export interface City {
   mapBounds?: { x: number; z: number; extent: number };
   /** Datos de construcción para convertir Brumaluz en un mapa editable. */
   layout?: CityLayout;
+  /** Montones de polvos de hada: marcadores del editor de mapas o lista por defecto. */
+  fairyDustSpots?: readonly { id: string; x: number; z: number; yaw: number }[];
   update(t: number, playerPosition?: THREE.Vector3): void;
   /** Luciérnagas y polen flotando (los interiores no las llevan). */
   fireflies?: boolean;

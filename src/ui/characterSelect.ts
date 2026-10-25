@@ -9,7 +9,7 @@ import { classIcon } from './classIcons';
 import type { User } from '@supabase/supabase-js';
 import { $ } from './dom';
 import { menuMusic, ambientSoundscape, reportAmbientError } from '../game/audio';
-import { refreshUI, nameInput } from './creator';
+import { refreshUI, nameInput, selectTab } from './creator';
 import { rebuildNow, characterContext } from '../game/avatar';
 import { layout, renderer } from '../game/stage';
 import { loadWorldState, stopMultiplayer } from '../game/worldClient';
@@ -340,6 +340,8 @@ export function installCharacterSelect() {
   $('#enter').onclick = async () => {
     if (session.enteringWorld) return;
     if (unspentAttributePoints(session.state) > 0) {
+      selectTab('raza');
+      $('#attributePointsLeft').scrollIntoView({ block: 'center' });
       toast('Un momento…', 'Reparte todos tus puntos de atributo antes de empezar.', true);
       return;
     }

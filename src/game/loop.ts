@@ -11,10 +11,12 @@ import { updateMinimap } from '../ui/minimap';
 import { GOLDEN_HOUR } from '../world/dayNight';
 import { publishedMaps } from '../world/mapCity';
 import { world } from '../world/paint';
-import { settings } from './audio';
+import { settings,updateWorldAudio } from './audio';
 import { updateCamera, occlusionTargets, applyCameraShake } from './camera';
 import { npcActors, updatePortals } from './cities';
 import { tickWorldCombat, positionLootWindow } from './combat';
+import { projectWildernessPlates } from './wilderness';
+import { projectCombatFeedback } from './combatFeedback';
 import { storyLock, updateConversationFacing } from './conversation';
 import { updateNameplate } from './hud';
 import { updateInteractPrompt } from './interaction';
@@ -83,6 +85,7 @@ export function startGameLoop() {
       env.setFireflies(!play.skyIndoor && (play.city.fireflies ?? true));
     }
     dayNight.update(play.mode === 'play' ? worldHour() : GOLDEN_HOUR, play.mode === 'play' && play.skyIndoor);
+    updateWorldAudio(worldHour(),play.skyIndoor);
     env.update(t, play.mode === 'play' ? holder.position : undefined, play.city.groundY);
     stage.follow(cinematic.scriptedCamera ? cinematic.focus : holder.position, play.mode === 'play');
     updateCamera(dt);
@@ -93,8 +96,11 @@ export function startGameLoop() {
     updateWelcome(dt, t);
     updatePersonalWaypoint();
     story.coinBags.update(session.state.coinBags, play.mode === 'play' && play.city.locationId === 'brumaluz', t);
+    story.fairyDust.update(session.state.fairyDust, play.mode === 'play' && play.city.locationId === 'brumaluz', t);
     updatePortals();
     applyCameraShake();
+    camera.updateMatrixWorld();
+    projectWildernessPlates();projectCombatFeedback();
     updateNameplate();
     if (play.mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);
     updateInteractPrompt();

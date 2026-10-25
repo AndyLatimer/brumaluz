@@ -13,14 +13,17 @@ import { tradeWindow } from '../ui/gameInterface';
 import { playerInteractions } from './interaction';
 import { remotePlayers } from './worldClient';
 import { wildernessTargets } from './wilderness';
-import { WILDERNESS } from '../data/wilderness';
 import { serverNow } from '../data/worldClock';
+import { shadowWindup } from '../data/shadowCombat';
 
 // Los NPC comentan algo de vez en cuando si estás cerca (canal NPC del chat).
 export const barkCooldown = new Map<string, number>();
+let nextTargetUpdate = 0;
 export function updateTargetFrame() {
   const enabled = play.mode === 'play' && !play.dead && !storyLock() && !tradeWindow.isOpen && !isDialogOpen() && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen && !playerInteractions.isOpen;
   if (!enabled) { ui.targetFrame.update([], false, holder.position); return; }
+  if (performance.now() < nextTargetUpdate) return;
+  nextTargetUpdate = performance.now() + 100;
   const targets: TargetDetails[] = [...wildernessTargets(),...remotePlayers.list().map<TargetDetails>((player) => ({
     ...player, identity: { kind: 'player', username: player.username, cls: player.cls, title: player.title },
   }))];
@@ -32,11 +35,11 @@ export function updateTargetFrame() {
       scale: data.render.scale * data.render.height, widthScale: data.render.scale * data.render.width,
       vitals: def.vitals, identity: { kind: 'npc', type: def.type, title: def.title, badgeIcon: data.badgeIcon } });
   }
-  if(fight.combatTargetRoot&&fight.combatEncounter?.status==='active')targets.push({
+  if(fight.combatTargetRoot&&fight.combatEncounter?.status==='active'&&fight.combatEncounter.kind!=='wilderness')targets.push({
     id:'enemy:shadowling',root:fight.combatTargetRoot,name:fight.combatEncounter.label??'Sombra de Isberto',level:fight.combatEncounter.level??(fight.combatEncounter.kind==='expedition'?session.state.level:1),height:1.4,
     vitals:{health:fight.combatEncounter.health,maxHealth:fight.combatEncounter.maxHealth,overheal:0,resource:0,maxResource:1,resourceKind:'stamina'},
     identity:{kind:'npc',type:'hostile',title:fight.combatEncounter.kind==='wilderness'?'Enemigo de Pompelín':'Espectro umbrío'},
-    cast:fight.combatEncounter.windup?{label:WILDERNESS.enemies[fight.combatEncounter.enemy??'']?.pattern==='line'?'Carga':WILDERNESS.enemies[fight.combatEncounter.enemy??'']?.pattern==='circle'?'Impacto de zona':'Golpe',remaining:fight.combatEncounter.windup-serverNow(),duration:WILDERNESS.enemies[fight.combatEncounter.enemy??'']?.windup??1.2}:undefined,
+    cast:fight.combatEncounter.windup?{label:fight.combatEncounter.attackKind==='bolt'?'Descarga sombría':'Impacto sombrío',remaining:fight.combatEncounter.windup-serverNow(),duration:shadowWindup(fight.combatEncounter.attackKind??'area')}:undefined,
   });
   if (story.welcomeWorld.root.visible) targets.push({
     id: 'npc:gnomi', root: story.welcomeWorld.root, name: session.registeredNpcs.gnomi.name, level: session.registeredNpcs.gnomi.stats.level, height: session.registeredNpcs.gnomi.appearance.height,
@@ -45,7 +48,7 @@ export function updateTargetFrame() {
     vitals: { health: session.registeredNpcs.gnomi.stats.health, maxHealth: session.registeredNpcs.gnomi.stats.maxHealth, overheal: 0, resource: 80, maxResource: 80, resourceKind: 'stamina' },
     identity: { kind: 'npc', type: 'resident', title: session.registeredNpcs.gnomi.subtitle, badgeIcon: session.registeredNpcs.gnomi.badgeIcon },
   });
-  ui.targetFrame.update(targets, true, holder.position, fight.lockedEnemy ? 'enemy:shadowling' : null);
+  ui.targetFrame.update(targets, true, holder.position, fight.lockedEnemy ? fight.combatEncounter?.kind==='wilderness'?'wild:'+fight.combatEncounter.spawn:'enemy:shadowling' : null);
 }
 /** De vez en cuando, un NPC cercano comenta algo. */
 export function installNpcBarks() {

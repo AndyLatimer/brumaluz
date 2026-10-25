@@ -5,6 +5,7 @@ import { t } from './i18n';
 import type { Equipment } from '../data/inventory';
 import { session } from '../game/state';
 import { skillCost } from '../data/combat';
+import combatTiming from '../data/combatTiming.json';
 
 const equipmentContexts = new WeakMap<HTMLElement, Equipment>();
 export const skillTooltipEquipment = (target: HTMLElement) => equipmentContexts.get(target);
@@ -36,6 +37,7 @@ export function skillStats(cls: ClassId) {
   return [
     [t('Coste'), `${Math.round((session.state.cls===cls?skillCost(session.state):skill.cost)*100)/100} ${t(cls === 'mago' || cls === 'clerigo' ? 'Maná' : 'Estamina')}`],
     [t('Recarga'), `${skill.cooldown} s`],
+    [t('Preparación'), `${combatTiming[cls].skill} s`],
     [t('Alcance'), `${kit.range} m`],
     [t('Objetivo'), t(skill.healing ? 'Tú o un compañero del grupo' : 'Un enemigo')],
   ];
@@ -78,6 +80,6 @@ export function renderSkillTooltip(container: HTMLElement, cls: ClassId, rank: n
     ? `${t('Siguiente rango')} · ${t('Nivel {n}', { n: skillRankLevel(rank + 1) })} · ${t('1 punto de habilidad')}. ${skillEffect(cls, rank + 1, equipment)}`
     : t('Rango máximo alcanzado.');
   const hint = document.createElement('small');
-  hint.textContent = t('Arrastra a la barra rápida · Usa con 1–0');
+  hint.textContent = `${t('Arrastra a la barra rápida · Usa con 1–0')} · ${t('Puedes moverte al usarla.')}`;
   container.append(header, rankLabel, stats, effect, description, footer, hint);
 }

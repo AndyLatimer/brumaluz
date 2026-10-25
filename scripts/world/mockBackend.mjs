@@ -144,6 +144,25 @@ export async function openPlayer(world, account, compatible = true, clockTime) {
       character.data.coinBags=[...taken,args.p_bag_id];
       return fulfill(character.data);
     }
+    if(fn==='collect_fairy_dust'){
+      const taken=character.data.fairyDust??[];
+      if(!['plaza_fuente','arco_entrada'].includes(args.p_dust_id))return fulfill({message:'FAIRY_DUST_INVALID'},400);
+      if(taken.includes(args.p_dust_id))return fulfill({message:'FAIRY_DUST_TAKEN'},400);
+      const amount=1+Math.floor(Math.random()*5);
+      let inv=character.data.inventory??[];
+      for(let i=0;i<amount;i++){
+        const slot=inv.findIndex(s=>s&&s.id==='polvo_de_hada'&&s.count<50);
+        if(slot>=0){inv[slot].count++;}
+        else{
+          const free=inv.findIndex((s,idx)=>!s&&idx<25);
+          if(free<0)return fulfill({message:'INVENTORY_FULL'},400);
+          inv[free]={id:'polvo_de_hada',count:1,bound:true};
+        }
+      }
+      character.data.inventory=inv;
+      character.data.fairyDust=[...taken,args.p_dust_id];
+      return fulfill(character.data);
+    }
     if(fn==='shadow_action'){
       if(world.fail.has('shadow'))return fulfill({message:'Temporary quest failure'},503);
       const q=character.data.shadowQuest,location=character.data.location??'brumaluz';

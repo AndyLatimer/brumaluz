@@ -61,9 +61,46 @@ test('Gnomi consumes reached waypoints on slopes and continues following',()=>{
   gnomi.dispose();
 });
 
+test('Gnomi can search and greet at the end of his approach without jumping to his waiting position',()=>{
+  const root=new Group(),gestures=[];
+  const character={root,attachToChest:o=>root.add(o),setGait(){},update(){},hop(){},speak(){},
+    pickUp:scripted=>gestures.push(['search',scripted]),wave:()=>gestures.push(['greet']),dispose(){}};
+  const city={groundY:()=>0,collide:(_from,to)=>to};
+  const gnomi=createWelcomeWorld(new Scene(),city,character,'Gnomi'),player=point(156.5,0);
+  gnomi.place(point(143.5,2.2),0);
+  gnomi.search();
+  gnomi.walkTo(point(153.5,0),1.8,true);
+  for(let frame=0;frame<480;frame++)gnomi.update({origin:null,stage:'available'},true,player,1/60,frame/60);
+  assert.equal(gnomi.arrived,true);
+  const arrived=gnomi.root.position.clone();
+  gnomi.walkTo(arrived,0);
+  gnomi.greet();
+  for(let frame=0;frame<120;frame++)gnomi.update({origin:null,stage:'available'},true,player,1/60,8+frame/60);
+  assert.deepEqual(gestures,[['search',true],['greet']]);
+  assert.ok(gnomi.root.position.distanceTo(arrived)<1e-8,'The greeting retains the position actually reached');
+  assert.equal(gnomi.root.userData.gait,'idle');
+  gnomi.release();gnomi.dispose();
+});
+
+test('the personal Gnomi marker leaves his meeting point reachable while fixed NPCs remain solid',async()=>{
+  const {createServer}=await import('vite');
+  const server=await createServer({configFile:false,logLevel:'error',server:{middlewareMode:true}});
+  try{
+    const maps=await server.ssrLoadModule('/src/data/maps.ts');
+    const runtime=await server.ssrLoadModule('/src/world/mapRuntime.ts');
+    const map=maps.newMap('llegada','Llegada');
+    const marker=(npcId,x)=>({id:`npc_${npcId}`,type:'npc',name:npcId,npcId,layer:map.layers[0].id,position:[x,0,0],rotationY:0,radius:1});
+    map.markers.push(marker('gnomi',0),marker('testiculos',4));
+    const collision=runtime.buildCollision(map,new runtime.TerrainField(maps.decodeTerrain(map.terrain)),new Map());
+    assert.ok(collision.collide(point(-3,0),point(0,0)).distanceTo(point(0,0))<.001,'Gnomi can walk onto his own marker');
+    assert.ok(storyPath(collision,point(-3,0),point(0,0)).length>0,'The arrival planner finds a route to the meeting point');
+    assert.ok(collision.collide(point(2,0),point(4,0)).distanceTo(point(4,0))>.8,'Ordinary NPCs keep their body collision');
+  }finally{await server.close();}
+});
+
 // Small DOM stand-in: these checks exercise the actual controller without a renderer or a timer.
 class Element {
-  hidden=false;children=new Map();classList={add(){},remove(){},toggle(){}};
+  hidden=false;dataset={};children=new Map();classList={add(){},remove(){},toggle(){}};
   querySelector(selector){if(!this.children.has(selector))this.children.set(selector,new Element());return this.children.get(selector);}
   append(){} addEventListener(){} setAttribute(){}
 }

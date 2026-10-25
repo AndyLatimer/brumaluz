@@ -88,6 +88,12 @@ export const ITEMS: Record<string, ItemDef> = {
     value: 0, bound: true, sellable: false,
     icon: '<path d="M12 2c5 5 8 9 7 14-1 5-12 7-14 0C3 11 9 8 12 2Z" fill="#443258" stroke="#bb9cd5" stroke-width="1.2"/><path d="M12 7c3 4 4 7 2 10-3 3-6 0-5-3" fill="#9170b2"/><path d="m12 10 2 3-2 5-2-4Z" fill="#dac4ee"/><path d="m4 5 1 2m14-1 1-2M3 18l2-1" stroke="#c7a8e0"/>',
   },
+  polvo_de_hada: {
+    id: 'polvo_de_hada', label: 'Polvo de hada', category: 'Objeto desconocido',
+    description: 'Polvo mágico brillante que emana de los montones de hadas. No se puede comprar ni vender. Ligado al personaje.',
+    value: 0, stack: 50, bound: true, sellable: false,
+    icon: '<circle cx="12" cy="12" r="6" fill="none" stroke="#a8d8ff" stroke-width="2"/><path d="M12 6L12 10M18 12L14 12M6 12L10 12M8.49 8.49L10.61 10.61M15.39 15.39L13.39 13.39M15.39 8.49L13.39 10.61M8.49 15.39L10.61 13.39" stroke="#a8d8ff" stroke-width="1.5" stroke-linecap="round"/>',
+  },
   ...Object.fromEntries([
     ['espada_inicial', 'Espada de principiante', 'Espada', NOVICE_SWORD_ICON],
     ['escudo_inicial', 'Escudo de principiante', 'Escudo', NOVICE_SHIELD_ICON],

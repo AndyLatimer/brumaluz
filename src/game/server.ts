@@ -60,6 +60,7 @@ export function errorMessage(error: unknown) {
   }
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
     const message = error.message;
+    if (/AbortError|TimeoutError|aborted|timed?\s*out/i.test(message)) return t('La conexión tarda en responder. El estado se actualizará al sincronizar con el mundo.');
     if (message.includes('Invalid login credentials')) return t('Correo o contraseña incorrectos.');
     if (message.includes('Email not confirmed')) return t('Confirma tu correo antes de iniciar sesión.');
     if (message.includes('User already registered')) return t('Ya existe una cuenta con ese correo.');

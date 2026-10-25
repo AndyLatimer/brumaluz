@@ -1,6 +1,5 @@
 // Mochila, equipo, comercio y banco: cada operación la decide el servidor.
 import { story, ui, play, session, vitals } from './state';
-import { setBonuses } from '../data/sets';
 import { RPG_CATALOG } from '../data/professions';
 import { performProfession } from './professions';
 import { selectProfessionTab } from '../ui/professionsWindow';
@@ -14,7 +13,7 @@ import { vitalsOf } from '../data/stats';
 import { chatCombat } from '../ui/chatWindow';
 import { t } from '../ui/i18n';
 import { skillAction } from '../ui/skillsWindow';
-import { skillRank, COMBAT_KITS } from '../data/combat';
+import { skillRank, skillCost, COMBAT_KITS } from '../data/combat';
 import { skillIcon } from '../ui/skillIcons';
 import { setWindow } from '../ui/menus';
 import { runOnServer } from './server';
@@ -22,7 +21,7 @@ import { houseOpen } from '../story/quests';
 import { holder, keys, marker, playerVel } from './stage';
 import { updateHud } from './hud';
 import { storyLock } from './conversation';
-import { releaseCombatTarget, useWorldCombatSkill } from './combat';
+import { getCombatActionFeedback, releaseCombatTarget, useWorldCombatSkill } from './combat';
 import { rebuildNow } from './avatar';
 import { totalHealth } from './vitals';
 import { restartClass, floatText } from './effects';
@@ -128,6 +127,7 @@ export async function useInventoryItem(slot: number) {
 }
 /** Barra de acción: objetos y habilidades del personaje activo. */
 export function installActionBar() {
+  const icons = new Map<string, string>();
   initActionBar({
     storageKey: () => `brumaluz-actionbar:${session.activeCharacterId ?? 'test'}`,
     count: (item) => session.state.inventory.reduce((sum, s) => sum + (s?.id === item ? s.count : 0), 0),
@@ -136,12 +136,20 @@ export function installActionBar() {
       const slot = session.state.inventory.findIndex((s) => s?.id === item);
       if (slot < 0) toast('No te quedan', '', true); else void useInventoryItem(slot);
     },
-    skill: () => ({
-      id: skillAction(session.state.cls), cls: session.state.cls, rank: skillRank(session.state), equipment: session.state.equipment, icon: skillIcon(COMBAT_KITS[session.state.cls].skill.id),
-      cooldown: Math.max(0, (vitals.skillReadyAt - performance.now()) / 1000), duration: COMBAT_KITS[session.state.cls].skill.cooldown,
-      available: !play.dead && hasCombatWeapon(session.state) && vitalsOf(session.state).resource >= COMBAT_KITS[session.state.cls].skill.cost * (1-setBonuses(session.state.cls,session.state.equipment).skillCost),
-    }),
+    skill: () => {
+      const cls = session.state.cls, skill = COMBAT_KITS[cls].skill;
+      const resource = vitalsOf(session.state).resource, cost = skillCost(session.state);
+      const unavailableReason = play.dead ? 'dead' : !hasCombatWeapon(session.state) ? 'weapon' : resource < cost ? 'resource' : undefined;
+      let icon = icons.get(skill.id);
+      if (!icon) { icon = skillIcon(skill.id); icons.set(skill.id, icon); }
+      return {
+        id: skillAction(cls), cls, rank: skillRank(session.state), equipment: session.state.equipment, icon,
+        cooldown: Math.max(0, (vitals.skillReadyAt - performance.now()) / 1000), duration: skill.cooldown,
+        available: !unavailableReason, unavailableReason, resource, cost,
+      };
+    },
     useSkill: useWorldCombatSkill,
+    feedback: getCombatActionFeedback,
     itemCooldown:()=>Math.max(0,(session.state.potionReadyAt??0)-Date.now()/1000),
   });
 }

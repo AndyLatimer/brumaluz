@@ -1,5 +1,7 @@
 # Revisión del combate — 24 de octubre de 2026
 
+**Actualización posterior:** el circuito exterior ya usa criaturas compartidas y varios enemigos simultáneos. [Reglas y arquitectura actuales](SHARED-WORLD-COMBAT.md). Las referencias y la revisión inicial de entrada/animación de este documento se conservan como historial.
+
 ## Referencias y decisiones
 
 - [Guild Wars 2: Combat](https://www.guildwars2.com/en/the-game/combat/): movimiento durante el combate, ataques evitables y autonomía de las profesiones. Aplicación en Brumaluz: los ataques de Pompelín fijan una zona durante su preparación y comprueban la posición al impactar; moverse fuera evita el daño. No se ha añadido una voltereta ni invulnerabilidad.
@@ -34,7 +36,7 @@ Los bandidos reutilizan el rig y armas del juego; jabalí y brote tienen modelos
 
 ## Límites y trabajo siguiente
 
-- Esta versión exterior mantiene **un enemigo activo por personaje**. Falta convertirla en población compartida con varios enemigos, amenaza, ayuda entre jugadores y atribución de botín. Rayo no encuentra un segundo objetivo en estos encuentros individuales; conserva su carga.
+- La restricción inicial de un enemigo activo por personaje está retirada. Hay población compartida, varios agresores simultáneos, amenaza y recompensas por participación. Rayo puede saltar a otras criaturas válidas.
 - La persecución comprueba obstáculos, pero no rodea edificios mediante navegación completa. Faltan rutas, retorno animado al origen y prevención de atasco más avanzada.
 - Sigue habiendo una habilidad inicial por clase. Faltan ampliar y revisar las rotaciones aprobadas, enemigos de mayor nivel y encuentros de roles. Los conjuntos siguen siendo bonos numéricos y los encantamientos solo activan con básicos.
 - Las preparaciones de zona se aplican al circuito exterior; la sombra de introducción conserva su resolución de historia.

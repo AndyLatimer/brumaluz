@@ -170,6 +170,8 @@ export function createWelcomeWorld(scene: THREE.Scene, citySource: City | (() =>
     root, lost, update,
     speak: (seconds: number) => character.speak(seconds),
     greet: () => character.wave(),
+    /** Revisa el suelo sin dejar su posición guionizada. */
+    search: () => character.pickUp(true),
     hop: () => character.hop(),
     /** Coloca a Gnomi en un punto (cinemáticas). */
     place(position: THREE.Vector3, facing: number) {

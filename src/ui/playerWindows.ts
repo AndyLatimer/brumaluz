@@ -1,9 +1,10 @@
 // Contenido de las ventanas del menú de personaje (Tab): inventario y ficha.
 import type * as THREE from 'three';
-import { ATTRIBUTES, ATTRIBUTE_MAX_VALUE, MAX_LEVEL, unspentAttributePoints, type AttributeId, type CharData } from '../data/data';
+import { ATTRIBUTES, MAX_LEVEL, type CharData } from '../data/data';
 import { classIcon } from './classIcons';
 import { raceIcon } from './raceIcons';
-import { attributeIcon } from './attributeIcons';
+import { renderSheetAttributes, type PointEditor } from './sheetAttributes';
+export type { PointEditor } from './sheetAttributes';
 import { CURRENCIES, CURRENCY_ORDER, currencyIcon } from '../data/currency';
 import { EQUIPMENT_SLOTS, INVENTORY_UNLOCKED, type EquipmentSlot } from '../data/inventory';
 import { itemDef, itemIcon, itemLabel } from '../data/items';
@@ -281,13 +282,6 @@ function titlePicker(current: TitleId, onChange?: (title: TitleId) => void) {
   return root;
 }
 
-export interface PointEditor {
-  draft: Partial<Record<AttributeId, number>>;
-  onAdd: (id: AttributeId) => void;
-  onRemove: (id: AttributeId) => void;
-}
-
-
 const BAR_GLYPH: Record<string, string> = {
   hp: 'M12 20.5s-8-4.8-8-10.7A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.8c0 5.9-8 10.7-8 10.7Z',
   mana: 'M12 3s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11Z',
@@ -367,69 +361,15 @@ export function renderSheet(container: HTMLElement, d: CharData, renderer: THREE
     ? t('Nivel máximo alcanzado')
     : t('{n} EXP para el nivel {level}', { n: v.experienceNeeded - v.experience, level: d.level + 1 })));
 
-  const attrs = el('section', 'sheet-panel sheet-attributes');
-  const attrHead = el('div', 'sheet-section-head');
-  const attrTitle = el('div');
-  attrTitle.append(el('h3', undefined, t('Atributos')), el('p', 'sheet-section-note', t('La base de tu personaje, punto a punto.')));
-  attrHead.append(attrTitle);
-  const owed = unspentAttributePoints(d);
-  const draft = points?.draft ?? {};
-  const drafted = Object.values(draft).reduce((sum, n) => sum + (n ?? 0), 0);
-  const left_ = owed - drafted;
-  if (owed > 0) {
-    const line = el('p', 'sheet-points');
-    line.append(el('span', 'points-badge', '!'), t('Puntos por repartir: {n}', { n: left_ }));
-    attrHead.append(line);
-  }
-  const grid = el('div', 'sheet-attrs');
-  for (const id of Object.keys(ATTRIBUTES) as AttributeId[]) {
-    const row = el('div', 'sheet-attr');
-    row.dataset.attribute = id;
-    row.tabIndex = -1;
-    const icon = el('div', 'sheet-attr-icon');
-    icon.innerHTML = attributeIcon(id);
-    const extra = draft[id] ?? 0;
-    const total = attributeTotal(d, id) + extra;
-    const value = el('b', extra ? 'pending' : undefined, String(total));
-    const info = el('div', 'sheet-attr-info');
-    const name = el('div', 'sheet-attr-name');
-    name.append(el('span', undefined, t(ATTRIBUTES[id].label)), value);
-    const meter = el('div', 'sheet-attr-meter');
-    meter.setAttribute('aria-hidden', 'true');
-    const base = el('i', 'base'), pending = el('i', 'pending');
-    base.style.width = `${Math.min(100, ((total - extra) / ATTRIBUTE_MAX_VALUE) * 100)}%`;
-    pending.style.width = `${Math.min(100, (extra / ATTRIBUTE_MAX_VALUE) * 100)}%`;
-    meter.append(base, pending);
-    info.append(name, meter, el('p', 'sheet-attr-description', t(ATTRIBUTES[id].desc)));
-    if (extra > 0) info.append(el('small', 'sheet-draft', t('+{n} sin confirmar', { n: extra })));
-    row.append(icon, info);
-    if (owed > 0 && points) {
-      const label = t(ATTRIBUTES[id].label);
-      const remove = el('button', 'sheet-attr-add', '−') as HTMLButtonElement;
-      remove.type = 'button';
-      remove.disabled = extra === 0;
-      remove.setAttribute('aria-label', t('Quitar un punto de {attribute}', { attribute: label }));
-      remove.onclick = () => points.onRemove(id);
-      const add = el('button', 'sheet-attr-add', '+') as HTMLButtonElement;
-      add.type = 'button';
-      add.disabled = left_ <= 0 || total >= ATTRIBUTE_MAX_VALUE;
-      add.setAttribute('aria-label', t('Añadir un punto a {attribute}', { attribute: label }));
-      add.onclick = () => points.onAdd(id);
-      const controls = el('div', 'sheet-attr-controls');
-      controls.append(remove, add);
-      row.append(controls);
-    }
-    grid.append(row);
-  }
-  attrs.append(attrHead, grid);
+  const attrs = renderSheetAttributes(d, points);
 
   const combat = el('section','sheet-panel sheet-combat');
   combat.append(el('h3',undefined,t('Combate')));
   const number = (value:number) => value.toLocaleString(getLanguage()==='en'?'en-US':'es-ES',{maximumFractionDigits:1});
   const stat = (label:string,value:string) => { const row=el('div','sheet-combat-stat');row.append(el('span',undefined,t(label)),el('b',undefined,value));combat.append(row); };
-  stat('Ataque básico',`${number(basicAttackDamage(d.cls,d.level,d.equipment,d))} · ${number(attackInterval(d.cls,d.equipment))} s`);
+  stat('Ataque básico',`${number(basicAttackDamage(d.cls,d.level,d.equipment,d))} · ${number(attackInterval(d.cls,d.equipment,d))} s`);
   stat(COMBAT_KITS[d.cls].skill.label,`${number(skillPower(d.cls,skillRank(d),d.equipment,d))}${d.cls==='picaro'?' × 2':''} · ${number(skillCost(d))} ${t(v.resourceKind==='mana'?'Maná':'Estamina')}`);
-  stat('Reducción por guardia',`${number((1-guardedDamage(d.cls,d.equipment,100)/100)*100)} %`);
+  stat('Reducción de daño',`${number((1-guardedDamage(d.cls,d.equipment,100,d)/100)*100)} %`);
   stat('Atributo principal',`${t(ATTRIBUTES[primaryAttribute(d.cls)].label)} · ${attributeTotal(d,primaryAttribute(d.cls))}`);
   for(const set of activeSets(d.cls,d.equipment))stat(set.name,`${set.count}/4 · 2: ${set.two>=1?t('activo'):t('inactivo')} · 4: ${set.four>=2?t('activo'):t('inactivo')}`);
   right.append(title, vitals, combat);

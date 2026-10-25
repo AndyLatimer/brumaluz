@@ -18,7 +18,10 @@ import { setCombatEncounter, resetCombatActions } from './combat';
 import { exitPlay } from './playSession';
 import { loadCharacterSelection, returnToCharacters } from '../ui/characterSelect';
 import { acceptSnapshot } from './snapshotOrder';
-import { combatFloat } from './combatFeedback';
+import { combatFloat,clearCombatFeedback } from './combatFeedback';
+import { receiveWilderness } from './wilderness';
+import { syncSkillCooldown, resetSkillCooldown } from './skillCooldown';
+import { combatAudio } from './audio';
 
 /** Pide al servidor los datos vigentes del personaje antes de entrar al mundo. */
 export async function loadWorldState() {
@@ -39,7 +42,7 @@ export async function loadWorldState() {
     if (!stillCurrent()) return false;
     setGrantedTitles(titles);
     await prepareMultiplayer();
-    vitals.skillReadyAt = performance.now() + Math.max(0, Number(data.combatNextSkill ?? 0) - Date.now() / 1000) * 1000;
+    syncSkillCooldown({deadline:Number(data.combatNextSkill??0),revision:typeof data.serverRevision==='number'?data.serverRevision:undefined});
     return stillCurrent();
   } catch (error) {
     if (!stillCurrent()) return false;
@@ -53,6 +56,7 @@ export function refreshWorldStatus() {
   setMapPlayerCount(session.worldRetrying ? null : remotePlayers.list().length + 1);
 }
 export function receiveWorld(value: WorldSnapshot) {
+  if(value.wilderness)receiveWilderness({wilderness:value.wilderness,vitals:value.selfVitals});
   if (value.food) receiveFood(value.food);
   const current=acceptSnapshot('vitals',value.selfVitals?.serverRevision);
   if (current&&value.selfVitals) {
@@ -62,7 +66,7 @@ export function receiveWorld(value: WorldSnapshot) {
     session.state.resource = value.selfVitals.resource;
     session.state.overheal=value.selfVitals.overheal;
     if(value.selfVitals.barrier!==undefined&&session.state.enchantState)session.state.enchantState.barrier=value.selfVitals.barrier;
-    if(tookDamage){if(!fight.combatBusy)play.char.hit();combatFloat(lostHealth,holder.position,'incoming');}
+    if(tookDamage){if(!fight.combatBusy)play.char.hit();combatFloat(lostHealth,holder.position,'incoming');combatAudio.play('incoming');}
     if (session.state.health === 0 && !play.dead) die();
     if (changed) updateHud();
   }
@@ -106,7 +110,9 @@ export async function prepareMultiplayer() {
   receiveWorld(initial);
 }
 export function stopMultiplayer() {
+  clearCombatFeedback();
   resetCombatActions();
+  fight.lootEncounter=null;fight.lootTargetRoot=null;
   setFoodRunning(false);
   const connection = session.worldConnection;
   session.worldConnection = null;
@@ -114,7 +120,7 @@ export function stopMultiplayer() {
   remotePlayers.clear();
   setCombatEncounter(null);
   fight.localCombatState = null;
-  vitals.skillReadyAt = 0;
+  resetSkillCooldown();
   setMapPlayerCount(null);
   return stopped;
 }

@@ -1,4 +1,5 @@
 import { COIN_BAGS } from '../data/coinBags';
+import { FAIRY_DUST_SPOTS } from '../data/fairyDust';
 import { t } from './i18n';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
@@ -18,6 +19,13 @@ const realms = [
 
 const areas = ['Brumaluz', 'Alrededores de Brumaluz'] as const;
 
+function dustIcon() {
+  const icon = el('span', 'collection-category-icon');
+  icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3Zm0 2c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1ZM6 15c0-1.1 1.1-2 2.5-2s2.5 .9 2.5 2-1.1 2-2.5 2S6 16.1 6 15ZM18 15c0-1.1 1.1-2 2.5-2S23 13.9 23 15s-1.1 2-2.5 2S18 16.1 18 15ZM4 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-4-1.8-4-4Zm8 0c0-1.1 1.1-2 2.5-2S16 10.9 16 12s-1.1 2-2.5 2S12 13.1 12 12Z" fill="#a8d8ff" stroke="#5b8db8" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+  icon.setAttribute('aria-hidden', 'true');
+  return icon;
+}
+
 function bagIcon() {
   const icon = el('span', 'collection-category-icon');
   icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5c.1-1.7 1.2-2.8 3-2.8s2.9 1.1 3 2.8l2.3 1.1-1 2c1.9 1.5 3.2 4.2 3.2 7 0 4.3-3.1 6.7-7.5 6.7s-7.5-2.4-7.5-6.7c0-2.8 1.3-5.5 3.2-7l-1-2Z" fill="#bd9958" stroke="#795832" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.2 8.3c2.1 1.1 5.5 1.1 7.6 0M8.7 9.2l-1.2 1.1m8.8-1.1 1.2 1.1" fill="none" stroke="#f0d99c" stroke-width="1" stroke-linecap="round"/><path d="M12 11.1c1.3 1.2 2.1 2.4 2.1 3.6a2.1 2.1 0 1 1-4.2 0c0-1.2.8-2.4 2.1-3.6Z" fill="#f4d36f" stroke="#8b6429" stroke-width=".8"/><path d="M5.2 5.2a1.8 1.8 0 1 1 3.6 0 1.8 1.8 0 0 1-3.6 0ZM16.7 4.8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Z" fill="#e8c65f" stroke="#8b6429" stroke-width=".8"/></svg>';
@@ -25,8 +33,9 @@ function bagIcon() {
   return icon;
 }
 
-export function renderCollections(container: HTMLElement, collectedIds: readonly string[]) {
+export function renderCollections(container: HTMLElement, collectedIds: readonly string[], dustCollectedIds: readonly string[] = []) {
   const collected = new Set(collectedIds);
+  const collectedDust = new Set(dustCollectedIds);
   let activeRealm: string | null = null;
 
   const realmBags = (realmId: string) => {
@@ -34,6 +43,7 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
     return COIN_BAGS.filter(bag => bag.realm === realmLabel);
   };
   const foundIn = (bags: readonly (typeof COIN_BAGS)[number][]) => bags.filter(bag => collected.has(bag.id)).length;
+  const foundInDust = (dusts: readonly (typeof FAIRY_DUST_SPOTS)[number][]) => dusts.filter(dust => collectedDust.has(dust.id)).length;
   const percentIn = (bags: readonly (typeof COIN_BAGS)[number][]) => bags.length ? Math.round(foundIn(bags) / bags.length * 100) : 0;
   const completionTone = (percent: number) => percent >= 100 ? 'legendary' : percent >= 50 ? 'silver' : 'bronze';
 
@@ -73,7 +83,16 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
       category.append(bagIcon(), el('strong', undefined, t('Bolsas de pelines')),
         el('span', 'collection-category-count', `${found}/${bags.length}`));
       details.append(summary, category);
-      list.append(details);
+      const dusts = FAIRY_DUST_SPOTS.filter(dust => dust.realm === realmLabel && dust.area === area);
+      const foundDust = foundInDust(dusts);
+      const detailsDust = el('details', 'collection-subzone');
+      const summaryDust = el('summary', 'collection-subzone-summary');
+      summaryDust.append(el('strong', undefined, t(area)));
+      const categoryDust = el('div', `collection-category${dusts.length > 0 && foundDust === dusts.length ? ' complete' : ''}`);
+      categoryDust.append(dustIcon(), el('strong', undefined, t('Polvos de hada')),
+        el('span', 'collection-category-count', `${foundDust}/${dusts.length}`));
+      detailsDust.append(summaryDust, categoryDust);
+      list.append(detailsDust);
     }
     return list;
   }

@@ -1,4 +1,28 @@
 .combat-dashboard.enemy-windup{border-color:#d2a05e;box-shadow:0 0 0 1px #d5a76833,0 6px 20px #0005}.combat-dashboard.enemy-windup .combat-log-compact{color:#edca8d;opacity:1}
 .target-resource[hidden]{display:none}
+.wild-enemy-plate{position:fixed;z-index:12;transform:translate(-50%,-100%);pointer-events:none;width:108px;text-align:center;color:#f4e0c3;font-size:10px;line-height:1.3;text-shadow:0 1px 3px #000,0 0 3px #000}.wild-enemy-plate span{display:block;white-space:nowrap}.wild-enemy-plate progress{display:block;appearance:none;width:100%;height:5px;margin-top:3px;border:1px solid #32251d;border-radius:4px;background:#34291f;overflow:hidden}.wild-enemy-plate progress::-webkit-progress-bar{background:#34291f}.wild-enemy-plate progress::-webkit-progress-value{background:linear-gradient(#c77a61,#994d43)}.wild-enemy-plate progress::-moz-progress-bar{background:#b66a55}.wild-enemy-plate.selected progress{border-color:#e4bf7e;box-shadow:0 0 3px #c69e554d}.wild-enemy-plate.returning{opacity:.55}.wild-enemy-plate[hidden],body:not(.playing) .wild-enemy-plate{display:none}
 .target-resource.enemy-cast{height:12px;border-color:#b7995e80}.target-resource.enemy-cast i{background:linear-gradient(#dcb16d,#a77743)}.target-resource.enemy-cast span{font-size:9px;color:#fff0cb}
 .combat-dashboard:has(select:not([hidden])){min-width:0;padding:7px 10px;display:flex;gap:10px;align-items:center;font-size:10px}.combat-dashboard[hidden]{display:none!important}.combat-dashboard progress[hidden],.combat-dashboard [hidden]{display:none!important}
+.ab-slot[data-action-state=queued],.ab-slot[data-action-state=approaching]{border-color:#e0c68a;box-shadow:inset 0 0 0 1px #e9cd7b66,0 0 7px #d4ad6c38}
+.ab-slot[data-action-state=queued]::after,.ab-slot[data-action-state=approaching]::after{content:'';position:absolute;right:4px;top:4px;width:5px;height:5px;border-radius:50%;background:#ffdf99;box-shadow:0 0 4px #e8bc6e;pointer-events:none;z-index:2}
+.ab-action-progress{position:absolute;left:3px;right:3px;bottom:3px;height:3px;border-radius:2px;background:#171b20cc;overflow:hidden;pointer-events:none;opacity:0}
+.ab-action-progress::after{content:'';display:block;width:var(--action-progress,0%);height:100%;border-radius:inherit;background:#e5c181}
+.ab-slot[data-action-state=casting] .ab-action-progress,.ab-slot[data-action-state=recovering] .ab-action-progress{opacity:1}
+.ab-slot[data-action-state=recovering] .ab-action-progress{height:2px;opacity:.55}
+.ab-slot.insufficient-resource{border-color:#987268}
+.ab-slot.insufficient-resource::after{content:'';position:absolute;right:4px;top:4px;width:4px;height:4px;border-radius:50%;background:#cb8272;pointer-events:none}
+.ab-cooldown-time{font-variant-numeric:tabular-nums}
+.combat-float.experience{font-size:16px;color:#c9a9ec}
+@media(prefers-reduced-motion:reduce){.ab-slot.skill-ready{animation:none}}
+
+#combat-tutorial{position:fixed;left:22px;top:190px;z-index:24;width:min(310px,calc(100vw - 32px));box-sizing:border-box;padding:15px 17px;border:1px solid #a8976377;border-radius:10px;background:linear-gradient(130deg,#282c29f2,#18221ff5);box-shadow:0 6px 22px #0004;color:#f0e6cf;pointer-events:none}
+#combat-tutorial[hidden],body:not(.playing) #combat-tutorial{display:none}
+.combat-lesson-heading{display:flex;justify-content:space-between;gap:12px;color:#cfbb87;font-size:10px;letter-spacing:.04em;margin-bottom:9px}
+#combat-tutorial strong{display:block;font-size:16px;line-height:1.3;font-weight:600}
+#combat-tutorial p{font-size:12px;line-height:1.6;margin:8px 0 12px;color:#d2d5c6}
+.combat-lesson-progress{display:flex;gap:5px}.combat-lesson-progress i{height:3px;flex:1;border-radius:2px;background:#ede2bd22}.combat-lesson-progress i.done{background:#cfb97e}
+.combat-lesson-input{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:11px;color:#e4d6ad}.combat-lesson-input kbd{padding:3px 7px;border:1px solid #dac18b66;border-radius:4px;background:#ede2bd12;font:600 11px system-ui,sans-serif;white-space:nowrap}
+#combat-tutorial.danger{border-color:#efb36b;background:linear-gradient(130deg,#403123f5,#29271ff5)}
+.ab-slot.tutorial-skill{outline:2px solid #f1cc80;outline-offset:3px;box-shadow:0 0 14px #f1cc8066}
+@media(max-width:760px){#combat-tutorial{left:16px;top:185px;bottom:auto;width:min(310px,calc(100vw - 32px));padding:10px 12px}#combat-tutorial strong{font-size:14px}#combat-tutorial p{font-size:11px;margin:6px 0 8px}body:has(#combat-tutorial:not([hidden])) #quest-tracker{display:none}}
+@media(max-height:520px){#combat-tutorial{top:85px;bottom:auto;left:12px;width:225px;padding:9px 11px}#combat-tutorial p{font-size:10px;line-height:1.4}.combat-lesson-heading{margin-bottom:5px}}

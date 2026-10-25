@@ -37,7 +37,7 @@ begin
   if c.data->>'shadowQuest' in ('completed','returned') then raise exception 'SHADOW_QUEST_COMPLETED'; end if;
   if c.data->>'shadowQuest' in ('defeated','returning') then raise exception 'SHADOW_ALREADY_DEFEATED'; end if;
   encounter:=jsonb_build_object(
-    'id','shadowling','status','active','engaged',false,'health',100,'maxHealth',100,
+    'id','shadowling','status','active','engaged',false,'health',(public.game_shadow_combat_config()->>'health')::int,'maxHealth',(public.game_shadow_combat_config()->>'health')::int,
     'instanceId',gen_random_uuid()::text,'loot','[]'::jsonb,'looted',false,
     'x',sx+3.5,'z',sz,'enemyAttackAt',stamp+2
   );

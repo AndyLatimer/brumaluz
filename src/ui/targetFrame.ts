@@ -22,7 +22,7 @@ export interface TargetDetails {
   identity: { kind: 'player'; username: string | null; cls: ClassId; title: TitleId } | { kind: 'npc'; type: NpcType; title: string; badgeIcon?: string };
 }
 
-export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camera, scenery: THREE.Object3D | (() => THREE.Object3D)) {
+export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camera, scenery: THREE.Object3D | (() => THREE.Object3D), sight?: (from: THREE.Vector3, to: THREE.Vector3) => boolean) {
   const panel = document.createElement('section');
   panel.id = 'target-frame';
   panel.hidden = true;
@@ -64,15 +64,16 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
   canvas.addEventListener('pointerleave', () => { overCanvas = false; });
   window.addEventListener('blur', () => { overCanvas = false; panel.hidden = true; });
 
-  function visible(target: TargetDetails) {
+  function visible(target: TargetDetails, origin:THREE.Vector3=camera.position) {
     // Test stable body anchors, not animated meshes or small gaps between limbs.
     const height = 1.8 * (0.84 + target.height * 0.32) * (target.scale ?? 1);
     for (const fraction of [0.55, 0.9]) {
       anchor.copy(target.root.position);
       anchor.y += height * fraction;
-      direction.subVectors(anchor, camera.position);
+      if (sight) { if (sight(origin, anchor)) return true; continue; }
+      direction.subVectors(anchor, origin);
       const distance = direction.length();
-      ray.set(camera.position, direction.normalize());
+      ray.set(origin, direction.normalize());
       ray.far = Math.max(0, distance - 0.1);
       if (!ray.intersectObject(typeof scenery === 'function' ? scenery() : scenery, true).length) return true;
     }
@@ -135,6 +136,7 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
     element.setAttribute('aria-valuetext', `${label} ${text}`);
   }
   return {
+    canSee:visible,
     current: () => panel.hidden ? null : current,
     update(targets: TargetDetails[], enabled: boolean, origin: THREE.Vector3, lockedId: string | null = null) {
       if (!enabled) { panel.hidden = true; nextCheck = 0; selectedId = null; current = null; return; }

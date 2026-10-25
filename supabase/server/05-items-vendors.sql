@@ -10,6 +10,7 @@ set search_path = ''
 as $$
   select case p_item
     when 'esencia_sombria' then '{"value":0,"bound":true,"sellable":false,"stack":50}'::jsonb
+    when 'polvo_de_hada' then '{"value":0,"bound":true,"stack":50,"sellable":false}'::jsonb
     when 'espada_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
     when 'escudo_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb
     when 'baston_inicial' then '{"value":0,"stack":1,"bound":true}'::jsonb

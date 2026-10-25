@@ -78,7 +78,8 @@ test('welcome systems save origins directly, present quest cards, await server a
     await approach(first.page,152,1);
     await talk(first.page);
     assert.match(await first.page.locator('.dialog-text').textContent(),/bienvenida a Brumaluz.*ayudante de bienvenida/s);
-    assert.match(await first.page.locator('.dialog-text').textContent(),/tu ayudante.*David me ha encargado/s);
+    assert.match(await first.page.locator('.dialog-text').textContent(),/ayudante de bienvenida.*Los demás ya tenían encargo/s);
+    assert.doesNotMatch(await first.page.locator('.dialog-text').textContent(),/David/,'The welcome introduces Gnomi rather than repeatedly invoking his boss');
     assert.equal(await first.page.locator('.dialog-subtitle').textContent(),npcDefinitions.find(npc=>npc.id==='gnomi').subtitle);
     assert.equal(await first.page.locator('.dialog-quest-card').count(),0,'Ordinary conversation has no quest panel');
     world.rpcDelay.set('welcome_action',600);
@@ -96,9 +97,10 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.equal(await first.page.locator('.dialog-hint').isVisible(),false,'Quest offers omit the redundant E / Choose hint');
     assert.equal(await first.page.getByRole('button',{name:'Aceptar misión'}).locator('.dialog-choice-mark').textContent(),'✓');
     assert.doesNotMatch(await first.page.locator('.dialog-text').textContent(),/Recompensa|40 XP/,'Rewards are structured UI, not dialogue prose');
-    assert.match(await first.page.locator('.dialog-text').textContent(),/Gremio de Ayudantes.*¡Otra vez!.*David/s);
-    await first.page.getByRole('button',{name:'¿Qué hace un ayudante asignado?',exact:true}).click();
-    assert.match(await first.page.locator('.dialog-text').textContent(),/David me ha asignado a ti.*iremos a tu ritmo/s);
+    assert.match(await first.page.locator('.dialog-text').textContent(),/distintivo.*plaza del Levante.*este es el mío/s);
+    assert.doesNotMatch(await first.page.locator('.dialog-text').textContent(),/David/);
+    await first.page.getByRole('button',{name:'¿En qué vas a ayudarme?',exact:true}).click();
+    assert.match(await first.page.locator('.dialog-text').textContent(),/recados.*Me gustaría hacerlo bien.*preguntamos juntos/s);
     assert.equal(a.character.data.welcome.stage,'available','Learning about the helper does not accept the quest');
     await first.page.keyboard.press('KeyE');
     for(const [width,height] of [[320,844],[390,844],[1280,844],[844,390],[320,568]]){
@@ -166,6 +168,12 @@ test('welcome systems save origins directly, present quest cards, await server a
     await first.page.getByRole('button',{name:'Aceptar misión'}).click();
     await first.page.locator('#dialog').waitFor({state:'hidden'});
     await first.page.locator('#quest-tracker').waitFor();
+    await talk(first.page);
+    await first.page.getByRole('button',{name:'¿Y si no aparece?',exact:true}).click();
+    const worry=await first.page.locator('.dialog-text').textContent();
+    assert.equal(worry.match(/David/g)?.length,1,'His boss is a single optional reference');
+    assert.match(worry,/vean el distintivo.*pueden pedirme ayuda/s,'The badge matters to Gnomi because he wants to be useful');
+    await first.page.keyboard.press('Escape');
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await first.page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'welcome-companion.png')});
     await first.page.keyboard.press('KeyJ');
     await first.page.locator('.quest-entry').waitFor();
@@ -252,6 +260,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     assert.equal(await first.page.locator('#toast.show').isVisible(),false,'Quest rewards wait until the conversation and cinematics finish');
     await first.page.keyboard.press('KeyE');
     await first.page.locator('#story-arrival').waitFor({state:'visible'});
+    assert.equal(await first.page.locator('.cinematic-line').isVisible(),false,'Isberto enters through animation, without a spoken caption');
     assert.equal(await first.page.locator('#dialog').isVisible(),false,'The offer does not start before Isberto arrives');
     const arrivalStart=await first.page.evaluate(()=>{
       const root=window.brumaluz.city().root.parent.getObjectByName('npc:isberto');
@@ -274,6 +283,7 @@ test('welcome systems save origins directly, present quest cards, await server a
     // Después de llegar, un plano de la criatura junto a la herrería antes de que Isberto pida ayuda.
     await first.page.locator('#cinematic').waitFor({state:'visible'});
     await first.page.locator('.cinematic-line').filter({hasText:'herrería'}).waitFor();
+    assert.equal(await first.page.locator('.cinematic-line strong').textContent(),'','The smithy is identified by a descriptive location caption');
     const reveal=await first.page.evaluate(()=>{
       const monster=window.brumaluz.city().root.parent.getObjectByName('story-shadow-preview');
       const p=monster.position.clone().setY(monster.position.y+.6).project(window.brumaluz.camera());
@@ -341,7 +351,8 @@ test('welcome systems save origins directly, present quest cards, await server a
     await talk(second.page,true);
     assert.equal(await second.page.locator('.dialog-quest-card').getAttribute('aria-label'),'New quest');
     assert.match(await second.page.locator('.dialog-quest-card').textContent(),/Objective.*Accompany Gnomi.*Rewards/s);
-    assert.match(await second.page.locator('.dialog-text').textContent(),/Helpers[’'] Guild.*David/s);
+    assert.match(await second.page.locator('.dialog-text').textContent(),/badge.*Levante Square/is);
+    assert.doesNotMatch(await second.page.locator('.dialog-text').textContent(),/David/);
     assert.equal(await second.page.locator('.dialog-subtitle').textContent(),'Welcome helper');
     assert.equal(await second.page.getByRole('button',{name:'Accept quest',exact:true}).isVisible(),true);
     assert.equal(await second.page.getByRole('button',{name:'Close',exact:true}).isVisible(),true);

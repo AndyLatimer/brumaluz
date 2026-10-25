@@ -5,6 +5,7 @@ import { ADVANCED_WEAPONS } from './weaponProgression';
 import { ORIGINAL_WEAPONS } from './uniqueWeapons';
 import { armorGuard } from './outfits';
 import { setBonuses } from './sets';
+import { perceptionGuard } from './attributeCombat';
 
 export interface WeaponDef {
   cls: ClassId;
@@ -53,10 +54,10 @@ export function equippedWeapon(cls: ClassId, equipment: Equipment, slot: 'weapon
   return def && stack?.count === 1 && def.cls === cls && def.slot === slot ? def : undefined;
 }
 
-export function guardedDamage(cls: ClassId, equipment: Equipment, incoming: number) {
+export function guardedDamage(cls: ClassId, equipment: Equipment, incoming: number,data?:import('./data').CharData) {
   if (incoming <= 0) return 0;
   const guard = ((equippedWeapon(cls, equipment, 'offhand')?.guard ?? 0) + armorGuard(cls,equipment)) * (1 + setBonuses(cls,equipment).guard);
-  return incoming * (1 - Math.min(.6,guard/(guard+20)));
+  return incoming * (1 - Math.min(.6,guard/(guard+20)))*(data?perceptionGuard(data):1);
 }
 
 export function weaponItemStats(id: string) {
