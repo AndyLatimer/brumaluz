@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Creador de misiones · Brumaluz</title></head>
+  <body>
+    <header class="workshop-header"><div><span class="eyebrow">Taller de Brumaluz</span><h1>Creador de misiones</h1><p>Prepara un encargo, paso a paso.</p></div><nav><a href="./npcs.html">NPCs</a><a href="./maps.html">Mapas</a><a href="./assets.html">Recursos</a></nav></header>
+    <div id="status" role="status" aria-live="polite">Cargando biblioteca…</div>
+    <div class="workspace">
+      <aside class="library panel"><h2>Mis misiones</h2><label>Buscar misión<input id="search" type="search" placeholder="Escribe un nombre…"></label><div id="quest-list"></div><label>¿Qué clase de encargo?<select id="template"><option value="fetch">Recoger objetos y volver</option><option value="kill">Derrotar enemigos y volver</option><option value="talk">Hablar con alguien y volver</option></select></label><button id="new" class="primary" disabled>+ Crear misión</button><details><summary>Gestionar biblioteca</summary><button id="duplicate" disabled>Hacer una copia</button><button id="reload" disabled>Recargar misiones guardadas</button><button id="export" disabled>Exportar una copia JSON</button><label class="file-button">Importar biblioteca JSON<input id="import" type="file" accept=".json,application/json" disabled></label><p class="muted">Importar sustituye la biblioteca cuando guardes. Las misiones guionizadas actuales se gestionan por separado.</p></details></aside>
+      <main class="panel"><div class="editor-heading"><div><span class="eyebrow">Ficha de misión</span><h2 id="draft-title">Nueva misión</h2></div><span id="dirty" class="pill">Sin cambios</span></div>
+        <nav id="steps" class="steps" aria-label="Pasos para crear la misión"></nav>
+        <form id="editor" novalidate><fieldset id="editor-fields" disabled><div id="validation" role="alert" hidden></div><div id="fields"></div><footer class="wizard-footer"><div class="actions"><button type="button" id="previous">← Anterior</button><button type="button" id="next" class="primary">Siguiente →</button></div><button type="submit" id="save">Guardar misión</button></footer><details class="delete-options"><summary>Eliminar esta misión</summary><p class="muted">Elimina la ficha de la biblioteca del proyecto.</p><button type="button" id="delete" class="danger">Eliminar misión</button></details></fieldset></form>
+      </main>
+      <aside class="panel context"><div id="overview" aria-live="polite"></div><section id="rehearsal" class="rehearsal" hidden><hr><span class="eyebrow">Prueba sin salir del editor</span><h2>Juega tu conversación</h2><p class="muted">1. Acepta el encargo en el diálogo.<br>2. Usa los botones para recoger, combatir o hablar.<br>3. Vuelve al contacto y entrega la misión.</p>
+        <details><summary>Cambiar el personaje de prueba</summary><label>Nivel del personaje<input id="test-level" type="number" min="1" max="10000" value="1"></label><label class="check"><input id="test-prerequisites" type="checkbox">Ya completó las misiones anteriores</label><p class="muted">Estos ajustes se aplican al empezar otra prueba. No modifican personajes del juego.</p></details>
+        <div class="actions"><button id="test-start" class="primary" disabled>Empezar prueba</button><button id="test-reset" disabled>Reiniciar</button></div><p id="test-notice" role="status"></p><div id="test-state"></div><div id="test-events"></div><button id="test-talk" disabled>Hablar con el contacto</button>
+        <section id="dialog" class="dialog" role="dialog" aria-live="polite" hidden><header class="dialog-identity"><span class="dialog-emblem" aria-hidden="true">❧</span><div><div id="dialog-speaker" class="dialog-speaker"></div><div class="dialog-subtitle" hidden></div></div></header><p class="dialog-text"></p><div class="dialog-choices" hidden></div><div class="dialog-hint"><kbd>E</kbd><span class="dialog-next"></span></div></section>
+      </section><p class="scope-note">Las misiones se guardan como fichas de desarrollo. Activarlas en el mundo requiere integración.</p></aside>
+    </div>
+    <script type="module" src="/src/dev/questEditor.ts"></script>
+  </body>
+</html>

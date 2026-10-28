@@ -5,9 +5,10 @@ language plpgsql volatile set search_path='' as $$
 declare def jsonb:=public.game_wilderness_catalog()->'enemies'->(e->>'enemy'); result jsonb:='[]';entry record;recipe text;
 begin
  for entry in select key,value from jsonb_each(def->'loot') loop result:=result||jsonb_build_array(jsonb_build_object('id',entry.key,'count',entry.value));end loop;
- if not coalesce((d->'wilderness'->>'firstRecipe')::boolean,false) or random()<.20 then
+ if (def->>'level')::int>=coalesce((public.game_rpg_catalog()->'rareRecipeDrop'->>'minEnemyLevel')::int,26)
+  and random()<coalesce((public.game_rpg_catalog()->'rareRecipeDrop'->>'chance')::numeric,.005) then
   select key into recipe from jsonb_each(public.game_rpg_catalog()->'recipes') r
-   where (value->>'tier')::int=1 and (public.game_rpg_catalog()->'equipment'->key->>'cls'=d->>'cls')
+   where value->>'source'='drop' and (value->>'tier')::int=(public.game_rpg_catalog()->'rareRecipeDrop'->>'tier')::int
    order by random() limit 1;
   if recipe is not null then result:=result||jsonb_build_array(jsonb_build_object('id','receta_'||recipe,'count',1));end if;
  end if;return result;

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MARKER_TYPES, type MapCollider, type MapMarker, type MapObject, type MarkerType } from '../../data/maps';
 import { applyObjectTransform } from '../../world/mapRuntime';
 import { defaultScale, loadMapAssetTemplate } from '../../world/mapAssets';
+import { loadProp } from '../../world/props';
 import { MARKER_COLORS, MARKER_LABELS } from './overlays';
 import {
   checkLimits, commit, el, layerFor, objectLayer, reindex, scene, setSelection, snapAngle, snapXZ, state,
@@ -209,6 +210,63 @@ registerTool({
 // ---------------------------------------------------------------------------
 // Marcadores
 // ---------------------------------------------------------------------------
+
+export const collectibleOptions = { kind: 'coin-bag' as 'coin-bag' | 'fairy-dust' };
+const collectiblePreview = new THREE.Group();
+collectiblePreview.name = 'editor-collectible-preview';
+collectiblePreview.visible = false;
+scene.add(collectiblePreview);
+let previewKind = '';
+async function loadCollectiblePreview() {
+  const kind = collectibleOptions.kind;
+  if (previewKind === kind) return;
+  previewKind = kind;
+  collectiblePreview.clear();
+  const model = await loadProp(kind).catch(() => null);
+  if (model && previewKind === kind) {
+    model.traverse(part => { part.raycast = () => {}; });
+    collectiblePreview.add(model);
+  }
+}
+
+registerTool({
+  id: 'collectible', icon: '✦', shortcut: 'l', label: 'Añadir coleccionables',
+  activate() { void loadCollectiblePreview(); },
+  deactivate() { collectiblePreview.visible = false; },
+  down(event, hit) {
+    if (selectClick(event, 'm')) return;
+    if (!hit) return;
+    const limit = checkLimits({ markers: 1 });
+    if (limit) { status(limit, 'error'); return; }
+    const kind = collectibleOptions.kind;
+    const [x, z] = snapXZ(hit.x, hit.z, pointer.ctrl);
+    const label = kind === 'coin-bag' ? 'Bolsa de pelines' : 'Polvos de hada';
+    const count = state.doc.markers.filter(m => m.text === kind).length + 1;
+    const marker: MapMarker = {
+      id: uid(kind === 'coin-bag' ? 'coins_collect_' : 'dust_collect_'), type: 'interaction',
+      name: `${label} ${count}`, text: kind, layer: layerFor(undefined, 'logica'),
+      position: [x, state.field.heightAt(x, z), z], rotationY: 0, radius: 2.2,
+      color: kind === 'coin-bag' ? '#f2d36b' : '#a8d8ff',
+    };
+    state.doc.markers.push(marker);
+    reindex(); syncScene(); setSelection([`m:${marker.id}`]);
+    commit(`Coleccionable: ${label}`);
+    status(`${label} añadido. Guarda y publica el mapa para incluirlo en el juego.`);
+  },
+  frame() {
+    collectiblePreview.visible = pointer.inside && !!pointer.ground;
+    if (!pointer.ground) return;
+    const [x, z] = snapXZ(pointer.ground.x, pointer.ground.z, pointer.ctrl);
+    collectiblePreview.position.set(x, state.field.heightAt(x, z), z);
+  },
+  options: () => [
+    el('strong', {}, 'Añadir coleccionables'),
+    selectOption('Tipo', collectibleOptions.kind, [['coin-bag', 'Bolsa de pelines'], ['fairy-dust', 'Polvos de hada']] as const,
+      value => { collectibleOptions.kind = value; void loadCollectiblePreview(); renderToolOptions(); }),
+    ...snapOptions().slice(0, 2),
+    el('span', { class: 'hint' }, 'Elige un tipo y haz clic en el suelo. Cada personaje podrá recogerlo una vez. Usa Seleccionar para moverlo o Supr para eliminarlo.'),
+  ],
+});
 
 export const markerOptions = { type: 'npc' as MarkerType, radius: 1.5, npcId: '' };
 export const npcChoices: { id: string; name: string }[] = [];

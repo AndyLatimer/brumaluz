@@ -1,0 +1,73 @@
+{
+  "scope": "Active gathering, crafting and outdoor loot; excludes retired expeditions, vendors, debug grants and existing player stock. Material closure does not prove recipe learning, rank progression, travel or affordability.",
+  "counts": {
+    "recipes": 441,
+    "nodes": 216,
+    "activeEnemyTypes": 10,
+    "spawns": 14
+  },
+  "missingIngredients": [],
+  "blockedRecipes": [],
+  "firstUpgrades": {
+    "guerrero": [
+      {
+        "id": "espada_cobre_t1",
+        "job": "herreria",
+        "ingredientsObtainable": true
+      },
+      {
+        "id": "espada_hoja_roble",
+        "job": "herreria",
+        "ingredientsObtainable": true
+      }
+    ],
+    "mago": [
+      {
+        "id": "baston_ambar_t1",
+        "job": "carpinteria",
+        "ingredientsObtainable": true
+      },
+      {
+        "id": "baston_brote_viejo",
+        "job": "carpinteria",
+        "ingredientsObtainable": true
+      }
+    ],
+    "picaro": [
+      {
+        "id": "daga_cazador_t1",
+        "job": "herreria",
+        "ingredientsObtainable": true
+      },
+      {
+        "id": "daga_helecho",
+        "job": "herreria",
+        "ingredientsObtainable": true
+      }
+    ],
+    "clerigo": [
+      {
+        "id": "varita_ambar_t1",
+        "job": "carpinteria",
+        "ingredientsObtainable": true
+      },
+      {
+        "id": "varita_semilla_viva",
+        "job": "carpinteria",
+        "ingredientsObtainable": true
+      }
+    ],
+    "explorador": [
+      {
+        "id": "ballesta_roble_t1",
+        "job": "carpinteria",
+        "ingredientsObtainable": true
+      },
+      {
+        "id": "ballesta_tejo_errante",
+        "job": "carpinteria",
+        "ingredientsObtainable": true
+      }
+    ]
+  }
+}

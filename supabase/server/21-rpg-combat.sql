@@ -59,6 +59,7 @@ begin
   select * into w from public.world_players where user_id=uid and character_id=c.id
     and seen_at>now()-interval '15 seconds' for update;
   if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  stamp:=extract(epoch from clock_timestamp());
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
   if not public.game_has_weapon(c.data) then raise exception 'COMBAT_WEAPON_REQUIRED'; end if;
   if not healing and (encounter->>'status' is distinct from 'active' or encounter->>'id' is distinct from 'shadowling') then raise exception 'COMBAT_NO_TARGET'; end if;
@@ -228,7 +229,7 @@ begin
     if attack_distance>
       (case when coalesce((encounter->>'engaged')::boolean,false) then (cfg->>'range')::numeric else (cfg->>'aggro')::numeric end)
       or not public.game_rpg_sight('brumaluz',p_x::numeric,p_z::numeric,enemy_x,enemy_z) then return d; end if;
-    attack_kind:=case when coalesce((encounter->>'attackSeq')::int,0)%3=0 then 'area' when attack_distance<=(cfg->>'meleeRange')::numeric then 'melee' else 'bolt' end;
+    attack_kind:=case when attack_distance<=(cfg->>'meleeRange')::numeric then 'melee' else 'bolt' end;
     encounter:=encounter||jsonb_build_object('attackKind',attack_kind,'windup',stamp+case attack_kind when 'area' then (cfg->>'windup')::numeric when 'bolt' then (cfg->>'boltWindup')::numeric else (cfg->>'meleeWindup')::numeric end,'aimX',p_x,'aimZ',p_z,
       'attackSeq',coalesce((encounter->>'attackSeq')::int,0)+1,'engaged',true);
     return jsonb_set(d,'{combatEncounter}',encounter);

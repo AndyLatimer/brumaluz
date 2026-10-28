@@ -17,6 +17,10 @@ export function buildMouth({ rayHead, nose, o }: { rayHead: (o: THREE.Vector3, d
   const arc = (r: number, t: number, a0: number, a1: number) => new THREE.TorusGeometry(r, t, 5, 14, a1 - a0).rotateZ(a0);
   const mp = onFace(0, mouthY, 0.012), mr = facing(0, mouthY);
   const mouthZ = mp.z - 0.012;
+  const expression = (points: [number, number][], thickness: number) => {
+    const curve = new THREE.CatmullRomCurve3(points.map(([x, y]) => V(x, y, 0)));
+    return piece(new THREE.TubeGeometry(curve, 28, thickness, 6, false), C_DARK, compose(mp, mr, V(1, 1, .45)));
+  };
   switch (o.mouth) {
     case 0:
       if (o.race === 'pelso') for (const sx of [-1, 1]) mouth.push(piece(arc(0.03, 0.011, PI * 1.05, PI * 1.95), C_DARK, compose(mp.clone().add(V(sx * 0.03, 0.022, 0)), mr, V(1, 1, 0.4))));
@@ -25,9 +29,9 @@ export function buildMouth({ rayHead, nose, o }: { rayHead: (o: THREE.Vector3, d
     case 1: mouth.push(piece(new THREE.CircleGeometry(0.075, 14, PI, PI), C_DARK, compose(mp.clone().add(V(0, 0.012, 0.004)), mr, V(1, 0.85, 1)))); break;
     case 2: mouth.push(piece(new THREE.CapsuleGeometry(0.011, 0.08, 3, 6).rotateZ(PI / 2), C_DARK, compose(mp, mr, V(1, 1, 0.5)))); break;
     case 3: mouth.push(piece(new THREE.TorusGeometry(0.034, 0.012, 5, 14), C_DARK, compose(mp, mr, V(0.85, 1.05, 0.5)))); break;
-    case 4: mouth.push(piece(arc(0.06, 0.012, PI * 1.25, PI * 1.85), C_DARK, compose(mp.clone().add(V(0.02, 0.05, 0)), new THREE.Euler(mr.x, mr.y, 0.22), V(1, 0.8, 0.4)))); break;
-    case 6: mouth.push(piece(arc(0.044, 0.01, PI * 1.22, PI * 1.78), C_DARK, compose(mp.clone().add(V(0, 0.034, 0)), mr, V(1, 0.65, 0.4)))); break;
-    case 8: mouth.push(piece(arc(0.06, 0.011, PI * 1.18, PI * 1.72), C_DARK, compose(mp.clone().add(V(-0.012, 0.04, 0)), new THREE.Euler(mr.x, mr.y, -0.28), V(1, 0.8, 0.4)))); break;
+    case 4: mouth.push(expression([[-.050, .006], [-.022, -.015], [.012, -.012], [.051, .024]], .010)); break;
+    case 6: mouth.push(expression([[-.029, .002], [0, -.008], [.029, .002]], .0075)); break;
+    case 8: mouth.push(expression([[-.058, -.004], [-.022, -.005], [.016, .004], [.043, .021], [.045, .029]], .009)); break;
     case 7:
     case 5:
       mouth.push(piece(arc(0.06, 0.014, PI * 1.2, PI * 1.8), C_DARK, compose(mp.clone().add(V(0, 0.05, 0)), mr, V(1, 0.85, 0.4))));

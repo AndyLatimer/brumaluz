@@ -31,8 +31,7 @@ export function createFairyDust(scene: THREE.Scene, citySource: City | (() => Ci
   const sparkleMaterial = new THREE.SpriteMaterial({
     map: texture, color: '#a8d8ff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
-  const spots = city.fairyDustSpots ?? FAIRY_DUST_SPOTS.map(d => ({ id: d.id, x: d.x, z: d.z, yaw: d.yaw }));
-  const dusts = spots.map((spot, index) => {
+  const dusts = FAIRY_DUST_SPOTS.map((spot, index) => {
     const root = new THREE.Group();
     root.name = `fairy-dust:${spot.id}`;
     root.position.set(spot.x, city.groundY(spot.x, spot.z), spot.z);
@@ -61,7 +60,7 @@ export function createFairyDust(scene: THREE.Scene, citySource: City | (() => Ci
       if (taken && dust.vanishAt === null && dust.root.visible && visible) dust.vanishAt = time;
       if (!taken) dust.vanishAt = null;
       const vanish = dust.vanishAt === null ? 0 : Math.min((time - dust.vanishAt) / VANISH_SECONDS, 1);
-      dust.root.visible = visible && (!taken || (dust.vanishAt !== null && vanish < 1));
+      dust.root.visible = visible && dust.spot.mapId === city.locationId && (!taken || (dust.vanishAt !== null && vanish < 1));
       if (!dust.root.visible) continue;
       // Al recogerlo, el montón brilla más y se encoge; mientras tanto, solo un destello intermitente.
       dust.root.position.y = city.groundY(dust.spot.x, dust.spot.z) + Math.sin(vanish * Math.PI) * .35;

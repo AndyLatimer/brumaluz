@@ -1,0 +1,153 @@
+{
+  "origins": [
+    {
+      "race": "humano",
+      "origin": 0,
+      "text": "¡Vecino, entonces! No te voy a explicar dónde está cada plaza. Para el primer oficio sí puedo ayudarte: vamos a los talleres y preguntamos. Preguntar sale barato; los pergaminos, ya menos.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "humano",
+      "origin": 1,
+      "text": "Probar suerte… Sí, eso hago yo algunas mañanas. Por aquí puedes empezar con los encargos de los maestros y ver si te gusta algún oficio. No prometo hacerte rico; encontrar el taller sí entra en mis competencias.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "humano",
+      "origin": 2,
+      "text": "Entonces has venido con tarea para mí. Los talleres están en el Barrio de los Artesanos. Te enseño las puertas; de lo que pasa dentro sabe más cada maestro. Yo prefiero avisarlo antes de que me pregunten cómo se hace una ballesta.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "elfo",
+      "origin": 0,
+      "text": "¿De La Arboleda? Y has venido a aprender aquí. Pues voy a procurar que merezca la pena el paseo. En los talleres puedes probar distintos oficios; no tienes que quedarte con el primero que te abra la puerta.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "elfo",
+      "origin": 1,
+      "text": "La capital… Dicho así parece que tenga que enseñártela entera antes de comer. Mejor empezamos por el mercado y los talleres, que los tengo bien aprendidos. Lo demás lo vamos viendo.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "elfo",
+      "origin": 2,
+      "text": "¿Vives aquí? Menos mal que he preguntado antes de darte la bienvenida por segunda vez. Si buscas otro rumbo, podemos empezar por los oficios. Cambiar de idea también está permitido; lo digo porque yo cambio bastante.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "lagto",
+      "origin": 0,
+      "text": "Desde las Cumbres de Cobre hasta nuestros talleres… Como el primer maestro que veamos te diga que vuelvas otro día, le voy a preguntar yo. Por las buenas, eso sí. Primero vemos qué te interesa aprender.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "lagto",
+      "origin": 1,
+      "text": "Fuera de las montañas, pues de momento me has encontrado a mí. No sé si eso compensa el viaje. Brumaluz tiene bastante más: mercado, talleres y vecinos de varias regiones. Vamos por partes.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "lagto",
+      "origin": 2,
+      "text": "Entonces no necesitas una visita a Brumaluz; necesitas encontrar algo que te apetezca hacer en ella. Eso me gusta más. Vamos a mirar los talleres sin decidir todavía nada.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "pelso",
+      "origin": 0,
+      "text": "¿Desde Luna Argéntea? Pues no voy a despacharte con señalar una calle. Podemos empezar por el mercado y el Barrio de los Artesanos. Si me alargo explicando, me lo dices; cuando me dejan llevar una bienvenida, me entusiasmo.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "pelso",
+      "origin": 1,
+      "text": "Para ganarte unos pelines, los maestros pagan por suministros. Para gastártelos, también venden recetas. Yo te enseño dónde están y tú decides en qué dirección van a moverse los tuyos.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    },
+    {
+      "race": "pelso",
+      "origin": 2,
+      "text": "¿Otro rumbo sin salir de Brumaluz? Eso sí puedo enseñártelo. En los talleres puedes probar varios oficios. Si alguno no te gusta, nos vamos al siguiente; no tengo encargo de convencerte a la fuerza.\n\nTengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo."
+    }
+  ],
+  "masters": [
+    {
+      "job": "herreria",
+      "intro": "Si has venido a admirar el yunque, hazlo desde ese lado. Desde este trabajo yo. ¿Qué necesitas?\n\nArmas, armaduras, herramientas. Sí, los picos también. A algunos se les olvida que el metal hay que sacarlo de alguna parte antes de venir a pedirme una espada.",
+      "question": "¿Qué harías primero: un arma o una herramienta?",
+      "answer": "Depende. Si ya tienes un arma que te sirve, no la cambies solo por estrenar algo. Mira qué materiales necesitas y quién los consigue. Un buen pico también acaba convertido en espadas, aunque dé más vueltas.",
+      "request": "Me vendrían bien componentes de Aprendiz para la forja. Si tienes algunos hechos, puedo pagártelos.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "peleteria",
+      "intro": "¿Vas a dejar ese cuero doblado así? Extiéndelo. Eso es. Ahora ya podemos hablar.\n\nHacemos protecciones ligeras. Me interesa el cuero que has traído, no lo grande que era el jabalí. La historia me la cuentas mientras preparamos la pieza.",
+      "question": "¿Y si no quiero salir a cazar?",
+      "answer": "Compra el cuero. Yo no te voy a examinar de caza delante del banco. También puedes preparar cueros superiores aquí, cuando tengas el rango y la receta: cuero del rango anterior, hierbas y tiempo. Lo que te pido es material; cómo llegues con él es cosa tuya.",
+      "request": "Necesito componentes de Aprendiz para trabajar el cuero. Mira las cantidades; puedo comprarte una entrega.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "sastreria",
+      "intro": "Pasa. Quieto un momento… No, no tienes nada pegado. Estaba mirando las costuras. Mala costumbre mía.\n\nAquí hacemos vestiduras, sobre todo para magos y clérigos. Puedes mirar todos los patrones que quieras. Solo te pido que no los pongas encima de las fibras; luego no encuentro nada.",
+      "question": "¿Tengo que empezar por la ropa más sencilla?",
+      "answer": "Por Aprendiz, sí. Por algo que te parezca feo, no. Mira las recetas de tu rango y elige una pieza que quieras usar. Vas a pasar bastante rato viéndola; yo empezaría por ahí.",
+      "request": "Estoy reuniendo componentes de Aprendiz para el taller. ¿Tienes algunos que puedas venderme?\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "carpinteria",
+      "intro": "¿Has venido por las ballestas? Di que sí, que casi todo el mundo pregunta por los bastones.\n\nTambién hago bastones, claro. Y varitas. Pero déjame tener mis preferencias. La madera la traen los leñadores de Pompelín; en la receta verás cuál necesitamos.",
+      "question": "Pues yo venía por un bastón.",
+      "answer": "Ya decía yo que duraba mucho la alegría. A ver qué receta te sirve. Comprueba tu rango y la madera antes de comprar el pergamino; no me traigas medio bosque al azar.",
+      "request": "Si te han sobrado componentes de Aprendiz al trabajar la madera, me sirven aquí. Te pago por traerlos.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "ebanisteria",
+      "intro": "¿Para qué rincón lo quieres? Siempre pregunto eso antes de enseñar los muebles. Un taburete también necesita su sitio.\n\nMesas, bibliotecas, bancos de trabajo… Me gusta imaginar qué vas a poner encima. Luego tú haces lo que quieras, por supuesto. Casi siempre.",
+      "question": "Solo quería un taburete.",
+      "answer": "Pues un taburete. No voy a colocarte una biblioteca por insistencia. Busca uno de tu rango y comprueba que tengas dónde ponerlo: los muebles necesitan un interior habilitado. Eso sí, piensa el sitio antes de encargarlo. Yo lo pensaría.",
+      "request": "Quiero dejar preparados componentes de Aprendiz para los muebles. Puedo pagarte los que indica el encargo.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "joyeria",
+      "intro": "Acércate. No hace falta levantar la voz; las gemas no hacen ruido y yo todavía oigo bien.\n\nAnillos, colgantes y abalorios. Son piezas pequeñas, pero también cuentan en tu equipo. Puedes tomarte tu tiempo para elegir; a mí me gusta mirarlas despacio.",
+      "question": "¿La gema más bonita hace la mejor pieza?",
+      "answer": "Para mirarla, quizá. Para llevarla al camino, comprueba qué aporta la pieza y qué materiales pide su receta. Yo puedo encapricharme con una gema; tú no tienes por qué pagar mis caprichos.",
+      "request": "Necesito componentes de Aprendiz para las piezas del taller. Comprueba qué te pido antes de ponerte a fabricarlos.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "alquimia",
+      "intro": "¿Qué has traído? Espera, no lo mezcles todavía. Me gusta ver qué hay antes de empezar a tener ideas.\n\nPociones de vida, maná y estamina. Yo las prepararía todas; tú seguramente querrás conservar algún ingrediente. Vamos a mirar qué necesitas de verdad.",
+      "question": "¿No podemos probar a mezclarlo todo?",
+      "answer": "Ganas no me faltan. Ingredientes, sí. Y tú has venido por una poción que te sirva. Empezamos con una receta aprendida y sus cantidades; cuando veas qué reserva recupera, sabrás cuál llevarte al camino.",
+      "request": "Para estas preparaciones me faltan componentes de Aprendiz. Si los traes, te los compro; no necesito que hagas una poción entera.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "encantamiento",
+      "intro": "¿Quieres encantar un arma o fabricar un pergamino? Te lo pregunto ahora para no descubrir a mitad de la explicación que hablamos de cosas distintas.\n\nAquí hacemos los pergaminos. Después se aplican al arma principal desde «Encantar un arma». Puedes guardar uno hasta decidirte. Decidirse antes también es una posibilidad que recomiendo mucho.",
+      "question": "¿Y si todavía no sé qué arma voy a usar?",
+      "answer": "Entonces todavía no lo apliques. El pergamino puede esperar en tu mochila. Consulta el efecto, elige el arma y vuelve a leerlo antes de confirmar. Sí, otra vez. Es más barato leer dos veces que gastar por impaciencia.",
+      "request": "Puedo comprarte componentes de Aprendiz para los encantamientos. Con eso basta para este encargo; no me traigas un pergamino terminado.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "cocina",
+      "intro": "¿Vienes a cocinar o a decirme que no tienes hambre? Para lo primero hay mesa. Para lo segundo, ya hablaremos cuando vuelvas del camino.\n\nPreparamos provisiones que aumentan tus reservas de vida y de maná o estamina. Las heridas te las curas antes: a mí me traes ingredientes, no un susto en mitad de la cocina.",
+      "question": "¿Con comer basta para recuperarme?",
+      "answer": "Ojalá. Me ahorraría muchas discusiones. La comida aumenta tus reservas máximas, pero no las rellena por sí sola. Si vienes herido, descansa o toma una poción. Luego ya vemos qué te preparo para salir.",
+      "request": "Me hacen falta componentes de Aprendiz para cocinar. Mira lo que falta y, si puedes prepararlo, te pago la entrega.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "minero",
+      "intro": "¿Tienes prisa? El yacimiento, no. Empieza por enseñarme el pico.\n\nMinerales y gemas, fuera de Brumaluz. Si solo buscas lo que brilla, vas a dejar atrás mucho material que necesitan los herreros. A mí el mineral corriente también me interesa.",
+      "question": "¿Voy directo al yacimiento más difícil?",
+      "answer": "Puedes mirarlo. Antes de picar, mira también cuánto te cuesta: lo difícil para tu dominio gasta más energía. Comparte reserva con Leñador y Recolector. Si quieres salir con algo más que cansancio, empieza por consultar el cuaderno.",
+      "request": "Necesito mineral y gemas básicos para el taller. No hace falta que sean de un yacimiento difícil: mira cuáles te pido.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "lenador",
+      "intro": "Dime qué madera te piden. «Un poco de todo» suele significar que luego cargas con mucho de lo que no era.\n\nCarpinteros y ebanistas necesitan las maderas de Pompelín. Tú trae un hacha de tala cuidada y una idea de qué buscas. Lo de cargar la madera ya te dará trabajo suficiente.",
+      "question": "Tengo un hacha. ¿Ya puedo salir?",
+      "answer": "De tala, ¿verdad? Equípala en Mis herramientas y revisa su estado. Si está gastada, a Herrería. No hace falta que me cuentes luego cuánto has tardado con un filo que no cortaba; ya me lo imagino.",
+      "request": "Me vendría bien una reserva de roble. Si vas a salir a talar, mira cuánto te puedo comprar.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    },
+    {
+      "job": "recolector",
+      "intro": "¿Qué andas buscando: hierbas, fibras, algo para cocinar? Dímelo antes de que me ponga a contarte para qué sirve todo lo demás.\n\nMe interesan demasiadas cosas, ya lo irás viendo. Por ahora: una hoz y la lista de materiales de tu receta. Así no vuelves con fruta para una vestidura. Aunque al menos habrás comido.",
+      "question": "¿No vale con recoger lo que encuentre?",
+      "answer": "A mí no me mires, que lo haría encantada. Pero tu mochila tiene un límite. Mira si necesitas hierbas, fibras o ingredientes de cocina; el cuaderno distingue las familias y lo que cuesta recogerlas. Después, si queda hueco, ya te entretienes.",
+      "request": "Estoy reuniendo hierbas, cereal y fruta de los más básicos. ¿Tienes algo de la lista? Puedo comprártelo.\n\nTe quedan 3 de 3 encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.\n\nSon independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas."
+    }
+  ],
+  "english": "I’m gathering basic herbs, grain and fruit. Got anything on the list? I can buy it from you.\n\nYou have 3 of 3 daily orders left. The limit is shared by all masters and resets at 00:00 UTC.\n\nThese are separate from mastery projects: they do not raise your rank or teach recipes.",
+  "errors": [],
+  "liveWrites": false
+}

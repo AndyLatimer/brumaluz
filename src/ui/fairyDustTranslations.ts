@@ -1,0 +1,16 @@
+export const FAIRY_DUST_TRANSLATIONS: Record<string, string> = {
+  'Un polvo misterioso': 'A mysterious dust',
+  'Has encontrado polvo de hada. Quizá Gnomi sepa algo sobre él.': 'You found fairy dust. Perhaps Gnomi knows something about it.',
+  'Pregunta a Gnomi por el polvo de hada que has encontrado.': 'Ask Gnomi about the fairy dust you found.',
+  'Gnomi te ha recomendado visitar La Arboleda para saber más sobre el polvo de hada.': 'Gnomi suggested visiting La Arboleda to learn more about fairy dust.',
+  'La historia continuará en una próxima etapa.': 'The story will continue in a future chapter.',
+  'Continuará': 'To be continued',
+  'Pregunta a Gnomi': 'Ask Gnomi',
+  '¡Hola! ¿En qué puedo echarte una mano?': 'Hello! What can I help you with?',
+  'He encontrado este polvo. ¿Sabes qué es?': 'I found this dust. Do you know what it is?',
+  'Quería hablar de otra cosa.': 'I wanted to talk about something else.',
+  'Gracias, Gnomi.': 'Thank you, Gnomi.',
+  'Tiene toda la pinta de ser polvo de hada. Mira cómo brilla… No te sabría decir para qué sirve; prefiero reconocerlo antes que inventarme algo y hacerte dar vueltas.\n\nEn La Arboleda quizá puedan contarte más. Si quieres saber de dónde viene o qué hacer con él, yo preguntaría allí. Guárdalo bien mientras tanto. Yo ya he perdido suficientes cosas por los dos.': 'It certainly looks like fairy dust. Look how it sparkles… I couldn’t tell you what it is used for; I’d rather admit that than make something up and send you in circles.\n\nPerhaps someone in La Arboleda can tell you more. If you want to know where it comes from or what to do with it, I would ask there. Keep it safe meanwhile. I’ve already lost enough things for both of us.',
+  'Esta conversación sobre el polvo de hada ya no está pendiente.': 'This conversation about fairy dust is no longer pending.',
+  'Acércate a Gnomi para preguntarle por el polvo de hada.': 'Move closer to Gnomi to ask him about fairy dust.',
+};

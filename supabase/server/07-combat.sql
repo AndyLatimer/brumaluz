@@ -30,6 +30,7 @@ begin
       +power((w.position->>'z')::numeric-coalesce((c.data->'isbertoPosition'->>'z')::numeric,sz),2))>6 then
     raise exception 'COMBAT_TOO_FAR';
   end if;
+  stamp:=extract(epoch from clock_timestamp());
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
   if c.data->'combatEncounter'->>'status'='active' then raise exception 'COMBAT_ALREADY_ACTIVE'; end if;
   if c.data->'combatEncounter'->>'status'='defeated' and c.data->'combatEncounter'->>'looted' is distinct from 'true'
@@ -99,6 +100,7 @@ begin
   select * into w from public.world_players where user_id=uid and character_id=c.id
     and seen_at>now()-interval '15 seconds' for update;
   if not found then raise exception 'COMBAT_NOT_PLAYING'; end if;
+  stamp:=extract(epoch from clock_timestamp());
   if public.game_health(c.data)=0 then raise exception 'COMBAT_DEAD'; end if;
   if not public.game_has_weapon(c.data) then raise exception 'COMBAT_WEAPON_REQUIRED'; end if;
   if not healing and (encounter->>'status' is distinct from 'active' or encounter->>'id' is distinct from 'shadowling') then raise exception 'COMBAT_NO_TARGET'; end if;

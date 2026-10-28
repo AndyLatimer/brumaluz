@@ -1,0 +1,183 @@
+{
+  "timings": [
+    {
+      "pass": 0,
+      "patch": {
+        "eyeShape": 1
+      },
+      "milliseconds": 80.9
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "eyeShape": 9
+      },
+      "milliseconds": 81.1
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "hair": 23
+      },
+      "milliseconds": 108.8
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "hair": 25
+      },
+      "milliseconds": 59.7
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "hair": 1
+      },
+      "milliseconds": 87.3
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "hair": 22
+      },
+      "milliseconds": 97.9
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "eyeColor": 3
+      },
+      "milliseconds": 65.3
+    },
+    {
+      "pass": 0,
+      "patch": {
+        "clothA": 2
+      },
+      "milliseconds": 57.6
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "eyeShape": 1
+      },
+      "milliseconds": 74.4
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "eyeShape": 9
+      },
+      "milliseconds": 75.4
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "hair": 23
+      },
+      "milliseconds": 52.7
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "hair": 25
+      },
+      "milliseconds": 59.8
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "hair": 1
+      },
+      "milliseconds": 50.6
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "hair": 22
+      },
+      "milliseconds": 54.8
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "eyeColor": 3
+      },
+      "milliseconds": 51.2
+    },
+    {
+      "pass": 1,
+      "patch": {
+        "clothA": 2
+      },
+      "milliseconds": 54.8
+    }
+  ],
+  "hotspots": [
+    [
+      "rayHead @ src/character/head/skull.ts",
+      151
+    ],
+    [
+      "getVertexPosition @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      80
+    ],
+    [
+      "checkGeometryIntersection @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      54
+    ],
+    [
+      "intersectTriangle @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      48
+    ],
+    [
+      "smoothNormals @ src/character/head/geometry.ts",
+      44
+    ],
+    [
+      "getProgramInfoLog @ runtime",
+      35
+    ],
+    [
+      "computeBoundingSphere @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      30
+    ],
+    [
+      "convertBufferAttribute @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      28
+    ],
+    [
+      "setFromBufferAttribute @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      24
+    ],
+    [
+      "clone @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      19
+    ],
+    [
+      "applyMatrix4 @ http://127.0.0.1:4213/node_modules/.vite-brumaluz/10616/deps/chunk-YDRMFMSN.js?v=7f53452d",
+      18
+    ],
+    [
+      "(anonymous) @ src/character/head/eyes.ts",
+      18
+    ],
+    [
+      "depth @ src/character/head/beard.ts",
+      16
+    ],
+    [
+      "F @ src/character/head/skull.ts",
+      16
+    ],
+    [
+      "buildHair @ src/character/head/hair.ts",
+      15
+    ],
+    [
+      "(garbage collector) @ runtime",
+      14
+    ]
+  ],
+  "errors": []
+}

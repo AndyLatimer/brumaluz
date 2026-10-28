@@ -78,8 +78,8 @@ export function setWorldMenuOpen(open: boolean, restoreFocus = true) {
 export const draftTotal = () => Object.values(ui.pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
 export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   const journalKey = win === 'quests' ? JSON.stringify([
-    session.activeCharacterId, session.state.welcome, session.state.shadowQuest, session.state.location, corpseLooted(), getLanguage(),
-    questTracking.isTracked('welcome'), questTracking.isTracked('shadow'),
+    session.activeCharacterId, session.state.welcome, session.state.shadowQuest, session.state.fairyDustQuest, session.state.rpg?.tutorial,session.state.rpg?.learned,session.state.rpg?.dailyOrders,new Date().toISOString().slice(0,10),session.state.inventory.map(item=>item?[item.id,item.count]:null),session.state.location, corpseLooted(), getLanguage(),
+    questTracking.isTracked('welcome'), questTracking.isTracked('shadow'), questTracking.isTracked('fairy-dust'),questTracking.isTracked('profession'),
   ]) : '';
   // Vida, comida y presencia no cambian el diario: conservar sus nodos durante el scroll y los clics.
   if (win === 'quests' && ui.openWindow === 'quests' && ui.questJournalKey === journalKey) return;

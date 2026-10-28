@@ -9,8 +9,8 @@ begin
   if p_skill_id is distinct from public.game_skill_id(c.data->>'cls') then raise exception 'SKILL_INVALID'; end if;
   if p_expected_rank is distinct from current_rank then raise exception 'SKILL_CHANGED'; end if;
   if current_rank>=5 then raise exception 'SKILL_MAX_RANK'; end if;
-  if public.game_level(c.data)<current_rank*2 then raise exception 'SKILL_LEVEL_REQUIRED'; end if;
-  if public.game_level(c.data)/2-(current_rank-1)<1 then raise exception 'SKILL_NO_POINTS'; end if;
+  if public.game_level(c.data)<current_rank+1 then raise exception 'SKILL_LEVEL_REQUIRED'; end if;
+  if public.game_level(c.data)-1-(current_rank-1)<1 then raise exception 'SKILL_NO_POINTS'; end if;
   return public.game_store(c.id,c.data||jsonb_build_object('skillRanks',
     coalesce(c.data->'skillRanks','{}'::jsonb)||jsonb_build_object(p_skill_id,current_rank+1)));
 end;

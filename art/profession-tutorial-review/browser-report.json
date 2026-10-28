@@ -1,0 +1,184 @@
+{
+  "passed": true,
+  "errors": [],
+  "selected": "herreria",
+  "actualSqlActions": [
+    {
+      "action": "tutorial_accept",
+      "args": {
+        "job": "herreria",
+        "master": "gnomi"
+      }
+    },
+    {
+      "action": "tutorial_visit",
+      "args": {
+        "master": "isberto"
+      }
+    },
+    {
+      "action": "buy_tool",
+      "args": {
+        "job": "minero"
+      }
+    },
+    {
+      "action": "tool",
+      "args": {
+        "slot": 0
+      }
+    },
+    {
+      "action": "buy_recipe",
+      "args": {
+        "id": "componente_herreria_0",
+        "master": "isberto",
+        "price": 50
+      }
+    },
+    {
+      "action": "use_recipe",
+      "args": {
+        "slot": 0,
+        "id": "receta_componente_herreria_0",
+        "instanceId": "e37ea289-9a4e-4ea0-a28d-79d5078a90ca"
+      }
+    },
+    {
+      "action": "gather_start",
+      "args": {
+        "id": "minero_0_0"
+      }
+    },
+    {
+      "action": "gather_finish",
+      "args": {
+        "id": "minero_0_0"
+      }
+    },
+    {
+      "action": "gather_start",
+      "args": {
+        "id": "minero_0_1"
+      }
+    },
+    {
+      "action": "gather_finish",
+      "args": {
+        "id": "minero_0_1"
+      }
+    },
+    {
+      "action": "gather_start",
+      "args": {
+        "id": "minero_0_2"
+      }
+    },
+    {
+      "action": "gather_finish",
+      "args": {
+        "id": "minero_0_2"
+      }
+    },
+    {
+      "action": "gather_start",
+      "args": {
+        "id": "minero_0_3"
+      }
+    },
+    {
+      "action": "gather_finish",
+      "args": {
+        "id": "minero_0_3"
+      }
+    },
+    {
+      "action": "gather_start",
+      "args": {
+        "id": "minero_0_4"
+      }
+    },
+    {
+      "action": "gather_finish",
+      "args": {
+        "id": "minero_0_4"
+      }
+    },
+    {
+      "action": "gather_start",
+      "args": {
+        "id": "minero_0_5"
+      }
+    },
+    {
+      "action": "gather_finish",
+      "args": {
+        "id": "minero_0_5"
+      }
+    },
+    {
+      "action": "craft",
+      "args": {
+        "id": "componente_herreria_0",
+        "count": 2
+      }
+    },
+    {
+      "action": "state",
+      "args": {}
+    },
+    {
+      "action": "collect",
+      "args": {
+        "id": "7b87a0d1-4974-47e5-ad6f-05ef6055c1c7"
+      }
+    },
+    {
+      "action": "collect",
+      "args": {
+        "id": "d14b0f91-67fb-4b15-94ad-fb70d9837346"
+      }
+    },
+    {
+      "action": "daily_order",
+      "args": {
+        "id": "piezas_herreria",
+        "master": "isberto",
+        "reward": 75
+      }
+    },
+    {
+      "action": "tutorial_complete",
+      "args": {
+        "master": "isberto"
+      }
+    }
+  ],
+  "completed": {
+    "job": "herreria",
+    "jobIds": [],
+    "status": "completed",
+    "crafted": 2,
+    "visited": true,
+    "equipped": true,
+    "gathered": 6,
+    "collected": 2,
+    "delivered": true,
+    "startedAt": 1793126422.69,
+    "completedAt": 1793126513.69
+  },
+  "final": {
+    "pelines": 75,
+    "experience": 40,
+    "dailyOrders": {
+      "day": "2026-10-27",
+      "completed": 1
+    }
+  },
+  "fixture": {
+    "startingPelines": 70,
+    "positioning": true,
+    "queueClockAdvanced": true
+  },
+  "liveWrites": false
+}

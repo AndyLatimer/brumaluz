@@ -24,6 +24,10 @@ renderTarget.texture.colorSpace = THREE.SRGBColorSpace;
 renderTarget.texture.generateMipmaps = false;
 
 export interface PortraitOptions {
+  /** Ángulo de inspección compartido por comparaciones y láminas artísticas. */
+  yaw?: number;
+  /** Encuadre de cabeza para comparar rasgos en los catálogos. */
+  closeup?: boolean;
   /** Muestra al personaje de pies a cabeza en lugar de busto. */
   fullBody?: boolean;
   /** Multiplicador de resolución (más nítido en pantallas grandes). */
@@ -48,6 +52,7 @@ export function createCharacterPortrait(data: CharData, renderer: THREE.WebGLRen
   target_.texture.colorSpace = THREE.SRGBColorSpace;
   // Misma ropa que lleva el personaje dentro del juego (atuendo de aldeano con sus colores).
   const character = new Character({ ...data }, { outfit: false });
+  character.root.rotation.y = options.yaw ?? 0;
   scene.add(character.root);
   scene.updateMatrixWorld(true);
   character.update(0);
@@ -61,8 +66,8 @@ export function createCharacterPortrait(data: CharData, renderer: THREE.WebGLRen
     camera.position.set(center.x, center.y, box.max.z + distance);
     camera.lookAt(center);
   } else {
-    const target = character.headWorld().add(new THREE.Vector3(0, -0.2, 0));
-    camera.position.set(target.x, target.y, target.z + 2.6);
+    const target = character.headWorld().add(new THREE.Vector3(0, options.closeup ? -.025 : -.2, 0));
+    camera.position.set(target.x, target.y, target.z + (options.closeup ? 2 : 2.6));
     camera.lookAt(target);
   }
   camera.updateProjectionMatrix();

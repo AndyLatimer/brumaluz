@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "desktop": true,
+  "mobileWidth": 390,
+  "actualSqlDeliveries": 3,
+  "paid": 225,
+  "sharedDailyLimit": 3,
+  "errors": [],
+  "liveWrites": false
+}

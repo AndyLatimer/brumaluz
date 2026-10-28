@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile, rename, unlink, stat } from 'node:fs/promises';
 import { resolve, join, sep, relative, dirname } from 'node:path';
 import { readLibraryCatalog } from './library-catalog.mjs';
+import { collectibleCatalog, collectiblesSql } from './collectibles.mjs';
 
 const hash = text => `"${createHash('sha256').update(text).digest('hex')}"`;
 const MAX_BYTES = 48_000_000;
@@ -178,9 +179,12 @@ async function writeWorldSql({ publishDir, sqlFile }, { validateMap, arrivalPoin
     portals.push(`(${sqlText(map.id)}, ${sqlText(marker.id)}, ${r2(marker.position[0])}, ${r2(marker.position[2])}, ${r2(Math.min(100, marker.radius))}, ${sqlText(target.id)}, ${sqlJson(point)})`);
   }
   if (portals.length) lines.push(`insert into public.world_portals(map, id, x, z, radius, target_map, target) values\n  ${portals.join(',\n  ')};`);
+  const collectibles = collectibleCatalog(maps.values());
+  lines.push(collectiblesSql(collectibles));
   lines.push('');
   await mkdir(dirname(sqlFile), { recursive: true });
   await writeAtomic(sqlFile, lines.join('\n'));
+  await writeAtomic(join(publishDir, 'collectibles.json'), `${JSON.stringify(collectibles, null, 2)}\n`);
   return warnings;
 }
 
@@ -232,7 +236,7 @@ export function mapEditorPlugin({ mapsDir, publishDir: publishOption, sqlFile: s
             const persistPublication = async operation => {
               const ids = new Set((await publishedStatus(publishDir)).map(meta => meta.id));
               if (typeof operation.id === 'string') ids.add(operation.id);
-              const files = [join(publishDir, 'published.ts'), join(publishDir, 'city.ts'), join(publishDir, 'city.json'), sqlFile,
+              const files = [join(publishDir, 'published.ts'), join(publishDir, 'city.ts'), join(publishDir, 'city.json'), join(publishDir, 'collectibles.json'), sqlFile,
                 ...[...ids].flatMap(id => ['ts', 'json'].map(ext => join(publishDir, 'maps', `${id}.${ext}`)))];
               return publicationTransaction(files, async () => {
                 const result = await operation.run();

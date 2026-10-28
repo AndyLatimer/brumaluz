@@ -253,7 +253,7 @@ test('a new character enters through the East Gate, tours the city and meets a w
     await page.setViewportSize({width:1280,height:800});
     await page.locator('#dialog').waitFor({state:'visible',timeout:30000});
     assert.equal(await page.locator('.dialog-speaker').textContent(),'Gnomi');
-    assert.match(await page.locator('.dialog-text').textContent(),/bienvenida a Brumaluz.*Gremio de Ayudantes/s);
+    assert.match(await page.locator('.dialog-text').textContent(),/Gnomi.*Gremio de Ayudantes.*recibirte/s);
     assert.equal(await page.locator('#cinematic').isVisible(),false);
     await page.getByRole('button',{name:'He venido a probar suerte.'}).click();
     await page.getByRole('button',{name:'Aceptar misión'}).waitFor();
@@ -348,7 +348,7 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.locator('#story-arrival').waitFor({state:'visible'});
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
     await facing('npc:isberto');
-    assert.match(await page.locator('.dialog-text').textContent(),/Has mantenido el tipo/);
+    assert.match(await page.locator('.dialog-text').textContent(),/hecho daño.*lo que has recogido/s);
     const beforeSpeakerChange=await page.evaluate(()=>({
       position:window.brumaluz.char().root.parent.position.toArray(),facing:window.brumaluz.char().root.parent.rotation.y,
     }));
@@ -363,7 +363,7 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.keyboard.press('KeyE');
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor();
     await page.keyboard.press('KeyE');
-    await page.locator('.dialog-text').filter({hasText:'Te has ganado un techo'}).waitFor();
+    await page.locator('.dialog-text').filter({hasText:'Ven a casa antes de seguir'}).waitFor();
     if(process.env.PLAYWRIGHT_SCREENSHOT_DIR)await page.screenshot({path:join(process.env.PLAYWRIGHT_SCREENSHOT_DIR,'isberto-invitation.png')});
     await page.keyboard.press('Escape');
     assert.equal(account.character.data.shadowQuest,'defeated','Exiting partway through the scene never advances the story');
@@ -439,7 +439,7 @@ test('after looting, Isberto comes back, leads the player home and shows the bed
     await page.locator('.dialog-speaker').filter({hasText:'Isberto'}).waitFor({timeout:20000});
     assert.equal(await page.evaluate(()=>window.brumaluz.city().root.parent.getObjectByName('npc:isberto').visible),true,'Isberto is home');
     await page.getByRole('button',{name:'Gracias, Isberto.',exact:true}).click();
-    await page.locator('.dialog-text').filter({hasText:/^Descansa\./}).waitFor();
+    await page.locator('.dialog-text').filter({hasText:'Voy a dejarte descansar.'}).waitFor();
     assert.equal(account.character.data.shadowQuest,'returned');
     await page.keyboard.press('KeyE');
     await page.locator('#toast.show').filter({hasText:'Misión completada'}).waitFor();

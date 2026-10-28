@@ -447,6 +447,12 @@ export function resetShadowEnemy(root: THREE.Group, time: number) {
   rig.actionStarted = time;
   rig.actionDuration = 0;
   rig.hitStarted=-Infinity;
+  rig.eyes.forEach((eye,index)=>{
+    eye.visible=true;eye.scale.set(.83,1.18,.43);
+    rig.eyeMaterials[index].emissiveIntensity=2.15;
+    rig.eyeGlows[index].visible=true;
+    (rig.eyeGlows[index].material as THREE.MeshBasicMaterial).opacity=.16;
+  });
   root.rotation.set(0, 0, 0);
   root.scale.setScalar(1);
   rig.model.position.set(0, 0.12, 0);
@@ -526,11 +532,14 @@ export function updateShadowEnemy(root: THREE.Group, time: number, dt: number, t
   });
   const blinkPhase = time % 5.2;
   const blink = Math.max(0, 1 - Math.abs(blinkPhase - 4.88) / 0.11);
+  const eyeClosure = rig.action === 'death' ? THREE.MathUtils.smoothstep(phase, 0, .22) : 0;
   rig.eyes.forEach((eye, index) => {
     const pulse = 1 + Math.sin(time * 3.2 + index * 0.7) * 0.055;
-    eye.scale.set(0.83 * pulse, 1.18 * pulse * (1 - blink * 0.92), 0.43);
-    rig.eyeMaterials[index].emissiveIntensity = (2.15 + Math.sin(time * 4 + index) * 0.3 + strike * 1.1 + hit * 1.8) * living;
-    (rig.eyeGlows[index].material as THREE.MeshBasicMaterial).opacity = (0.16 + Math.sin(time * 3 + index) * 0.035 + hit * 0.16) * living;
+    eye.scale.set(0.83 * pulse, 1.18 * pulse * (1 - Math.max(blink * .92, eyeClosure * .98)), 0.43);
+    eye.visible = eyeClosure < 1;
+    rig.eyeGlows[index].visible = eyeClosure < 1;
+    rig.eyeMaterials[index].emissiveIntensity = (2.15 + Math.sin(time * 4 + index) * 0.3 + strike * 1.1 + hit * 1.8) * (1-eyeClosure);
+    (rig.eyeGlows[index].material as THREE.MeshBasicMaterial).opacity = (0.16 + Math.sin(time * 3 + index) * 0.035 + hit * 0.16) * (1-eyeClosure);
   });
   for (const material of rig.flashMaterials) {
     const baseEmissive = material.userData.baseEmissive as THREE.Color;

@@ -16,10 +16,13 @@ import { paintCell, smoothNormals } from './head/geometry';
 import { softDot } from '../world/paint';
 import { STARTER_MODELS } from '../data/starterItems';
 import { loadWeaponModels, weaponModel } from './weaponModels';
-import { refinedCombatClips } from './combatAnimations';
+import { refinedCombatClips, upperBodyGesture } from './combatAnimations';
 import { ARMOR_SLOTS, equippedArmor } from '../data/outfits';
 import { mountModularWardrobe, modularHairFit, mountEquippedAccessories } from './wardrobe';
 import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeId } from './wardrobe';
+import { gatheringToolGeometry, resourceMaterial } from '../world/resourceModels';
+import { fitCreatorNeckAccessory } from './creatorNeckFit';
+import { fitEyewearToHeadwear } from './head/headwearEyewearFit';
 
 // ---------------------------------------------------------------------------
 // Personajes a partir del pack "KayKit Adventurers" (Kay Lousberg, CC0).
@@ -203,11 +206,15 @@ export class Character {
   private nextBlink = 1 + Math.random() * 2;
   private blinkT = -1;
   private happy: THREE.Object3D[] = [];
+  private closedEyes: THREE.Object3D[] = [];
   private mouth?: { rest: THREE.Object3D; open: THREE.Object3D; sy: number };
   private speakUntil = -1;
   private happyReq = false;
   private happyUntil = -1;
   private owned: { dispose(): void }[] = [];
+  private heldObjects:THREE.Object3D[]=[];
+  private gatheringTool:THREE.Mesh|null=null;
+  private gatheringHidden:{object:THREE.Object3D;visible:boolean}[]=[];
 
   constructor(public d: CharData, public opts: BuildOpts) {
     this.build();
@@ -284,15 +291,18 @@ export class Character {
     const hatKind = this.opts.clothing ? this.opts.clothing.hairFit : this.opts.hat === false ? 'none' : modular ? modularHairFit(d.cls,d.equipment) : wardrobe ? WARDROBES[wardrobe].hairFit : !outfit.hat ? 'none' : outfit.hat === 'Knight_Helmet' ? 'helmet' : outfit.hat === 'Mage_Hat' ? 'wizard' : 'bear';
     const head = buildHead(heads, {
       face: FACE_KITS[d.face] ?? 'Mage', hair: d.hair, beard: d.beard, eyeShape: d.eyeShape, brows: d.brows, nose: d.nose,
-      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, skin,
+      mouth: d.mouth, detail: d.detail, eyeColor: EYE_COLORS[d.eyeColor], flattenEars: d.race !== 'humano', hat: hatKind, race: d.race, trait: d.trait, skin,
+      coveredEars: !!(modular && equippedArmor(d.cls, d.equipment, 'head') && (d.cls === 'guerrero' || d.cls === 'picaro')),
       hairAcc: d.hairAcc, hairAccColor: ACC_COLORS[d.hairAccColor], acc: d.acc, makeup: d.makeup, makeupColor: ACC_COLORS[d.makeupColor], accColor: ACC_COLORS[d.accColor],
     }, headMat, flatMat, creatorParts);
     this.bones.get('head')!.add(head.group);
     this.owned.push(...head.ownedMaterials.filter(material => !this.owned.includes(material)));
     this.eyes = head.eyes.map((e) => ({ o: e, sy: e.scale.y }));
     this.happy = head.happy;
+    this.closedEyes = head.closed;
     this.mouth = { rest: head.mouth.rest, open: head.mouth.open, sy: head.mouth.open.scale.y };
     head.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) this.owned.push((o as THREE.Mesh).geometry); });
+    const existingHeadChildren = new Set(this.bones.get('head')!.children);
 
     // Piezas
     if (modular) {
@@ -354,15 +364,21 @@ export class Character {
         }
         o.traverse(part => { if (part instanceof THREE.Mesh) part.castShadow = true; });
         (this.model.getObjectByName(reference.parent!.name) ?? this.model).add(o);
+        this.heldObjects.push(o);
         continue;
       }
       const o = this.addRigid(it.kit, it.name, mat(it.kit, it.kit === outfit.kit));
+      if(o)this.heldObjects.push(o);
       if (it.name === '2H_Staff' && o) this.addGlow(o);
       // el libro cuelga de la mano, agarrado por el canto
       if (it.name === 'Spellbook' && o) { o.quaternion.set(-0.3637, 0.6065, 0.3641, -0.6061).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2)); o.position.set(-0.21, 0, 0); }
     }
 
     // Rasgos del linaje
+    const mountedHeadwear = this.bones.get('head')!.children.filter(node => !existingHeadChildren.has(node));
+    this.model.traverse(node => { if (node.userData.characterHeadwear && !mountedHeadwear.includes(node)) mountedHeadwear.push(node); });
+    this.model.updateMatrixWorld(true);
+    fitEyewearToHeadwear(head, mountedHeadwear);
     this.addRaceTraits(d, head, headMat(FACE_KITS[d.face] ?? 'Mage'), flatMat, hatKind);
 
     // Las piezas de cuello siguen al pecho. Conservar la pose de montaje evita
@@ -370,12 +386,19 @@ export class Character {
     this.model.updateMatrixWorld(true);
     const chest = this.bones.get('chest');
     if (chest) for (const accessory of [...head.group.children]) {
-      if (accessory.name === 'character-neck-accessory') chest.attach(accessory);
+      if (accessory.name === 'character-neck-accessory') {
+        chest.attach(accessory);
+        fitCreatorNeckAccessory(accessory, this.model, chest, resource => this.owned.push(resource));
+      }
     }
 
     // Animaciones
     this.mixer = new THREE.AnimationMixer(this.model);
     for (const clip of [...base.animations, ...ambientAnimations, ...refinedCombatClips([...base.animations,...rangedAnimations,...meleeAnimations])]) this.actions.set(clip.name, this.mixer.clipAction(clip));
+    for(const [name,source] of [['Gather_Mine','Melee_1H_Attack_Chop'],['Gather_Chop','Melee_1H_Attack_Slice_Diagonal']] as const){
+      const original=meleeAnimations.find(clip=>clip.name===source);
+      if(original){const clip=original.clone();clip.name=name;clip.duration=1.25;for(const track of clip.tracks){const ratio=1.25/original.duration;for(let i=0;i<track.times.length;i++)track.times[i]*=ratio;}this.actions.set(name,this.mixer.clipAction(clip));}
+    }
     this.idle = this.actions.get(outfit.idle) ?? this.actions.get('Idle')!;
     this.idle.play();
     this.applyBodyShape();
@@ -561,66 +584,73 @@ export class Character {
       return g;
     };
 
-    if (d.race === 'elfo') {
-      for (const s of [-1, 1]) {
-        const len = [0.5, 0.3, 0.42, 0.36, 0.44][d.trait] ?? 0.5;
-        const dir = d.trait === 2 ? V(s, -0.25, -0.35) : d.trait === 4 ? V(s, 0.05, -0.15) : V(s, 0.5, -0.3);
-        const g = paintCell(cone(d.trait === 3 ? 0.135 : 0.1, len, 8, dir, 0.4), 0, 0.15, 0.5);
-        mesh(g.translate(-s * 0.02, 0, 0), mat, pivot(A.ear(s)));
-      }
+    const earGroup = (side: number) => {
+      const fit = head.anatomy.ear(side), group = pivot(fit.root);
+      group.name = 'character-ear'; group.quaternion.copy(fit.rotation); group.scale.setScalar(fit.scale);
+      group.userData.earSide = side; group.userData.earKind = fit.kind;
+      group.userData.earRootBind = fit.root.toArray();
+      group.userData.earLobeLocal = fit.lobe.clone().sub(fit.root).applyQuaternion(fit.rotation.clone().invert()).divideScalar(fit.scale).toArray();
+      return { fit, group };
+    };
+    if (d.race === 'elfo') for (const side of [-1, 1]) {
+      if (!head.anatomy.ear(side).visible) continue;
+      const { fit, group } = earGroup(side);
+      mesh(paintCell(cone(fit.radius, fit.length, 12, V(0, 1, 0), fit.flat), 0, .15, .5), mat, group).name = 'character-ear-outer';
     }
     if (d.race === 'pelso') {
-      // orejas y cola siguen el pelaje, no el color de pelo
       const coat = coatMark(RACES.pelso.skins[d.skin]);
       const furMat: THREE.Material = coat?.mark === 'mask' ? flatMat(coat.markColor) : mat;
-      const innerCol = coat?.ear ?? '#f2a6ae';
-      for (const s of [-1, 1]) {
-        const g = pivot(A.top(s).add(V(s * 0.02, -0.06, 0)));
-        g.rotation.z = -s * 0.3;
-        if (d.trait === 2) g.rotation.x = 0.7;
+      const innerMat = flatMat(coat?.ear ?? '#f2a6ae');
+      for (const side of [-1, 1]) {
+        if (!head.anatomy.ear(side).visible) continue;
+        const { fit, group } = earGroup(side);
         if (d.trait === 1) {
-          const ear = new THREE.SphereGeometry(0.17, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
-          ear.scale(1, 1.3, 0.5);
-          mesh(paintCell(ear.translate(0, -0.05, 0), 0), furMat, g);
-          const inner = new THREE.SphereGeometry(0.11, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
-          inner.scale(1, 1.2, 0.3).translate(0, 0.0, 0.05);
-          mesh(inner, flatMat(innerCol), g);
+          const outer = new THREE.SphereGeometry(1, 28, 20).scale(.145, .155, .075).translate(0, .045, 0);
+          mesh(paintCell(outer, 0), furMat, group).name = 'character-ear-outer';
+          const positions: number[] = [], indices: number[] = [], rings = 8, segments = 40;
+          const point = (x: number, y: number) => {
+            positions.push(x, y, .075 * Math.sqrt(Math.max(.01, 1 - (x / .145) ** 2 - ((y - .045) / .155) ** 2)) + .004);
+          };
+          point(0, .065);
+          for (let ring = 1; ring <= rings; ring++) for (let col = 0; col < segments; col++) {
+            const angle = col / segments * PI * 2; point(Math.cos(angle) * .095 * ring / rings, .065 + Math.sin(angle) * .105 * ring / rings);
+          }
+          for (let col = 0; col < segments; col++) indices.push(0, 1 + col, 1 + (col + 1) % segments);
+          for (let ring = 0; ring < rings - 1; ring++) for (let col = 0; col < segments; col++) {
+            const a = 1 + ring * segments + col, b = 1 + ring * segments + (col + 1) % segments;
+            indices.push(a, a + segments, b, b, a + segments, b + segments);
+          }
+          const inner = new THREE.BufferGeometry(); inner.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); inner.setIndex(indices); inner.computeVertexNormals();
+          mesh(inner, innerMat, group).name = 'character-ear-inner';
         } else {
-          // la base se hunde en la cabeza para que la oreja nazca de ella y no flote
-          mesh(paintCell(new THREE.ConeGeometry(0.19, 0.46, 4).rotateY(Math.PI / 4).scale(1, 1, 0.6).translate(0, 0.11, 0), 0), furMat, g);
-          mesh(new THREE.ConeGeometry(0.1, 0.26, 4).rotateY(Math.PI / 4).scale(1, 1, 0.3).translate(0, 0.1, 0.07), flatMat(innerCol), g);
-          if (d.trait === 3) for (const offset of [-0.025, 0, 0.025])
-            mesh(cone(0.016, 0.12 - Math.abs(offset), 5, V(offset * 5, 1, 0)).translate(offset, 0.3, 0), flatMat(coat?.markColor ?? '#5a423c'), g);
-          if (d.trait === 4) g.scale.setScalar(0.68);
+          const outer = new THREE.ConeGeometry(.19, .46, 4).rotateY(PI / 4).scale(1, 1, .6).translate(0, .11, 0);
+          mesh(paintCell(outer, 0), furMat, group).name = 'character-ear-outer';
+          const shape = new THREE.Shape(); shape.moveTo(-.065, .005); shape.quadraticCurveTo(-.074, -.015, 0, -.008);
+          shape.quadraticCurveTo(.074, -.015, .065, .005); shape.lineTo(.009, .225); shape.quadraticCurveTo(0, .246, -.009, .225); shape.closePath();
+          const inner = new THREE.ShapeGeometry(shape, 16), p = inner.attributes.position;
+          for (let i = 0; i < p.count; i++) p.setZ(i, (.19 / Math.sqrt(2) * .6) * (.34 - p.getY(i)) / .46 + .003);
+          inner.computeVertexNormals(); mesh(inner, innerMat, group).name = 'character-ear-inner';
+          if (d.trait === 3) for (const offset of [-.025, 0, .025])
+            mesh(cone(.016, .12 - Math.abs(offset), 5, V(offset * 5, 1, 0)).translate(offset, .3, 0), flatMat(coat?.markColor ?? '#5a423c'), group).name = 'character-ear-tuft';
         }
-        this.ears.push(g);
+        this.model.updateMatrixWorld(true);
+        for (const accessory of [...head.group.children]) if (accessory.name === 'character-earring' && accessory.userData.earSide === side) group.attach(accessory);
+        this.ears.push(group);
       }
-      this.addTail(furMat, 0, 0.055, 0.035, [[0, 0, 0], [0, -0.1, -0.16], [0, -0.04, -0.34], [0, 0.16, -0.44], [0.04, 0.33, -0.42]]);
+      this.addTail(furMat, 0, .055, .035, [[0, 0, 0], [0, -.1, -.16], [0, -.04, -.34], [0, .16, -.44], [.04, .33, -.42]]);
     }
     if (d.race === 'lagto') {
-      if (hat === 'none' && (d.trait === 0 || d.trait === 5)) A.crest.forEach((c, i) => {
-        const h = [0.16, 0.22, 0.24, 0.22, 0.18, 0.13][i] * (d.trait === 5 ? 0.7 : 1);
-        mesh(paintCell(cone(0.09, h, 4, c.n, 1).scale(0.35, 1, 1), 0, 0.5, 0.95), mat, pivot(c.p.clone().addScaledVector(c.n, -0.04)));
-        if (d.trait === 5) for (const side of [-1, 1]) {
-          const n = c.n.clone().add(V(side * 0.45, 0, 0)).normalize();
-          const p = A.surf(n, 0.025).p;
-          mesh(paintCell(cone(0.045, h * 0.65, 6, n), 0, 0.5, 0.95), mat, pivot(p));
-        }
-      });
-      if (hat === 'none' && (d.trait === 1 || d.trait === 4)) for (const s of [-1, 1]) {
-        // cuernos que nacen de la superficie de la cabeza, con la base hundida
-        const { p, n } = A.surf(V(s * 0.6, 0.75, -0.25), 0.05);
-        const dir = n.clone().multiplyScalar(0.7).add(V(0, 0.15, -0.55));
-        mesh(cone(0.075, d.trait === 4 ? 0.2 : 0.4, 8, dir), flatMat('#efe4c8'), pivot(p));
+      for (const feature of head.anatomy.protrusions()) {
+        if (feature.kind === 'ear' || feature.kind === 'fin') continue;
+        const material = feature.kind === 'horn' ? flatMat('#efe4c8') : mat;
+        const geometry = cone(feature.radius, feature.length, feature.kind === 'horn' ? 12 : 6, V(0, 1, 0)).scale(feature.xScale, 1, feature.flat);
+        geometry.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), feature.direction));
+        mesh(feature.kind === 'horn' ? geometry : paintCell(geometry, 0, .5, .95), material, pivot(feature.root)).name = 'character-lineage-' + feature.kind;
       }
-      if (d.trait === 2) for (const s of [-1, 1]) {
-        // aletas laterales ancladas a la superficie y hundidas en la cabeza
-        const { p, n } = A.surf(V(s, -0.05, -0.1), 0.12);
-        const dir = n.clone().multiplyScalar(0.8).add(V(0, 0.2, -0.6));
-        const g = new THREE.ConeGeometry(0.2, 0.5, 3).translate(0, 0.2, 0);
-        g.scale(1, 1, 0.22);
-        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), dir.normalize()));
-        mesh(paintCell(g, 0, 0.5, 0.95), mat, pivot(p));
+      if (d.trait === 2) for (const side of [-1, 1]) {
+        if (!head.anatomy.ear(side).visible) continue;
+        const { fit, group } = earGroup(side);
+        mesh(paintCell(cone(fit.radius, fit.length, 12, V(0, 1, 0), fit.flat), 0, .5, .95), mat, group).name = 'character-lineage-fin';
       }
       this.addTail(mat, 0, 0.11, 0.015, [[0, 0, 0], [0, -0.08, -0.2], [0, -0.16, -0.42], [0, -0.17, -0.66]]);
     }
@@ -669,11 +699,14 @@ export class Character {
     const a = this.actions.get(name);
     if (!a) throw new Error(`Falta la animación ${name}.`);
     const from = this.oneShot ?? this.gaitAction();
+    if (name !== 'Idle_B') this.stopItemGesture();
+    this.clearGatheringTool();this.gatherAction = null;
     if (name !== 'Sit_Chair_Idle') this.seated = false;
     this.oneShot = a;
     this.interruptible = interruptible;
     this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
     a.reset();
+    a.setEffectiveWeight(1).setEffectiveTimeScale(1);
     a.setLoop(THREE.LoopOnce, 1);
     a.clampWhenFinished = true;
     a.play();
@@ -693,6 +726,7 @@ export class Character {
   stopGesture() {
     if (!this.oneShot || this.dead) return;
     const from = this.oneShot;
+    this.clearGatheringTool();this.gatherAction=null;
     this.oneShot = null;
     this.interruptible = false;
     this.playGait(from);
@@ -701,6 +735,9 @@ export class Character {
   private oneShot: THREE.AnimationAction | null = null;
   private interruptible = false;
   private nextIdleAt = Infinity;
+  private itemAction: THREE.AnimationAction | null = null;
+  private gatherAction: THREE.AnimationAction | null = null;
+  private locomotionSpeed = 0;
   private seated = false;
   private seatHeight = 0;
   private seatOffset = 0;
@@ -727,7 +764,11 @@ export class Character {
   get isSwimming() { return this.swimming; }
   private playGait(from?: THREE.AnimationAction) {
     const action = this.gaitAction();
-    action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+    // Keep the footfall phase instead of restarting the first step after every gesture.
+    const locomotion = ['Walking_A','Running_A','Crawling'].includes(from?.getClip().name ?? '');
+    const phase = from && locomotion ? from.time / from.getClip().duration : action.time / action.getClip().duration;
+    action.reset().setEffectiveWeight(1).setLoop(THREE.LoopRepeat, Infinity).play();
+    if (this.gait !== 'idle') action.time = (phase % 1) * action.getClip().duration;
     if (from && from !== action) from.crossFadeTo(action, 0.28, false);
     else action.fadeIn(0.28);
   }
@@ -743,6 +784,8 @@ export class Character {
     this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
     this.playGait(from);
   }
+  /** Actual displacement after collision, used to match footsteps to movement. */
+  setLocomotionSpeed(speed: number) { this.locomotionSpeed = Number.isFinite(speed) ? Math.max(0,speed) : 0; }
   sit(seatHeight: number) {
     if (this.dead || this.swimming || this.jumpTime >= 0) return false;
     const action = this.actions.get('Sit_Chair_Idle');
@@ -772,7 +815,7 @@ export class Character {
     this.playGait(from);
   }
   private gesture(name: string) {
-    if (this.dead || this.gait !== 'idle' || this.oneShot || this.jumpTime >= 0) return;
+    if (this.dead || this.seated || this.gait !== 'idle' || (this.oneShot && !this.interruptible) || this.jumpTime >= 0) return;
     this.play(name, true);
   }
   /** Gestos cosméticos: nunca bloquean el movimiento ni interrumpen el combate. */
@@ -780,7 +823,38 @@ export class Character {
     if (scripted && !this.dead) this.play('PickUp', true);
     else this.gesture('PickUp');
   }
-  useItem() { this.gesture('Use_Item'); }
+  useItem() {
+    if (this.dead || (this.oneShot && !this.interruptible)) return;
+    const source = this.actions.get('Use_Item');
+    if (!source) return;
+    const clip = upperBodyGesture(source.getClip());
+    let action = this.actions.get(clip.name);
+    if (!action) { action = this.mixer.clipAction(clip); this.actions.set(clip.name,action); }
+    this.itemAction = action;
+    action.reset().setEffectiveWeight(0).setLoop(THREE.LoopOnce,1).play();
+    action.clampWhenFinished = true;
+  }
+  private stopItemGesture() { this.itemAction?.fadeOut(.1); this.itemAction = null; }
+  /** Repeating hand work while a resource is being gathered; walking always cancels it. */
+  beginGathering(job?:string,tier=0) {
+    if (this.dead || this.seated || this.swimming || this.jumpTime >= 0 || (this.oneShot && !this.interruptible)) return false;
+    const name=job==='minero'?'Gather_Mine':job==='lenador'?'Gather_Chop':'Interact';
+    this.play(this.actions.has(name)?name:'Interact',true);
+    this.gatherAction = this.oneShot;
+    this.gatherAction!.setLoop(THREE.LoopRepeat,Infinity);
+    if(job){
+      this.gatheringHidden=this.heldObjects.map(object=>({object,visible:object.visible}));for(const entry of this.gatheringHidden)entry.object.visible=false;
+      const reference=kits.Knight.scene.getObjectByName('1H_Sword');
+      if(reference){const tool=new THREE.Mesh(gatheringToolGeometry(job,tier),resourceMaterial());tool.name='gathering-tool';tool.castShadow=true;tool.position.copy(reference.position);tool.quaternion.copy(reference.quaternion);tool.scale.copy(reference.scale);(this.model.getObjectByName(reference.parent!.name)??this.model).add(tool);this.gatheringTool=tool;}
+    }
+    return true;
+  }
+  private clearGatheringTool(){
+    if(this.gatheringTool){this.gatheringTool.removeFromParent();this.gatheringTool.geometry.dispose();(this.gatheringTool.material as THREE.Material).dispose();this.gatheringTool=null;}
+    for(const entry of this.gatheringHidden)entry.object.visible=entry.visible;this.gatheringHidden=[];
+  }
+  endGathering() { if (this.gatherAction && this.oneShot === this.gatherAction) this.stopGesture(); this.clearGatheringTool();this.gatherAction = null; }
+  inspect() { this.gesture('Interact'); }
   wave() { if (!this.dead) { this.play('Cheer'); this.happyReq = true; } }
   attachToChest(object: THREE.Object3D) {
     const chest = this.bones.get('chest');
@@ -792,7 +866,7 @@ export class Character {
   private hitVariant = false;
   hit() {
     // Cosmetic damage reactions must not cancel the attack the player just issued.
-    if (this.dead || this.oneShot?.getClip().name.startsWith('Combat_')) return;
+    if (this.dead || this.oneShot?.getClip().name.startsWith('Combat_') || /^Hit_[AB]$/.test(this.oneShot?.getClip().name ?? '')) return;
     this.play(this.hitVariant ? 'Hit_B' : 'Hit_A');
     this.hitVariant = !this.hitVariant;
   }
@@ -808,17 +882,20 @@ export class Character {
   /** Cae al suelo y se queda ahí hasta `revive()`. */
   die() {
     if (this.dead) return;
-    if (!this.actions.has('Death_A')) return;
     this.jumpAction?.stop();
     this.jumpAction = null;
     this.jumpTime = -1;
     this.seated = false;
     this.dead = true;
-    this.play('Death_A');
+    this.happyReq = false; this.happyUntil = this.speakUntil = -1;
+    this.updateFace(Math.max(0, this.lastT));
+    if (this.actions.has('Death_A')) this.play('Death_A');
   }
   revive() {
     if (!this.dead) return;
     this.dead = false;
+    this.blinkT = -1; this.nextBlink = Math.max(0, this.lastT) + 2;
+    this.updateFace(Math.max(0, this.lastT));
     this.seated = false;
     const from = this.oneShot;
     this.oneShot = null;
@@ -873,12 +950,17 @@ export class Character {
 
   update(t: number) {
     if (this.lastT < 0) this.nextIdleAt = t + 10 + Math.random() * 8;
-    const dt = this.lastT < 0 ? 0 : Math.min(t - this.lastT, 0.1);
+    const dt = this.lastT < 0 ? 0 : Math.max(0, Math.min(t - this.lastT, 0.1));
     this.lastT = t;
     if (!this.dead && this.gait === 'idle' && !this.oneShot && this.jumpTime < 0 && t >= this.nextIdleAt) {
       this.gesture('Idle_B');
     }
     this.updateJump(dt);
+    if (this.itemAction) {
+      const left = this.itemAction.getClip().duration - this.itemAction.time;
+      this.itemAction.setEffectiveWeight(Math.min(1,this.itemAction.time/.12,Math.max(0,left/.18)));
+      if (left <= .001) { this.itemAction.stop(); this.itemAction = null; }
+    }
     if (this.healT >= 0) {
       this.healT += dt;
       const p = this.healT / 0.7;
@@ -887,6 +969,10 @@ export class Character {
     }
     // El gateo nadando va más lento que en tierra: brazadas largas.
     this.actions.get('Crawling')?.setEffectiveTimeScale(0.75);
+    if (!this.swimming && this.gait !== 'idle' && this.locomotionSpeed > 0) {
+      const gait = this.gaitAction(), target = THREE.MathUtils.clamp(this.locomotionSpeed / (this.gait === 'run' ? 6.2 : 2.4), .25, 1.35);
+      gait.setEffectiveTimeScale(THREE.MathUtils.lerp(gait.timeScale,target,1-Math.exp(-dt*10)));
+    }
     this.mixer.update(dt);
     // Animation tracks reset bone scales, so reapply the chosen proportions afterward.
     this.applyBodyShape();
@@ -897,18 +983,23 @@ export class Character {
     if (this.tail) this.tail.forEach((g, i) => { g.rotation.y = Math.sin(t * 1.6 - i * 0.6) * 0.16; g.rotation.x = Math.sin(t * 1.1 - i * 0.5) * 0.05; });
     this.ears.forEach((e, i) => { e.rotation.x = (e.userData.rx ??= e.rotation.x) - Math.max(0, Math.sin(t * 0.7 + i * 0.4) - 0.97) * 8; });
     if (this.glow) this.glow.scale.setScalar(0.45 + Math.sin(t * 3) * 0.05);
-    // parpadeo (a veces doble)
-    if (t > this.nextBlink) { this.blinkT = t; this.nextBlink = t + (Math.random() < 0.2 ? 0.25 : 2 + Math.random() * 3.5); }
+    this.updateFace(t);
+  }
+
+  private updateFace(t: number) {
+    // Un cadáver conserva los párpados cerrados incluso al saludar, curar o hablar.
+    if (!this.dead && t > this.nextBlink) { this.blinkT = t; this.nextBlink = t + (Math.random() < 0.2 ? 0.25 : 2 + Math.random() * 3.5); }
     const bp = (t - this.blinkT) / 0.14;
     const k = bp >= 0 && bp <= 1 ? Math.max(0.08, Math.abs(bp * 2 - 1)) : 1;
     for (const e of this.eyes) e.o.scale.y = e.sy * k;
     // al saludar, ojos cerrados de alegría (^ ^)
     if (this.happyReq) { this.happyUntil = t + 1.7; this.happyReq = false; }
-    const joy = t < this.happyUntil && t > this.happyUntil - 1.45;
-    for (const e of this.eyes) e.o.visible = !joy;
+    const joy = !this.dead && t < this.happyUntil && t > this.happyUntil - 1.45;
+    for (const e of this.eyes) e.o.visible = !this.dead && !joy;
     for (const h of this.happy) h.visible = joy;
+    for (const lid of this.closedEyes) lid.visible = this.dead;
     if (this.mouth) {
-      const talking = t < this.speakUntil && !joy;
+      const talking = !this.dead && t < this.speakUntil && !joy;
       this.mouth.rest.visible = !talking;
       this.mouth.open.visible = talking;
       if (talking) this.mouth.open.scale.y = this.mouth.sy * (0.25 + 0.75 * Math.abs(Math.sin(t * 11) * Math.sin(t * 4.3 + 1)));
@@ -933,7 +1024,8 @@ export class Character {
     const height = this.d.height * 2 - 1;
     const build = this.d.build * 2 - 1;
     const scale = (name: string, x: number, y: number, z: number) => {
-      this.bones.get(name)?.scale.set(x, y, z);
+      // GLTFLoader sanitizes dots out of names such as upperarm.l.
+      (this.bones.get(name) ?? this.bones.get(name.replaceAll('.','')))?.scale.set(x, y, z);
     };
     this.model.scale.set(UNIT, UNIT * (1 + height * 0.16), UNIT);
     const hipsX = 1 + build * 0.05, hipsZ = 1 + build * 0.06;
@@ -957,6 +1049,7 @@ export class Character {
   }
 
   dispose() {
+    this.clearGatheringTool();
     this.root.removeFromParent();
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.model);

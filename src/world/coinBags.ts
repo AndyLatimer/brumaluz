@@ -55,7 +55,7 @@ export function createCoinBags(scene: THREE.Scene, citySource: City | (() => Cit
       if (taken && bag.vanishAt === null && bag.root.visible && visible) bag.vanishAt = time;
       if (!taken) bag.vanishAt = null;
       const vanish = bag.vanishAt === null ? 0 : Math.min((time - bag.vanishAt) / VANISH_SECONDS, 1);
-      bag.root.visible = visible && (!taken || (bag.vanishAt !== null && vanish < 1));
+      bag.root.visible = visible && bag.spot.mapId === city.locationId && (!taken || (bag.vanishAt !== null && vanish < 1));
       if (!bag.root.visible) continue;
       // Al recogerla, la bolsa da un saltito y se encoge; mientras tanto, solo un destello intermitente.
       bag.root.position.y = city.groundY(bag.spot.x, bag.spot.z) + Math.sin(vanish * Math.PI) * .35;

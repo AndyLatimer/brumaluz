@@ -181,6 +181,7 @@ export function renderZoneMap(body: HTMLElement, zone: string, player: () => { x
     [mapIcon('player'), 'Tu posición', 'player'], [mapIcon('npc'), 'NPC', 'npc'],
     [mapIcon('quest'), 'Objetivo de misión', 'quest'], [mapIcon('waypoint'), 'Destino personal', 'waypoint'],
     [mapIcon('exit'), 'Salida de zona', 'exit'], [mapIcon('interior'), 'Acceso a interior', 'interior'],
+    [mapIcon('ore'), 'Minerales y gemas', 'ore'], [mapIcon('wood'), 'Maderas', 'wood'], [mapIcon('herb'), 'Plantas y alimentos', 'herb'],
   ]) {
     const entry = document.createElement('span');
     const icon = document.createElement('span');
@@ -218,7 +219,18 @@ export function renderZoneMap(body: HTMLElement, zone: string, player: () => { x
     else pin.hidden = true;
     remove.disabled = !destination;
     arrow.style.transform = `rotate(${Math.PI - position.facing}rad)`;
-    const current = npcs();
+    const all=npcs(),current:MapPoint[]=all.filter(point=>!point.resource);
+    if(zoom>=4)current.unshift(...all.filter(point=>point.resource));
+    else{
+      // At continent scale, show readable groups; zoom reveals individual nodes.
+      const groups:{points:MapPoint[];x:number;z:number}[]=[],scale=chart.clientWidth*zoom/(bounds.extent*2);
+      for(const point of all.filter(point=>point.resource)){
+        const group=groups.find(group=>Math.hypot(point.x-group.x,point.z-group.z)*scale<25);
+        if(!group){groups.push({points:[point],x:point.x,z:point.z});continue;}
+        group.points.push(point);group.x+=(point.x-group.x)/group.points.length;group.z+=(point.z-group.z)/group.points.length;
+      }
+      current.unshift(...groups.map(group=>group.points.length===1?group.points[0]:({id:`resource-group:${group.points[0].id}`,x:group.x,z:group.z,kind:'resources' as const,resource:true,resourceCount:group.points.length,name:t('{n} recursos cercanos · acercar',{n:group.points.length})})));
+    }
     const ids = new Set(current.map(npc=>npc.id));
     for (const [id,node] of npcMarkers) if (!ids.has(id)) { node.remove(); npcMarkers.delete(id); }
     for (const npc of current) {
@@ -230,11 +242,16 @@ export function renderZoneMap(body: HTMLElement, zone: string, player: () => { x
         node.append(dot,tooltip); chart.append(node); npcMarkers.set(npc.id,node);
       }
       const kind = npc.kind ?? 'npc';
-      node.className = `zone-map-npc zone-map-poi-${kind}${npc.closed ? ' closed' : ''}`;
-      node.querySelector('.zone-map-poi-icon')!.innerHTML = mapIcon(kind);
+      node.className = `zone-map-npc zone-map-poi-${kind}${npc.closed ? ' closed' : ''}${npc.resource?' zone-map-resource':''}`;
+      if(node.dataset.kind!==kind){node.querySelector('.zone-map-poi-icon')!.innerHTML = mapIcon(kind);node.dataset.kind=kind;}
       node.setAttribute('aria-label',npc.name);
-      node.setAttribute('aria-description',t('Marcar destino aquí'));
-      node.onclick = () => waypoint.set({x:npc.x,z:npc.z});
+      node.setAttribute('aria-description',t(npc.resourceCount?'Acercar estos recursos':'Marcar destino aquí'));
+      let badge=node.querySelector<HTMLElement>('.zone-map-resource-count');
+      if(npc.resourceCount){if(!badge){badge=document.createElement('span');badge.className='zone-map-resource-count';node.append(badge);}badge.textContent=String(npc.resourceCount);}else badge?.remove();
+      node.onclick = () => {
+        if(npc.resourceCount){zoomTo(Math.max(4,zoom*2));centerX=(npc.x-bounds.x+bounds.extent)/(2*bounds.extent);centerZ=(npc.z-bounds.z+bounds.extent)/(2*bounds.extent);clampCenter();redraw=true;}
+        else waypoint.set({x:npc.x,z:npc.z});
+      };
       node.querySelector('.zone-map-npc-name')!.textContent=npc.name;
       positionMarker(node,npc.x,npc.z);
     }

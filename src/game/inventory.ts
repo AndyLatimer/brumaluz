@@ -106,7 +106,12 @@ export async function useInventoryItem(slot: number) {
   if (play.dead) return;
   const item=session.state.inventory[slot],extra=item&&RPG_CATALOG.items[item.id];
   if(extra?.tool){await performProfession('tool',{slot});if(ui.openWindow==='inventory')setWindow('inventory',false);return;}
-  if(extra?.recipe){await performProfession('learn',{id:extra.recipe});if(ui.openWindow==='inventory')setWindow('inventory',false);return;}
+  if(extra?.recipe){
+    if(await performProfession('use_recipe',{slot,id:item!.id,...(item!.instanceId?{instanceId:item!.instanceId}:{})})){
+      toast('Receta aprendida',RPG_CATALOG.recipes[extra.recipe].label);
+      if(ui.openWindow==='inventory')setWindow('inventory',false);
+    }return;
+  }
   if(extra?.enchant||extra?.furniture){selectProfessionTab(extra.enchant?'enchants':'furniture');setWindow('professions');void performProfession('state');return;}
   const before = totalHealth();
   const resourceBefore = vitalsOf(session.state).resource;

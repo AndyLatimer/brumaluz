@@ -3,9 +3,11 @@ import { emptyWallet, sanitizeWallet, type Wallet } from './currency';
 import { DEFAULT_TITLE, isTitleId, type TitleId } from './titles';
 import { emptyEquipment, emptyInventory, sanitizeEquipment, sanitizeInventory, type Equipment, type InventorySlots } from './inventory';
 import { parseFoodBuff, type FoodBuff } from './food';
-import { parseWelcome, parseShadowQuest, type ShadowQuest, type WelcomeProgress } from './quests';
+import { parseWelcome, parseShadowQuest, parseFairyDustQuest, type FairyDustQuest, type ShadowQuest, type WelcomeProgress } from './quests';
 import { COMBAT_KITS, skillRank, type SkillRanks } from './combat';
 import { isCoinBagId } from './coinBags';
+import { isFairyDustId } from './fairyDust';
+import { ACCESSORIES } from '../character/head/accessoryLayers';
 import { professionState, type RpgState } from './professions';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
@@ -57,6 +59,7 @@ export interface CharData {
   isbertoPosition: { x: number; z: number } | null;
   coinBags: string[]; // bolsas de pelines ya recogidas (ver coinBags.ts)
   fairyDust: string[]; // polvos de hada ya recogidos (ver fairyDust.ts)
+  fairyDustQuest: FairyDustQuest | null;
   welcome: WelcomeProgress | null;
   name: string;
   title: TitleId; // título mostrado junto al nombre (ver titles.ts)
@@ -219,7 +222,7 @@ export const CLOTH_NAMES = ['Carmesí', 'Azul real', 'Bosque', 'Púrpura', 'Oro'
 export const CAPES = ['Sin capa', 'Capa corta', 'Capa de mago', 'Capa noble', 'Capa de piel'];
 export const HAIR_ACCS = ['Ninguno', 'Flor', 'Lazo', 'Horquilla de estrella', 'Corona de flores', 'Pasador metálico', 'Broche rúnico', 'Pasador de hojas', 'Luna creciente', 'Diadema de cuentas'];
 export const HAIR_ACC_VALUES = [0, 1, 2, 3, 4, 7, 8, 9, 10, 11];
-export const ACCS = ['Ninguno', 'Gafas redondas', 'Bufanda', 'Colgante', 'Pendientes', 'Monóculo', 'Gafas y bufanda', 'Pañuelo de viajero', 'Aros de cobre', 'Pendientes de luna', 'Gafas de boticario'];
+export const ACCS = ACCESSORIES;
 export const MAKEUPS = ['Ninguno', 'Pestañas', 'Sombra de ojos', 'Labios', 'Sombra y labios', 'Brillitos', 'Rabillo gatuno', 'Polvo de hadas', 'Delineado de bosque', 'Rubor de pétalo'];
 export const ACC_COLORS = ['#e8b84a', '#c8ccd4', '#f08aa8', '#d0404a', '#4a7ad8', '#4aa86a', '#f4f0e6', '#9a6ad0', '#3a3036', '#b97850', '#6a8e78', '#729da4', '#caa4a1'];
 export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde', 'Blanco', 'Lila', 'Negro', 'Cobre', 'Salvia', 'Bruma', 'Pétalo'];
@@ -231,7 +234,7 @@ export function randomName(race: Race, r = Math.random) {
 
 export function defaultChar(): CharData {
   return {
-    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [], rpg: undefined, enchantState: undefined, partyPeers: 0, potionReadyAt: undefined, combatVisual: undefined, wilderness: undefined,
+    introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [], fairyDustQuest: null, rpg: undefined, enchantState: undefined, partyPeers: 0, potionReadyAt: undefined, combatVisual: undefined, wilderness: undefined,
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
     trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
@@ -260,6 +263,8 @@ export function sanitize(d: Record<string, unknown>): CharData {
     throw new Error('Posición de Isberto no válida.');
   out.isbertoPosition = isberto ? { x: Number(isberto.x), z: Number(isberto.z) } : null;
   out.coinBags = Array.isArray(d.coinBags) ? [...new Set(d.coinBags.filter(isCoinBagId))] : [];
+  out.fairyDust = Array.isArray(d.fairyDust) ? [...new Set(d.fairyDust.filter(isFairyDustId))] : [];
+  out.fairyDustQuest = parseFairyDustQuest(d.fairyDustQuest);
   out.foodRevision = Number.isSafeInteger(d.foodRevision) && Number(d.foodRevision) >= 0 ? Number(d.foodRevision) : 0;
   out.wallet = sanitizeWallet(d.wallet, d.gold);
   delete (out as unknown as Record<string, unknown>).gold;
@@ -336,7 +341,7 @@ export function randomChar(): CharData {
   const sex = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
   const R = RACES[race];
   return {
-    welcome: null, introSeen: false, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [],
+    welcome: null, introSeen: false, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [], fairyDustQuest: null,
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
     height: Math.random(), build: Math.random(),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],

@@ -1,0 +1,185 @@
+{
+  "report": [
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.0547436807555014,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.055607819473462494,
+      "minimumMaskSkullGap": 0.034830548318048715
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.05744815856031804,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.0563078963342829,
+      "minimumMaskSkullGap": 0.034847559209435275
+    },
+    {
+      "race": "elfo",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.0547436807555014,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "elfo",
+      "trait": 1,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.055607819473462494,
+      "minimumMaskSkullGap": 0.034830548318048715
+    },
+    {
+      "race": "elfo",
+      "trait": 2,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.05744815856031804,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "elfo",
+      "trait": 3,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.0563078963342829,
+      "minimumMaskSkullGap": 0.034847559209435275
+    },
+    {
+      "race": "elfo",
+      "trait": 4,
+      "face": 0,
+      "hair": 25,
+      "acc": 77,
+      "minimumLensSkullGap": 0.055844827828133436,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.0547436807555014,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 1,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.055607819473462494,
+      "minimumMaskSkullGap": 0.034830548318048715
+    },
+    {
+      "race": "lagto",
+      "trait": 2,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.05744815856031804,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 3,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.0563078963342829,
+      "minimumMaskSkullGap": 0.034847559209435275
+    },
+    {
+      "race": "lagto",
+      "trait": 4,
+      "face": 0,
+      "hair": 25,
+      "acc": 77,
+      "minimumLensSkullGap": 0.055844827828133436,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 5,
+      "face": 1,
+      "hair": 27,
+      "acc": 177,
+      "minimumLensSkullGap": 0.054523044921368724,
+      "minimumMaskSkullGap": 0.034830548318048715
+    },
+    {
+      "race": "pelso",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.0547436807555014,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "pelso",
+      "trait": 1,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.055607819473462494,
+      "minimumMaskSkullGap": 0.034830548318048715
+    },
+    {
+      "race": "pelso",
+      "trait": 2,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.05744815856031804,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "pelso",
+      "trait": 3,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.0563078963342829,
+      "minimumMaskSkullGap": 0.034847559209435275
+    },
+    {
+      "race": "pelso",
+      "trait": 4,
+      "face": 0,
+      "hair": 25,
+      "acc": 77,
+      "minimumLensSkullGap": 0.055844827828133436,
+      "minimumMaskSkullGap": null
+    }
+  ],
+  "errors": []
+}

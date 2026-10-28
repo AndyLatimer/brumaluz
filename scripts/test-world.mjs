@@ -8,6 +8,8 @@ import './world/social-targets.mjs';
 import './world/party.mjs';
 import './world/quests-ui.mjs';
 import './world/story.mjs';
+import './world/collectibles.mjs';
+import './world/fairy-dust-quest.mjs';
 import './world/combat.mjs';
 import './world/skills.mjs';
 import './world/menus-chat.mjs';

@@ -10,7 +10,7 @@ declare
  stamp numeric:=extract(epoch from clock_timestamp());id text:=coalesce(p_args->>'id','');job text:=coalesce(p_args->>'job','');
  item jsonb;meta jsonb;recipe jsonb;task jsonb;jobs jsonb;newjobs jsonb;entry record;outitem jsonb;inv jsonb;tool jsonb;
  slot int;idx int;n int;amount int;rank int;tier int;xp int;next_rank int;cost numeric;start_at numeric;duration numeric;cursor_at numeric;
- energy numeric;max_d numeric;original numeric;current_d numeric;loss numeric;fraction numeric;mat text;found boolean:=false;receipt jsonb;count_jobs int;px numeric;pz numeric;yaw numeric;
+ energy numeric;max_d numeric;original numeric;current_d numeric;loss numeric;fraction numeric;mat text;receipt jsonb;count_jobs int;px numeric;pz numeric;yaw numeric;
 begin
  if auth.uid() is null then raise exception 'NOT_AUTHENTICATED';end if;
  perform pg_catalog.pg_advisory_xact_lock(731029,3);
@@ -28,14 +28,57 @@ begin
  if p_args ? 'slot' then slot:=(p_args->>'slot')::int;if slot not between 0 and 1000 then raise exception 'INVALID_SLOT';end if;end if;
  rank:=public.game_rpg_rank(s,job);
 
- if p_action='learn' then
+ if p_action='learn' then raise exception 'Habla con el maestro del oficio para aprender recetas.';
+ elsif p_action in('tutorial_accept','tutorial_visit','tutorial_complete') then
+  d:=public.game_profession_tutorial_action(d,p_action,p_args,w.position,stamp);s:=d->'rpg';
+ elsif p_action='daily_order' then
+  recipe:=catalog->'dailyOrders'->'orders'->id;job:=recipe->>'job';
+  if recipe is null then raise exception 'Encargo diario no válido.';end if;
+  meta:=catalog->'teachers'->job;
+  if meta is null or meta->>'id' is distinct from p_args->>'master' or meta->>'location' is distinct from d->>'location'
+   or sqrt(power((w.position->>'x')::numeric-(meta->>'x')::numeric,2)+power((w.position->>'z')::numeric-(meta->>'z')::numeric,2))>coalesce((meta->>'radius')::numeric,3) then raise exception 'Habla con el maestro de este encargo.';end if;
+  cost:=(recipe->>'reward')::int;
+  if (p_args->>'reward')::int is distinct from cost then raise exception 'La recompensa ha cambiado. Consulta de nuevo al maestro.';end if;
+  mat:=to_char(to_timestamp(stamp) at time zone 'UTC','YYYY-MM-DD');task:=coalesce(s->'dailyOrders','{}');
+  if task->>'day' is distinct from mat then task:=jsonb_build_object('day',mat,'completed',0);end if;
+  count_jobs:=coalesce((task->>'completed')::int,0);
+  if count_jobs>=(catalog->'dailyOrders'->>'limit')::int then raise exception 'Ya has completado tus tres encargos diarios.';end if;
+  inv:=public.game_inventory(d);
+  for entry in select * from jsonb_each_text(recipe->'ingredients') loop
+   if (select coalesce(sum((value->>'count')::int),0) from jsonb_array_elements(inv) where value->>'id'=entry.key and not coalesce((value->>'bound')::boolean,false))<entry.value::int then raise exception 'Faltan los materiales o componentes sin vincular del encargo.';end if;
+  end loop;
+  for entry in select * from jsonb_each_text(recipe->'ingredients') loop
+   amount:=entry.value::int;
+   for idx in 0..24 loop
+    item:=inv->idx;if item->>'id' is distinct from entry.key or coalesce((item->>'bound')::boolean,false) then continue;end if;
+    n:=least(amount,(item->>'count')::int);amount:=amount-n;
+    inv:=jsonb_set(inv,array[idx::text],case when n=(item->>'count')::int then 'null'::jsonb else item||jsonb_build_object('count',(item->>'count')::int-n) end);exit when amount=0;
+   end loop;
+  end loop;
+  d:=public.game_set_pelines(d||jsonb_build_object('inventory',inv),public.game_pelines(d)+cost::int);
+  s:=jsonb_set(s,'{dailyOrders}',task||jsonb_build_object('completed',count_jobs+1));
+ elsif p_action='buy_recipe' then
   recipe:=catalog->'recipes'->id;
   if recipe is null or public.game_rpg_rank(s,recipe->>'job')<(recipe->>'tier')::int then raise exception 'No tienes el dominio necesario.';end if;
-  if not public.game_rpg_near(d,recipe->>'job',w.position) then raise exception 'Acércate al taller de este oficio.';end if;
+  meta:=catalog->'teachers'->(recipe->>'job');
+  if meta is null or meta->>'id' is distinct from p_args->>'master' or meta->>'location' is distinct from d->>'location'
+   or sqrt(power((w.position->>'x')::numeric-(meta->>'x')::numeric,2)+power((w.position->>'z')::numeric-(meta->>'z')::numeric,2))>coalesce((meta->>'radius')::numeric,3) then raise exception 'Habla con el maestro de este oficio.';end if;
   if s->'learned' ? id then raise exception 'Ya conoces esta receta.';end if;
-  if (recipe->>'tier')::int>0 then d:=public.game_rpg_consume(d,'receta_'||id,1);
-  else if public.game_pelines(d)<2 then raise exception 'NOT_ENOUGH_PELINES';end if;d:=public.game_set_pelines(d,public.game_pelines(d)-2);end if;
-  s:=jsonb_set(s,'{learned}',s->'learned'||to_jsonb(id));
+  cost:=(recipe->>'price')::int;
+  if cost is null or cost<0 or cost=0 and recipe->>'source' is distinct from 'drop' then raise exception 'Precio de receta no válido.';end if;
+  if (p_args->>'price')::int is distinct from cost then raise exception 'El precio ha cambiado. Consulta de nuevo al maestro.';end if;
+  if recipe->>'source'='drop' then raise exception 'Esta receta excepcional no está en venta.';end if;
+  if public.game_pelines(d)<cost then raise exception 'NOT_ENOUGH_PELINES';end if;
+  d:=public.game_rpg_give(d,public.game_rpg_new_item('receta_'||id,1),false);
+  d:=public.game_set_pelines(d,public.game_pelines(d)-cost::int);
+
+ elsif p_action='use_recipe' then
+  inv:=public.game_inventory(d);item:=inv->slot;meta:=catalog->'items'->(item->>'id');recipe:=catalog->'recipes'->(meta->>'recipe');
+  if recipe is null or item->>'id' is distinct from id or p_args ? 'instanceId' and item->>'instanceId' is distinct from p_args->>'instanceId' then raise exception 'La receta de esa casilla ha cambiado.';end if;
+  if public.game_rpg_rank(s,recipe->>'job')<(recipe->>'tier')::int then raise exception 'No tienes el dominio necesario.';end if;
+  if s->'learned' ? (recipe->>'id') then raise exception 'Ya conoces esta receta.';end if;
+  inv:=jsonb_set(inv,array[slot::text],case when (item->>'count')::int=1 then 'null'::jsonb else item||jsonb_build_object('count',(item->>'count')::int-1) end);
+  d:=d||jsonb_build_object('inventory',inv);s:=jsonb_set(s,'{learned}',s->'learned'||to_jsonb(recipe->>'id'));
 
  elsif p_action='craft' then
   recipe:=catalog->'recipes'->id;job:=recipe->>'job';tier:=(recipe->>'tier')::int;
@@ -47,7 +90,7 @@ begin
   if duration>0 and count_jobs+amount>5 then raise exception 'Máximo cinco trabajos por oficio.';end if;
   for entry in select * from jsonb_each_text(recipe->'ingredients') loop d:=public.game_rpg_consume(d,entry.key,entry.value::int*amount);end loop;
   for n in 1..amount loop
-   xp:=public.game_rpg_craft_xp(s,job,tier);outitem:=public.game_rpg_new_item(recipe->>'output',(recipe->>'count')::int);
+   xp:=public.game_rpg_recipe_xp(s,recipe);outitem:=public.game_rpg_new_item(recipe->>'output',(recipe->>'count')::int);
    if duration=0 then
     if d->>'race'='elfo' and job='alquimia' and recipe->>'output' like 'pocion_%' and random()<.25 then outitem:=outitem||jsonb_build_object('count',(outitem->>'count')::int+1);end if;
     d:=public.game_rpg_give(d,outitem,false);
@@ -123,11 +166,8 @@ begin
     s:=jsonb_set(s,array['nodes',id],to_jsonb(stamp+(meta->>'respawn')::numeric));
     s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+public.game_rpg_xp(s,job,tier)));
     s:=jsonb_set(s,array['crafts',job],to_jsonb(coalesce((s->'crafts'->>job)::int,0)+1));s:=jsonb_set(s,'{gathering}','null');
-    -- Rare, tradable recipe discoveries and restoration cores come from actual play.
+    -- Exceptional recipes come only from high-level combat; gathering retains restoration cores.
     if random()<.002 then d:=jsonb_set(d,'{rpg}',s);d:=public.game_rpg_give(d,public.game_rpg_new_item('nucleo_restauracion',1),true);s:=d->'rpg';
-    elsif random()<.08 then
-     select key into mat from jsonb_each(catalog->'recipes') r where (r.value->>'tier')::int between 1 and least(5,greatest(1,tier)) order by random() limit 1;
-     if mat is not null then d:=jsonb_set(d,'{rpg}',s);d:=public.game_rpg_give(d,public.game_rpg_new_item('receta_'||mat,1),true);s:=d->'rpg';end if;
     end if;
    end if;
   end if;
@@ -170,8 +210,6 @@ begin
   mat:=case when job in('minero','herreria','joyeria') then 'minero' when job in('lenador','carpinteria','ebanisteria') then 'lenador' else 'recolector' end;
   d:=public.game_rpg_consume(d,'material_'||mat||'_0',next_rank*20);d:=public.game_rpg_consume(d,'material_'||mat||'_'||(next_rank+1)::text,next_rank*10);
   s:=jsonb_set(s,array['mastery',job],to_jsonb(next_rank));
-  select key into mat from jsonb_each(catalog->'recipes') r where r.value->>'job'=job and (r.value->>'tier')::int=next_rank+2 order by key limit 1;
-  if mat is not null and not(s->'learned' ? mat) then s:=jsonb_set(s,'{learned}',s->'learned'||to_jsonb(mat));end if;
 
  elsif p_action='place' then
   item:=public.game_inventory(d)->slot;meta:=catalog->'items'->(item->>'id');
@@ -192,6 +230,7 @@ begin
  s:=s||jsonb_build_object('revision',p_revision+1,'requests',receipt||to_jsonb(p_request::text));d:=d||jsonb_build_object('rpg',s);
  -- Inventory changes invalidate accepted offers; both participants must review again.
  update public.player_trades set revision=revision+1,accepted_a=false,accepted_b=false,offer_a=case when a=c.id then '{"items":[],"pelines":0}'::jsonb else offer_a end,offer_b=case when b=c.id then '{"items":[],"pelines":0}'::jsonb else offer_b end where status in('open','invited') and c.id in(a,b);
+ d:=public.game_profession_tutorial_event(d,p_action,p_args,c.data);
  return public.game_store(c.id,d);
 end $$;
 revoke all on function public.rpg_action(uuid,text,jsonb,uuid,bigint) from public,anon;

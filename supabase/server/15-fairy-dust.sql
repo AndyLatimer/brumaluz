@@ -1,5 +1,6 @@
 -- ---------- Polvos de hada del mundo ----------
--- Catálogo de montones de polvo: posición y rango de recompensa (1-5 unidades). Mantener ids y posiciones iguales a src/data/fairyDust.ts.
+-- Catálogo inicial de polvo (1-5 unidades). Al publicar, world.sql lo sustituye por
+-- los puntos del editor, coordinados con src/data/world/collectibles.json.
 create or replace function public.game_fairy_dust(p_id text)
 returns jsonb language sql immutable set search_path='' as $$
   select jsonb_build_object('x',b.x,'z',b.z,'min',b.lo,'max',b.hi) from (values
@@ -23,7 +24,7 @@ begin
   if taken ? p_dust_id then raise exception 'FAIRY_DUST_TAKEN'; end if;
   select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
     and seen_at>now()-interval '15 seconds';
-  if pos is null or coalesce(d->>'location','brumaluz')<>'brumaluz' then raise exception 'FAIRY_DUST_NOT_PLAYING'; end if;
+  if pos is null or coalesce(d->>'location','brumaluz')<>coalesce(dust->>'location','brumaluz') then raise exception 'FAIRY_DUST_NOT_PLAYING'; end if;
   if power((pos->>'x')::numeric-(dust->>'x')::numeric,2)+power((pos->>'z')::numeric-(dust->>'z')::numeric,2)>9
     then raise exception 'FAIRY_DUST_TOO_FAR'; end if;
   amount:=1+floor(random()*5)::int;
@@ -31,7 +32,38 @@ begin
     d:=public.game_add_item(d,'polvo_de_hada');
   end loop;
   d:=d||jsonb_build_object('fairyDust',taken||to_jsonb(p_dust_id));
+  if d->>'fairyDustQuest' is null then
+    d:=d||jsonb_build_object('fairyDustQuest','ask_gnomi');
+  end if;
   return public.game_store(c.id,d);
 end $$;
 revoke all on function public.collect_fairy_dust(uuid,text) from public,anon;
 grant execute on function public.collect_fairy_dust(uuid,text) to authenticated;
+
+-- El descubrimiento solo avanza al preguntar. No consume polvo ni entrega premios.
+create or replace function public.fairy_dust_quest_action(p_character_id uuid)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  c public.characters:=public.game_lock_character(p_character_id);
+  d jsonb:=c.data; pos jsonb; target_x numeric:=153.5; target_z numeric:=0; following boolean;
+begin
+  if d->>'fairyDustQuest' is distinct from 'ask_gnomi' then raise exception 'FAIRY_DUST_QUEST_STATE'; end if;
+  if public.game_health(d)=0 then raise exception 'FAIRY_DUST_DEAD'; end if;
+  select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
+    and seen_at>now()-interval '15 seconds' for update;
+  if pos is null or coalesce(d->>'location','brumaluz')<>'brumaluz' then raise exception 'FAIRY_DUST_QUEST_TOO_FAR'; end if;
+  -- Gnomi es un acompañante personal móvil durante la bienvenida, como en welcome_action(claim).
+  following:=coalesce(d->'welcome'->>'stage' in ('active','found','completed'),false)
+    and coalesce(d->>'shadowQuest','') not in ('returning','returned');
+  if not following then
+    if jsonb_typeof(d->'welcome')='object' and d->>'shadowQuest' in ('returning','returned') then
+      target_x:=-3.5;
+    end if;
+    if power((pos->>'x')::numeric-target_x,2)+power((pos->>'z')::numeric-target_z,2)>16 then
+      raise exception 'FAIRY_DUST_QUEST_TOO_FAR';
+    end if;
+  end if;
+  return public.game_store(c.id,d||jsonb_build_object('fairyDustQuest','arboleda'));
+end $$;
+revoke all on function public.fairy_dust_quest_action(uuid) from public,anon;
+grant execute on function public.fairy_dust_quest_action(uuid) to authenticated;

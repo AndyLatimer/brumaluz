@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { coatMark } from '../../data/data';
 import type { HeadOptions } from './types';
 import { V, softBlushTexture, PI } from './geometry';
+import { detailParts } from './detailLayers';
 
 /** Detalles de la cara de la cabeza (parte de buildHead). */
 export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, rayHead, nose, o, mouthY }: { extraMat: (c: string) => THREE.Material; facing: (x: number, y: number) => THREE.Euler; onFace: (x: number, y: number, out?: number) => THREE.Vector3; conform: (grp: THREE.Object3D, lift: number, clampY?: number) => void; decals: THREE.Object3D[]; rayHead: (o: THREE.Vector3, d: THREE.Vector3) => { point: THREE.Vector3; normal: THREE.Vector3; } | null; nose: THREE.Vector3; o: HeadOptions; mouthY: number }) {
@@ -47,7 +48,8 @@ export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, ra
     decals.push(new THREE.Mesh(geometry, extraMat('#3a6ab8')));
   };
   const cheekY = nose.y - 0.04;
-  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: o.makeup === 9 ? o.makeupColor : '#ff6f7a', transparent: true, opacity: o.detail === 1 || o.makeup === 9 ? 0.85 : o.race === 'lagto' ? 0.16 : (o.makeup ?? 0) > 0 ? 0.42 : 0.24, depthWrite: false });
+  const details = detailParts(o.detail);
+  const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: o.makeup === 9 ? o.makeupColor : '#ff6f7a', transparent: true, opacity: details.includes(1) || o.makeup === 9 ? 0.85 : o.race === 'lagto' ? 0.16 : (o.makeup ?? 0) > 0 ? 0.42 : 0.24, depthWrite: false });
   for (const s of [-1, 1]) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.14, 12, 8), blushMat);
     const r = facing(s * 0.27, cheekY);
@@ -58,7 +60,7 @@ export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, ra
     m.renderOrder = 2;
     decals.push(patch);
   }
-  switch (o.detail) {
+  for (const detail of details) switch (detail) {
     case 1: break;
     case 2: for (const s of [-1, 1]) for (let k = 0; k < 5; k++) decal(new THREE.CircleGeometry(0.011, 6), '#a0603a', s * (0.2 + (k % 3) * 0.045), cheekY + (k % 2 ? 0.03 : -0.01) - (k > 2 ? 0.035 : 0), 0, V(1, 1, 1), 0.006); break;
     case 3: // cicatriz en la mejilla, con puntadas

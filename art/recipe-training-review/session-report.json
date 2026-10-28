@@ -1,0 +1,350 @@
+{
+  "scope": "Accelerated scripted solo warrior route, not a human playtest. Entire SQL world, enemy AI, rewards, regeneration, travel and crafting; actual client collision/movement. No latency, competition, dialogue reading or clicking time. Combat uses 0.25 s steps, movement 0.5 s and safe stationary waits 5 s presence heartbeats; idle patrols are not benchmarked.",
+  "initialState": "Minimal test checkpoint: human warrior, level 1, XP 0, two unspent creation points, rank-one skill, starter equipment, empty bags, 5 Pelines, welcome marked completed and returned from Isberto. The 40 welcome XP are omitted; this is a conservative control, not a replay of the tutorial. Only this checkpoint is seeded; subsequent progress uses RPCs.",
+  "liveWrites": false,
+  "times": {
+    "travel": 238.5,
+    "approach": 40,
+    "combat movement": 1.5,
+    "combat": 416.25,
+    "loot": 22.5,
+    "respawn/recovery": 3949,
+    "teacher": 1,
+    "gathering travel": 45.5,
+    "gathering wait": 27.5,
+    "crafting": 1,
+    "crafting wait": 230.5
+  },
+  "distance": 1930,
+  "kills": 45,
+  "events": [
+    {
+      "label": "Outside Brumaluz",
+      "seconds": 27.5,
+      "pelines": 5,
+      "level": 1,
+      "health": 66,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 5, projected funds 40",
+      "seconds": 456.75,
+      "pelines": 30,
+      "level": 2,
+      "health": 42,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 10, projected funds 75",
+      "seconds": 956.75,
+      "pelines": 55,
+      "level": 2,
+      "health": 55,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 15, projected funds 110",
+      "seconds": 1456.75,
+      "pelines": 80,
+      "level": 2,
+      "health": 54,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 20, projected funds 145",
+      "seconds": 1956.75,
+      "pelines": 105,
+      "level": 3,
+      "health": 69,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 25, projected funds 180",
+      "seconds": 2456.75,
+      "pelines": 130,
+      "level": 3,
+      "health": 68,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 30, projected funds 215",
+      "seconds": 2956.75,
+      "pelines": 155,
+      "level": 3,
+      "health": 68,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 35, projected funds 250",
+      "seconds": 3456.75,
+      "pelines": 180,
+      "level": 3,
+      "health": 69,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 40, projected funds 285",
+      "seconds": 3956.75,
+      "pelines": 205,
+      "level": 3,
+      "health": 68,
+      "professionXP": {}
+    },
+    {
+      "label": "Kills 45, projected funds 320",
+      "seconds": 4456.75,
+      "pelines": 230,
+      "level": 4,
+      "health": 82,
+      "professionXP": {}
+    },
+    {
+      "label": "Enough funds including surplus loot",
+      "seconds": 4456.75,
+      "pelines": 230,
+      "level": 4,
+      "health": 82,
+      "professionXP": {}
+    },
+    {
+      "label": "Loot sold",
+      "seconds": 4502.25,
+      "pelines": 320,
+      "level": 4,
+      "health": 105,
+      "professionXP": {}
+    },
+    {
+      "label": "Basic recipe and mining tool purchased",
+      "seconds": 4528.25,
+      "pelines": 250,
+      "level": 4,
+      "health": 105,
+      "professionXP": {}
+    },
+    {
+      "label": "Five iron gathered while components run",
+      "seconds": 4656.25,
+      "pelines": 250,
+      "level": 4,
+      "health": 105,
+      "professionXP": {
+        "minero": 65,
+        "herreria": 50
+      }
+    },
+    {
+      "label": "First crafted upgrade equipped",
+      "seconds": 4973.25,
+      "pelines": 0,
+      "level": 4,
+      "health": 105,
+      "professionXP": {
+        "minero": 65,
+        "herreria": 130
+      }
+    }
+  ],
+  "errors": [],
+  "upgrade": {
+    "item": {
+      "id": "espada_cobre_t1",
+      "bound": true,
+      "count": 1,
+      "instanceId": "2f15658e-8786-45eb-8483-e6f5e6dd0727"
+    },
+    "before": 11.130000000000003,
+    "after": 12.243000000000002
+  },
+  "complete": true,
+  "seconds": 4973.25,
+  "final": {
+    "level": 4,
+    "pelines": 0,
+    "inventory": [
+      {
+        "id": "espada_inicial",
+        "bound": true,
+        "count": 1,
+        "instanceId": "9f78884d-5c73-4bb9-85d8-66fd47ef4ac6"
+      },
+      {
+        "id": "material_minero_0",
+        "count": 54
+      },
+      {
+        "id": "componente_herreria_0",
+        "count": 4
+      },
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "profession": {
+      "at": 1793107373.25,
+      "xp": {
+        "minero": 65,
+        "herreria": 130
+      },
+      "jobs": [
+        {
+          "id": "bf1bfa40-73ac-4515-9f08-f2456801f329",
+          "xp": 10,
+          "end": 1793106953.75,
+          "job": "herreria",
+          "done": true,
+          "start": 1793106928.25,
+          "output": {
+            "id": "componente_herreria_0",
+            "count": 1
+          },
+          "recipe": "componente_herreria_0",
+          "ingredients": {
+            "material_minero_0": 3
+          }
+        },
+        {
+          "id": "45863546-19d7-4c8b-b47a-10bdcaaaa464",
+          "xp": 10,
+          "end": 1793106979.25,
+          "job": "herreria",
+          "done": true,
+          "start": 1793106953.75,
+          "output": {
+            "id": "componente_herreria_0",
+            "count": 1
+          },
+          "recipe": "componente_herreria_0",
+          "ingredients": {
+            "material_minero_0": 3
+          }
+        },
+        {
+          "id": "63000d21-7dfb-4806-9b17-c9df10fd989e",
+          "xp": 10,
+          "end": 1793107004.75,
+          "job": "herreria",
+          "done": true,
+          "start": 1793106979.25,
+          "output": {
+            "id": "componente_herreria_0",
+            "count": 1
+          },
+          "recipe": "componente_herreria_0",
+          "ingredients": {
+            "material_minero_0": 3
+          }
+        },
+        {
+          "id": "54294792-88cb-498e-a10b-4cf042d672cc",
+          "xp": 10,
+          "end": 1793107030.25,
+          "job": "herreria",
+          "done": true,
+          "start": 1793107004.75,
+          "output": {
+            "id": "componente_herreria_0",
+            "count": 1
+          },
+          "recipe": "componente_herreria_0",
+          "ingredients": {
+            "material_minero_0": 3
+          }
+        },
+        {
+          "id": "ffef2cb8-27cf-4448-8b51-d9bc1040604f",
+          "xp": 10,
+          "end": 1793107055.75,
+          "job": "herreria",
+          "done": true,
+          "start": 1793107030.25,
+          "output": {
+            "id": "componente_herreria_0",
+            "count": 1
+          },
+          "recipe": "componente_herreria_0",
+          "ingredients": {
+            "material_minero_0": 3
+          }
+        }
+      ],
+      "nodes": {
+        "minero_1_1": 1793107506.75,
+        "minero_1_2": 1793107536.25,
+        "minero_1_4": 1793107516.25,
+        "minero_1_6": 1793107497.25,
+        "minero_1_7": 1793107526.75
+      },
+      "tools": {
+        "minero": {
+          "id": "herramienta_minero_0",
+          "count": 1,
+          "durability": 98.125,
+          "instanceId": "f5169197-880e-4946-a737-27afda682f1f",
+          "maxDurability": 100,
+          "originalDurability": 100
+        }
+      },
+      "crafts": {
+        "minero": 5,
+        "herreria": 11
+      },
+      "energy": 89.64975845410628,
+      "learned": [
+        "componente_herreria_0",
+        "espada_cobre_t1"
+      ],
+      "mastery": {},
+      "version": 1,
+      "projects": {},
+      "requests": [
+        "24983d4e-f3f5-459c-8e6b-5ec5b2b62af9",
+        "9f17feb4-13aa-4cdb-84fe-31336bc0a549",
+        "834a1b9e-f557-401d-bcd4-62eedd69c96e",
+        "e979374a-e659-4f4d-af53-8f3a164990fd",
+        "e8345794-1041-4610-90ce-7b0e8fea433b",
+        "675c21c8-ba3d-447e-9c70-e8a20c0c6003",
+        "65296616-a56f-49a4-b674-948a29b392dc",
+        "143b7623-5a15-4224-a5bc-5ec07417c97f",
+        "8727d008-fcae-4509-b3b4-8134408c897f",
+        "e5258181-6309-43c9-98e6-4383f910ce6d",
+        "69c33520-9ca2-44c1-ab96-9d2f27612501",
+        "d8b9d978-d60e-4c1e-beb1-2dab75599092",
+        "5295a333-bfdf-4d20-81c1-753a76f0a158",
+        "31abc792-845b-4365-8b68-c42e61a2d2d9",
+        "2f426a8a-c124-40a0-92fb-6a305b8b2a3b",
+        "243fb0fb-5dd9-4621-b9cc-cde00a3503dc",
+        "d916d36b-e2ed-4fef-a754-90a3cfd166d8",
+        "110995a8-0c81-43f9-a32c-5a7697728cf6",
+        "c09137f7-5dda-4b91-b63b-5a522fb15c96",
+        "68d68478-e2ba-4d9e-b355-1dfab638f71f",
+        "59e717a3-5106-4719-98e8-679351880842",
+        "58003422-f69c-47eb-8b02-cf1db92f449d",
+        "38f58763-c10e-4bb0-9285-4bc9f58591df"
+      ],
+      "revision": 23,
+      "furniture": [],
+      "gathering": null,
+      "deliveries": []
+    }
+  }
+}

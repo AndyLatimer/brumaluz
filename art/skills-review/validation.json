@@ -1,0 +1,13 @@
+{
+  "typecheck": "passed: npx tsc --noEmit",
+  "build": "passed: production bundle contains final comparison, point labels and focus handling",
+  "progression": "passed: scripts/test-skill-progression.mjs, client and isolated PostgreSQL for all five classes",
+  "visual": "passed: tools/review-skills.mjs, desktop and 390/320px, all five classes, confirmation, success, maximum rank and English",
+  "browser": {
+    "upgrades": "passed: browser-tests.tap subtest 2",
+    "quickbarPersistence": "passed: browser-tests.tap subtest 3",
+    "onlineFailureRetryAndReconnect": "passed: browser-tests.tap subtest 4",
+    "controlsDragAndHealing": "passed: browser-controls.tap; rerun after waiting for the next quickbar refresh instead of reading it synchronously"
+  },
+  "deployment": "not applied; server-patch.sql updates only game_skill_rank and upgrade_skill before publishing the client"
+}

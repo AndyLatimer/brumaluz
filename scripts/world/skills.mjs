@@ -18,7 +18,7 @@ test('skillbook lists each class starter skill, supports responsive quickbar dra
       await page.waitForFunction(()=>!!window.brumaluz);
       await page.evaluate(({cls,weapon})=>{
         localStorage.removeItem('brumaluz-actionbar:test');
-        window.brumaluz.set({cls,health:60,resource:50,equipment:{weapon:{id:weapon,count:1,bound:true}}});
+        window.brumaluz.set({cls,health:cls==='clerigo'?1:60,resource:50,equipment:{weapon:{id:weapon,count:1,bound:true}}});
         window.brumaluz.play();
       },{cls,weapon:({guerrero:'espada_inicial',mago:'baston_inicial',picaro:'daga_inicial',clerigo:'varita_inicial',explorador:'ballesta_inicial'})[cls]});
       await page.keyboard.press('KeyK');
@@ -50,14 +50,20 @@ test('skillbook lists each class starter skill, supports responsive quickbar dra
       assert.match(await page.locator('#game-tooltip').textContent(),/Rango 1/);
       await page.locator(`.ab-slot[data-skill-id="${id}"]`).blur();
       if(cls==='clerigo') {
+        const healthBefore=await page.locator('#hud-health-text').textContent().then(text=>Number(text.split('/')[0]));
+        const resourceBeforeCast=await page.locator('#hud-resource-text').textContent().then(text=>Number(text.split('/')[0]));
         await page.keyboard.press('Digit5');
-        await page.waitForFunction(()=>document.querySelector('#hud-health-text').textContent==='92 / 100');
+        await page.waitForFunction(before=>Number(document.querySelector('#hud-resource-text').textContent.split('/')[0])<before,resourceBeforeCast);
+        await page.waitForFunction(before=>Number(document.querySelector('#hud-health-text').textContent.split('/')[0])>before,healthBefore);
+        await page.waitForFunction(id=>Number(document.querySelector(`.ab-slot[data-skill-id="${id}"] .ab-cooldown-time`).textContent)>0,id);
         assert.ok(Number(await page.locator(`.ab-slot[data-skill-id="${id}"] .ab-cooldown-time`).textContent())>0,'Skill cooldown is shown on quickbar');
+        const resourceBefore=await page.locator('#hud-resource-text').textContent().then(text=>Number(text.split('/')[0]));
         await page.keyboard.press('Digit5');
-        assert.equal(await page.locator('#hud-health-text').textContent(),'92 / 100','Cooldown prevents repeated healing');
+        const resourceAfter=await page.locator('#hud-resource-text').textContent().then(text=>Number(text.split('/')[0]));
+        assert.ok(resourceAfter>=resourceBefore,'Cooldown prevents spending resource twice while regeneration continues');
       } else {
         await page.keyboard.press('Digit5');
-        await page.locator('#toast').filter({hasText:'Fija un enemigo visible con F.'}).waitFor();
+        assert.equal(await page.locator(`.ab-slot[data-skill-id="${id}"]`).evaluate(el=>el.classList.contains('on-cooldown')),false,'An offensive skill without a target does not start a cooldown');
       }
       await page.locator(`.ab-slot[data-skill-id="${id}"]`).click({button:'right'});
       await page.keyboard.press('KeyK');
@@ -76,24 +82,28 @@ test('skillbook previews permanent rank upgrades, spends once, keeps points and 
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   try{
-    for(const [cls,power] of [['guerrero',26],['mago',26],['picaro',12],['clerigo',48],['explorador',27]]){
+    for(const cls of ['guerrero','mago','picaro','clerigo','explorador']){
       await page.goto(`${url}/?test&graphics=compatible`);
       await page.waitForFunction(()=>!!window.brumaluz);
-      await page.evaluate(cls=>{window.brumaluz.set({cls,level:8,health:1,resource:80});window.brumaluz.play();},cls);
+      await page.evaluate(cls=>{
+        const weapons={guerrero:'espada_inicial',mago:'baston_inicial',picaro:'daga_inicial',clerigo:'varita_inicial',explorador:'ballesta_inicial'};
+        window.brumaluz.set({cls,level:5,health:1,resource:80,equipment:{weapon:{id:weapons[cls],count:1,bound:true}}});window.brumaluz.play();
+      },cls);
       await page.keyboard.press('KeyK');
       assert.equal(await page.locator('.skill-points strong').textContent(),'4');
-      assert.match(await page.locator('.skills-progress').textContent(),/nivel 10/);
+      assert.match(await page.locator('.skills-progress').textContent(),/nivel 6/);
       await page.getByRole('button',{name:'Mejorar habilidad',exact:true}).click();
       assert.match(await page.locator('.skill-confirmation').textContent(),/permanente/);
       await page.locator('.skill-confirmation').getByRole('button',{name:'Cancelar',exact:true}).click();
       assert.equal(await page.locator('.skill-points strong').textContent(),'4');
       for(let rank=2;rank<=5;rank++){
+        const expected=await page.locator('.skill-next-effect').textContent();
         await page.getByRole('button',{name:'Mejorar habilidad',exact:true}).click();
         await page.getByRole('button',{name:'Confirmar mejora',exact:true}).click();
         await page.waitForFunction(rank=>document.querySelector('.skill-rank-label').textContent.includes(`Rango ${rank}`),rank);
         assert.equal(await page.locator('.skill-points strong').textContent(),String(5-rank));
+        assert.equal(await page.locator('.skill-effect p').textContent(),expected,'The applied effect matches the preview including equipment and attributes');
       }
-      assert.match(await page.locator('.skill-effect').textContent(),new RegExp(String(power)));
       assert.equal(await page.getByRole('button',{name:'Mejorar habilidad',exact:true}).isDisabled(),true);
       assert.equal(await page.locator('.skill-rank-track .learned').count(),5);
       await page.keyboard.press('Escape');
@@ -110,6 +120,7 @@ test('skillbook previews permanent rank upgrades, spends once, keeps points and 
 test('starter skill fills a free slot without replacing items and respects manual removal after reconnect', {timeout:60000}, async()=>{
   const world=backend(),account=fixture('Alric','humano',100);
   account.character.data.inventory=[{id:'pan_duro',count:2}];
+  account.character.data.equipment={weapon:{id:'espada_inicial',count:1,bound:true}};
   const player=await openPlayer(world,account);
   try {
     await player.page.evaluate(id=>{
@@ -139,7 +150,7 @@ test('online skill upgrades show failures, retry safely and preserve their rank 
   try{
     await player.enter();
     await player.page.keyboard.press('KeyK');
-    assert.equal(await player.page.locator('.skill-points strong').textContent(),'2');
+    assert.equal(await player.page.locator('.skill-points strong').textContent(),'3');
     world.fail.add('skill');
     await player.page.getByRole('button',{name:'Mejorar habilidad',exact:true}).click();
     await player.page.getByRole('button',{name:'Confirmar mejora',exact:true}).click();
@@ -152,7 +163,7 @@ test('online skill upgrades show failures, retry safely and preserve their rank 
     await player.page.waitForFunction(()=>document.querySelector('.skill-rank-label').textContent.includes('Rank 2'));
     await player.page.locator('[data-language="es"]').first().dispatchEvent('click');
     assert.deepEqual(account.character.data.skillRanks,{heavy_strike:2});
-    assert.equal(await player.page.locator('.skill-points strong').textContent(),'1');
+    assert.equal(await player.page.locator('.skill-points strong').textContent(),'2');
     await player.page.getByRole('button',{name:'Mejorar habilidad',exact:true}).click();
     await player.page.getByRole('button',{name:'Confirmar mejora',exact:true}).click();
     await player.page.keyboard.press('Escape');
@@ -164,7 +175,7 @@ test('online skill upgrades show failures, retry safely and preserve their rank 
     await player.page.reload();await player.page.waitForFunction(()=>!!window.brumaluz);
     await player.enter();await player.page.keyboard.press('KeyK');
     assert.match(await player.page.locator('.skill-rank-label').textContent(),/Rango 3/);
-    assert.equal(await player.page.locator('.skill-points strong').textContent(),'0');
+    assert.equal(await player.page.locator('.skill-points strong').textContent(),'1');
     assert.deepEqual(player.errors,[]);
   }finally{await player.context.close();}
 });

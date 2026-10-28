@@ -12,6 +12,7 @@ import {
 import { collisionBox, loadMapAssetTemplate, type MapAssetInfo } from '../../world/mapAssets';
 import { CollisionOverlay, ColliderLayer, MarkerLayer } from './overlays';
 import { History, type SceneState } from './history';
+import { ResourceLayer } from '../../world/resourceLayer';
 
 // Estado compartido del editor: escena, documento, índices, selección e historial.
 
@@ -68,7 +69,7 @@ export const npcModels: NpcModelSource = { model: async () => null };
 export const markerLayer = new MarkerLayer(labels, npcId => npcModels.model(npcId));
 scene.add(environment.root, grass.root, objectLayer.root, colliderLayer.root, markerLayer.root, collisionOverlay.root);
 
-export type ToolId = 'select' | 'place' | 'scatter' | 'erase' | 'sculpt' | 'paint' | 'water' | 'grass' | 'collider' | 'marker';
+export type ToolId = 'select' | 'place' | 'scatter' | 'erase' | 'sculpt' | 'paint' | 'water' | 'grass' | 'collider' | 'marker' | 'collectible';
 export type EntityKind = 'o' | 'c' | 'm';
 export type Entity =
   | { kind: 'o'; key: string; data: MapObject }
@@ -250,9 +251,19 @@ export function syncScene() {
   objectLayer.sync(state.doc.objects, state.doc.layers);
   colliderLayer.sync(state.doc.colliders, state.doc.layers);
   markerLayer.sync(state.doc.markers, state.doc.layers, state.field);
+  syncResources();
   for (const key of [...state.selection]) if (!entity(key)) state.selection.delete(key);
   scheduleCollision();
   emit(events.changed);
+}
+let resourcePreview:ResourceLayer|null=null,resourceMap='';
+/** Derived resources are a preview, never duplicated into the editable map document. */
+function syncResources(){
+ const signature=`${state.doc.id}:${state.field.data.heights.length}`;
+ if(resourceMap===signature&&resourcePreview){resourcePreview.fitTerrain((x,z)=>state.field.heightAt(x,z));return;}
+ resourcePreview?.dispose();resourceMap=signature;
+ resourcePreview=new ResourceLayer(state.doc.id,(x,z)=>state.field.heightAt(x,z));
+ resourcePreview.root.name='editor-resource-preview';scene.add(resourcePreview.root);
 }
 let collisionTimer = 0;
 export function scheduleCollision(delay = 250) {

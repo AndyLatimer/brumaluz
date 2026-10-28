@@ -20,16 +20,18 @@ import { buildEyes } from './head/eyes';
 import { buildFaceDetails, buildLineageMarks } from './head/faceDetails';
 import { buildLineageFeatures } from './head/lineage';
 import { buildAccessories } from './head/accessories';
+import { createHeadAnatomy } from './head/anatomy';
+import { hasTravelerMask } from './head/accessoryLayers';
 
 export type { HeadKit, HeadSource, CreatorParts, HeadOptions, HeadResult } from './head/types';
 
-export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado', 'Melena de explorador', 'Flequillo de viajero', 'Trenza lateral', 'Trenzas de la Arboleda', 'Moño de artesano', 'Coleta de aventurero', 'Ondas de Bruma', 'Corona trenzada'];
+export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado', 'Melena de explorador', 'Flequillo de viajero', 'Trenza lateral', 'Trenzas de la Arboleda', 'Moño de artesano', 'Coleta de aventurero', 'Ondas de Bruma', 'Corona trenzada', 'Trenza alta', 'Moño trenzado', 'Melena a un lado', 'Rizos cortos', 'Trenzas recogidas', 'Dos moños trenzados'];
 export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla y bigote', 'Bigote', 'Perilla', 'Patillas', 'Barba de tres días', 'Bigote de artesano'];
 export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados', 'Almendrados', 'Curiosos', 'Serenos', 'Vivaces'];
 export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas', 'Arqueadas', 'Rectas', 'Suaves'];
 export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón', 'Recta', 'Redondeada', 'Delicada'];
 export const MOUTHS = ['Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo', 'Sonrisa tímida', 'Dos colmillos', 'Sonrisa de lado'];
-export const DETAILS = ['Ninguno', 'Rubor', 'Pecas', 'Cicatriz', 'Pintura de guerra', 'Lunar', 'Pecas de sol', 'Constelación', 'Marca de hoja', 'Cicatriz de ceja', 'Runas de la Arboleda'];
+export { DETAILS } from './head/detailLayers';
 export const FACE_LABELS: Record<HeadKit, string> = { Mage: 'Serio', Knight: 'Noble', Rogue: 'Dulce', Barbarian: 'Cuadrada' };
 export const FACE_KITS: HeadKit[] = ['Rogue', 'Mage', 'Knight', 'Barbarian'];
 
@@ -47,21 +49,30 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   const { conform, beardGeos } = buildBeard({ o, mouthY, rayHead, headR, hairCell });
 
-  const { decals, eyes, happy } = buildEyes({ extraMat, A, facing, onFace, E, o, beast, E0, conform, B, material });
+  const { decals, eyes, happy, closed } = buildEyes({ extraMat, A, facing, onFace, E, o, beast, E0, conform, B, material });
 
   const { decal, cheekY, blushMat } = buildFaceDetails({ extraMat, facing, onFace, conform, decals, rayHead, nose, o, mouthY });
 
   buildLineageMarks({ o, decal, nose, cheekY });
 
-  const { topRay, topAt, finalHair, crest } = buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, headAt, skinParts });
+  const anatomy = createHeadAnatomy(o, headAt);
+  const { topRay, topAt, finalHair, crest } = buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, headAt, skinParts, anatomy });
 
-  const { makeupCol, tops, onHair } = buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, frontZ, onFace, parts, pushOut, beast, blushMat, facing, topAt, conform });
+  const { makeupCol, tops, onHair } = buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, frontZ, onFace, parts, blushMat, facing, topAt, conform, anatomy, skinParts });
 
   // ---------- Montaje en el espacio del hueso ----------
   const finish = (m: THREE.Mesh) => { m.geometry.applyMatrix4(toBone); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
   headMesh.name='character-skull';
   finish(headMesh);
-  for (const g of skinParts) finish(new THREE.Mesh(smoothNormals(g, 80), material(o.face)));
+  for (const g of skinParts) {
+    const mesh = finish(new THREE.Mesh(smoothNormals(g, 80), material(o.face)));
+    if (g.userData.earSide) {
+      const ear = new THREE.Group(), fit = anatomy.ear(g.userData.earSide);
+      ear.name = 'character-ear'; ear.userData.earSide = g.userData.earSide; ear.userData.earKind = fit.kind;
+      ear.userData.earLobeLocal = fit.lobe.applyMatrix4(toBone).toArray();
+      mesh.name = 'character-ear-outer'; ear.add(mesh); group.add(ear);
+    }
+  }
   for (const h of extras) finish(new THREE.Mesh(h.geo, material(h.kit)));
   for (const h of finalHair) {
     const hairMaterial = material(h.kit);
@@ -70,8 +81,10 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
     ownedMaterials.push(doubleSided);
     const mesh = finish(new THREE.Mesh(h.geo, doubleSided));
     mesh.name = 'character-hair';
+    // Authored locks and their thin backing cast onto skin; self-shadowing between them creates acne.
+    mesh.receiveShadow = ![12, 13, 14, 15].includes(o.hair);
   }
-  for (const g of beardGeos) finish(new THREE.Mesh(g, material(o.face)));
+  for (const g of beardGeos) { const beard = new THREE.Mesh(g, material(o.face)); beard.name = 'character-beard'; finish(beard); }
   // la boca sigue la curva de la cara (en la cara "Dulce" los labios abultan y la tapaban)
   const hugFace = (g: THREE.BufferGeometry | null) => {
     if (!g) return g;
@@ -88,7 +101,8 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   // La boca vive en un grupo propio para poder animarla al hablar: la boca en reposo se oculta y una boca
   // abierta (óvalo oscuro) se abre y cierra. Las geometrías se centran en el pivote para escalar desde ahí.
   const mouthRig = new THREE.Group();
-  mouthRig.visible = o.acc !== 7;
+  mouthRig.name = 'character-mouth-rig';
+  mouthRig.visible = !hasTravelerMask(o.acc ?? 0);
   mouthRig.position.copy(mp);
   const rest = new THREE.Group();
   mouthRig.add(rest);
@@ -137,14 +151,16 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
   });
   return {
     group,
+    anatomy,
     ownedMaterials,
     toBone,
     eyes,
     happy,
+    closed,
     mouth: { rest, open: openPivot },
     skullSurface: dir => headAt(dir, 0),
     anchors: {
-      ear: (s) => headAt(V(s, -0.2, -0.05), -0.01), top: (s) => tops[s < 0 ? -1 : 1].clone(), crest,
+      ear: (s) => anatomy.ear(s).root, top: (s) => tops[s < 0 ? -1 : 1].clone(), crest,
       // punto real de la superficie (pelo o cabeza) en una dirección, hundido hacia dentro
       surf: (dir, sink = 0.05) => { const n = dir.clone().normalize(); return { p: onHair(n, -sink), n }; },
     },

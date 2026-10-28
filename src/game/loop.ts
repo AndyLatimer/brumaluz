@@ -27,6 +27,8 @@ import { play, view, story, talk, ui, session } from './state';
 import { updateTargetFrame } from './targets';
 import { tickOverheal, tickFood } from './vitals';
 import { remotePlayers } from './worldClient';
+import { creatorStage, camTarget } from './stage';
+import { CREATOR_STAGE_Y } from '../world/creatorStage';
 
 /** Arranca el bucle de render (una vez, al terminar de cargar). */
 export function startGameLoop() {
@@ -34,6 +36,11 @@ export function startGameLoop() {
     if (graphics.failed) return;
     try {
     const t = clock.getElapsedTime();
+    creatorStage.visible = play.mode === 'create';
+    if (creatorStage.visible) {
+      if (holder.position.y !== CREATOR_STAGE_Y) camTarget.set(0, CREATOR_STAGE_Y + 1, 0);
+      holder.position.set(0, CREATOR_STAGE_Y, 0);
+    }
     const dt = Math.min(t - play.last, 0.05);
     play.last = t;
     world.uTime.value = t;
@@ -53,7 +60,7 @@ export function startGameLoop() {
         isberto.character.root.position.copy(play.city.collide(destination, destination.clone()));
         isberto.character.root.position.y = play.city.groundY(isberto.character.root.position.x, isberto.character.root.position.z);
       }
-      if (talk.pendingIsbertoIntroduction && play.mode === 'play' && !play.dead && !play.actionBusy && !isDialogOpen() && !storyLock()) {
+      if (play.city.locationId === 'brumaluz' && talk.pendingIsbertoIntroduction && play.mode === 'play' && !play.dead && !play.actionBusy && !isDialogOpen() && !storyLock()) {
         talk.pendingIsbertoIntroduction = false;
         beginIsbertoArrival(isberto.character, playMonsterReveal);
       }
@@ -95,8 +102,8 @@ export function startGameLoop() {
     if (ui.openWindow === 'loot') positionLootWindow();
     updateWelcome(dt, t);
     updatePersonalWaypoint();
-    story.coinBags.update(session.state.coinBags, play.mode === 'play' && play.city.locationId === 'brumaluz', t);
-    story.fairyDust.update(session.state.fairyDust, play.mode === 'play' && play.city.locationId === 'brumaluz', t);
+    story.coinBags.update(session.state.coinBags, play.mode === 'play', t);
+    story.fairyDust.update(session.state.fairyDust, play.mode === 'play', t);
     updatePortals();
     applyCameraShake();
     camera.updateMatrixWorld();

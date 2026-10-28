@@ -363,6 +363,7 @@ create or replace function public.game_item(p_item text)
 returns jsonb language sql immutable set search_path='' as $$
   select case p_item
     when 'esencia_sombria' then '{"value":0,"stack":50,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'polvo_de_hada' then '{"value":0,"stack":50,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
     when 'espada_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
     when 'escudo_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
     when 'baston_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
@@ -859,6 +860,9 @@ returns jsonb language sql immutable set search_path='' as $$
     when 'componente_alquimia_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'componente_encantamiento_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'componente_cocina_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_escudo_inicial' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_daga_secundaria_inicial' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_libro_inicial' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_espada_cobre_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_escudo_roble_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_baston_ambar_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
@@ -939,6 +943,26 @@ returns jsonb language sql immutable set search_path='' as $$
     when 'receta_varita_estrella_forjada' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     when 'receta_grimorio_relicario_estelar' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     when 'receta_ballesta_riel_cenital' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_traje_guerrero_artesano_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_traje_guerrero_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_traje_guerrero_artesano_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
@@ -1169,16 +1193,22 @@ returns jsonb language sql immutable set search_path='' as $$
     when 'receta_colgante_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     when 'receta_anillo_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     when 'receta_abalorio_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_colgante_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_anillo_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_abalorio_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_herramienta_minero_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_herramienta_minero_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_herramienta_minero_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_herramienta_minero_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_herramienta_minero_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_herramienta_minero_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_herramienta_lenador_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_herramienta_lenador_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_herramienta_lenador_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_herramienta_lenador_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_herramienta_lenador_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_herramienta_lenador_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_herramienta_recolector_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_herramienta_recolector_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_herramienta_recolector_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_herramienta_recolector_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
@@ -1209,6 +1239,10 @@ returns jsonb language sql immutable set search_path='' as $$
     when 'receta_pergamino_dark_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_pergamino_dark_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_pergamino_dark_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pocion_vida_minuscula' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pocion_mana_minuscula' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pocion_estamina_minuscula' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pan_duro' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_pocion_health_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_pocion_mana_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_pocion_stamina_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
@@ -1229,26 +1263,44 @@ returns jsonb language sql immutable set search_path='' as $$
     when 'receta_pocion_mana_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     when 'receta_pocion_stamina_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     when 'receta_comida_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_taburete_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_mueble_taburete_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_mueble_taburete_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_mueble_taburete_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_mueble_taburete_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_mueble_taburete_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_mesa_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_mueble_mesa_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_mueble_mesa_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_mueble_mesa_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_mueble_mesa_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_mueble_mesa_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_biblioteca_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_mueble_biblioteca_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_mueble_biblioteca_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_mueble_biblioteca_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_mueble_biblioteca_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_mueble_biblioteca_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_estacion_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
     when 'receta_mueble_estacion_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
     when 'receta_mueble_estacion_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
     when 'receta_mueble_estacion_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
     when 'receta_mueble_estacion_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
     when 'receta_mueble_estacion_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_componente_herreria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_peleteria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_sastreria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_carpinteria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_ebanisteria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_joyeria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_alquimia_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_encantamiento_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_cocina_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_curtir_cuero_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_curtir_cuero_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_curtir_cuero_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_curtir_cuero_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_curtir_cuero_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
     else null
   end
 $$;

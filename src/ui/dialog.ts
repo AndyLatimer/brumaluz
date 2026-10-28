@@ -34,6 +34,7 @@ export interface DialogNode {
     objective: string;
     experience: number;
     pelines: number;
+    items?: { label: string; count: number }[];
     turnIn?: boolean;
   };
   /** Respuestas posibles. Sin ellas, E continúa a `next` o cierra. */
@@ -148,8 +149,14 @@ function render() {
     rewards.append(rewardsLabel);
     if (quest.experience > 0) rewards.append(xp);
     if (quest.pelines > 0) rewards.append(coins);
+    for (const item of quest.items ?? []) {
+      const label = document.createElement('span');
+      label.className = 'dialog-quest-item';
+      label.textContent = `${item.count} × ${t(item.label)}`;
+      rewards.append(label);
+    }
     card.append(heading, objective);
-    if (quest.experience > 0 || quest.pelines > 0) card.append(rewards);
+    if (quest.experience > 0 || quest.pelines > 0 || quest.items?.length) card.append(rewards);
     list.before(card);
   }
   if (node && conversation) {

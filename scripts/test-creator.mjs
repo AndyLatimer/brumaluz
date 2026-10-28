@@ -179,7 +179,7 @@ test('creator options, colors, head attachments and animations work across all r
             && !!actor.root.getObjectByName('character-glasses-arm'), `${race}/${variant}: complete glasses`);
         }
       }
-      for (let hair = 0; hair < 22; hair++) {
+      for (let hair = 0; hair < 28; hair++) {
         window.brumaluz.set({ hair });
         check(window.brumaluz.char().d.hair === hair, `Saved hair ID ${hair} is preserved by sanitization`);
       }
@@ -188,18 +188,20 @@ test('creator options, colors, head attachments and animations work across all r
     assert.deepEqual(failures, []);
     await page.evaluate(() => { window.brumaluz.tab('cabello'); window.brumaluz.set({ hair: 13, acc: 7, beard: 2, race: 'humano', face: 1 }); });
     const hair = page.locator('.stepper[data-key="hair"]');
-    assert.match(await hair.innerText(), /Corto pegado.*14 \/ 22/s);
+    assert.match(await hair.innerText(), /Corto pegado.*14 \/ 28/s);
     await hair.locator('button').last().click();
-    assert.match(await hair.innerText(), /Melena de explorador.*15 \/ 22/s);
+    assert.match(await hair.innerText(), /Melena de explorador.*15 \/ 28/s);
     await hair.locator('button').last().click();
-    assert.match(await hair.innerText(), /Flequillo de viajero.*16 \/ 22/s);
+    assert.match(await hair.innerText(), /Flequillo de viajero.*16 \/ 28/s);
     await page.waitForFunction(() => window.brumaluz.char().d.hair === 15);
     await hair.locator('select').selectOption('21');
     await page.waitForFunction(() => window.brumaluz.char().d.hair === 21);
+    await hair.locator('select').selectOption('27');
+    await page.waitForFunction(() => window.brumaluz.char().d.hair === 27);
     await hair.locator('button').last().click();
-    assert.match(await hair.innerText(), /Rapado.*1 \/ 22/s);
+    assert.match(await hair.innerText(), /Rapado.*1 \/ 28/s);
     const maskChoice = page.locator('.stepper[data-key="acc"]');
-    assert.match(await maskChoice.innerText(), /Pañuelo de viajero.*8 \/ 11/s);
+    assert.match(await maskChoice.innerText(), /Pañuelo de viajero.*8 \/ 14/s);
     await page.evaluate(() => window.brumaluz.set({ acc: 0 }));
     assert.equal(await page.evaluate(() => {
       const actor = window.brumaluz.char();

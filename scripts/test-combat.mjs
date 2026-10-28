@@ -214,13 +214,13 @@ test('cleric healing is self-targeted, caps at maximum health and does not damag
   assert.throws(()=>resolveCombat('clerigo',{...state(),health:100},'skill',10,0),/vida completa/);
 });
 
-test('skill points accrue at every even level, with five free-starting ranks and guarded permanent upgrades',()=>{
-  for(const [level,points] of [[1,0],[2,1],[3,1],[4,2],[8,4],[50,25]])assert.equal(skillPointsAllowed(level),points);
+test('skill points accrue at every level from two, with five free-starting ranks and guarded permanent upgrades',()=>{
+  for(const [level,points] of [[1,0],[2,1],[3,2],[4,3],[5,4],[8,7],[50,49]])assert.equal(skillPointsAllowed(level),points);
   for(const [cls,kit] of Object.entries(COMBAT_KITS)){
     const data={cls,level:1,skillRanks:{}};
     assert.equal(skillRank(data),1);assert.equal(unspentSkillPoints(data),0);
     assert.throws(()=>upgradeSkill(data,kit.skill.id,1),/nivel/);
-    data.level=8;
+    data.level=5;
     assert.equal(unspentSkillPoints(data),4,'Existing levels grant points without a migration');
     assert.throws(()=>upgradeSkill(data,cls==='clerigo'?'heavy_strike':'healing',1),/clase/);
     for(let rank=1;rank<5;rank++){
@@ -229,7 +229,7 @@ test('skill points accrue at every even level, with five free-starting ranks and
       assert.throws(()=>upgradeSkill(data,kit.skill.id,rank),/cambiado/,'A repeated or concurrent request cannot spend twice');
     }
     assert.throws(()=>upgradeSkill(data,kit.skill.id,5),/máximo/);
-    assert.equal(unspentSkillPoints({...data,level:50}),21,'Unused points remain available for future skills');
+    assert.equal(unspentSkillPoints({...data,level:50}),45,'Unused points remain available for future skills');
     assert.equal(skillRank({...data,level:2}),2,'Invalid over-budget ranks cannot leak into combat');
   }
 });

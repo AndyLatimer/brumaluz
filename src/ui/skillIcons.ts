@@ -118,16 +118,19 @@ let sequence = 0;
 
 export function skillIcon(id: SkillId) {
   const { colors, drawing } = ART[id], uid = `skill-art-${++sequence}`;
-  return `<svg class="skill-icon" data-icon-skill="${id}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  return `<svg class="skill-icon" data-icon-skill="${id}" data-icon-family="painted" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id="${uid}" cx=".35" cy=".2" r=".95"><stop stop-color="${colors[0]}"/><stop offset="1" stop-color="${colors[1]}"/></radialGradient>
       <radialGradient id="${uid}-vignette" cx=".5" cy=".5" r=".72"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
+      <linearGradient id="${uid}-frame" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff0b8"/><stop offset=".48" stop-color="#d8b16a"/><stop offset="1" stop-color="#93632e"/></linearGradient>
+      <clipPath id="${uid}-clip"><rect x="3" y="3" width="58" height="58" rx="8"/></clipPath>
     </defs>
-    <rect x="1" y="1" width="62" height="62" rx="11" fill="url(#${uid})"/>
-    ${drawing(name => `${uid}-${name}`)}
-    <rect x="1" y="1" width="62" height="62" rx="11" fill="url(#${uid}-vignette)"/>
-    <rect x="1" y="1" width="62" height="62" rx="11" fill="none" stroke="${colors[2]}" stroke-width="1.5"/>
-    <rect x="4" y="4" width="56" height="56" rx="8" fill="none" stroke="${colors[2]}" stroke-opacity=".25"/>
-    <path d="M6 14V7h7m38 0h6v7M6 50v7h7m38 0h6v-7" fill="none" stroke="${colors[2]}" stroke-width="1.2"/>
+    <rect x="1.5" y="1.5" width="61" height="61" rx="10" fill="url(#${uid})" stroke="#382519" stroke-width="3"/>
+    <g clip-path="url(#${uid}-clip)" stroke-linejoin="round" stroke-linecap="round">${drawing(name => `${uid}-${name}`)}</g>
+    <rect x="3" y="3" width="58" height="58" rx="8" fill="url(#${uid}-vignette)"/>
+    <rect x="2.5" y="2.5" width="59" height="59" rx="9" fill="none" stroke="url(#${uid}-frame)" stroke-width="1.7"/>
+    <rect x="5" y="5" width="54" height="54" rx="6.5" fill="none" stroke="#e6c78e" stroke-opacity=".2" stroke-width=".8"/>
+    <path d="M7 14V8h6m38 0h5v6M7 50v6h6m38 0h5v-6" fill="none" stroke="#efd59d" stroke-width="1" stroke-linejoin="round"/>
+    <circle cx="55" cy="8" r="1.3" fill="${colors[2]}" stroke="#5e4028" stroke-width=".55"/>
   </svg>`;
 }

@@ -84,6 +84,7 @@ function objectProps(object: MapObject) {
     field('Escala', vec(object.scale, value => apply('Escalar', () => { object.scale = value.map(v => Math.max(0.01, v)) as Vec3; }), 0.05)),
     field('Escala uniforme', number(1, value => apply('Escalar', () => { object.scale = object.scale.map(v => Math.max(0.01, v * value)) as Vec3; }), 0.05, { title: 'Multiplica la escala actual' })),
     field('Colisión', choice(object.collision, COLLISION_MODES.map(mode => [mode, COLLISION_LABELS[mode]] as const), value => apply('Colisión', () => { object.collision = value; }))),
+    ...(object.asset === 'city/wall_straight_gate' ? [field('Puerta cerrada', check(!!object.gateClosed, value => apply(value ? 'Cerrar puerta' : 'Abrir puerta', () => { object.gateClosed = value || undefined; })))] : []),
     field('Transitable', choice(object.walkable === undefined ? 'auto' : object.walkable ? 'yes' : 'no', [['auto', 'Automático (según altura)'], ['yes', 'Sí, se puede subir'], ['no', 'No']] as const,
       value => apply('Transitable', () => { object.walkable = value === 'auto' ? undefined : value === 'yes'; }))),
     field('Pegar al relieve', check(!!object.conform, value => apply('Pegar al relieve', () => {
@@ -118,11 +119,14 @@ function colliderProps(collider: MapCollider) {
 }
 
 function markerProps(marker: MapMarker) {
+  const collectible = marker.type === 'interaction' && (marker.text === 'coin-bag' || marker.text === 'fairy-dust');
   return [
     el('div', { class: 'title' }, marker.name),
     el('div', { class: 'asset-id' }, marker.id),
     field('Nombre', text(marker.name, value => apply('Nombre', () => { marker.name = value.trim().slice(0, 80) || MARKER_LABELS[marker.type]; }))),
-    field('Tipo', choice(marker.type, MARKER_TYPES.map(type => [type, MARKER_LABELS[type]] as const), value => apply('Tipo', () => { marker.type = value; }))),
+      collectible
+        ? field('Coleccionable', el('strong', {}, marker.text === 'coin-bag' ? 'Bolsa de pelines' : 'Polvos de hada'))
+        : field('Tipo', choice(marker.type, MARKER_TYPES.map(type => [type, MARKER_LABELS[type]] as const), value => apply('Tipo', () => { marker.type = value; }))),
     ...(marker.type === 'npc' ? [field('NPC', choice(marker.npcId ?? '', [['', '— genérico —'], ...npcChoices.map(npc => [npc.id, npc.name] as const)], value => apply('NPC', () => {
       marker.npcId = value || undefined;
       const npc = npcChoices.find(item => item.id === value);
@@ -136,11 +140,11 @@ function markerProps(marker: MapMarker) {
     field(marker.type === 'light' ? 'Alcance (m)' : 'Radio (m)', number(marker.radius, value => apply('Radio', () => { marker.radius = Math.max(0, Math.min(500, value)); }), 0.5)),
     field('Color', el('input', { type: 'color', value: marker.color ?? '#ffffff', onchange: (event: Event) => apply('Color', () => { marker.color = (event.target as HTMLInputElement).value; }) }),
       el('button', { type: 'button', disabled: !marker.color, onclick: () => apply('Color', () => { delete marker.color; }) }, 'Por defecto')),
-    field('Texto / datos', (() => {
+      ...(!collectible ? [field('Texto / datos', (() => {
       const area = el('textarea', { rows: 3, maxLength: 2000, placeholder: 'Notas, ID de misión, diálogo…' }, marker.text ?? '');
       area.addEventListener('change', () => apply('Texto', () => { marker.text = area.value || undefined; }));
       return area;
-    })()),
+      })())] : [el('p', { class: 'hint' }, 'Recogida personal, una vez por personaje. Guarda y publica para aplicar los cambios.')]),
   ];
 }
 

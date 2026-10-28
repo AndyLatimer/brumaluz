@@ -1,6 +1,14 @@
 # Arboleda · Cuna de los Elfos
 
-30 modelos originales construidos en Blender para la arboleda natal de los elfos de Brumaluz. Madera viva, piedra lunar, hojas solapadas, herrajes dorados y alquimia botánica. Geometría estilizada coherente con el juego.
+30 modelos originales construidos en Blender para la arboleda natal de los elfos de Brumaluz. Madera viva, piedra lunar, tejas de hoja, herrajes dorados y alquimia botánica. Geometría estilizada coherente con el juego.
+
+## Revisión 2 · superficies y uniones
+
+Los cuatro tejados de hojas se han rehecho con una curva común para la base y las tejas, juntas entre sectores, relieves con espesor y nervaduras ajustadas a cada teja. Se han cerrado las costuras de los aros, unificado los arcos ojivales, limpiado las puntas degeneradas y separado las trenzas del banco, puente y valla. Las hojas pequeñas ahora tienen espesor proporcional a su tamaño.
+
+La auditoría de los 30 modelos comprueba triángulos degenerados, solapamientos coplanares expuestos y cruces entre tejas o contra su base. El resultado está en `review/surface-audit.json`, con el diagnóstico anterior en `review/surface-audit-before.json`. Las intersecciones estructurales de ramas y herrajes se conservan.
+
+La revisión anterior tenía 394 triángulos degenerados y 21 pares de triángulos coplanares expuestos. La revisión 2 registra cero en ambas comprobaciones, cero aristas abiertas o no manifold y cero cruces de tejas. La detección coplanar usa una tolerancia de 0,4 mm y un área mínima de 0,2 mm².
 
 ## Usarlos
 
@@ -27,10 +35,12 @@ Los edificios son piezas de exterior. Para atravesar el portal, el puente o el p
 
 - Blender: metros, Z arriba, frente −Y. GLB: Y arriba, frente +Z.
 - Una malla y un material por modelo, atlas pintado, mapas de metal/rugosidad y emisión suave de los faroles. Sin dependencias de texturas externas.
-- Semilla y geometría deterministas; sin modelos descargados ni recursos de terceros. El paquete no hereda la licencia CC0 de los packs importados.
+- Geometría determinista; sin modelos descargados ni recursos de terceros. El paquete no hereda la licencia CC0 de los packs importados.
 - `npm run art:arboleda`: reconstruye Blender, GLB, atlas, renders y catálogo. Requiere Blender 5.2 o configurar `BLENDER_PATH`.
 - `node tools/build-arboleda.mjs --skip-render` y `node tools/register-arboleda.mjs`: reconstrucción sin renders.
-- `npm run test:arboleda`: verifica fuente editable, catálogo, texturas, límites, origen, geometría y presupuesto de triángulos.
+- `node tools/build-arboleda.mjs --render-only`: actualiza los renders desde el Blender guardado. Admite `--asset=house_leafhaven` para un detalle individual.
+- `npm run test:arboleda`: verifica fuente editable, catálogo, texturas, límites, origen, triángulos exportados, presupuesto de geometría y auditoría de solapamientos en Blender.
 - `node tools/review-hamlet.mjs --arboleda`: carga los modelos con el cargador real y revisa su colocación en el editor; guarda capturas e informe en `review/`.
+- `node tools/review-arboleda-surfaces.mjs`: genera 32 vistas WebGL de tejados y uniones con distintas orientaciones y distancias, usando los rangos de profundidad del juego y del editor.
 
-La vista general está en `arboleda-collection.png`. También se incluyen seis renders de detalle.
+La vista general está en `arboleda-collection.png`. También se incluyen renders de detalle y las hojas de revisión `review/roofs-orbit.png` y `review/joinery-orbit.png`.

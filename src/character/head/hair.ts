@@ -3,11 +3,25 @@ import * as THREE from 'three';
 import type { HeadOptions, HeadKit, HeadSource, CreatorParts } from './types';
 import { type Tris, V, HEAD_C, CENTER, toGeometry, toTris, subset, C_HAIR, piece, compose, PI, smoothNormals, paintCell } from './geometry';
 import { analyse, smallFrontIslands } from './analysis';
+import { sculptedHair } from './sculptedHair';
+import { GeometryTemplates } from './geometryCache';
+import { hairLining } from './hairLining';
+import { repairHairNape } from './hairSeams';
+const hairTemplates = new GeometryTemplates();
 
 /** Pelo de la cabeza (parte de buildHead). */
 export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, parts, headAt }: { o: HeadOptions; headR: (d: THREE.Vector3) => number; fitHairShell: (g: THREE.BufferGeometry) => THREE.BufferGeometry<THREE.NormalBufferAttributes>; settle: (g: THREE.BufferGeometry, margin: number) => THREE.BufferGeometry<THREE.NormalBufferAttributes>; pushOut: (g: THREE.BufferGeometry, margin: number) => THREE.BufferGeometry<THREE.NormalBufferAttributes>; sources: Record<HeadKit, HeadSource>; parts: CreatorParts; headAt: (dir: THREE.Vector3, out?: number) => THREE.Vector3 }) {
+  const templateKey = JSON.stringify([o.face, o.hair, o.hat]);
+  const cached = hairTemplates.get(templateKey);
+  if (cached) return { hairCell: C_HAIR, hairPieces: cached.map(geo => ({ geo, kit: o.face })) };
+  const sculpted = sculptedHair(o, headAt);
+  if (sculpted) {
+    hairTemplates.set(templateKey, sculpted.map(piece => piece.geo));
+    return { hairCell: C_HAIR, hairPieces: sculpted };
+  }
   const hatShrink = o.hat === 'helmet' ? 0.9 : o.hat === 'bear' ? 0.92 : o.hat === 'wizard' ? 0.94 : o.hat === 'cap' ? 0.96 : 1;
   const hairPieces: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
+  if ([12, 13, 14, 15].includes(o.hair)) hairPieces.push({ geo: hairLining(o.face, headAt), kit: o.face });
   const addHair = (h: Tris, kit: HeadKit, closeFit = 1, fit: 'shell' | 'authored' | 'cropped' = 'shell') => {
     const T: Tris = { pos: h.pos.slice(), uv: h.uv.slice(), nrm: h.nrm.slice(), count: h.count };
     if (closeFit < 1) for (let i = 0; i < T.count * 3; i++) {
@@ -35,7 +49,9 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
       geometry.computeVertexNormals();
     }
     const fitted = fit === 'shell' ? fitHairShell(geometry) : fit === 'authored' ? settle(geometry, .018) : geometry;
-    hairPieces.push({ geo: pushOut(fitted, 0.014), kit });
+    if (o.hair === 12 && kit === 'Mage' && fit === 'shell') repairHairNape(fitted);
+    // Imported cuts share the backing's gradient; old palette islands must not read as holes.
+    hairPieces.push({ geo: paintCell(pushOut(fitted, 0.014), C_HAIR, .17, .8), kit: o.face });
   };
   const kitHair = (kit: HeadKit, closeFit = 1) => {
     const h = analyse(sources[kit]).hair;
@@ -62,9 +78,9 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
    * Mechón liso: un tubo que sigue una curva y se estrecha hasta una punta redonda.
    * braid: ondas de trenzado; flat: aplastado de lado (cresta); taperStart: afina también el inicio.
    */
-  const strand = (pts: THREE.Vector3[], r0: number, r1: number, opt: { braid?: number; flat?: number; taperStart?: boolean } = {}) => {
+  const strand = (pts: THREE.Vector3[], r0: number, r1: number, opt: { braid?: number; flat?: number; taperStart?: boolean; steps?: number; sides?: number } = {}) => {
     const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-    const N = 56, M = 18, fr = curve.computeFrenetFrames(N, false);
+    const N = opt.steps ?? 56, M = opt.sides ?? 18, fr = curve.computeFrenetFrames(N, false);
     const pos: number[] = [], idx: number[] = [];
     for (let i = 0; i <= N; i++) {
       const t = i / N, c = curve.getPointAt(t);
@@ -143,9 +159,11 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
           }
           if (k) for (let j = 0; j < 4; j++) {
             const a = (k - 1) * 4 + j, b = (k - 1) * 4 + (j + 1) % 4;
-            indices.push(a, a + 4, b, b, a + 4, b + 4);
+            indices.push(a, b, a + 4, b, b + 4, a + 4);
           }
         }
+        const end = 40 * 4;
+        indices.push(0, 2, 1, 0, 3, 2, end, end + 1, end + 2, end, end + 2, end + 3);
         const crest = new THREE.BufferGeometry();
         crest.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); crest.setIndex(indices); crest.computeVertexNormals();
         hairPieces.push({ geo: paintCell(crest, hairCell, 0.2, 0.8), kit: o.face });
@@ -275,6 +293,88 @@ export function buildHair({ o, headR, fitHairShell, settle, pushOut, sources, pa
           points.push(headAt(V(Math.sin(a), 0.82, Math.cos(a)), 0.025));
         }
         braid(points, 0.055, 16);
+      }
+      break;
+    }
+    case 22: { // High braid: raised root, with an actual interlaced tail.
+      kitHair('Mage');
+      const root = headAt(V(0, .65, -1), -.018);
+      braid([root, root.clone().add(V(0, -.05, -.09)), V(.02, 1.65, -.58), V(.06, 1.35, -.55), V(.04, 1.07, -.46)], .085, 7);
+      break;
+    }
+    case 23: { // Braided low bun, following the back of the final skull.
+      kitHair('Mage');
+      if (!hasHat) {
+        const root = headAt(V(0, .26, -1), .025);
+        hairPieces.push({ geo: blob(.11, root, V(1, .9, .7), new THREE.Euler(), 3), kit: o.face });
+        const path: THREE.Vector3[] = [];
+        for (let k = 0; k <= 64; k++) {
+          const t = k / 64, a = t * PI * 4.5, radius = .3 * (1 - t) + .025;
+          path.push(headAt(V(Math.sin(a) * radius, .26 + Math.cos(a) * radius * .85, -1), .035 + t * .045));
+        }
+        braid(path, .05, 19);
+      }
+      break;
+    }
+    case 24: { // Swept bob: fringe and a cascade on one side.
+      kitHair('Rogue'); importedHair('rogue-fringe');
+      for (let k = 0; k < 4; k++) {
+        const root = headAt(V(.95, .12, .1 - k * .25), -.02);
+        hairPieces.push({ geo: pushOut(strand([root, root.clone().add(V(.035, -.12, .015)),
+          root.clone().add(V(.065, -.29, .1)), root.clone().add(V(.015, -.43, .18))], .062, .02, { taperStart: true }), .014), kit: o.face });
+      }
+      break;
+    }
+    case 25: { // Short curls: interlocking coils along the hairline, never dots on the forehead.
+      importedHair('ranger-hair', true);
+      const proxyMaterial = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+      const shell = hairPieces.map(part => { const mesh = new THREE.Mesh(part.geo, proxyMaterial); mesh.updateMatrixWorld(); return mesh; });
+      const ray = new THREE.Raycaster();
+      const curlAt = (direction: THREE.Vector3, out: number) => {
+        const d = direction.clone().normalize(); ray.set(HEAD_C.clone().addScaledVector(d, 2), d.clone().negate());
+        const hit = ray.intersectObjects(shell, false)[0];
+        return hit ? hit.point.addScaledVector(hit.face!.normal, out) : headAt(d, out);
+      };
+      if (!hasHat) for (let row = 0; row < 5; row++) for (let k = 0; k < (row < 3 ? 18 : row === 3 ? 12 : 6); k++) {
+        const count = row < 3 ? 18 : row === 3 ? 12 : 6;
+        const a = (k + row * .5) / count * PI * 2;
+        const dir = V(Math.sin(a), [.55, 1.45, 2.35, 4, 8][row] + Math.max(0, Math.cos(a)) * .75, Math.cos(a)).normalize();
+        const tangent = V(Math.cos(a), 0, -Math.sin(a));
+        const vertical = new THREE.Vector3().crossVectors(dir, tangent).normalize();
+        const path: THREE.Vector3[] = [];
+        for (let j = 0; j <= 20; j++) {
+          const t = j / 20, angle = t * PI * 2.5, radius = .13 * (1 - t * .65);
+          const direction = dir.clone().addScaledVector(tangent, Math.cos(angle) * radius).addScaledVector(vertical, Math.sin(angle) * radius);
+          path.push(curlAt(direction, .018 + Math.sin(t * PI) * .012));
+        }
+        hairPieces.push({ geo: pushOut(strand(path, .023, .013, { steps: 20, sides: 8, taperStart: true }), .014), kit: o.face });
+      }
+      proxyMaterial.dispose();
+      break;
+    }
+    case 26: { // Two braids tucked into a low crown, away from the neck.
+      kitHair('Mage');
+      for (const side of [-1, 1]) {
+        const path: THREE.Vector3[] = [];
+        for (let k = 0; k <= 24; k++) {
+          const t = k / 24, angle = side * (1.45 + t * (PI - 1.45));
+          path.push(headAt(V(Math.sin(angle), .06 - Math.sin(t * PI) * .13, Math.cos(angle)), .025));
+        }
+        braid(path, .049, 7);
+      }
+      break;
+    }
+    case 27: { // Braided double buns with a visible weave rather than spheres.
+      kitHair('Rogue');
+      if (!hasHat) for (const side of [-1, 1]) {
+        const root = headAt(V(side * .64, .7, -.62), .025);
+        hairPieces.push({ geo: blob(.105, root, V(1, .95, .8), new THREE.Euler(), 3), kit: o.face });
+        const path: THREE.Vector3[] = [];
+        for (let k = 0; k <= 32; k++) {
+          const t = k / 32, a = t * PI * 4, radius = .085 * (1 - t * .8);
+          path.push(root.clone().add(V(Math.sin(a) * radius, Math.cos(a) * radius, -.035 - t * .015)));
+        }
+        braid(path, .042, 8);
       }
       break;
     }

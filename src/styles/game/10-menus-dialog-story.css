@@ -140,6 +140,7 @@
 .dialog-quest-rewards > strong { margin-right: auto; }
 .dialog-quest-rewards > span { padding: 5px 11px; border: 1px solid #a98a4d66; border-radius: 999px; color: #5b4d29; background: #f7e7b9; font: 700 14px 'Alegreya',serif; }
 .dialog-quest-rewards > .dialog-quest-xp { color: #3b5b42; background: #e3ead5; border-color: #7c956c66; }
+.dialog-quest-rewards > .dialog-quest-item { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .quest-dialog .dialog-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .quest-dialog .dialog-choice { flex: 1 1 180px; justify-content: center; align-items: center; padding: 10px 14px; border: 1px solid #496445; background: linear-gradient(#657e58,#496443); color: #fff4d6; text-align: center; box-shadow: 0 2px 3px #382d2022; }
 .quest-dialog .dialog-choice.selected { border-color: #eac97c; box-shadow: 0 0 0 2px #95733466; }
@@ -188,15 +189,19 @@ body.conversation-open .nameplate,body.conversation-open .speech-bubble,body.con
 .cinematic-line.title::after { content:''; display:block; width:72px; height:1px; margin:18px auto 0; background:linear-gradient(90deg,transparent,#e3bd70,transparent); }
 .cinematic-line:not(.title) { padding:12px 20px; border-radius:3px; background:linear-gradient(90deg,transparent,#111a16d9 12%,#111a16d9 88%,transparent); }
 .cinematic-line:not(.title) > span { color:#edce8e; font:600 clamp(15px,2vw,19px)/1.4 'Cinzel',serif; }
+.cinematic-line.spoken > span { display:block; color:#fff6e5; font:400 clamp(18px,2.3vw,22px)/1.5 'Alegreya',serif; text-wrap:pretty; }
+.cinematic-line.spoken { max-width:68ch; padding:14px 24px; }
 .cinematic-line.show { animation:cinematic-line .7s ease both; }
 @keyframes cinematic-line { from { opacity:0; transform:translate(-50%,8px); } }
-.cinematic-skip { position:absolute; right:16px; bottom:calc((clamp(36px,11vh,110px) - 30px) / 2); height:30px; padding:0 14px; border:1px solid #e3b45a66; border-radius:4px 10px; background:#1a1510cc; color:#f3dfb3; font:600 12px 'Cinzel',serif; letter-spacing:.08em; cursor:pointer; pointer-events:auto; }
+.cinematic-skip { position:absolute; right:max(16px,env(safe-area-inset-right)); bottom:max(8px,calc((clamp(36px,11vh,110px) - 38px) / 2),env(safe-area-inset-bottom)); min-height:38px; padding:8px 14px; border:1px solid #e3b45a66; border-radius:4px 10px; background:#1a1510cc; color:#f3dfb3; font:600 12px 'Cinzel',serif; letter-spacing:.08em; cursor:pointer; pointer-events:auto; touch-action:manipulation; }
 .cinematic-skip::after { content:' ▸▸'; color:var(--gold); }
 .cinematic-skip:hover,.cinematic-skip:focus-visible { border-color:var(--gold); background:#2a2117; outline:none; }
+.cinematic-skip:focus-visible { outline:2px solid #f5dca0; outline-offset:3px; }
 body.cinematic-open .chat,body.cinematic-open .chat-peek,body.cinematic-open .minimap,body.cinematic-open .action-bar,body.cinematic-open .active-buffs,
 body.cinematic-open .nameplate,body.cinematic-open .speech-bubble,body.cinematic-open #player-hud,body.cinematic-open #game-menu,body.cinematic-open #player-menu,
 body.cinematic-open #world-menu,body.cinematic-open #quest-tracker,body.cinematic-open #interact-prompt,body.cinematic-open #target-frame { visibility:hidden; pointer-events:none; }
 @media (max-width:560px) { .cinematic-line { font-size:16px; } }
+@media (max-height:500px) { .cinematic-line { bottom:58px; max-height:calc(100dvh - 95px); overflow-y:auto; } .cinematic-line.spoken { padding:8px 14px; } .cinematic-line small { margin-bottom:4px; } }
 @media (prefers-reduced-motion: reduce) { .cinematic-bar,.cinematic-line.show { animation:none; } }
 /* Descansar en la cama de Isberto: fundido a negro. */
 #rest-fade { position:fixed; inset:0; z-index:70; background:#05040a; opacity:0; transition:opacity .55s ease; pointer-events:none; }

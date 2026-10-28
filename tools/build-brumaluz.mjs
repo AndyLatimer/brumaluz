@@ -74,7 +74,7 @@ export const GATES = [
 /** Un barrio por cada sector de 60° entre calles mayores (sector k: de 60k° a 60k+60°). */
 export const DISTRICTS = [
   'Barrio de los Telares', 'Huertas del Alba', 'Barrio del Olmo',
-  'Barrio de los Canteros', 'Barrio de la Guardia', 'Barrio de los Mercaderes',
+  'Barrio de los Artesanos', 'Barrio de la Guardia', 'Barrio de los Mercaderes',
 ];
 const PLAZAS = ['Plaza del Levante', 'Plaza de la Fuente', 'Plaza del Olmo', 'Plaza del Poniente', 'Plaza de Armas', 'Plaza de la Lonja'];
 /**
@@ -540,7 +540,7 @@ export function buildBrumaluz(source, maps, boxes = null) {
   // Casas gremiales: un edificio del pack en la casilla de la manzana más cercana a su centro que dé al anillo interior.
   const guilds = [
     { id: 'telares', name: 'Casa de los Telares', asset: 'city/market', scale: 3.6, prop: ['resources/objects/Textiles_Stack_Large_Colored', 1.3] },
-    { id: 'canteros', name: 'Casa de los Canteros', asset: 'city/blacksmith', scale: 4, prop: ['resources/objects/Stone_Bricks_Stack_Large', 1.4] },
+    { id: 'canteros', name: 'Casa de los Artesanos', asset: 'city/blacksmith', scale: 4, prop: ['resources/objects/Stone_Bricks_Stack_Large', 1.4] },
     { id: 'lonja', name: 'Lonja de los Mercaderes', asset: 'medieval-builder/objects/market', scale: 3.4, prop: ['restaurant/objects/crate_carrots', 0.6] },
     { id: 'archivo', name: 'Archivo de la Capital', asset: 'city/tower_B', scale: 4, prop: ['forest/objects/Bush_2_A_Color1', 2.2] },
   ];

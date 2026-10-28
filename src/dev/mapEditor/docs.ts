@@ -162,7 +162,7 @@ export async function publish() {
   try {
     const result = await publishMap(state.doc.id, state.revision);
     published = [...published.filter(map => map.id !== result.id), result];
-    status(`Publicado: ${result.objects} objetos, ${result.assets} recursos (${megabytes(result.bytes)}). SQL generado: supabase/world.sql. Aplica «npm run db:apply» para habilitar portales online.`);
+    status(`Publicado: ${result.objects} objetos, ${result.assets} recursos (${megabytes(result.bytes)}). SQL generado: supabase/world.sql. Aplica «npm run db:apply» para habilitar portales y coleccionables online.`);
     if (result.warnings?.length) alert(`Publicado con caminos cerrados:\n\n${result.warnings.join('\n')}\n\nPublica los destinos para abrirlos.`);
   } catch (error) {
     status(`No se pudo publicar: ${(error as Error).message}`, 'error');

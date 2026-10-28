@@ -1,0 +1,653 @@
+{
+  "version": 1,
+  "workshops": [
+    {
+      "job": "herreria",
+      "label": "Herrería",
+      "name": "Forja de Brumaluz",
+      "mapId": "taller_herreria_interior",
+      "masterId": "isberto",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_herreria",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_herreria"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#b88859",
+      "entrance": {
+        "buildingId": "urbe_0283",
+        "asset": "city/blacksmith",
+        "x": -112.234,
+        "z": -34.642,
+        "y": 1.154,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -113.684,
+        "returnZ": -34.642,
+        "returnY": 1.248
+      }
+    },
+    {
+      "job": "peleteria",
+      "label": "Peletería",
+      "name": "Taller de Peletería",
+      "mapId": "taller_peleteria_interior",
+      "masterId": "maestro_peleteria",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_peleteria",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_peleteria"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#a9875c",
+      "entrance": {
+        "buildingId": "urbe_027w",
+        "asset": "city/home_B",
+        "x": -115.772,
+        "z": -41.57,
+        "y": 1.888,
+        "yaw": 1.571,
+        "radius": 2.2,
+        "returnX": -114.322,
+        "returnZ": -41.57,
+        "returnY": 1.8
+      }
+    },
+    {
+      "job": "sastreria",
+      "label": "Sastrería",
+      "name": "Taller de Sastrería",
+      "mapId": "taller_sastreria_interior",
+      "masterId": "maestro_sastreria",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_sastreria",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_sastreria"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#b1a3bc",
+      "entrance": {
+        "buildingId": "urbe_0282",
+        "asset": "city/home_B",
+        "x": -111.772,
+        "z": -48.498,
+        "y": 2.037,
+        "yaw": 1.571,
+        "radius": 2.2,
+        "returnX": -110.322,
+        "returnZ": -48.498,
+        "returnY": 1.947
+      }
+    },
+    {
+      "job": "carpinteria",
+      "label": "Carpintería",
+      "name": "Taller de Carpintería",
+      "mapId": "taller_carpinteria_interior",
+      "masterId": "maestro_carpinteria",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_carpinteria",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_carpinteria"
+        }
+      },
+      "bounds": {
+        "width": 15.600000000000001,
+        "depth": 10.4
+      },
+      "color": "#ac9265",
+      "entrance": {
+        "buildingId": "urbe_0281",
+        "asset": "city/home_A",
+        "x": -123.01,
+        "z": -55.427,
+        "y": 2.38,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -124.46,
+        "returnZ": -55.427,
+        "returnY": 2.385
+      }
+    },
+    {
+      "job": "ebanisteria",
+      "label": "Ebanistería",
+      "name": "Taller de Ebanistería",
+      "mapId": "taller_ebanisteria_interior",
+      "masterId": "maestro_ebanisteria",
+      "master": {
+        "x": -1.85,
+        "z": -2.8,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -2.5,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -4.05
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 4.2,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_ebanisteria",
+        "x": 0,
+        "z": 5.5,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_ebanisteria"
+        }
+      },
+      "bounds": {
+        "width": 15.600000000000001,
+        "depth": 13
+      },
+      "color": "#a18a62",
+      "entrance": {
+        "buildingId": "urbe_028c",
+        "asset": "city/home_A",
+        "x": -115.01,
+        "z": -69.283,
+        "y": 2.66,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -116.46,
+        "returnZ": -69.283,
+        "returnY": 2.666
+      }
+    },
+    {
+      "job": "joyeria",
+      "label": "Joyería",
+      "name": "Taller de Joyería",
+      "mapId": "taller_joyeria_interior",
+      "masterId": "maestro_joyeria",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_joyeria",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_joyeria"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#a7b4b4",
+      "entrance": {
+        "buildingId": "urbe_028k",
+        "asset": "city/home_A",
+        "x": -99.01,
+        "z": -55.427,
+        "y": 1.58,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -100.46,
+        "returnZ": -55.427,
+        "returnY": 1.591
+      }
+    },
+    {
+      "job": "alquimia",
+      "label": "Alquimia",
+      "name": "Taller de Alquimia",
+      "mapId": "taller_alquimia_interior",
+      "masterId": "maestro_alquimia",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_alquimia",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_alquimia"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#95ad8a",
+      "entrance": {
+        "buildingId": "urbe_028l",
+        "asset": "medieval-builder/objects/house",
+        "x": -83.85,
+        "z": -41.57,
+        "y": 0.704,
+        "yaw": 1.571,
+        "radius": 2.2,
+        "returnX": -82.4,
+        "returnZ": -41.57,
+        "returnY": 0.633
+      }
+    },
+    {
+      "job": "encantamiento",
+      "label": "Encantamiento",
+      "name": "Taller de Encantamiento",
+      "mapId": "taller_encantamiento_interior",
+      "masterId": "maestro_encantamiento",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_encantamiento",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_encantamiento"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#a2a1ba",
+      "entrance": {
+        "buildingId": "urbe_028p",
+        "asset": "city/home_B",
+        "x": -95.772,
+        "z": -76.211,
+        "y": 2.558,
+        "yaw": 1.571,
+        "radius": 2.2,
+        "returnX": -94.322,
+        "returnZ": -76.211,
+        "returnY": 2.465
+      }
+    },
+    {
+      "job": "cocina",
+      "label": "Cocina",
+      "name": "Cocina de Brumaluz",
+      "mapId": "taller_cocina_interior",
+      "masterId": "maestro_cocina",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_cocina",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_cocina"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#c2a26b",
+      "entrance": {
+        "buildingId": "urbe_028d",
+        "asset": "city/home_A",
+        "x": -104.99,
+        "z": -62.355,
+        "y": 2.331,
+        "yaw": 1.571,
+        "radius": 2.2,
+        "returnX": -103.54,
+        "returnZ": -62.355,
+        "returnY": 2.321
+      }
+    },
+    {
+      "job": "minero",
+      "label": "Minería",
+      "name": "Taller de Minería",
+      "mapId": "taller_minero_interior",
+      "masterId": "maestro_minero",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_minero",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_minero"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#a2acaa",
+      "entrance": {
+        "buildingId": "urbe_027v",
+        "asset": "medieval-builder/objects/house",
+        "x": -128.15,
+        "z": -48.498,
+        "y": 2.232,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -129.6,
+        "returnZ": -48.498,
+        "returnY": 2.27
+      }
+    },
+    {
+      "job": "lenador",
+      "label": "Leñadores",
+      "name": "Taller de Leñadores",
+      "mapId": "taller_lenador_interior",
+      "masterId": "maestro_lenador",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_lenador",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_lenador"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#a68d62",
+      "entrance": {
+        "buildingId": "urbe_0277",
+        "asset": "city/home_A",
+        "x": -135.01,
+        "z": -34.642,
+        "y": 1.96,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -136.46,
+        "returnZ": -34.642,
+        "returnY": 1.965
+      }
+    },
+    {
+      "job": "recolector",
+      "label": "Recolección",
+      "name": "Taller de Recolección",
+      "mapId": "taller_recolector_interior",
+      "masterId": "maestro_recolector",
+      "master": {
+        "x": -1.85,
+        "z": -1.5,
+        "yaw": 0
+      },
+      "station": {
+        "x": 0.8,
+        "z": -1.2,
+        "radius": 4
+      },
+      "bench": {
+        "x": 0.8,
+        "z": -2.75
+      },
+      "arrival": {
+        "id": "desde_brumaluz",
+        "x": 0,
+        "z": 2.9000000000000004,
+        "yaw": 3.141592653589793
+      },
+      "exit": {
+        "id": "salida_taller_recolector",
+        "x": 0,
+        "z": 4.2,
+        "radius": 1.3,
+        "target": {
+          "map": "brumaluz",
+          "arrival": "desde_taller_recolector"
+        }
+      },
+      "bounds": {
+        "width": 13,
+        "depth": 10.4
+      },
+      "color": "#9daf83",
+      "entrance": {
+        "buildingId": "urbe_028q",
+        "asset": "medieval-builder/objects/house",
+        "x": -96.15,
+        "z": -62.355,
+        "y": 1.703,
+        "yaw": -1.571,
+        "radius": 2.2,
+        "returnX": -97.6,
+        "returnZ": -62.355,
+        "returnY": 1.798
+      }
+    }
+  ]
+}

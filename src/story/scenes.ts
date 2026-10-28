@@ -25,6 +25,7 @@ import { storyLock } from '../game/conversation';
 import { tradeWindow } from '../ui/gameInterface';
 
 export const cinematic = createCinematics();
+if (import.meta.hot) import.meta.hot.dispose(() => cinematic.dispose());
 // ---------------- Historia: cinemáticas y escenas ----------------
 export function groundPoint(p: { x: number; z: number }) { return new THREE.Vector3(p.x, play.city.groundY(p.x, p.z), p.z); }
 export const facingTo = (from: THREE.Vector3, to: THREE.Vector3) => Math.atan2(to.x - from.x, to.z - from.z);
@@ -76,6 +77,7 @@ export async function finishIntro() {
 }
 /** Vuelo sobre Brumaluz, entrada por la puerta y Gnomi, que busca su distintivo hasta que se topa con el jugador. */
 export function playIntro() {
+  cinematic.cancel();
   const generation = play.playGeneration;
   const entry = groundPoint(INTRO_ENTRY), meet = groundPoint(WELCOME_START), from = groundPoint(INTRO_GNOMI_FROM);
   // El decorado puede invadir la referencia de salida; resolverlo antes de mostrarlo.
@@ -136,10 +138,16 @@ export function playIntro() {
     story.playerScript = null;
     if (generation !== play.playGeneration || play.mode !== 'play') return;
     void finishIntro();
+  }, () => {
+    story.playerScript = null;
+    play.char.setGait('idle');
+    restoreStoryFog();
+    story.welcomeWorld.release();
   });
 }
 /** Tras devolver el distintivo: la criatura que ronda la herrería de Isberto. */
 export function playMonsterReveal() {
+  cinematic.cancel();
   const generation = play.playGeneration;
   removeMonsterPreview();
   const site = groundPoint({ x: LOCAL_COMBAT_SITE.x + 3.5, z: LOCAL_COMBAT_SITE.z });
@@ -149,9 +157,9 @@ export function playMonsterReveal() {
   scene.add(story.monsterPreview);
   const look = site.clone().setY(site.y + .7);
   cinematic.play([
-    { id: 'smithy', duration: 4.5, line: { speaker:session.registeredNpcs.isberto.name, text: 'Esta mañana no había nada. He salido a por carbón y, al volver, me la he encontrado junto al yunque.', eyebrow: 'Herrería de Isberto', layout: 'caption' },
+    { id: 'smithy', duration: 7, line: { speaker:session.registeredNpcs.isberto.name, text: 'Esta mañana no había nada. He salido a por carbón y, al volver, me la he encontrado junto al yunque.', eyebrow: 'Herrería de Isberto', layout: 'caption' },
       camera: orbitShot(site, [7.5, 5.2], [3.4, 1.8], [-.9, -.1], .7) },
-    { id: 'creature', duration: 5, blend: .6,
+    { id: 'creature', duration: 7, blend: .6,
       line:{speaker:session.registeredNpcs.isberto.name,text:'He intentado espantarla desde la puerta. Me ha lanzado algo que ha dejado la madera negra. Cuidado con acercarte.'},
       start: () => playShadowEnemyAction(story.monsterPreview, 'attack', clock.getElapsedTime()),
       camera: dollyShot({ position: new THREE.Vector3(site.x + 3.4, site.y + 1.2, site.z - 1.6), target: look },
@@ -159,7 +167,7 @@ export function playMonsterReveal() {
   ], () => {
     removeMonsterPreview();
     if (generation === play.playGeneration && play.mode === 'play') talkTo('isberto');
-  });
+  }, removeMonsterPreview);
 }
 export function removeMonsterPreview() {
   if (!story.monsterPreview) return;
@@ -174,6 +182,7 @@ export function removeMonsterPreview() {
 export const corpseLooted = () => fight.combatEncounter?.status === 'defeated' && fight.combatEncounter.looted;
 /** Tras registrar los restos, Isberto acude junto al jugador. */
 export function playIsbertoReturn() {
+  cinematic.cancel();
   const isberto = npcActors.find(npc => npc.id === 'isberto');
   if (!isberto) return;
   const away = holder.position.clone().sub(fight.combatTargetRoot?.position ?? holder.position).setY(0);
@@ -247,6 +256,7 @@ export function updateIsbertoGuide(dt: number) {
 }
 /** Ya dentro de su casa, Isberto enseña la cama y el cofre. */
 export function playHouseTour() {
+  cinematic.cancel();
   const generation = play.playGeneration;
   const bed = groundPoint(HOUSE_BED), chest = groundPoint(BANK_SPOTS[ISBERTO_HOUSE]);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, play.city.groundY(x, z) + y, z);

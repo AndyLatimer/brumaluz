@@ -32,6 +32,17 @@ export const playerInteractions = createPlayerInteractions((target) => tradeWind
 export const INTERACTIONS: Record<string, () => DialogLine[]> = {
   well: () => [{ speaker: session.state.name, text: '(Te asomas al pozo, es realmente profundo)' }],
 };
+/** Stop at the object before reaching for it, instead of sliding through the gesture. */
+function prepareObjectInteraction(item: Interactable, gesture: 'inspect' | 'pickup' | null = null) {
+  play.pendingTalk = null;
+  keys.clear(); play.moveTarget = null; marker.visible = false; playerVel.set(0,0,0);
+  fight.combatApproach = false;
+  play.char.setGait('idle');
+  const dx = item.position.x-holder.position.x, dz = item.position.z-holder.position.z;
+  if (dx*dx+dz*dz > .01) holder.rotation.y = Math.atan2(dx,dz);
+  if (gesture === 'inspect') play.char.inspect();
+  else if (gesture === 'pickup') play.char.pickUp();
+}
 export function nearestInteractable(): Interactable | null {
   let best: Interactable | null = null, bestDistance = Infinity;
   const corpses: Interactable[] = fight.combatTargetRoot && fight.combatEncounter?.status === 'defeated'
@@ -48,7 +59,7 @@ export function nearestInteractable(): Interactable | null {
   const seats: Interactable[] = play.city.seats.map(seat => ({
     id: `seat:${seat.id}`, label: 'Sentarse', position: seat.position, radius: 2.2,
   }));
-  for (const item of [...portals, ...corpses, ...banks, ...beds, ...seats, ...wildernessInteractions(), ...professionInteractions(play.city,session.state.rpg), ...play.city.interactables, ...story.welcomeWorld.interactions(), ...story.coinBags.interactions()]) {
+  for (const item of [...portals, ...corpses, ...banks, ...beds, ...seats, ...wildernessInteractions(), ...professionInteractions(play.city,session.state.rpg), ...play.city.interactables, ...story.welcomeWorld.interactions(), ...story.coinBags.interactions(), ...story.fairyDust.interactions()]) {
     if (item.id === 'npc:isberto' && !isbertoVisible()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -79,6 +90,7 @@ export function talkTo(npcId: string) {
 }
 export function interact() {
   if (play.mode !== 'play' || play.mapTravelling || play.dead || storyLock() || tradeWindow.isOpen || playerInteractions.isOpen || isDialogOpen() || ui.openWindow || ui.gameMenuOpen || ui.playerMenuOpen || ui.worldMenuOpen || ui.optionsOpen) return;
+  if(isInCombat(fight.combatEncounter)||fight.combatAuto&&fight.combatEncounter?.status==='active')return;
   if (play.char.isSeated) { play.char.stand(); return; }
   const { item, player } = nearestInteraction();
   if (player) {
@@ -106,9 +118,9 @@ export function interact() {
     play.lastPlatformY = null;
     return;
   }
-  if(item?.id.startsWith('wildloot:')){openWildernessCorpse(item.id.slice(9));return;}
-  if(item?.id.startsWith('resource:')){void gatherResource(item.id.slice(9));return;}
-  if(item?.id.startsWith('station:')){const job=item.id.slice(8);selectProfessionTab(job==='reparacion'?'tools':'recipes',job==='reparacion'?'herreria':job);setWindow('professions');void performProfession('state');return;}
+  if(item?.id.startsWith('wildloot:')){prepareObjectInteraction(item,'pickup');openWildernessCorpse(item.id.slice(9));return;}
+  if(item?.id.startsWith('resource:')){prepareObjectInteraction(item);void gatherResource(item.id.slice(9));return;}
+  if(item?.id.startsWith('station:')){prepareObjectInteraction(item,'inspect');const job=item.id.slice(8);selectProfessionTab(job==='reparacion'?'tools':'recipes',job==='reparacion'?'herreria':job);setWindow('professions');void performProfession('state');return;}
   if (item?.id.startsWith('portal:')) {
     const portal = play.city.portals.find(portal => portal.id === item.id.slice(7));
     if (portal && doorLocked(portal)) { toast('Casa de Isberto', 'La puerta está cerrada con llave.', true); return; }
@@ -116,15 +128,16 @@ export function interact() {
     return;
   }
   if (item?.id === 'house:bed') { void restInBed(); return; }
-  if (item?.id === 'welcome:badge') { void performWelcome('collect'); return; }
-  if (item?.id === 'corpse:shadowling') { fight.lootEncounter=null;fight.lootTargetRoot=null;setWindow('loot'); return; }
-  if (item?.id === 'bank:chest') { void openBank(); return; }
-  if (item?.id.startsWith('coinbag:')) { void pickUpCoinBag(item.id.slice('coinbag:'.length)); return; }
-  if (item?.id.startsWith('fairydust:')) { void pickUpFairyDust(item.id.slice('fairydust:'.length)); return; }
+  if (item?.id === 'welcome:badge') { prepareObjectInteraction(item);void performWelcome('collect'); return; }
+  if (item?.id === 'corpse:shadowling') { prepareObjectInteraction(item,'pickup');fight.lootEncounter=null;fight.lootTargetRoot=null;setWindow('loot'); return; }
+  if (item?.id === 'bank:chest') { prepareObjectInteraction(item,'inspect');void openBank(); return; }
+  if (item?.id.startsWith('coinbag:')) { prepareObjectInteraction(item);void pickUpCoinBag(item.id.slice('coinbag:'.length)); return; }
+  if (item?.id.startsWith('fairydust:')) { prepareObjectInteraction(item);void pickUpFairyDust(item.id.slice('fairydust:'.length)); return; }
   const npcId = item?.id.startsWith('npc:') ? item.id.slice(4) : null;
   if (npcId) { talkTo(npcId); return; }
   const lines = item && (INTERACTIONS[item.id]?.() ?? (item.text ? [{ speaker: session.state.name, text: item.text }] : undefined));
   if (!lines) return;
+  if (item) prepareObjectInteraction(item,'inspect');
   keys.clear();
   play.moveTarget = null;
   marker.visible = false;
@@ -139,7 +152,10 @@ export function clickNpc(e: PointerEvent) {
   ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   if(play.city.locationId==='pompelin'&&clickWilderness(ray))return true;
   if (fight.combatTargetRoot && fight.combatEncounter?.status === 'defeated' && ray.intersectObject(fight.combatTargetRoot, true).length) {
-    if (holder.position.distanceTo(fight.combatTargetRoot.position) <= 3) setWindow('loot');
+    if (holder.position.distanceTo(fight.combatTargetRoot.position) <= 3) {
+      prepareObjectInteraction({id:'corpse:shadowling',position:fight.combatTargetRoot.position,radius:3,label:'Registrar cuerpo'},'pickup');
+      setWindow('loot');
+    }
     else toast('Botín', 'Acércate al cuerpo para recoger el botín.', true);
     return true;
   }
@@ -147,6 +163,7 @@ export function clickNpc(e: PointerEvent) {
     lockCombatTarget(true);
     return true;
   }
+  if(isInCombat(fight.combatEncounter)||fight.combatAuto&&fight.combatEncounter?.status==='active')return false;
   if (story.welcomeWorld.root.visible && ray.intersectObject(story.welcomeWorld.root, true).length) {
     if (holder.position.distanceTo(story.welcomeWorld.root.position) <= TALK_RANGE) talkGnomi();
     else {
@@ -175,7 +192,7 @@ export function updateInteractPrompt() {
     const target = remotePlayers.list().find((player) => player.id === playerInteractions.targetId);
     if (play.mode !== 'play' || play.dead || !target || Math.hypot(target.root.position.x - holder.position.x, target.root.position.z - holder.position.z) > TALK_RANGE) playerInteractions.close();
   }
-  const canInteract = play.mode === 'play' && !play.dead && !storyLock() && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen;
+  const canInteract = play.mode === 'play' && !play.mapTravelling && !play.dead && !storyLock() && !tradeWindow.isOpen && !playerInteractions.isOpen && !isDialogOpen() && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen && !isInCombat(fight.combatEncounter) && !(fight.combatAuto&&fight.combatEncounter?.status==='active');
   const seated = play.mode === 'play' && play.char.isSeated;
   const interaction = canInteract && !seated ? nearestInteraction() : null;
   prompt.hidden = seated ? !canInteract : !interaction?.item && !interaction?.player;

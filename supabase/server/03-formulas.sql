@@ -182,7 +182,7 @@ $$;
 
 create or replace function public.game_skill_rank(d jsonb)
 returns int language sql immutable set search_path = '' as $$
-  select greatest(1,least(5,public.game_level(d)/2+1,
+  select greatest(1,least(5,public.game_level(d),
     coalesce((d->'skillRanks'->>public.game_skill_id(d->>'cls'))::int,1)))
 $$;
 

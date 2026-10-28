@@ -1,0 +1,44 @@
+{
+  "region": {
+    "x": 660,
+    "z": -225,
+    "rx": 235,
+    "rz": 185
+  },
+  "checks": {
+    "composition": {
+      "trees": 1147,
+      "broadleaf": 1147,
+      "broadleafShare": 1,
+      "cityBuildings": 0
+    },
+    "canopy": {
+      "spacing": 5,
+      "dryForestArea": 113450,
+      "coveredArea": 87900,
+      "coverage": 0.775
+    },
+    "futureArrival": {
+      "x": 625,
+      "z": -195,
+      "radius": 15,
+      "blockedSamples": 0
+    },
+    "entrancePath": {
+      "from": [
+        600,
+        -195
+      ],
+      "to": [
+        625,
+        -195
+      ],
+      "maxDeflection": 0
+    },
+    "gameplaySites": {
+      "resources": 34,
+      "enemies": 0
+    }
+  },
+  "errors": []
+}

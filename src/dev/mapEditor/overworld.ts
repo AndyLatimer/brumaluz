@@ -82,7 +82,7 @@ export function overworldTemplate(): MapDocument {
     const px=-40+dx/length*50/OVERWORLD_SCALE,pz=-30+dz/length*50/OVERWORLD_SCALE;
     const ax=-40+dx/length*64/OVERWORLD_SCALE,az=-30+dz/length*64/OVERWORLD_SCALE;
     map.markers.push(
-      {id:`entrada_brumaluz_${gate.id}`,type:'portal',name:`Entrar en Brumaluz · ${gate.name}`,layer:'logica',position:[px*OVERWORLD_SCALE,heightAt(px,pz),pz*OVERWORLD_SCALE],rotationY:0,radius:4,trigger:'interact',target:{map:'brumaluz',arrival:`llegada_${gate.id}`}},
+      {id:`entrada_brumaluz_${gate.id}`,type:'portal',name:`Entrar en Brumaluz · ${gate.name}`,layer:'logica',position:[px*OVERWORLD_SCALE,heightAt(px,pz),pz*OVERWORLD_SCALE],rotationY:0,radius:4,trigger:'walk',target:{map:'brumaluz',arrival:`llegada_${gate.id}`}},
       {id:`desde_brumaluz_${gate.id}`,type:'arrival',name:`Desde Brumaluz · ${gate.name}`,layer:'logica',position:[ax*OVERWORLD_SCALE,heightAt(ax,az),az*OVERWORLD_SCALE],rotationY:Math.atan2(-dx,-dz),radius:1},
     );
   }

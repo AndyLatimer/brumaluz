@@ -2,6 +2,7 @@
 @import './game/01-base.css';
 @import './game/02-account.css';
 @import './game/03-creator.css';
+@import './game/23-creator-studio.css';
 @import './game/04-play-maps.css';
 @import './game/05-inventory-bank.css';
 @import './game/06-sheet-effects.css';

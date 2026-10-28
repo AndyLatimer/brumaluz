@@ -9,6 +9,7 @@ import { loadGLB } from './load';
 import { softDot } from './paint';
 import { daylight } from './dayNight';
 import { loadMapWorld } from './mapRuntime';
+import { WORLD_TREE_OCCLUDER } from './map/objects';
 import { WaterLayer } from './water';
 import { boxOf, createMapAssetProvider, LAMPPOST_FLAME_Y, LAMPPOST_GLASS } from './mapAssetsCore';
 import { cityLinks, type City, type CityVendorSpot, type Interactable, type NpcSite, type SeatSpot } from './city';
@@ -122,6 +123,7 @@ async function sinkTerrainUnderTiles(world: Awaited<ReturnType<typeof loadMapWor
   position.needsUpdate = true;
   surface.mesh.geometry.computeBoundingSphere();
   surface.mesh.geometry.computeBoundingBox();
+  surface.refreshRenderedChunks();
 }
 
 /** Adapta un mapa del editor a la interfaz `City` que usa el juego. */
@@ -195,18 +197,18 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     npcSites.push({ id: marker.npcId, position: onGround(marker.position), yaw: marker.rotationY });
   }
 
-  const interactables: Interactable[] = [], vendorSpots: CityVendorSpot[] = [], fairyDustSpots: { id: string; x: number; z: number; yaw: number }[] = [];
+  const interactables: Interactable[] = [], vendorSpots: CityVendorSpot[] = [];
   for (const marker of markers) {
     if (marker.type !== 'interaction') continue;
     const text = marker.text?.trim() ?? '';
-    if (marker.id.startsWith('coins_') || text === 'coin-bag') continue;
-    if (text === 'fairy-dust') {
-      fairyDustSpots.push({ id: marker.id, x: marker.position[0], z: marker.position[2], yaw: marker.rotationY });
-      continue;
-    }
+    // Personal collectibles share the catalog and stable IDs validated by the server.
+    if (marker.id.startsWith('coins_') || text === 'coin-bag' || text === 'fairy-dust') continue;
     if (VENDOR_ROLES.has(text as CityVendorSpot['role'])) {
       vendorSpots.push({ id: marker.id.replace(/^vendor_/, ''), role: text as CityVendorSpot['role'], position: onGround(marker.position) });
       continue;
+    }
+    if(/^profession:(herreria|peleteria|sastreria|carpinteria|ebanisteria|joyeria|alquimia|encantamiento|cocina|minero|lenador|recolector)$/.test(text)){
+      interactables.push({id:`station:${text.slice(11)}`,position:onGround(marker.position),radius:marker.radius,label:marker.name||'Usar banco de trabajo'});continue;
     }
     interactables.push(text === 'well'
       ? { id: 'well', position: onGround(marker.position), radius: marker.radius, label: marker.name || 'Asomarse al pozo' }
@@ -282,9 +284,8 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
     platformY: collision.platformY,
     spawn: spawnMarker ? onGround(spawnMarker.position) : world.spawn,
     spawnYaw: spawnMarker?.rotationY ?? 0,
-    fairyDustSpots,
     ...cityLinks(markers, (x, z) => field.heightAt(x, z)),
-    // Solo en interiores, y solo sus paredes: muebles, casas de la ciudad o árboles no se atenúan.
+    // Interior walls and world canopy each use their own narrow occlusion rule.
     waterAt: collision.waterAt,
     waterFalls: water.falls,
     fireflies: mapFireflies(doc.settings),
@@ -303,6 +304,10 @@ export async function buildMapCity(doc: MapDocument, assets: Readonly<Record<str
         // Si se retira una pared para ver al personaje, tampoco queda un rectángulo de cielo flotando.
         pane.visible = chunk?.visible !== false && !faded;
       });
+    } : doc.settings.kind === 'world' ? (eye, targets, dt) => {
+      // Several leaf lobes overlap on each tree; a faint silhouette avoids
+      // stacking green transparent surfaces over the player.
+      world.objects.fadeOccluders(eye, targets, dt, WORLD_TREE_OCCLUDER, .06);
     } : undefined,
     update(t: number, playerPosition?: THREE.Vector3) {
       // Campo de visión: lo que queda tras la niebla no se dibuja (con margen para la cámara, detrás del jugador).

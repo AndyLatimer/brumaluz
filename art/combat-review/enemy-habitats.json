@@ -1,0 +1,76 @@
+[
+  {
+    "id": "camino_1",
+    "cells": 733,
+    "sites": [
+      "camino_1",
+      "camino_1_salteador",
+      "camino_1_vigia"
+    ]
+  },
+  {
+    "id": "camino_2",
+    "cells": 733,
+    "sites": [
+      "camino_2"
+    ]
+  },
+  {
+    "id": "camino_3",
+    "cells": 721,
+    "sites": [
+      "camino_3"
+    ]
+  },
+  {
+    "id": "camino_4",
+    "cells": 733,
+    "sites": [
+      "camino_4",
+      "camino_4_jabali"
+    ]
+  },
+  {
+    "id": "camino_5",
+    "cells": 733,
+    "sites": [
+      "camino_5",
+      "camino_5_brote"
+    ]
+  },
+  {
+    "id": "cuero_1",
+    "cells": 401,
+    "sites": [
+      "cuero_1"
+    ]
+  },
+  {
+    "id": "cuero_2",
+    "cells": 400,
+    "sites": [
+      "cuero_2"
+    ]
+  },
+  {
+    "id": "cuero_3",
+    "cells": 374,
+    "sites": [
+      "cuero_3"
+    ]
+  },
+  {
+    "id": "cuero_4",
+    "cells": 390,
+    "sites": [
+      "cuero_4"
+    ]
+  },
+  {
+    "id": "cuero_5",
+    "cells": 401,
+    "sites": [
+      "cuero_5"
+    ]
+  }
+]

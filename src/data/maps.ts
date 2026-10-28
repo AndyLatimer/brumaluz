@@ -54,6 +54,8 @@ export interface MapObject {
   collision: CollisionMode;
   /** Plataforma sobre la que se puede subir. Sin valor: decide el motor según su altura. */
   walkable?: boolean;
+  /** Hojas cerradas de `city/wall_straight_gate`; el portal de proximidad se configura por separado. */
+  gateClosed?: boolean;
   /** Se deforma con el terreno; `position[1]` pasa a ser un desplazamiento sobre él. */
   conform?: boolean;
   tint?: string;
@@ -318,6 +320,7 @@ export function validateMap(value: unknown): MapDocument {
     };
     const name = text(object.name, `${path}.name`, 120, false); if (name) result.name = name;
     const walkable = bool(object.walkable, `${path}.walkable`, true); if (walkable !== undefined) result.walkable = walkable;
+    const gateClosed = bool(object.gateClosed, `${path}.gateClosed`, true); if (gateClosed !== undefined) result.gateClosed = gateClosed;
     if (bool(object.conform, `${path}.conform`, true)) result.conform = true;
     const tint = color(object.tint, `${path}.tint`, true); if (tint) result.tint = tint;
     if (bool(object.locked, `${path}.locked`, true)) result.locked = true;

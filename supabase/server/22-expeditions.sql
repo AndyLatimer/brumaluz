@@ -127,8 +127,10 @@ begin
   -- Crafted-only collections are never selected here. Dungeon collection models remain distinct.
   select key into recipe from jsonb_each(public.game_rpg_catalog()->'recipes') r where (r.value->>'tier')::int<=tier and r.key ~ '(alba|eclipse|marea|forja)' and public.game_equipment_item(r.key)->>'cls'=c.data->>'cls' order by random() limit 1;
   if recipe is not null then c.data:=public.game_rpg_give(c.data,public.game_rpg_new_item(recipe,1),true);end if;
-  select key into recipe from jsonb_each(public.game_rpg_catalog()->'recipes') r where (r.value->>'tier')::int between 1 and tier order by random() limit 1;
-  if recipe is not null then c.data:=public.game_rpg_give(c.data,public.game_rpg_new_item('receta_'||recipe,1),true);end if;
+  if (s->>'level')::int>=coalesce((public.game_rpg_catalog()->'rareRecipeDrop'->>'minEnemyLevel')::int,26) and random()<coalesce((public.game_rpg_catalog()->'rareRecipeDrop'->>'chance')::numeric,.005) then
+   select key into recipe from jsonb_each(public.game_rpg_catalog()->'recipes') r where r.value->>'source'='drop' and (r.value->>'tier')::int=5 order by random() limit 1;
+   if recipe is not null then c.data:=public.game_rpg_give(c.data,public.game_rpg_new_item('receta_'||recipe,1),true);end if;
+  end if;
   c.data:=public.game_set_pelines(c.data,public.game_pelines(c.data)+10+tier*5);
   c.data:=public.game_rpg_give(c.data,public.game_rpg_new_item('cuero_'||tier::text,3),true);
   c.data:=public.game_rpg_give(c.data,public.game_rpg_new_item('cuero_0',3),true);

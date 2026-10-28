@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "liveWrites": false,
+  "checks": [
+    "schema and references",
+    "local rehearsal lifecycle",
+    "atomic writes and conflicts",
+    "five-step guided creation",
+    "searchable target lists",
+    "inline error navigation",
+    "preservation of custom objective text",
+    "automatic question and return",
+    "editor desktop and mobile",
+    "draft and current step recovery",
+    "actual game dialogue desktop and mobile"
+  ]
+}

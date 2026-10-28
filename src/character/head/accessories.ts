@@ -2,52 +2,56 @@
 import * as THREE from 'three';
 import type { HeadOptions, CreatorParts } from './types';
 import type { Analysis } from './analysis';
-import { CENTER, V, PI, smoothNormals } from './geometry';
-import { earringAnchor } from './earringAnchor';
+import { CENTER, V, PI } from './geometry';
+import type { HeadAnatomy } from './anatomy';
+import { accessorySelection } from './accessoryLayers';
+import { tailoredBow, sculptedFlower, tailoredScarf } from './tailoredDetails';
+import { crescentGeometry, leafSprig } from './ornamentGeometry';
+import { accessorySurfaces } from './accessorySurfaces';
+import { fitEyewear, eyewearTemple, fittedTravelerMask } from './faceAccessoryFit';
+import { neckJewelry } from './neckJewelry';
+import { fitHairOrnament, hairCirclet } from './hairOrnamentFit';
+
+const hairContacts = new Map<string, { point: THREE.Vector3; normal: THREE.Vector3 }>();
 
 /** Complementos de la cabeza (parte de buildHead). */
-export function buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, frontZ, onFace, parts, pushOut, beast, blushMat, facing, topAt, conform }: { o: HeadOptions; extraMat: (c: string) => THREE.Material; topRay: THREE.Group<THREE.Object3DEventMap>; headRay: THREE.Mesh<THREE.BufferGeometry<THREE.NormalBufferAttributes>, THREE.MeshBasicMaterial, THREE.Object3DEventMap>; decals: THREE.Object3D[]; A: Analysis; E: { rx: number; ry: number; tilt: number; lid: number; hl?: number; }; frontZ: (x: number, y: number) => number; onFace: (x: number, y: number, out?: number) => THREE.Vector3; parts: CreatorParts; pushOut: (g: THREE.BufferGeometry, margin: number) => THREE.BufferGeometry<THREE.NormalBufferAttributes>; beast: boolean; blushMat: THREE.MeshBasicMaterial; facing: (x: number, y: number) => THREE.Euler; topAt: (x: number, z: number) => THREE.Vector3; conform: (group: THREE.Object3D, lift: number) => void }) {
+export function buildAccessories({ o, anatomy, skinParts = [], extraMat, topRay, headRay, decals, A, E, frontZ, onFace, parts, blushMat, facing, topAt, conform }: { o: HeadOptions; anatomy: HeadAnatomy; skinParts?: THREE.BufferGeometry[]; extraMat: (c: string) => THREE.Material; topRay: THREE.Group<THREE.Object3DEventMap>; headRay: THREE.Mesh<THREE.BufferGeometry<THREE.NormalBufferAttributes>, THREE.MeshBasicMaterial, THREE.Object3DEventMap>; decals: THREE.Object3D[]; A: Analysis; E: { rx: number; ry: number; tilt: number; lid: number; hl?: number; }; frontZ: (x: number, y: number) => number; onFace: (x: number, y: number, out?: number) => THREE.Vector3; parts: CreatorParts; blushMat: THREE.MeshBasicMaterial; facing: (x: number, y: number) => THREE.Euler; topAt: (x: number, z: number) => THREE.Vector3; conform: (group: THREE.Object3D, lift: number) => void }) {
   const accCol = o.accColor ?? '#e8b84a';
-  const accMat = extraMat(accCol);
   const hairAccMat = extraMat(o.hairAccColor ?? '#e8b84a');
   const makeupCol = o.makeupColor ?? '#f08aa8';
+  const { eyewear, neckwear, earrings, mask: faceCovering } = accessorySelection(o.acc ?? 0);
+  const surfaces = accessorySurfaces(o, topRay, headRay, skinParts, frontZ);
+  const frame = fitEyewear(A, E, eyewear, surfaces, onFace);
+  const hairContact = (dir: THREE.Vector3) => {
+    const d = dir.clone().normalize();
+    const key = `${o.face}/${o.hair}/${o.hat}/${Math.round(d.x * 1e5)},${Math.round(d.y * 1e5)},${Math.round(d.z * 1e5)}`;
+    const cached = hairContacts.get(key);
+    if (cached) return { point: cached.point.clone(), normal: cached.normal.clone() };
+    const hit = new THREE.Raycaster(CENTER.clone().addScaledVector(d, 2), d.clone().negate()).intersectObjects([topRay, headRay], true)[0];
+    const point = hit?.point.clone() ?? CENTER.clone().addScaledVector(d, .55);
+    const normal = hit?.face?.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize() ?? d.clone();
+    if (normal.dot(d) < 0) normal.negate();
+    hairContacts.set(key, { point: point.clone(), normal: normal.clone() });
+    if (hairContacts.size > 1024) hairContacts.delete(hairContacts.keys().next().value!);
+    return { point, normal };
+  };
   /** Punto del pelo (o de la cabeza) en una dirección desde el centro, un poco por fuera. */
   const onHair = (dir: THREE.Vector3, out = 0.01) => {
-    const d = dir.clone().normalize();
-    const hit = new THREE.Raycaster(CENTER.clone().addScaledVector(d, 2), d.clone().negate()).intersectObjects([topRay, headRay], true)[0];
-    return (hit ? hit.point : CENTER.clone().addScaledVector(d, 0.55)).addScaledVector(d, out);
+    return hairContact(dir).point.addScaledVector(dir.clone().normalize(), out);
   };
   const onHairSurface = (dir: THREE.Vector3, out: number) => {
-    const d = dir.clone().normalize();
-    const hit = new THREE.Raycaster(CENTER.clone().addScaledVector(d, 2), d.clone().negate()).intersectObjects([topRay, headRay], true)[0];
-    if (!hit) return { point: CENTER.clone().addScaledVector(d, 0.55).addScaledVector(d, out), normal: d };
-    const normal = hit.face!.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
-    return { point: hit.point.clone().addScaledVector(normal, out), normal };
+    const { point, normal } = hairContact(dir);
+    return { point: point.addScaledVector(normal, out), normal };
   };
   /** Objeto mirando hacia fuera según una dirección. */
   const place = (obj: THREE.Object3D, direction: THREE.Vector3, roll = 0) => {
-    // La base y la orientación usan la misma superficie final, incluso sobre un moño.
-    const { point, normal } = onHairSurface(direction, 0.006);
     obj.name = 'character-hair-ornament';
-    obj.position.copy(point);
-    obj.quaternion.setFromUnitVectors(V(0, 0, 1), normal).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1), roll));
+    fitHairOrnament(obj, direction, roll, anatomy, onHairSurface);
     decals.push(obj);
     return obj;
   };
   const flower = (r: number, petal: string, heart = '#ffd65a', n = 5) => {
-    const g = new THREE.Group();
-    for (let k = 0; k < n; k++) {
-      const a = (k / n) * PI * 2;
-      const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 6), extraMat(petal));
-      m.scale.set(1, 0.72, 0.38);
-      m.position.set(Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95, 0);
-      m.rotation.z = a;
-      g.add(m);
-    }
-    const c = new THREE.Mesh(new THREE.SphereGeometry(r * 0.55, 10, 6), extraMat(heart));
-    c.scale.z = 0.6; c.position.z = r * 0.2;
-    g.add(c);
-    return g;
+    return sculptedFlower(r, petal, heart, n);
   };
   const star = (r: number, depth: number) => {
     const sh = new THREE.Shape();
@@ -62,18 +66,7 @@ export function buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, f
   if (o.hat === 'none') switch (o.hairAcc ?? 0) {
     case 1: { const d = V(0.6, 0.6, 0.55); place(flower(0.06, o.hairAccColor ?? '#e8b84a'), d); break; }
     case 2: {
-      const d = V(0.5, 0.8, 0.3), g = new THREE.Group();
-      for (const sx of [-1, 1]) {
-        const w = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.16, 12).rotateZ(sx * PI / 2).translate(sx * 0.08, 0, 0), hairAccMat);
-        w.scale.set(1, 1, 0.45);
-        g.add(w);
-        const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.1, 2, 6), hairAccMat);
-        tail.position.set(sx * 0.03, -0.08, 0); tail.rotation.z = sx * 0.35; tail.scale.z = 0.4;
-        g.add(tail);
-      }
-      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), hairAccMat);
-      g.add(knot);
-      place(g, d, -0.4);
+      place(tailoredBow(o.hairAccColor ?? '#e8b84a'), V(0.5, 0.8, 0.3), -.4);
       break;
     }
     case 3: { const d = V(-0.65, 0.6, 0.5); place(new THREE.Mesh(star(0.06, 0.018), hairAccMat), d, 0.2); break; }
@@ -129,34 +122,24 @@ export function buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, f
       break;
     }
     case 9: {
-      const d = V(-0.72, 0.45, 0.7), pin = new THREE.Group();
-      for (let k = 0; k < 3; k++) {
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), hairAccMat);
-        leaf.scale.set(0.026, 0.058, 0.009);
-        leaf.position.set((k - 1) * 0.035, (k - 1) * 0.035, 0);
-        leaf.rotation.z = k % 2 ? -0.6 : 0.5;
-        pin.add(leaf);
-      }
-      place(pin, d, -0.3);
+      place(leafSprig(o.hairAccColor ?? '#e8b84a'), V(-0.72, 0.45, 0.7), -.3);
       break;
     }
     case 10: {
       const d = V(0.62, 0.65, 0.55), moon = new THREE.Group();
-      moon.add(new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.012, 8, 28, PI * 1.48).rotateZ(PI * 0.26), hairAccMat));
+      moon.add(new THREE.Mesh(crescentGeometry(.052, .009), hairAccMat));
       const bead = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 8), extraMat('#fff2ca'));
       bead.position.set(0.038, -0.06, 0); moon.add(bead);
+      moon.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(.029, -.043, 0), V(.033, -.053, 0), V(.038, -.06, 0)]), 12, .0025, 5), hairAccMat));
       place(moon, d, -0.15);
       break;
     }
     case 11: {
-      const points: THREE.Vector3[] = [];
-      for (let k = 0; k <= 32; k++) {
-        const a = -1.5 + k / 32 * 3;
-        const anchor = onHairSurface(V(Math.sin(a), 0.55, Math.cos(a)), 0.008);
-        points.push(anchor.point);
+      const points = hairCirclet(anatomy, onHairSurface);
+      for (let k = 0; k < points.length; k++) {
         if (k % 4 === 0) {
           const bead = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), hairAccMat);
-          bead.position.copy(anchor.point); bead.name = 'character-hair-ornament'; decals.push(bead);
+          bead.position.copy(points[k]); bead.name = 'character-hair-ornament'; decals.push(bead);
         }
       }
       ring(points, 0.006, extraMat('#80603d')).name = 'character-hair-ornament';
@@ -166,89 +149,79 @@ export function buildAccessories({ o, extraMat, topRay, headRay, decals, A, E, f
   const glasses = (sides: number[]) => {
     const metal = extraMat(accCol), lens = new THREE.MeshStandardMaterial({ color: '#dff2ff', transparent: true, opacity: 0.18, roughness: 0.05, depthWrite: false });
     for (const s of sides) {
-      const x = s * A.eyeX * 0.96, y = A.eyeY - 0.012;
-      // No invadir la lente opuesta con ojos grandes; también deja sitio al puente.
-      const r = Math.min(Math.max(E.rx, E.ry) * 1.4, A.eyeX * 0.96 - 0.026);
+      const { y, rx, ry, z } = frame, x = s * frame.x;
       const g = new THREE.Group();
       g.name = 'character-glasses-lens';
-      g.add(new THREE.Mesh(new THREE.TorusGeometry(r, 0.009, 6, 28), metal));
-      if (o.acc === 10) g.scale.y = 0.78;
-      const l = new THREE.Mesh(new THREE.CircleGeometry(r, 24), lens);
-      l.renderOrder = 3;
+      g.userData.fit = { ...frame, x };
+      const outline: THREE.Vector3[] = [];
+      for (let i = 0; i <= 48; i++) {
+        const a = i / 48 * PI * 2, cos = Math.cos(a), sin = Math.sin(a);
+        outline.push(eyewear === 11 ? V(rx * Math.sign(cos) * Math.abs(cos) ** .5, ry * Math.sign(sin) * Math.abs(sin) ** .5, 0) : V(rx * cos, ry * sin, 0));
+      }
+      const rim = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(outline, true), 48, .009, 6, true), metal);
+      rim.name = 'character-glasses-rim'; g.add(rim);
+      const lensShape = new THREE.Shape(outline.map(point => new THREE.Vector2(point.x, point.y)));
+      const l = new THREE.Mesh(new THREE.ShapeGeometry(lensShape), lens);
+      l.name = 'character-glasses-glass'; l.renderOrder = 3;
       g.add(l);
-      // las dos lentes en un mismo plano delante de la cara (como unas gafas de verdad)
-      const z = Math.max(frontZ(0, y) + 0.065, frontZ(x, y) + 0.055);
       g.position.set(x, y, z);
       decals.push(g);
       if (sides.length === 2) {
-        const temple = onHair(V(s, -0.12, 0.05), 0.012);
-        const arm = ring([V(x + s * r, y, z), V(s * 0.37, y, z - 0.025), temple], 0.007, metal);
+        const attachment = anatomy.ear(s), support = attachment.temple.clone().addScaledVector(attachment.normal, .007);
+        const arm = ring(eyewearTemple(V(x + s * rx, y, z), support, s, surfaces), .007, metal);
         arm.name = 'character-glasses-arm';
+        arm.userData.earSide = s;
+        const hinge = new THREE.Mesh(new THREE.CylinderGeometry(.0045, .0045, .018, 10), metal);
+        hinge.position.set(x + s * rx, y, z - .003); hinge.name = 'character-glasses-hinge'; decals.push(hinge);
+        const padX = x - s * rx * .83, padY = y - .022, padZ = surfaces.front(padX, padY) + .008;
+        const pad = new THREE.Mesh(new THREE.CapsuleGeometry(.006, .009, 3, 8), extraMat('#dbd4bc'));
+        pad.name = 'character-glasses-pad'; pad.position.set(padX, padY, padZ); pad.rotation.z = s * .3; decals.push(pad);
+        ring([V(x - s * rx * .86, y - .008, z - .002), V(padX, padY, padZ + .005)], .0027, metal).name = 'character-glasses-pad-stem';
       }
     }
     return metal;
   };
-  const acc = o.acc ?? 0;
-  if (acc === 1 || acc === 6 || acc === 10) {
+  if (eyewear === 1 || eyewear === 10 || eyewear === 11) {
     const metal = glasses([-1, 1]);
-    const y = A.eyeY - 0.012, x = A.eyeX * 0.96;
-    const r = Math.min(Math.max(E.rx, E.ry) * 1.4, x - 0.026);
-    const z = Math.max(frontZ(0, y) + 0.065, frontZ(x, y) + 0.055);
-    const bridge = ring([V(-x + r, y, z), V(0, y + 0.022, z + 0.006), V(x - r, y, z)], 0.007, metal);
+    const { x, y, rx, z } = frame;
+    const bridge = ring([V(-x + rx, y, z), V(0, y + .022, Math.max(z + .006, surfaces.front(0, y + .022) + .018)), V(x - rx, y, z)], .007, metal);
     bridge.name = 'character-glasses-bridge';
   }
-  if (acc === 5) {
-    glasses([1]);
-    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.32, 4), accMat);
-    chain.position.copy(onFace(A.eyeX + 0.06, A.eyeY - 0.2, 0.03)); chain.rotation.z = 0.25;
-    decals.push(chain);
+  if (eyewear === 5) {
+    const metal = glasses([1]), { x, y, rx, ry, z } = frame;
+    const root = V(x + rx * .7, y - ry * .7, z), points = [root];
+    for (let k = 1; k <= 14; k++) {
+      const t = k / 14, px = root.x + .022 * Math.sin(t * PI), py = root.y - .24 * t;
+      points.push(V(px, py, Math.max(root.z + .018 * Math.sin(t * PI), surfaces.front(px, py) + .025)));
+    }
+    ring(points, .003, metal).name = 'character-monocle-chain';
   }
-  if (acc === 2 || acc === 6) {
-    // bufanda de lana: rosca al cuello y una punta que cuelga
-    const wool = extraMat(accCol);
-    const sc = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.075, 10, 28).rotateX(PI / 2), wool);
-    sc.position.set(0, 1.15, 0.0); sc.scale.set(1, 1, 0.92); sc.rotation.x = 0.12;
-    sc.name = 'character-neck-accessory';
-    decals.push(sc);
-    const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.2, 4, 8), wool);
-    tail.position.set(0.17, 0.98, 0.3); tail.rotation.set(0.25, 0, 0.18); tail.scale.z = 0.55;
-    tail.name = 'character-neck-accessory';
-    decals.push(tail);
+  if (neckwear === 2) {
+    decals.push(...tailoredScarf(accCol));
   }
-  if (acc === 3) {
-    const pts: THREE.Vector3[] = [];
-    for (let k = 0; k <= 16; k++) { const a = -PI * 0.85 + (k / 16) * PI * 1.7; pts.push(V(Math.sin(a) * 0.3, 1.13 - Math.cos(a) * 0.1 - (1 + Math.cos(a)) * 0.0, Math.cos(a) * 0.3 + 0.02)); }
-    ring(pts, 0.008, extraMat('#e8b84a')).name = 'character-neck-accessory';
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.04, 0), new THREE.MeshStandardMaterial({ color: accCol, roughness: 0.15, metalness: 0.2, emissive: accCol, emissiveIntensity: 0.25 }));
-    gem.scale.set(0.9, 1.25, 0.6);
-    gem.position.copy(pts[8]).add(V(0, -0.04, 0.01));
-    gem.name = 'character-neck-accessory';
-    decals.push(gem);
-  }
-  if (acc === 4 || acc === 8 || acc === 9) for (const s of [-1, 1]) {
-    const g = new THREE.Group();
-    g.name = 'character-earring';
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), extraMat('#e8b84a')));
-    const drop = new THREE.Mesh(acc === 8 ? new THREE.TorusGeometry(0.045, 0.008, 8, 24) : acc === 9
-      ? new THREE.TorusGeometry(0.033, 0.009, 8, 24, PI * 1.5).rotateZ(PI * 0.25)
-      : new THREE.SphereGeometry(0.03, 10, 8), extraMat(accCol));
-    drop.scale.y = 1.3; drop.position.y = -0.055;
+  if (neckwear === 3 || neckwear === 12) decals.push(...neckJewelry(accCol, neckwear === 12));
+  if (earrings) for (const s of [-1, 1]) {
+    const ear = anatomy.ear(s), g = new THREE.Group();
+    g.name = 'character-earring'; g.userData.earSide = s; g.visible = ear.visible;
+    const outward = ear.normal.clone().setY(0).normalize();
+    g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(V(0, 1, 0).cross(outward).normalize(), V(0, 1, 0), outward));
+    g.scale.setScalar(Math.max(.75, ear.scale));
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(.016, 12, 10), extraMat('#e8b84a')));
+    const drop = new THREE.Mesh(earrings === 8 ? new THREE.TorusGeometry(0.045, 0.008, 8, 24) : earrings === 9
+      ? crescentGeometry(.033, .006)
+      : new THREE.SphereGeometry(earrings === 13 ? .023 : .03, 12, 10), extraMat(earrings === 13 ? '#fff1da' : accCol));
+    drop.scale.y = earrings === 13 ? 1 : 1.3;
+    drop.position.set(0, earrings === 13 ? -.038 : -.075, .018);
+    const hookEnd = earrings === 13 ? -.022 : earrings === 8 ? -.02 : -.04;
+    const hook = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(0, -.008, 0), V(0, -.02, .014), V(0, hookEnd, .018)]), 16, .0035, 6), extraMat('#e8b84a'));
+    hook.name = 'character-earring-hook'; g.add(hook);
     g.add(drop);
-    g.position.copy(earringAnchor(o, s, topAt, onHair));
+    g.position.copy(ear.lobe).addScaledVector(ear.normal, .012);
     decals.push(g);
   }
-  if (acc === 7) {
-    const geometry = parts['rogue-mask'].clone();
-    pushOut(geometry, .035);
-    if (beast) {
-      const positions = geometry.attributes.position;
-      for (let i = 0; i < positions.count; i++) {
-        const front = THREE.MathUtils.smoothstep(positions.getZ(i), .1, .4);
-        positions.setZ(i, positions.getZ(i) + front * .1);
-      }
-    }
-    geometry.computeVertexNormals();
-    const mask = new THREE.Mesh(smoothNormals(geometry, 65), extraMat(accCol));
+  if (faceCovering === 7) {
+    const geometry = fittedTravelerMask(parts['rogue-mask'], o, A, frame, eyewear, surfaces);
+    const mask = new THREE.Mesh(geometry, extraMat(accCol));
     mask.name = 'traveler-mask';
     decals.push(mask);
   }

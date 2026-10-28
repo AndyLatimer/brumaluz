@@ -110,6 +110,10 @@ $$;
 create or replace function public.game_rpg_craft_xp(s jsonb,job text,tier int) returns int language sql immutable set search_path='' as $$
  select public.game_rpg_xp(s,job,tier)*power(3,tier)::int
 $$;
+create or replace function public.game_rpg_recipe_xp(s jsonb,recipe jsonb) returns int language sql immutable set search_path='' as $$
+ select case when coalesce((recipe->>'processing')::boolean,false) then public.game_rpg_xp(s,recipe->>'job',(recipe->>'tier')::int) else public.game_rpg_craft_xp(s,recipe->>'job',(recipe->>'tier')::int) end
+$$;
+revoke all on function public.game_rpg_recipe_xp(jsonb,jsonb) from public,anon,authenticated;
 create or replace function public.game_rpg_settle(d jsonb,stamp numeric) returns jsonb language plpgsql volatile set search_path='' as $$
 declare s jsonb:=coalesce(d->'rpg','{}'); jobs jsonb:='[]';task jsonb;job text; slot text;item jsonb;inv jsonb;eq jsonb;extras jsonb:='[]';copy jsonb;
 begin
@@ -118,7 +122,7 @@ begin
  for task in select value from jsonb_array_elements(s->'jobs') order by (value->>'end')::numeric loop
   if not coalesce((task->>'done')::boolean,false) and (task->>'end')::numeric<=stamp then
    job:=task->>'job';task:=task||'{"done":true}'::jsonb;
-   s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+public.game_rpg_craft_xp(s,job,(public.game_rpg_catalog()->'recipes'->(task->>'recipe')->>'tier')::int)));
+   s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+public.game_rpg_recipe_xp(s,public.game_rpg_catalog()->'recipes'->(task->>'recipe'))));
    s:=jsonb_set(s,array['crafts',job],to_jsonb(coalesce((s->'crafts'->>job)::int,0)+1));
   end if;jobs:=jobs||jsonb_build_array(task);
  end loop;

@@ -42,14 +42,14 @@ export function updateHud() {
   setBar('hud-resource', v.resource, v.maxResource, `${Math.floor(v.resource)} / ${v.maxResource}`);
   $('#hud-resource').className = `hud-bar hud-resource ${v.resourceKind}`;
   $('#hud-resource').setAttribute('aria-label', t(v.resourceKind === 'mana' ? 'Maná' : 'Estamina'));
-  setBar('hud-xp', v.experience, v.experienceNeeded, `${v.experience} / ${v.experienceNeeded} XP`);
+  setBar('hud-xp', v.experience, v.experienceNeeded, `${v.experience} / ${v.experienceNeeded} EXP`);
   const hudTips: [string, string][] = [['hud-health', 'Vida'], ['hud-resource', v.resourceKind === 'mana' ? 'Maná' : 'Estamina'], ['hud-xp', 'Experiencia']];
   for (const [id, label] of hudTips) $(`#${id}-fill`).parentElement!.title = `${t(label)}|${$(`#${id}-text`).textContent}`;
   $('#hud-class-icon').title = `${classText(session.state)}|${t('Nivel')} ${session.state.level}`;
   const canImproveSkill = skillRank(session.state) < MAX_SKILL_RANK && unspentSkillPoints(session.state) > 0;
   $('#player-menu-toggle').classList.toggle('has-points', unspentAttributePoints(session.state) > 0 || canImproveSkill);
   document.querySelector('#player-menu-panel [data-window="skills"]')!.classList.toggle('has-points', canImproveSkill);
-  document.querySelector<HTMLButtonElement>('[data-window="quests"]')!.hidden = !session.state.welcome;
+  document.querySelector<HTMLButtonElement>('[data-window="quests"]')!.hidden = !session.state.welcome && !session.state.fairyDustQuest && !session.state.rpg?.tutorial;
   document.querySelector('#player-menu-panel [data-window="sheet"]')!.classList.toggle('has-points', unspentAttributePoints(session.state) > 0);
   refreshNameplateText();
   if (ui.openWindow === 'quests') setWindow('quests', false);

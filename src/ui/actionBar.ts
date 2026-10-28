@@ -14,10 +14,11 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 const DRAG_TYPE = 'application/x-brumaluz-item';
 
 export interface CombatActionFeedback {
-  state: 'idle' | 'queued' | 'approaching' | 'casting' | 'recovering';
+  state: 'idle' | 'approaching' | 'casting' | 'recovering' | 'resolving';
   /** Seconds remaining in the current preparation/recovery. */
   remaining: number;
   duration: number;
+  interruptible?: boolean;
 }
 
 interface ActionBarSkill {
@@ -56,8 +57,18 @@ let cachedRoot: HTMLElement | null = null;
 let skillSlots: { slot: HTMLElement; timer: HTMLElement }[] = [];
 let potionSlots: { slot: HTMLElement; timer: HTMLElement }[] = [];
 const pressAnimations = new WeakMap<HTMLElement, Animation>();
+let explainUntil = 0, explained = '';
+let nextVisualAt = 0;
+let languageListenerInstalled = false;
 
-const root = () => cachedRoot ??= document.querySelector<HTMLElement>('#action-bar')!;
+/** Keep a rejected input on its slot, without interrupting the fight with prose. */
+export function explainAction(message:string){
+  explained=message;explainUntil=performance.now()+650;
+  for(const {slot} of skillSlots)pressSlot(slot,false);
+  if(hooks)updateActionState(hooks.skill(),true);
+}
+
+const root = () => cachedRoot?.isConnected ? cachedRoot : cachedRoot = document.querySelector<HTMLElement>('#action-bar')!;
 
 function load(skillId = hooks.skill().id) {
   const key = hooks.storageKey();
@@ -65,6 +76,8 @@ function load(skillId = hooks.skill().id) {
   if (key === loadedKey && skill === loadedSkill) return;
   loadedKey = key;
   loadedSkill = skill;
+  explainUntil = 0; explained = '';
+  nextVisualAt = 0;
   pages = Array.from({ length: ACTION_BAR_PAGES }, emptyPage);
   page = 0;
   try {
@@ -120,6 +133,8 @@ export function renderActionBar(force = false) {
   const next = `${page}|${skill.id}:${skill.rank}:${JSON.stringify(skill.equipment)}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
   if (!force && next === signature) { updateActionState(skill); return; }
   signature = next;
+  const focusedIndex = document.activeElement instanceof HTMLElement && root().contains(document.activeElement)
+    ? document.activeElement.dataset.index : undefined;
   skillSlots = []; potionSlots = [];
   const switcher = document.createElement('button');
   switcher.type = 'button';
@@ -128,7 +143,8 @@ export function renderActionBar(force = false) {
   switcher.innerHTML = `<kbd>Z</kbd><span>${page + 1}</span>`;
   switcher.onclick = () => { toggleActionBarPage(); switcher.blur(); };
   root().replaceChildren(switcher, ...slots.map((id, i) => slotElement(id, i, skill)));
-  updateActionState(skill);
+  if (focusedIndex !== undefined) root().querySelector<HTMLElement>(`[data-index="${focusedIndex}"]`)?.focus({preventScroll:true});
+  updateActionState(skill,true);
   if (force) {
     const bar = root();
     bar.classList.remove('flipping');
@@ -147,16 +163,22 @@ function setAttribute(target: HTMLElement, name: string, value: string) {
 }
 
 function cooldownState(slot: HTMLElement, timer: HTMLElement, remaining: number, duration: number) {
+  remaining = Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
+  duration = Number.isFinite(duration) ? Math.max(.01, duration) : .01;
   const recovering = remaining > 0;
   const wasRecovering = slot.classList.contains('on-cooldown');
   slot.classList.toggle('on-cooldown', recovering);
-  slot.style.setProperty('--cooldown-sweep', `${(Math.min(1, remaining / Math.max(.01, duration)) * 360).toFixed(1)}deg`);
+  const sweep = `${(Math.min(1, remaining / duration) * 360).toFixed(1)}deg`;
+  if(slot.style.getPropertyValue('--cooldown-sweep')!==sweep)slot.style.setProperty('--cooldown-sweep', sweep);
   setText(timer, recovering ? remaining < 1 ? (Math.ceil(remaining * 10) / 10).toFixed(1) : String(Math.ceil(remaining)) : '');
   if (recovering) slot.classList.remove('skill-ready');
   else if (wasRecovering && !slot.classList.contains('empty')) slot.classList.add('skill-ready');
 }
 
-function updateActionState(skill: ActionBarSkill) {
+function updateActionState(skill: ActionBarSkill,immediate=false) {
+  const now=performance.now();
+  if(!immediate&&now<nextVisualAt)return;
+  nextVisualAt=now+1000/30;
   const feedback = hooks.feedback?.();
   for (const { slot, timer } of skillSlots) {
     // Full server snapshots replace equipment objects even when their values match.
@@ -165,9 +187,11 @@ function updateActionState(skill: ActionBarSkill) {
     const unavailable = !skill.available;
     slot.classList.toggle('empty', unavailable);
     slot.classList.toggle('insufficient-resource', skill.unavailableReason === 'resource');
-    setAttribute(slot, 'aria-disabled', String(unavailable||skill.cooldown>.35));
+    const busy=feedback?.state==='casting'||feedback?.state==='recovering'&&!feedback.interruptible;
+    setAttribute(slot, 'aria-disabled', String(unavailable||skill.cooldown>0||busy));
     cooldownState(slot, timer, skill.cooldown, skill.duration);
-    const state = feedback?.state==='casting'? 'casting' : unavailable ? 'idle' : feedback?.state ?? 'idle';
+    const state = feedback?.state==='casting'? 'casting' : unavailable||feedback?.interruptible||feedback?.state==='resolving' ? 'idle' : feedback?.state ?? 'idle';
+    slot.classList.toggle('action-rejected',now<explainUntil);
     if (slot.dataset.actionState !== state) slot.dataset.actionState = state;
     if (feedback && (state === 'casting' || state === 'recovering')) {
       slot.style.setProperty('--action-progress', `${Math.max(0, Math.min(1, 1 - feedback.remaining / Math.max(.01, feedback.duration))) * 100}%`);
@@ -177,13 +201,19 @@ function updateActionState(skill: ActionBarSkill) {
       : skill.unavailableReason === 'dead' ? t('Debes volver a la vida.')
       : skill.unavailableReason === 'weapon' ? t('Equipa un arma de tu clase.')
       : skill.unavailableReason === 'resource' ? t('Recurso insuficiente: {current} / {cost}.', { current: Math.floor(skill.resource ?? 0), cost: Math.ceil(skill.cost ?? 0) })
-      : state === 'queued' ? t('Habilidad en cola.')
+      : state === 'recovering' ? t('Terminando la habilidad: {n} s',{n:feedback!.remaining.toFixed(1)})
       : state === 'approaching' ? t('Acercándote para usar la habilidad.')
       : t('Habilidad lista');
-    setAttribute(slot, 'aria-description', status);
+    setAttribute(slot, 'aria-description', now<explainUntil?explained:status);
   }
   const itemCooldown = hooks.itemCooldown?.() ?? 0;
-  for (const { slot, timer } of potionSlots) cooldownState(slot, timer, itemCooldown, 15);
+  for (const { slot, timer } of potionSlots) {
+    const unavailable = hooks.count(slot.dataset.itemId!) <= 0 || skill.unavailableReason === 'dead';
+    slot.classList.toggle('empty',unavailable);
+    cooldownState(slot, timer, itemCooldown, 15);
+    setAttribute(slot,'aria-disabled',String(unavailable||itemCooldown>0));
+    setAttribute(slot,'aria-description',skill.unavailableReason==='dead'?t('Debes volver a la vida.'):unavailable?t('No te quedan'):itemCooldown>0?t('Recuperándose: {n} s',{n:Math.ceil(itemCooldown)}):t('Objeto listo'));
+  }
 }
 
 function pressSlot(slot: HTMLElement, available = true) {
@@ -309,7 +339,22 @@ export function useActionBarSlot(index: number) {
   if (!id) return false;
   const skill = hooks.skill();
   const el = root().children[index + 1] as HTMLElement | undefined;
-  if (el) pressSlot(el, id === skill.id ? skill.available&&skill.cooldown<=.35 : hooks.count(id) > 0);
+  const potionCooldown = itemDef(id)?.restore ? Math.max(0,hooks.itemCooldown?.()??0) : 0;
+  const dead=skill.unavailableReason==='dead';
+  const feedback=hooks.feedback?.();
+  const busy=feedback?.state==='casting'||feedback?.state==='recovering'&&!feedback.interruptible;
+  const available = id===skill.id ? skill.available&&skill.cooldown<=0&&!busy : !dead&&hooks.count(id)>0&&potionCooldown<=0;
+  if (el) pressSlot(el,available);
+  if (!available) {
+    explained = id === skill.id ? skill.unavailableReason === 'dead' ? t('Debes volver a la vida.')
+      : skill.unavailableReason === 'weapon' ? t('Equipa un arma de tu clase.')
+      : skill.unavailableReason === 'resource' ? t('Recurso insuficiente: {current} / {cost}.',{current:Math.floor(skill.resource??0),cost:Math.ceil(skill.cost??0)})
+      : busy ? t('Espera a que termine el golpe actual.')
+      : t('Recuperándose: {n} s',{n:Math.ceil(skill.cooldown)})
+      : dead?t('Debes volver a la vida.'):potionCooldown>0?t('Recuperándose: {n} s',{n:Math.ceil(potionCooldown)}):t('No te quedan');
+    explainUntil=performance.now()+650;updateActionState(skill,true);
+    return true;
+  } else { explainUntil=0;explained=''; }
   if (id === skill.id) hooks.useSkill();
   else if (!id.startsWith('skill:')) hooks.use(id);
   return true;
@@ -322,5 +367,5 @@ export const DRAG_ITEM_TYPE = DRAG_TYPE;
 export function initActionBar(h: ActionBarHooks) {
   hooks = h;
   renderActionBar(true);
-  document.addEventListener('brumaluz-language-change', () => renderActionBar(true));
+  if(!languageListenerInstalled){document.addEventListener('brumaluz-language-change', () => {explainUntil=0;renderActionBar(true);});languageListenerInstalled=true;}
 }

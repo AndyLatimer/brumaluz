@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Level 3 upgrade, cancellation, point spending, success feedback and locked next rank.",
+    "Fits 390px with quickbar accessible.",
+    "Fits 320px with quickbar accessible.",
+    "Numerical damage/healing comparison for all five classes.",
+    "Maximum rank at level 5, English translation, free rank and no points at level 1."
+  ],
+  "errors": []
+}

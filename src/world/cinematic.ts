@@ -61,20 +61,29 @@ export function createCinematics() {
   let shots: CinematicShot[] = [];
   let index = -1, elapsed = 0;
   let finish: ((skipped: boolean) => void) | null = null;
+  let cancelled: (() => void) | null = null;
+  let disposed = false;
+  let generation = 0;
+  let previousFocus: HTMLElement | null = null;
   let current: CinematicFrame | null = null;
   let from: CinematicFrame | null = null;
   let onLine: ((speaker: string | undefined, text: string) => void) | null = null;
   const focus = new THREE.Vector3();
 
   function begin(i: number) {
+    const version = generation;
     index = i; elapsed = 0;
     const shot = shots[i];
     root.dataset.shot = shot.id ?? String(i);
     from = current ? { position: current.position.clone(), target: current.target.clone() } : null;
     shot.start?.();
+    // Un callback puede iniciar otra escena o salir de la partida.
+    if (version !== generation || !finish) return;
     if (shot.camera) focus.copy(shot.camera(0, 0).target);
+    if (version !== generation || !finish) return;
     if (shot.line) {
       line.classList.toggle('title', !shot.line.speaker && shot.line.layout !== 'caption');
+      line.classList.toggle('spoken', !!shot.line.speaker);
       line.querySelector('strong')!.textContent = shot.line.speaker ?? '';
       line.querySelector('span')!.textContent = t(shot.line.text);
       line.querySelector('small')!.textContent = t(shot.line.eyebrow ?? '');
@@ -86,14 +95,29 @@ export function createCinematics() {
     } else line.hidden = true;
   }
   function end(skipped: boolean, notify = true) {
-    const done = finish;
-    shots = []; index = -1; finish = null; current = null; from = null;
+    const done = notify ? finish : cancelled;
+    const restoreFocus = previousFocus;
+    const ownedFocus = root.contains?.(document.activeElement) ?? false;
+    generation++;
+    shots = []; index = -1; finish = null; cancelled = null; current = null; from = null; previousFocus = null;
     delete root.dataset.shot;
     root.hidden = true;
+    line.hidden = true;
+    line.classList.remove('show');
     document.body.classList.remove('cinematic-open');
-    if (notify) done?.(skipped);
+    // Restaurar antes de la continuación permite que el siguiente diálogo tome el foco.
+    if (ownedFocus && restoreFocus?.isConnected) restoreFocus.focus({ preventScroll: true });
+    done?.(skipped);
   }
-  skipButton.addEventListener('click', () => skip());
+  const skipClick = () => skip();
+  const skipKey = (event: KeyboardEvent) => {
+    // El bloqueo general del juego consume Enter/Espacio: el botón conserva su uso por teclado.
+    if ((event.code === 'Enter' || event.code === 'Space') && !event.repeat) {
+      event.preventDefault(); event.stopPropagation(); skip();
+    }
+  };
+  skipButton.addEventListener('click', skipClick);
+  skipButton.addEventListener('keydown', skipKey);
   function skip() { if (finish) end(true); }
 
   return {
@@ -102,29 +126,54 @@ export function createCinematics() {
     /** Punto que mira la cámara (para decidir qué parte del mapa se dibuja). */
     focus,
     /** Recibe cada subtítulo con hablante (para el chat). */
-    onLine(fn: typeof onLine) { onLine = fn; },
-    play(list: CinematicShot[], onEnd: (skipped: boolean) => void) {
+    onLine(fn: typeof onLine) { if (!disposed) onLine = fn; },
+    play(list: CinematicShot[], onEnd: (skipped: boolean) => void, onCancel?: () => void) {
+      if (disposed) return;
       if (finish) end(true, false);
       if (!list.length) { onEnd(false); return; }
-      shots = list; finish = onEnd; current = null;
+      generation++;
+      // Una duración inválida nunca puede dejar al jugador atrapado en un plano.
+      shots = list.map(shot => {
+        const duration = Number.isFinite(shot.duration) && shot.duration > 0 ? shot.duration : .1;
+        return { ...shot, duration, minimum: Math.min(duration, Math.max(0, Number.isFinite(shot.minimum) ? shot.minimum! : 0)) };
+      });
+      finish = onEnd; cancelled = onCancel ?? null; current = null;
+      previousFocus = typeof HTMLElement !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null;
       skipButton.textContent = t('Saltar escena');
       skipButton.setAttribute('aria-label', t('Saltar escena (Esc)'));
       root.hidden = false;
       document.body.classList.add('cinematic-open');
+      skipButton.focus?.({ preventScroll: true });
       begin(0);
     },
     skip,
     /** Cancela al salir, morir o cambiar de mapa; no dispara la siguiente escena. */
     cancel() { if (finish) end(true, false); },
+    /** Retira el controlador al recargar su módulo; no deja botones ni subtítulos duplicados. */
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      try { if (finish) end(true, false); }
+      finally {
+        onLine = null;
+        skipButton.removeEventListener('click', skipClick);
+        skipButton.removeEventListener('keydown', skipKey);
+        root.remove();
+      }
+    },
     /** Avanza la escena; devuelve el encuadre de este fotograma o null si manda otra cámara. */
     frame(dt: number): CinematicFrame | null {
       if (!finish || index < 0) return null;
+      const version = generation;
       const shot = shots[index];
+      dt = Number.isFinite(dt) ? Math.max(0, dt) : 0;
       elapsed += dt;
       const done = shot.update?.(dt, elapsed) === true;
+      if (version !== generation || !finish) return null;
       let frame: CinematicFrame | null = null;
       if (shot.camera) {
         frame = shot.camera(smooth(Math.min(1, elapsed / shot.duration)), elapsed);
+        if (version !== generation || !finish) return null;
         if (from && shot.blend) {
           const k = smooth(Math.min(1, elapsed / shot.blend));
           frame = { position: from.position.clone().lerp(frame.position, k), target: from.target.clone().lerp(frame.target, k) };
@@ -135,7 +184,8 @@ export function createCinematics() {
       if (elapsed >= shot.duration || (done && elapsed >= (shot.minimum ?? 0))) {
         if (index + 1 < shots.length) begin(index + 1); else end(false);
       }
-      return frame;
+      // No devolver la cámara antigua si terminar abrió un diálogo o una escena nueva.
+      return version === generation ? frame : null;
     },
   };
 }

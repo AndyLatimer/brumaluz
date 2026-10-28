@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Purchase delivers a consumable scroll without learning; the real inventory button consumes it and teaches its recipe, verified at 1440px and 390px.",
+    "Recipes are purchased only in the real master conversation, with confirmation at 250 Pelines. The profession book only crafts. Desktop/mobile controls remain accessible.",
+    "Leather requirements identify the enemy and set its real world position as a waypoint.",
+    "Real game accepts the fourteen-creature SQL snapshot and renders/selects nearby new low/high hide suppliers; distance culling remains active.",
+    "Existing leather workshop opens in the map editor; authored maps and resource positions are unchanged."
+  ],
+  "errors": [],
+  "isolatedSql": true,
+  "liveDatabaseWrites": false
+}

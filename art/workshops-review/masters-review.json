@@ -1,0 +1,22 @@
+{
+  "masterCount": 12,
+  "checked": [
+    "maestro_herreria",
+    "maestro_peleteria",
+    "maestro_sastreria",
+    "maestro_carpinteria",
+    "maestro_ebanisteria",
+    "maestro_joyeria",
+    "maestro_alquimia",
+    "maestro_encantamiento",
+    "maestro_cocina",
+    "maestro_minero",
+    "maestro_lenador",
+    "maestro_recolector"
+  ],
+  "editorLoaded": true,
+  "protectedFromRemoval": true,
+  "walkAndIdleAnimation": true,
+  "errors": [],
+  "warnings": []
+}

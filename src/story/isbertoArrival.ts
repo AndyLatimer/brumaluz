@@ -12,6 +12,8 @@ import { cinematic } from './scenes';
 
 export const arrivalOverlay = document.createElement('div');
 export function beginIsbertoArrival(character: Character, then: () => void = () => talkTo('isberto')) {
+  // Cancelar antes de crear el nuevo trayecto: la limpieza anterior no debe borrarlo.
+  cinematic.cancel();
   closeDialog();
   setWindow(null, false);
   setGameMenuOpen(false, false);
@@ -64,7 +66,7 @@ export function beginIsbertoArrival(character: Character, then: () => void = () 
     const next = talk.isbertoArrival?.then;
     endIsbertoArrival();
     if (generation === play.playGeneration && play.mode === 'play' && !play.dead) next?.();
-  });
+  }, endIsbertoArrival);
 }
 export function endIsbertoArrival() {
   if (!talk.isbertoArrival) return;

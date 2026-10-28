@@ -11,6 +11,7 @@ import { TALK_RANGE, talkTo } from './interaction';
 export function updatePlay(dt: number) {
   if (storyLock()) {
     keys.clear(); playerVel.set(0, 0, 0); play.moveTarget = null; marker.visible = false;
+    play.char.setLocomotionSpeed(0);
     if (!story.playerScript) play.char.setGait('idle');
     return;
   }
@@ -31,6 +32,7 @@ export function updatePlay(dt: number) {
   let clickMoving = false,arrivalSpeed=Infinity;
   if (input.lengthSq() > 0) {
     fight.combatApproach=false;
+    fight.pendingCombatSkill=false;
     play.moveTarget = null;
     marker.visible = false;
     const fx = -Math.sin(view.yaw), fz = -Math.cos(view.yaw);
@@ -41,7 +43,7 @@ export function updatePlay(dt: number) {
   } else if(fight.combatAuto&&fight.combatApproach&&fight.combatTargetRoot&&fight.combatEncounter?.status==='active'){
     const range=COMBAT_KITS[session.state.cls].range;
     const dx=fight.combatTargetRoot.position.x-holder.position.x,dz=fight.combatTargetRoot.position.z-holder.position.z;
-    const remaining=Math.hypot(dx,dz)-Math.max(.7,range-.12);
+    const remaining=Math.hypot(dx,dz)-Math.max(.7,range-.35);
     if(remaining>0){dir.set(dx,0,dz).normalize();clickMoving=true;arrivalSpeed=remaining*7;}
   }
   if (play.char.isSeated && dir.lengthSq() > 0) play.char.stand();
@@ -61,11 +63,12 @@ export function updatePlay(dt: number) {
   playerVel.lerp(wantVel, 1 - Math.exp(-dt * (maxSpeed > 0 ? 9 : 11)));
   const speed = playerVel.length();
   if (speed < 0.05) playerVel.set(0, 0, 0);
-  play.char.setGait(speed < 0.35 ? 'idle' : speed > 4 ? 'run' : 'walk');
+  let actualSpeed = 0;
   if (speed >= 0.05) {
     const from = holder.position.clone();
     const to = from.clone().addScaledVector(playerVel, dt);
     const p = play.city.collide(from, to);
+    actualSpeed = dt > 0 ? Math.hypot(p.x-from.x,p.z-from.z) / dt : 0;
     if (play.moveTarget && p.distanceTo(to) > speed * dt * 0.7) { play.moveTarget = null; marker.visible = false; }
     holder.position.x = p.x; holder.position.z = p.z;
     if (speed > 0.35) {
@@ -75,6 +78,10 @@ export function updatePlay(dt: number) {
       holder.rotation.y += d * (1 - Math.exp(-dt * 12));
     }
   }
+  // Walls and obstacles can stop the body while the input velocity is still high.
+  // Animate the displacement that really happened, so feet do not run on the spot.
+  play.char.setLocomotionSpeed(actualSpeed);
+  play.char.setGait(actualSpeed < 0.35 ? 'idle' : actualSpeed > 4 ? 'run' : 'walk');
   if(performance.now()<fight.facingUntil&&fight.combatTargetRoot&&fight.combatEncounter?.status==='active'){
     const want=Math.atan2(fight.combatTargetRoot.position.x-holder.position.x,fight.combatTargetRoot.position.z-holder.position.z);
     const turn=Math.atan2(Math.sin(want-holder.rotation.y),Math.cos(want-holder.rotation.y));holder.rotation.y+=turn*(1-Math.exp(-dt*22));

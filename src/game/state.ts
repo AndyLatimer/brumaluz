@@ -7,6 +7,7 @@ import { defaultChar, type AttributeId, type CharData } from '../data/data';
 import type { BankState } from '../data/bank';
 import type { CombatState } from '../data/combat';
 import type { loadWorldNpcs } from '../data/worldNpcs';
+import type { WorldNpcId } from '../data/npcs';
 import type { SavedCharacter } from '../services/account';
 import type { CombatEncounter, WorldConnection } from '../services/multiplayer';
 import type { City } from '../world/city';
@@ -43,7 +44,7 @@ export const session = {
   worldConnection: null as WorldConnection | null,
   worldRetrying: false,
   authMode: 'login' as 'login' | 'register',
-  worldCharacters: undefined! as Record<keyof ReturnType<typeof loadWorldNpcs>, Character>,
+  worldCharacters: undefined! as Record<'testiculos'|'gnomi'|'isberto',Character>&Partial<Record<WorldNpcId,Character>>,
 };
 
 /** La partida en curso: modo, mapa, personaje y su movimiento. */

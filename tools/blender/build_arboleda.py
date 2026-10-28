@@ -7,9 +7,10 @@ No downloaded models, fonts, images or Python dependencies.
 import sys
 import math
 import json
-import random
+import warnings
 from pathlib import Path
 import bpy
+import bmesh
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -20,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ART = ROOT / 'art' / 'arboleda'
 OUT = ROOT / 'src' / 'assets' / 'library' / 'brumaluz-arboleda'
 TAU = math.tau
-RNG = random.Random(713)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 h.ART, h.OUT = ART, OUT
 h.PALETTE = {
     'wood': '#77604a', 'wood_dark': '#393b30', 'wood_light': '#bca77a', 'wood_mid': '#93805a',
@@ -34,14 +35,35 @@ h.PALETTE = {
 }
 
 
+def clean_mesh(obj):
+    """Weld collapsed lathe tips before triangulation; keep UVs and hard edges."""
+    bm=bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=1e-7)
+    bmesh.ops.dissolve_degenerate(bm,edges=list(bm.edges),dist=1e-7)
+    invalid=[f for f in bm.faces if f.calc_area()<1e-12]
+    if invalid: bmesh.ops.delete(bm,geom=invalid,context='FACES')
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    bm.to_mesh(obj.data); bm.free(); obj.data.update()
+    return obj
+
+
+def lathe(name, loc, profile, mat='pot', segments=12):
+    return clean_mesh(h.lathe(name,loc,profile,mat,segments))
+
+
 def tube(name, points, radius=.05, mat='brass', sides=7):
     """Closed tapered sweep, with stable frames even along vertical trunks."""
     pts = [Vector(p) for p in points]
     radii = radius if isinstance(radius, (list, tuple)) else [radius] * len(pts)
+    closed=(pts[0]-pts[-1]).length<1e-7
+    if closed:
+        pts=pts[:-1]
+        radii=radii[:-1]
     verts = []
     previous_u = None
     for i, p in enumerate(pts):
-        tangent = (pts[min(i+1, len(pts)-1)] - pts[max(0, i-1)]).normalized()
+        tangent = (pts[(i+1)%len(pts)]-pts[(i-1)%len(pts)]).normalized() if closed else (pts[min(i+1, len(pts)-1)]-pts[max(0,i-1)]).normalized()
         # Transport the frame; switching reference axes midway through a coil
         # creates pinched, apparently disconnected sections at every turn.
         if previous_u is None:
@@ -56,14 +78,16 @@ def tube(name, points, radius=.05, mat='brass', sides=7):
         v = tangent.cross(u).normalized()
         for j in range(sides):
             verts.append(p + radii[i] * (math.cos(TAU*j/sides)*u + math.sin(TAU*j/sides)*v))
-    faces = [tuple(reversed(range(sides))), tuple((len(pts)-1)*sides+j for j in range(sides))]
-    for i in range(len(pts)-1):
+    faces = [] if closed else [tuple(reversed(range(sides))), tuple((len(pts)-1)*sides+j for j in range(sides))]
+    for i in range(len(pts) if closed else len(pts)-1):
         for j in range(sides):
             a, b = i*sides+j, i*sides+(j+1)%sides
-            faces.append((a, b, b+sides, a+sides))
+            c,d=((i+1)%len(pts))*sides+(j+1)%sides,((i+1)%len(pts))*sides+j
+            faces.append((a,b,c,d))
     obj = mesh(name, verts, faces, mat)
     for polygon in obj.data.polygons:
         polygon.use_smooth = len(polygon.vertices) == 4
+    obj['closed_sweep']=closed
     return obj
 
 
@@ -75,12 +99,14 @@ def leaf(name, base, tip, width, mat='leaf', bend=.09, vein=False, rows=7):
     side = d.cross(normal).normalized()
     up = side.cross(d).normalized()
     verts = []
+    thickness=min(.018,max(.0015,width*.06))
     for layer in [0, 1]:
         for i in range(rows):
             t = i/(rows-1)
-            w = width * .5 * math.sin(math.pi*t)**.8 + .005
-            center = a+d*t+up*(bend*math.sin(math.pi*t)-layer*.025)
-            verts.extend([center-side*w, center+up*width*.1, center+side*w])
+            w = width * .5 * math.sin(math.pi*t)**.8 + max(.0008,width*.006)
+            center = a+d*t+up*(bend*math.sin(math.pi*t)-layer*thickness)
+            ridge=width*.1*(.06+.94*math.sin(math.pi*t))
+            verts.extend([center-side*w, center+up*ridge, center+side*w])
     faces = []
     n = rows*3
     for layer in range(2):
@@ -96,7 +122,8 @@ def leaf(name, base, tip, width, mat='leaf', bend=.09, vein=False, rows=7):
     faces.extend([(0,1,2,n+2,n+1,n), (n-3,2*n-3,2*n-2,2*n-1,n-1,n-2)])
     obj = mesh(name, verts, faces, mat)
     if vein:
-        tube(name+' / central inlay', [a+d*t+up*(bend*math.sin(math.pi*t)+width*.1+.012) for t in [0,.2,.4,.6,.8,1]], .009, 'brass', 5)
+        vein_radius=min(.009,width*.025)
+        tube(name+' / central inlay', [a+d*t+up*(bend*math.sin(math.pi*t)+width*.1*(.06+.94*math.sin(math.pi*t))+vein_radius*.65) for t in [0,.2,.4,.6,.8,1]], vein_radius, 'brass', 5)
     return obj
 
 
@@ -107,10 +134,10 @@ def ring(name, center, radius, minor=.04, mat='brass', n=48):
 
 def pointed(name, center, w, height, mat='wood_light', thickness=.07):
     x,y,z = center
-    for s in [-1, 1]:
-        points = [(x+s*w*.5,y,z), (x+s*w*.5,y,z+height*.52),
-                  (x+s*w*.43,y,z+height*.73), (x+s*w*.24,y,z+height*.91), (x,y,z+height)]
-        tube(name, points, thickness, mat)
+    left=[(x-w*.5,y,z),(x-w*.5,y,z+height*.52),(x-w*.43,y,z+height*.73),
+          (x-w*.24,y,z+height*.91),(x,y,z+height)]
+    right=[(x+w*.24,y,z+height*.91),(x+w*.43,y,z+height*.73),(x+w*.5,y,z+height*.52),(x+w*.5,y,z)]
+    return tube(name,left+right,thickness,mat)
 
 
 def ogive_panel(name, center, width, height, mat, depth=.07):
@@ -162,29 +189,68 @@ def door(center, width=1.05, height=2.1):
 
 
 def canopy(center, radius, rise, petals=10):
-    """Overlapping sculpted leaf shingles on a continuous swept roof shell."""
+    """Conforming scalloped shingles with measured clearances, without crossings.
+
+    Every backing, tile and rib uses the same radial height function. Separate
+    sectors have a real reveal; crowns meet a cap rather than collapsing to a
+    pile of intersecting leaves. The offsets are geometry, not depth bias.
+    """
     x,y,z = center
-    profile = [(radius,0),(radius*.88,rise*.19),(radius*.63,rise*.39),
-               (radius*.36,rise*.66),(radius*.11,rise*.91),(.025,rise)]
-    lathe('Roof / continuous dark understructure',center,profile,'roof_dark',petals*3)
+    power=1.10
+    height=lambda r:rise*(1-(max(0,r)/radius)**(1/power))
+    radial=lambda t:radius*(1-t)**power
+    profile=[(radial(i/12),rise*i/12) for i in range(13)]
+    shell=lathe('Roof / backing shell',center,profile,'roof_dark',petals*4)
+    shell['surface_role']='roof_backing'
+    row_limits=[0,.24,.48,.72,.93]
+    minimum_gap=.012
     for row in range(4):
-        t0 = row/4
-        t1 = min(1,(row+1.35)/4)
-        r0 = radius*(1-t0)**1.1
-        r1 = radius*(1-t1)**1.1
-        count = petals if row < 3 else max(6,petals-2)
+        outer=radial(row_limits[row])-.008
+        inner=radial(row_limits[row+1])+.008
+        count=petals if row<3 else petals-2
         for i in range(count):
-            a = TAU*(i+(row%2)*.5)/count
-            # Petal tip points toward the eave; raised midrib follows the cone.
-            start = (x+r1*math.cos(a),y+r1*math.sin(a),z+rise*t1+.065)
-            end = (x+r0*math.cos(a),y+r0*math.sin(a),z+rise*t0+.02)
-            color = ['roof','roof','roof_light','leaf_dark'][(i+row)%4]
-            leaf('Roof / overlapping leaf shingle',start,end,max(.12,r0*TAU/count*1.22),color,.055,False)
-    ring('Roof / golden drip edge',(x,y,z+.01),radius,.045)
-    for i in range(petals):
-        a = TAU*i/petals
-        tube('Roof / raised golden rib',[(x+r*math.cos(a),y+r*math.sin(a),z+zz+.065) for r,zz in profile],.025,'brass',5)
-    lathe('Roof / bud finial',(x,y,z+rise),[(.06,0),(.11,.14),(.065,.25),(0,.50)],'brass',10)
+            middle=TAU*(i+(row%2)*.5)/count
+            half=math.pi/count-minimum_gap/(2*inner)
+            verts=[]; steps=4; across=4
+            for layer in range(2):
+                for j in range(steps+1):
+                    t=j/steps
+                    for k in range(across+1):
+                        u=2*k/across-1
+                        # Retract the two corners of the eave to form a leaf tip.
+                        scallop=(outer-inner)*.16*abs(u)**2
+                        r=inner+(outer-inner-scallop)*t
+                        angle=middle+u*half
+                        relief=.017*(1-u*u)*math.sin(math.pi*t)
+                        lift=.055+relief-layer*.018
+                        verts.append((x+r*math.cos(angle),y+r*math.sin(angle),z+height(r)+lift))
+            grid=across+1; size=(steps+1)*grid; faces=[]
+            for layer in range(2):
+                for j in range(steps):
+                    for k in range(across):
+                        a=layer*size+j*grid+k
+                        f=(a,a+1,a+grid+1,a+grid)
+                        faces.append(f if layer==0 else tuple(reversed(f)))
+            perimeter=list(range(grid))+[j*grid+across for j in range(1,steps+1)]+[steps*grid+k for k in range(across-1,-1,-1)]+[j*grid for j in range(steps-1,0,-1)]
+            for j,a in enumerate(perimeter):
+                b=perimeter[(j+1)%len(perimeter)]
+                faces.append((a,a+size,b+size,b))
+            color=['roof','roof','roof_light','leaf_dark'][(i+row)%4]
+            tile=mesh('Roof / leaf shingle',verts,faces,color)
+            tile['surface_role']='roof_shingle'
+            tile['backing_clearance']=.030
+            tile['row']=row
+            vein=[]
+            for j in range(6):
+                t=j/5
+                r=inner+(outer-inner)*t
+                zz=z+height(r)+.063+.017*math.sin(math.pi*t)
+                vein.append((x+r*math.cos(middle),y+r*math.sin(middle),zz))
+            tube('Roof / leaf midrib',vein,.012,'brass',6)
+    ring('Roof / golden drip edge',(x,y,z+.045),radius,.040)
+    cap_radius=radial(.925)+.035
+    lathe('Roof / crown cap',(x,y,z+rise*.925+.07),[(cap_radius,0),(.04,rise*.075),(.035,rise*.075+.05)],'brass',petals*2)
+    lathe('Roof / bud finial',(x,y,z+rise+.08),[(.055,0),(.10,.12),(.055,.22),(0,.42)],'brass',12)
 
 
 def roots(center, radius=1, height=3, count=7):
@@ -215,7 +281,7 @@ def fern(center, scale=1, fronds=7):
         pts=[]
         for j in range(7):
             t=j/6
-            pts.append((x+math.cos(a)*scale*.68*t,y+math.sin(a)*scale*.68*t,z+scale*(.9*t-.48*t*t)))
+            pts.append((x+math.cos(a)*scale*(.025+.68*t),y+math.sin(a)*scale*(.025+.68*t),z+scale*(.9*t-.48*t*t)))
         tube('Fern / arched rachis',pts,.012*scale,'leaf_light',5)
         for j in range(1,6):
             p=Vector(pts[j]); t=j/6
@@ -386,10 +452,13 @@ def buildings():
 
 def construction():
     start('gateway_twining','Umbral de las Dos Ramas','Construcción','Gran arco transitable de ramas entrelazadas, hojas y faroles de luciérnaga.')
+    tube('Gateway / grown arch',[(-1.6,0,.2),(-1.65,0,1.5),(-1.45,0,2.7),(-.9,0,3.55),(0,0,4.15),
+         (.9,0,3.55),(1.45,0,2.7),(1.65,0,1.5),(1.6,0,.2)],
+         [.20,.16,.15,.11,.04,.11,.15,.16,.20],'wood',10)
+    tube('Gateway / golden inner vine',[(-1.38,-.12,.3),(-1.38,-.12,1.8),(-1.1,-.12,2.85),(-.65,-.12,3.52),(0,-.12,3.95),
+         (.65,-.12,3.52),(1.1,-.12,2.85),(1.38,-.12,1.8),(1.38,-.12,.3)],.035,'brass',7)
     for s in [-1,1]:
         lathe('Gateway / carved plinth',(s*1.6,0,0),[(.45,0),(.45,.17),(.31,.30)],'stone_light',12)
-        tube('Gateway / grown arch',[(s*1.6,0,.2),(s*1.65,0,1.5),(s*1.45,0,2.7),(s*.9,0,3.55),(0,0,4.15)],[.20,.16,.15,.11,.04],'wood',10)
-        tube('Gateway / golden inner vine',[(s*1.38,-.12,.3),(s*1.38,-.12,1.8),(s*1.1,-.12,2.85),(s*.65,-.12,3.52),(0,-.12,3.95)],.035,'brass',7)
         for i in range(5):
             x=s*(1.60-i*.20); z=2.45+i*.30
             leaf('Gateway / crown leaf',(x,0,z),(x+s*.48,.10,z+.46),.35,'leaf' if i%2 else 'leaf_light',.08,True)
@@ -410,7 +479,7 @@ def construction():
         for zz in [-.1,.95]:
             tube('Bridge / swept rail',[(x,s*.94,.16+.64*(1-(x/2.5)**2)+zz) for x in [-2.5+i*5/32 for i in range(33)]],.08 if zz<0 else .065,'wood',8)
         for phase in [0,math.pi]:
-            tube('Bridge / woven vine',[(x,s*.94,.65+.64*(1-(x/2.5)**2)+.22*math.sin(x*3+phase)) for x in [-2.5+i*5/40 for i in range(41)]],.025,'brass',5)
+            tube('Bridge / woven vine',[(x,s*.94+.034*math.cos(x*3+phase),.65+.64*(1-(x/2.5)**2)+.22*math.sin(x*3+phase)) for x in [-2.5+i*5/40 for i in range(41)]],.025,'brass',5)
     finish()
 
     start('fence_vinepanel','Valla de Sarmientos · 2 m','Construcción','Módulo de dos metros con extremos encajables y hojas de latón.')
@@ -420,7 +489,7 @@ def construction():
         leaf('Fence / terminal bud',(x,0,1.13),(x,0,1.39),.15,'brass',.02)
     for z in [.30,1.0]: tube('Fence / rail',[(-1,0,z),(0,0,z+.05),(1,0,z)],.05,'wood')
     for phase in [0,math.pi]:
-        tube('Fence / braid',[(x,0,.65+.29*math.sin(x*math.pi*2+phase)) for x in [-1+i/16 for i in range(33)]],.024,'wood_light',6)
+        tube('Fence / braid',[(x,.032*math.cos(x*math.pi*2+phase),.65+.29*math.sin(x*math.pi*2+phase)) for x in [-1+i/16 for i in range(33)]],.024,'wood_light',6)
     for x in [-.65,0,.65]: leaf('Fence / leaf',(x,0,.58),(x+.18,0,.90),.16,'brass',.015)
     finish()
 
@@ -462,17 +531,19 @@ def furniture():
     legs(.48,.45,.49)
     box('Chair / seat',(0,0,.50),(.64,.61,.12),'wood_light',.04)
     box('Chair / moss cushion',(0,-.02,.585),(.53,.49,.10),'teal',.045)
-    for s in [-1,1]: tube('Chair / flowing stile',[(s*.25,.23,.3),(s*.29,.25,.85),(s*.23,.26,1.18),(0,.26,1.55)],[.045,.04,.035,.018],'wood_light')
+    tube('Chair / flowing stile',[(-.25,.23,.3),(-.29,.25,.85),(-.23,.26,1.18),(0,.26,1.55),(.23,.26,1.18),(.29,.25,.85),(.25,.23,.3)],
+         [.045,.04,.035,.018,.035,.04,.045],'wood_light')
     leaf('Chair / leaf back',(0,.26,.68),(0,.26,1.51),.43,'roof',.02,True)
     finish()
 
     start('bench_bough','Banco de Ramas Gemelas','Mobiliario','Banco de jardín con asiento entablado, brazos curvos y respaldo trenzado.')
     legs(1.52,.46,.48)
     for i in range(3): box('Bench / seat slat',(0,-.26+(i+.5)*.52/3,.49),(1.95,.16,.10),'wood_light',.025)
+    tube('Bench / branching back',[(-.76,.22,.12),(-.80,.24,.75),(-.65,.24,1.1),(0,.24,1.18),(.65,.24,1.1),(.80,.24,.75),(.76,.22,.12)],
+         [.07,.06,.045,.025,.045,.06,.07],'wood')
     for s in [-1,1]:
-        tube('Bench / branching back',[(s*.76,.22,.12),(s*.80,.24,.75),(s*.65,.24,1.1),(0,.24,1.18)],[.07,.06,.045,.025],'wood')
         tube('Bench / arm',[(s*.82,-.25,.52),(s*.86,-.20,.80),(s*.82,.22,.85)],.052,'wood_light')
-    for phase in [0,math.pi]: tube('Bench / woven back',[(x,.24,.90+.13*math.sin(x*5+phase)) for x in [-.76+i*1.52/24 for i in range(25)]],.024,'brass',6)
+    for phase in [0,math.pi]: tube('Bench / woven back',[(x,.24+.032*math.cos(x*5+phase),.90+.13*math.sin(x*5+phase)) for x in [-.76+i*1.52/24 for i in range(25)]],.024,'brass',6)
     finish()
 
     start('bed_ferncanopy','Lecho del Sueño Verde','Mobiliario','Cama con dosel de hojas, sábanas de lino, manta cosida y cuatro postes orgánicos.')
@@ -484,11 +555,12 @@ def furniture():
     for x in [-.34,.34]: box('Bed / pillow',(x,.76,.82),(.57,.44,.17),'linen',.08, (0,0,.06 if x<0 else -.06))
     for sx in [-1,1]:
         for sy in [-1,1]:
-            tube('Bed / grown canopy post',[(sx*.69,sy*1.05,.2),(sx*.72,sy*1.05,1.5),(sx*.62,sy*.97,2.12),(sx*.25,sy*.80,2.48)],[.075,.05,.045,.018],'wood_light',8)
+            tube('Bed / grown canopy post',[(sx*.69,sy*1.05,.2),(sx*.72,sy*1.05,1.5),(sx*.70,sy*1.05,2.23)],[.075,.05,.045],'wood_light',8)
     for sy in [-1,1]:
+        tube('Bed / canopy leaf support',[(-.74,sy*1.05,2.23),(0,sy*1.05,2.23),(.74,sy*1.05,2.23)],.038,'wood_light',8)
         for i in range(5):
             x=-.7+i*.35
-            leaf('Bed / canopy leaf',(x,sy*1.05,2.23),(x*.50,sy*.25,2.54),.40,'leaf' if i%2 else 'roof',.08,True)
+            leaf('Bed / canopy leaf',(x,sy*1.05,2.23),(x*.50,sy*.25,2.54),.27,'leaf' if i%2 else 'roof',.08,True)
     leaf('Bed / headboard',(0,1.06,.6),(0,1.06,1.65),1.05,'wood_light',.01,True)
     finish()
 
@@ -505,7 +577,7 @@ def furniture():
         for x in [-.3,.3]: sphere('Cabinet / drawer pull',(x,-.37,z),(.026,)*3,'brass',1)
     for i in range(7):
         x=-.55+i*.183
-        leaf('Cabinet / crown',(x,0,1.78),(x*.7,0,2.05+(.18 if i==3 else 0)),.20,'wood_light',.025)
+        leaf('Cabinet / crown',(x,0,1.78),(x*.7,0,2.05+(.18 if i==3 else 0)),.14,'wood_light',.025)
     finish()
 
     start('shelf_herbarium','Estantería del Herbario','Alquimia','Estantes curvos con libros encuadernados, frascos de colores y plantas medicinales.')
@@ -769,9 +841,22 @@ def presentation():
                 area.spaces.active.region_3d.view_location=(5,5,1.5)
     bpy.ops.wm.save_as_mainfile(filepath=str(ART/'brumaluz-arboleda.blend'))
     if '--skip-render' not in sys.argv:
-        scene.render.filepath=str(ART/'arboleda-collection.png'); bpy.ops.render.render(write_still=True)
+        render_gallery()
+
+
+def render_gallery():
+    scene=bpy.context.scene
+    camera=scene.camera
+    selected=next((arg.split('=',1)[1] for arg in sys.argv if arg.startswith('--asset=')),None)
+    camera_location=camera.location.copy(); camera_rotation=camera.rotation_euler.copy()
+    camera_scale=camera.data.ortho_scale
+    original_resolution=(scene.render.resolution_x,scene.render.resolution_y)
+    try:
+        if not selected:
+            scene.render.filepath=str(ART/'arboleda-collection.png'); bpy.ops.render.render(write_still=True)
         # Close views make joinery, roof shingles and small alchemy fittings reviewable.
-        for name in ['house_leafhaven','laboratory_dew','pavilion_moonwell','table_alchemist','distiller_spiral','tree_weeping_willow']:
+        details=[selected] if selected else ['house_leafhaven','laboratory_dew','pavilion_moonwell','table_alchemist','distiller_spiral','tree_weeping_willow']
+        for name in details:
             entry=next(a for a in h.ASSETS if a['name']==name)
             coll=bpy.data.collections[name]
             for a in h.ASSETS: bpy.data.collections[a['name']].hide_render=a['name']!=name
@@ -786,7 +871,11 @@ def presentation():
             camera.data.ortho_scale=max(size)*1.45
             scene.render.resolution_x=1200; scene.render.resolution_y=1200
             scene.render.filepath=str(ART/(name+'.png')); bpy.ops.render.render(write_still=True)
+    finally:
         for a in h.ASSETS: bpy.data.collections[a['name']].hide_render=False
+        camera.location=camera_location; camera.rotation_euler=camera_rotation
+        camera.data.ortho_scale=camera_scale
+        scene.render.resolution_x,scene.render.resolution_y=original_resolution
 
 
 if __name__=='__main__':
@@ -803,7 +892,7 @@ if __name__=='__main__':
     furniture()
     decorations()
     nature()
-    manifest=dict(version=1,title='Arboleda · Cuna de los Elfos',author='Brumaluz',
+    manifest=dict(version=1,revision=2,title='Arboleda · Cuna de los Elfos',author='Brumaluz',
                   description='Arte original de Blender: arquitectura de madera viva, hojas, piedra lunar y alquimia botánica. Escala métrica. GLB +Y arriba, +Z frente.',
                   assets=h.ASSETS)
     # Save the manifest before expensive render work.

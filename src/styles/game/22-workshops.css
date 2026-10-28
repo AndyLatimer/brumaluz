@@ -1,0 +1,66 @@
+/* A short lesson sits beside the existing profession book, with four readable tabs. */
+.profession-window .profession-tabs{display:grid;grid-template-columns:repeat(var(--profession-tabs,4),minmax(0,1fr));gap:4px;overflow:visible}
+.profession-window .profession-tab{position:relative;min-width:0;gap:7px;padding:11px 7px;font-size:13px;white-space:normal;line-height:1.2;text-align:center}
+.profession-window .profession-tab>.profession-symbol{flex:none;width:21px;height:21px}
+.profession-window .profession-tab>span:last-of-type{min-width:0;overflow-wrap:normal;word-break:normal}
+.profession-guide{display:block;padding:20px;scroll-padding-block:16px}
+.profession-guide>.profession-section-heading{margin-bottom:18px}
+.profession-guide>.profession-section-heading h3{font-size:16px;letter-spacing:.03em;text-transform:none}
+.profession-guide>.profession-section-heading p{font-size:14px;line-height:1.45;color:#806849}
+.profession-guide-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;list-style:none;margin:0 0 25px;padding:0}
+.profession-guide-step{display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:16px;border:1px solid #b69b6c80;border-radius:7px 16px 7px 7px;background:linear-gradient(135deg,#fff9e9d9,#e6d4ae60);box-shadow:0 3px 8px #7152290b}
+.profession-guide-step-title{display:flex;align-items:center;gap:10px;width:100%}
+.profession-guide-step-number{display:grid;place-items:center;flex:none;width:29px;height:29px;border:1px solid #b29459;border-radius:50%;color:#f8edcf;background:linear-gradient(#9c824f,#77613f);font:700 15px 'Cinzel',Georgia,serif;box-shadow:inset 0 1px #eddbaf55}
+.profession-window .profession-guide-step h4{margin:0;color:#65482c;font:700 15px/1.25 'Alegreya',Georgia,serif;letter-spacing:0;text-transform:none}
+.profession-guide-step p{flex:1;margin:12px 0 15px;color:#80694b;font-size:14px;line-height:1.5}
+.profession-guide-step>.profession-button{justify-content:space-between;gap:13px;max-width:100%;min-height:37px;font-size:12px;line-height:1.25;text-align:left}
+.profession-guide-step>.profession-button .profession-symbol{width:19px;height:19px;flex:none}
+.profession-guide-places{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.profession-guide-place{display:flex;align-items:flex-start;gap:10px;min-width:0;padding:13px 12px;border:1px solid #ac99724d;border-radius:6px;background:#c8b48a18}
+.profession-guide-place>.profession-symbol{flex:none;width:25px;height:25px;color:#917846}
+.profession-window .profession-guide-place h4{margin:0 0 7px;color:#735634;font:700 13px 'Cinzel',Georgia,serif;letter-spacing:0;text-transform:none}
+.profession-guide-place p{margin:0;color:#8a7151;font-size:13px;line-height:1.45}
+.profession-guide-visit{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #b6a27780;border-radius:6px;background:#ecddbd80}
+.profession-guide-visit>.profession-symbol{width:26px;height:26px;flex:none;color:#947d52}
+.profession-guide-visit>div{flex:1;min-width:0}
+.profession-guide-visit strong{display:block;color:#755839;font-size:14px}
+.profession-guide-visit p{margin:5px 0 0;color:#8b7352;font-size:13px;line-height:1.4}
+.profession-guide-visit>.profession-button{flex:none;max-width:100%}
+.profession-guide-visit.available{background:#c5d0aa2d;border-color:#93a16c77}
+.profession-guide-visit.available>.profession-symbol,.profession-guide-visit.available strong{color:#657b48}
+.profession-guide-tool-status{display:flex;align-items:center;gap:8px;margin:15px 0 0;color:#907553;font-size:13px;line-height:1.4}
+.profession-guide-tool-status>.profession-symbol{width:21px;height:21px;flex:none}
+@media(max-width:1000px){
+ .profession-guide{padding:16px}
+ .profession-guide-places{grid-template-columns:minmax(0,1fr);gap:8px}
+ .profession-guide-place{padding:11px 12px}
+ .profession-guide-place p{font-size:13px}
+ .profession-guide-step{padding:14px}
+}
+@media(max-width:760px){
+ .profession-window .profession-tabs{padding:7px 8px 0}
+ .profession-window .profession-tab{min-height:44px;gap:5px;padding:9px 4px;font-size:12px}
+ .profession-window .profession-tab>.profession-symbol{width:18px;height:18px}
+ .profession-guide-visit{flex-wrap:wrap}
+ .profession-guide-visit>.profession-button{margin-left:38px}
+}
+@media(max-width:560px){
+ .profession-window .profession-tabs{grid-template-columns:repeat(var(--profession-tabs,4),minmax(0,1fr));gap:3px;padding:5px 5px 0;overflow:visible}
+ .profession-window .profession-tab{flex-direction:column;gap:4px;min-height:51px;padding:6px 2px;font-size:10px;border-radius:5px 5px 0 0}
+ .profession-window .profession-tab>.profession-symbol{display:inline-grid;width:18px;height:18px}
+ .profession-window .profession-tab>.profession-tab-badge{position:absolute;top:3px;right:3px;min-width:14px;height:14px;padding:0 3px;font-size:8px}
+ .profession-guide{padding:13px 11px}
+ .profession-guide>.profession-section-heading{margin-bottom:14px}
+ .profession-guide>.profession-section-heading h3{font-size:15px}
+ .profession-guide>.profession-section-heading p{font-size:13px;line-height:1.45}
+ .profession-guide-steps{grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:22px}
+ .profession-guide-step{padding:13px}
+ .profession-guide-step p{font-size:14px;margin:10px 0 12px}
+ .profession-guide-step>.profession-button{min-height:40px;width:100%;font-size:12px}
+ .profession-guide-step-number{width:27px;height:27px;font-size:14px}
+ .profession-guide-visit{padding:12px;gap:9px}
+ .profession-guide-visit>.profession-symbol{width:22px;height:22px}
+ .profession-guide-visit>div{flex-basis:calc(100% - 35px)}
+ .profession-guide-visit>.profession-button{margin-left:31px}
+ .profession-guide-tool-status{font-size:12px}
+}

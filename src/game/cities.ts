@@ -6,6 +6,7 @@ import { setMinimapImage } from '../ui/minimap';
 import { captureTopDown } from '../world/mapCapture';
 import { play, story, session, talk, fight, view, ui } from './state';
 import { type WorldNpcId, isWorldNpcId } from '../data/npcs';
+import { createNpc } from '../character/npc';
 import type { Character } from '../character/character';
 import { ISBERTO_HOUSE, ISBERTO_INSIDE } from '../data/quests';
 import { castShadows } from '../world/render';
@@ -49,6 +50,11 @@ export async function gameCity(id: string): Promise<City> {
     : id === 'brumaluz' ? await buildCity()
       : (() => { throw new Error(`El mapa «${id}» no está incluido en esta versión del juego.`); })();
   buildProfessionWorld(result);
+  // Interior masters are built only when their workshop is visited.
+  await Promise.all(result.npcSites.map(async site=>{
+    if(!isWorldNpcId(site.id))return;
+    if(!session.worldCharacters[site.id])session.worldCharacters[site.id]=await createNpc(session.registeredNpcs[site.id]);
+  }));
   loadedCities.set(id, result);
   return result;
 }
@@ -80,6 +86,7 @@ for (const site of npcSitesHere()) {
   if (!def) continue;
   if (!isWorldNpcId(site.id)) throw new Error(`Falta el personaje registrado ${site.id}.`);
   const character = session.worldCharacters[site.id];
+  if(!character)throw new Error(`Falta cargar el personaje ${site.id}.`);
   character.root.name = `npc:${site.id}`;
   character.root.position.copy(site.position);
   character.root.rotation.y = site.yaw;

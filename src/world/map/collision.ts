@@ -19,7 +19,12 @@ export interface CollisionShape {
  * Superficie a la que se puede subir. Con `slope` es una rampa (la altura cambia `slope` m por metro hacia +Z local);
  * las que lo definen, aunque sea 0, son superficies explícitas (escaleras): cuentan desde el suelo hasta 2 m sobre él.
  */
-export interface PlatformShape { x: number; z: number; y: number; hx: number; hz: number; cos: number; sin: number; sourceId: string; slope?: number }
+export interface PlatformShape {
+  x: number; z: number; y: number; hx: number; hz: number; cos: number; sin: number; sourceId: string;
+  slope?: number; slopeX?: number;
+  /** A deliberately authored bridge deck spans a channel, so its rise is measured from its banks. */
+  bridge?: boolean;
+}
 export const CHARACTER_RADIUS = 0.45;
 /**
  * Piezas de city.glb con escalera ante la puerta (medidas del modelo sin escalar, fachada hacia +Z): `blocks` son las
@@ -58,6 +63,28 @@ export function objectCollision(object: MapObject, box: THREE.Box3 | undefined, 
   const addBox = (ox: number, oz: number, bx: number, bz: number) => shapes.push({
     x: x + ox * cos + oz * sin, z: z - ox * sin + oz * cos, r: 0, hx: bx, hz: bz, cos, sin, topY, bottomY, source: 'object', sourceId,
   });
+  if (object.collision === 'auto' && object.walkable === true && object.asset === 'medieval-builder/objects/bridge') {
+    // Measured from the canonical bridge mesh: the central passage is an arch,
+    // not its bounding-box top (the parapets). Only explicitly walkable bridges
+    // get this surface, leaving the normal platform height limit unchanged.
+    const deck = [[-1, -.1], [-.71201, .05739], [-.26062, .200617], [.26062, .200617], [.71201, .05739], [1, -.1]];
+    for (let i = 1; i < deck.length; i++) {
+      const [ax, ay] = deck[i - 1], [bx, by] = deck[i];
+      const mx = (ax + bx) / 2 * sx;
+      platforms.push({ x: x + mx * cos, z: z - mx * sin, y: baseY + (ay + by) / 2 * sy,
+        hx: (bx - ax) / 2 * sx, hz: .17322 * sz, cos, sin, sourceId, slopeX: (by - ay) * sy / ((bx - ax) * sx), bridge: true });
+      // The passage remains open; only the two visible parapets stop sideways
+      // movement. A single bounding box would make the whole bridge a wall.
+      for (const side of [-1, 1]) {
+        const oz = side * .23661 * sz;
+        shapes.push({ x: x + mx * cos + oz * sin, z: z - mx * sin + oz * cos, r: 0,
+          hx: (bx - ax) / 2 * sx, hz: .06339 * sz, cos, sin,
+          topY: baseY + (Math.max(ay, by) + .0763) * sy, bottomY: baseY + Math.min(ay, by) * sy,
+          source: 'object', sourceId });
+      }
+    }
+    return { shapes, platforms };
+  }
   if (object.collision === 'auto') {
     const stairs = city ? STAIRS[name] : undefined;
     if (stairs) {
@@ -114,12 +141,13 @@ export function objectCollision(object: MapObject, box: THREE.Box3 | undefined, 
       addBox(cx, cz, hx * 0.72, hz * 0.72);
       return { shapes, platforms };
     }
-    if (!city && /tree|pine|birch|oak/i.test(name) && !/stump|log|fallen/i.test(name)) {
+    if (!city && /(?:^|_)trees?(?:_|$)|^(?:pine|birch|oak)(?:_|$)/i.test(name) && !/stump|log|fallen/i.test(name)) {
       shapes.push({ x: wx, z: wz, r: THREE.MathUtils.clamp(Math.min(hx, hz) * 0.3, 0.25, 1.2), source: 'object', sourceId });
       return { shapes, platforms };
     }
     if (city && name === 'wall_straight_gate') {
-      for (const side of [-1, 1]) addBox(cx + side * 0.75 * sx, cz, 0.25 * sx, hz);
+      if (object.gateClosed) addBox(cx, cz, hx, hz);
+      else for (const side of [-1, 1]) addBox(cx + side * 0.75 * sx, cz, 0.25 * sx, hz);
       return { shapes, platforms };
     }
     addBox(cx, cz, hx + (city && name === 'wall_straight' ? 0.05 : 0), hz);
@@ -209,6 +237,21 @@ export function buildCollision(
   const water = doc.settings.water;
   const bounded = doc.settings.bounded;
   const groundY = (x: number, z: number) => field.heightAt(x, z);
+  const surfaceY = (platform: PlatformShape, x: number, z: number): number | null => {
+    const dx = x - platform.x, dz = z - platform.z;
+    const lx = dx * platform.cos - dz * platform.sin, lz = dx * platform.sin + dz * platform.cos;
+    if (Math.abs(lx) > platform.hx + 1e-6 || Math.abs(lz) > platform.hz + 1e-6) return null;
+    return platform.y + (platform.slopeX ?? 0) * lx + (platform.slope ?? 0) * lz;
+  };
+  const bridgeHeightAt = (x: number, z: number) => {
+    let top: number | null = null;
+    for (const platform of platformHash.query(x, z)) {
+      if (!platform.bridge) continue;
+      const y = surfaceY(platform, x, z);
+      if (y !== null && (top === null || y > top)) top = y;
+    }
+    return top;
+  };
   // El agua ya no es un muro: solo bloquean los límites del mapa.
   const blocked = (x: number, z: number) => bounded && !field.contains(x, z, 0.5);
   const waterTiles: { x: number; z: number; cos: number; sin: number; sx: number; sy: number; sz: number; y: number; conform: boolean; spec: typeof WATER_TILES[string] }[] = [];
@@ -221,6 +264,7 @@ export function buildCollision(
   const waterHash = new SpatialHash<typeof waterTiles[number]>();
   for (const tile of waterTiles) waterHash.insert(tile, 1.2 * Math.max(tile.sx, tile.sz));
   const waterAt = (x: number, z: number): WaterSample | null => {
+    const bridge = bridgeHeightAt(x, z);
     for (const tile of waterHash.query(x, z)) {
       const dx = x - tile.x, dz = z - tile.z;
       const lx = (dx * tile.cos - dz * tile.sin) / tile.sx, lz = (dx * tile.sin + dz * tile.cos) / tile.sz;
@@ -229,12 +273,15 @@ export function buildCollision(
       const channel = tile.spec.channel;
       if (channel && (lz < channel[0] || lz > channel[1])) continue;
       const base = tile.conform ? field.heightAt(x, z) + tile.y : tile.y;
-      return { surface: base + tile.spec.surface * tile.sy, deep: tile.spec.deep };
+      const surface = base + tile.spec.surface * tile.sy;
+      if (bridge !== null && bridge > surface + .02) return null;
+      return { surface, deep: tile.spec.deep };
     }
     // Agua pintada en el editor (lagos, ríos): la más alta entre ella y la lámina general.
     const painted = field.waterAt(x, z);
     const ground = field.heightAt(x, z);
     const level = Math.max(painted ?? -Infinity, water.enabled ? water.level : -Infinity);
+    if (bridge !== null && bridge > level + .02) return null;
     if (level > ground) return { surface: level, deep: level - ground >= SWIM_DEPTH };
     return null;
   };
@@ -275,13 +322,12 @@ export function buildCollision(
     const floor = groundY(x, z);
     let top: number | null = null;
     for (const platform of platformHash.query(x, z)) {
-      const dx = x - platform.x, dz = z - platform.z;
-      const lx = dx * platform.cos - dz * platform.sin, lz = dx * platform.sin + dz * platform.cos;
-      if (Math.abs(lx) > platform.hx || Math.abs(lz) > platform.hz) continue;
-      const y = platform.y + (platform.slope ?? 0) * lz;
+      const y = surfaceY(platform, x, z);
+      if (y === null) continue;
       // Las superficies explícitas (escaleras) cuentan desde el suelo, para que el pie de una rampa enlace con él.
       const explicit = platform.slope !== undefined;
-      if (y <= floor + (explicit ? 0.01 : 0.2) || y > floor + (explicit ? 2 : 1.2) || (top !== null && y <= top)) continue;
+      if (y <= floor + (explicit || platform.bridge ? 0.01 : 0.2)
+        || (!platform.bridge && y > floor + (explicit ? 2 : 1.2)) || (top !== null && y <= top)) continue;
       top = y;
     }
     return top;
@@ -290,8 +336,12 @@ export function buildCollision(
     const distance = Math.hypot(to.x - from.x, to.z - from.z);
     const steps = Math.max(1, Math.ceil(distance / 0.2));
     const out = from.clone();
+    const increment = to.clone().sub(from).divideScalar(steps);
     // Nadando, lo que cuenta es la superficie del agua: el fondo puede tener desniveles.
-    const support = (x: number, z: number) => { const w = waterAt(x, z); return w?.deep ? Math.max(groundY(x, z), w.surface - SWIM_DEPTH) : groundY(x, z); };
+    const support = (x: number, z: number) => {
+      const w = waterAt(x, z), ground = Math.max(groundY(x, z), bridgeHeightAt(x, z) ?? -Infinity);
+      return w?.deep ? Math.max(ground, w.surface - SWIM_DEPTH) : ground;
+    };
     // Al agua profunda uno se puede tirar desde cualquier altura, y desde ella se sale trepando a una orilla de
     // hasta 1,7 m sobre la superficie; en tierra, solo escalones de 0,55 m.
     const legal = (x: number, z: number, previous: THREE.Vector3) => {
@@ -299,7 +349,7 @@ export function buildCollision(
       // Una cascada se baja (de un salto o dejándose caer), pero no se remonta: no se entra en un agua cuya superficie
       // queda muy por encima de donde se está (otra agua más baja o el suelo al pie del salto).
       const toWater = waterAt(x, z);
-      if (toWater && toWater.surface - (waterAt(previous.x, previous.z)?.surface ?? groundY(previous.x, previous.z)) > FALL_STEP) return false;
+      if (toWater && toWater.surface - (waterAt(previous.x, previous.z)?.surface ?? support(previous.x, previous.z)) > FALL_STEP) return false;
       const rise = support(x, z) - support(previous.x, previous.z);
       if (rise <= 0 && waterAt(x, z)?.deep) return true;
       const from = waterAt(previous.x, previous.z);
@@ -308,7 +358,9 @@ export function buildCollision(
     };
     for (let step = 1; step <= steps; step++) {
       const previous = out.clone();
-      const candidate = from.clone().lerp(to, step / steps);
+      // Continue from the resolved position. Interpolating from the original
+      // start again would eventually place a later substep beyond a thin wall.
+      const candidate = previous.clone().add(increment);
       if (!legal(candidate.x, candidate.z, previous)) {
         const canX = legal(candidate.x, previous.z, previous), canZ = legal(previous.x, candidate.z, previous);
         if (canX && canZ) {

@@ -83,16 +83,29 @@ resultado calculado por el prototipo como daño o progreso autoritativos.
 
 ## Puntos y rangos
 
-- Se gana **1 punto de habilidad en los niveles 2, 4, 6… 50**. El saldo se
+- Ajuste del 25 de octubre de 2026, solicitado para agilizar las mejoras:
+  se gana **1 punto de habilidad en cada nivel desde el 2 hasta el 50**. El saldo se
   deriva del nivel y los rangos comprados, no de un contador que envíe el cliente.
   Los personajes existentes reconocen sus niveles ganados sin modificar misiones.
   No hay puntos de habilidad al crear un personaje de nivel 1.
 - La habilidad inicial se aprende gratis en rango 1. Tiene cinco rangos:
-  mejorar a 2/3/4/5 requiere nivel 2/4/6/8 y cuesta un punto por mejora.
+  mejorar a 2/3/4/5 requiere nivel 2/3/4/5 y cuesta un punto por mejora.
   Los puntos sobrantes se conservan para futuras habilidades.
 - El libro muestra el efecto actual y el siguiente antes de confirmar un gasto
   permanente. Cancelar no gasta nada. Un fallo del servidor se notifica y permite
   reintentar sin aparentar que se ha guardado.
+- El libro muestra la experiencia hacia el siguiente punto, los cinco rangos y
+  una comparación numérica del daño total o la curación con su ganancia porcentual.
+  La mejora tiene un botón completo, confirmación y un aviso al guardarse;
+  el estado máximo conserva los puntos sobrantes para futuras habilidades.
+- Este ajuste está preparado en cliente y SQL (`game_skill_rank` y `upgrade_skill`).
+  `node tools/review-skills.mjs` genera capturas del juego y el parche transaccional
+  limitado a esas dos funciones en `art/skills-review/server-patch.sql`.
+  Antes de publicar el cliente debe aplicarse ese parche al servidor; esta tarea no aplica
+  cambios a la base de datos configurada. Los rangos ya comprados se conservan y
+  los niveles existentes reconocen automáticamente los nuevos puntos.
+- Validación de la nueva curva: `node --test scripts/test-skill-progression.mjs`
+  comprueba las cinco clases y la paridad con PostgreSQL aislado (PGlite).
 - `upgrade_skill` bloquea el personaje y valida propiedad, habilidad de clase,
   rango esperado, nivel y saldo. Una petición repetida con el rango anterior
   falla, incluso si llega desde otra pestaña. El rango se guarda en

@@ -55,7 +55,46 @@ test('generated combat SQL matches client attribute formulas and resolves ranged
   const prepared=await tick(d,8,0);assert.equal(prepared.combatEncounter.attackKind,'bolt');assert.equal(prepared.health,66);
   prepared.combatEncounter.windup=1;const hit=await tick(prepared,10,1);assert.equal(hit.health,61,'A ranged bolt follows the player beyond the original aim');
   await db.exec('update public.test_sight set enabled=false');const blocked=await tick(prepared,10,1);assert.equal(blocked.health,66,'Cover stops ranged damage');await db.exec('update public.test_sight set enabled=true');
-  d.combatEncounter.attackSeq=0;const area=await tick(d,8,0);assert.equal(area.combatEncounter.attackKind,'area');area.combatEncounter.windup=1;const dodged=await tick(area,8,3);assert.equal(dodged.health,66);
-  console.log(`SQL/client parity: ${checks} class/attribute builds; targeted bolt, cover and area dodge verified.`);
+  d.combatEncounter.attackSeq=0;const melee=await tick(d,1,0);assert.equal(melee.combatEncounter.attackKind,'melee');melee.combatEncounter.windup=1;const dodged=await tick(melee,4,0);assert.equal(dodged.health,66,'Leaving melee reach avoids contact damage');
+  console.log(`SQL/client parity: ${checks} class/attribute builds; targeted bolt, cover and melee reach verified.`);
+ }finally{await db.close();}
+});
+
+test('shared enemy simulation targets one opponent, skips idle worlds and never simulates outdoors for town players',{skip:!available,timeout:60000},async()=>{
+ const {PGlite}=await import(pathToFileURL(modulePath).href),db=new PGlite();
+ const source=await readFile(new URL('../supabase/server/28-shared-wilderness.sql',import.meta.url),'utf8');
+ const extract=name=>{const start=source.indexOf(`create or replace function public.${name}(`);assert.ok(start>=0,name);return source.slice(start,source.indexOf('end $$;',start)+8);};
+ const first='00000000-0000-4000-8000-000000000011',second='00000000-0000-4000-8000-000000000012';
+ try{
+  await db.exec(`
+   create table public.characters(id uuid primary key,data jsonb);
+   create table public.world_players(character_id uuid,position jsonb,seen_at timestamptz,dead boolean default false);
+   create table public.wilderness_mobs(spawn text primary key,state jsonb,revision int default 1);
+   create table public.wilderness_events(character_id uuid,instance_id text,kind text,payload jsonb,created_at timestamptz default now());
+   create table public.wilderness_claims(character_id uuid,expires_at numeric);
+   create table public.server_config(key text,value jsonb);insert into public.server_config values('combat_enabled','true');
+   create table public.guard_checks(calls int);insert into public.guard_checks values(0);
+   create function public.game_wilderness_catalog()returns jsonb language sql as $$ select '{"enemies":{"test":{"range":1.8,"aggro":5,"radius":9,"reach":9,"pattern":"circle","damage":6,"speed":2,"windup":1.2,"interval":2.8}},"spawns":[]}'::jsonb $$;
+   create function public.game_health(d jsonb)returns int language sql as $$select 60$$;
+   create function public.game_rpg_sight(loc text,x1 numeric,z1 numeric,x2 numeric,z2 numeric)returns boolean language sql as $$select true$$;
+   create function public.game_guard_multiplier(d jsonb)returns numeric language plpgsql as $$begin update public.guard_checks set calls=calls+1;return 1;end$$;
+   create function public.game_wilderness_join(m jsonb,pid uuid,damage numeric default 0,support numeric default 0)returns jsonb language sql as $$select m$$;
+   create function public.game_wilderness_consume(pid uuid,d jsonb)returns jsonb language sql as $$select d$$;
+   create function public.game_wilderness_context(pid uuid,d jsonb,x numeric,z numeric)returns jsonb language sql as $$select d$$;
+   create function public.game_story_combat_tick(pid uuid,d jsonb,x double precision,z double precision)returns jsonb language sql as $$select d||'{"story":true}'::jsonb$$;
+   insert into public.characters values('${first}','{"location":"pompelin"}'),('${second}','{"location":"pompelin"}');
+   insert into public.world_players values('${first}','{"x":1,"z":0}',now(),false),('${second}','{"x":1,"z":0}',now(),false);
+   insert into public.wilderness_mobs values('test',jsonb_build_object('spawn','test','enemy','test','instanceId','enemy-1','status','active','health',80,'maxHealth',80,'x',0,'z',0,'homeX',0,'homeZ',0,'movedAt',extract(epoch from clock_timestamp())-.2,'windup',extract(epoch from clock_timestamp())-.1,'aimX',0,'aimZ',0,'enemyAttackAt',0,'members',jsonb_build_object('${first}',jsonb_build_object('threat',10,'seenAt',extract(epoch from clock_timestamp())))),1);
+  `);
+  await db.exec(extract('game_wilderness_world_tick'));await db.exec(extract('game_combat_tick'));
+  await db.exec('select public.game_wilderness_world_tick()');
+  const events=(await db.query('select character_id,payload from public.wilderness_events')).rows;
+  assert.equal(events.length,1,'A normal strike never damages the bystander standing on the same spot');assert.equal(events[0].character_id,first);
+  assert.equal((await db.query('select calls from public.guard_checks')).rows[0].calls,1,'Equipment mitigation is computed only for the opponent actually struck');
+  const revision=(await db.query('select revision from public.wilderness_mobs')).rows[0].revision;
+  await db.exec("update public.world_players set seen_at=now()-interval '1 minute';update public.wilderness_mobs set state=jsonb_set(state,'{movedAt}',to_jsonb(extract(epoch from clock_timestamp())-1))");
+  await db.exec('select public.game_wilderness_world_tick()');assert.equal((await db.query('select revision from public.wilderness_mobs')).rows[0].revision,revision,'An empty outdoor map creates no simulation writes');
+  const town=(await db.query('select public.game_combat_tick($1,$2,0,0) result',[first,{location:'brumaluz'}])).rows[0].result;
+  assert.equal(town.story,true);assert.equal((await db.query('select revision from public.wilderness_mobs')).rows[0].revision,revision);
  }finally{await db.close();}
 });

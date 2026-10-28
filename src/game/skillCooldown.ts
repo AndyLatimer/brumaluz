@@ -26,7 +26,9 @@ export function syncSkillCooldown(sample:SkillCooldownSample,requestStarted?:num
   // the measured round trip for the response travelling back to the client.
   if(requestStarted!==undefined&&(serverTime!==undefined||remaining!==undefined))seconds-=Math.max(0,performance.now()-requestStarted)/2000;
   let readyAt=performance.now()+Math.max(0,seconds)*1000;
-  if(deadline!==undefined&&deadline===lastDeadline)readyAt=Math.min(vitals.skillReadyAt,readyAt);
+  // A replay of one authoritative revision represents the same cast, even
+  // when an older endpoint supplies only a relative remaining time.
+  if((deadline!==undefined&&deadline===lastDeadline)||(revision!==undefined&&revision===lastRevision))readyAt=Math.min(vitals.skillReadyAt,readyAt);
   vitals.skillReadyAt=readyAt;
   if(revision!==undefined)lastRevision=revision;
   lastDeadline=deadline;
@@ -41,6 +43,8 @@ export function cancelSkillCooldown(token:ReturnType<typeof predictSkillCooldown
   pending=0;vitals.skillReadyAt=token.previous;
 }
 export function resetSkillCooldown(){serial++;pending=0;lastRevision=-1;lastDeadline=undefined;vitals.skillReadyAt=0;}
+/** Stop shielding a request that was aborted when its scene/session changed. */
+export function releasePendingSkillCooldown(){pending=0;}
 
 export function cooldownSample(result:Record<string,unknown>):SkillCooldownSample{
   const data=result.data as {combatNextSkill?:number;serverRevision?:number}|undefined;

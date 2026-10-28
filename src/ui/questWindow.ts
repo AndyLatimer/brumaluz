@@ -1,9 +1,11 @@
 import type { CharData } from '../data/data';
-import { ORIGINS, ORIGIN_REPLIES, WELCOME_TITLE, WELCOME_REWARD, SHADOW_TITLE, shadowObjective, questItems, welcomeObjective, type WelcomeAction } from '../data/quests';
+import { ORIGINS, ORIGIN_REPLIES, WELCOME_TITLE, WELCOME_REWARD, SHADOW_TITLE, FAIRY_DUST_QUEST_TITLE, fairyDustObjective, shadowObjective, questItems, welcomeObjective, type WelcomeAction } from '../data/quests';
 import { currencyIcon } from '../data/currency';
 import type { Conversation } from './dialog';
 import { t } from './i18n';
 import { currentQuest, type QuestId, type QuestTracking } from './questTracking';
+import {PROFESSION_TUTORIAL,tutorialObjective,tutorialSteps,tutorialProgress} from '../data/professionTutorial';
+import {RPG_CATALOG} from '../data/professions';
 
 /** ID de la misión de bienvenida (welcome). */
 const WELCOME_QUEST_KEY = 'welcome';
@@ -29,11 +31,15 @@ function createTrackButton(tracking: QuestTracking, questId: QuestId): HTMLButto
 export function welcomeConversation(data: CharData, act: (action: WelcomeAction, origin?: number) => Promise<boolean>): Conversation {
   const progress = data.welcome;
   const conversation: Conversation = { speaker: 'Gnomi', subtitle: 'Ayudante de bienvenida', emblem: 'guild', start: 'intro', nodes: {} };
-  const offer = 'Antes de enseñarte nada… ¿ves el hueco del peto? Ahí iba mi distintivo. Lo llevaba al pasar junto a los puestos de la plaza del Levante, aquí al lado.\n\nEs redondo, dorado y está un poco abollado. En el gremio tienen otros más lustrosos, pero este es el mío. ¿Me ayudas a encontrarlo? Me quedaría mucho más tranquilo si lo llevase puesto.';
+  const offer = "Tengo que pedirte un favor antes de enseñarte los talleres. He perdido mi distintivo. Lo llevaba junto a los puestos de la plaza del Levante; después he venido a la puerta y… nada. He mirado dos veces en el mismo bolsillo, por si acaso.\n\nEs redondo y dorado, con una abolladura en el borde. Esa no hace falta arreglarla: así sé que es el mío. ¿Lo buscamos? Tú miras alrededor del puesto y yo me meto debajo.";
   const accept = { text: 'Aceptar misión', action: () => act('accept') };
-  const offerChoices = [accept, { text: '¿En qué vas a ayudarme?', next: 'guild' }];
+  const offerChoices = [accept, { text: '¿En qué vas a ayudarme?', next: 'guild' }, {text:'¿No eras tú quien iba a ayudarme?',next:'helper'}];
+  conversation.nodes.helper = {
+    text: 'Sí. Y entiendo cómo está quedando esto. Pero no me descartes todavía, que la ciudad me la sé.\n\nPodría haberte llevado al mercado sin decir nada y buscarlo de reojo. Se me ha ocurrido. Luego he pensado que sería feo empezar así contigo.',
+    next: 'offer',
+  };
   conversation.nodes.guild = {
-    text: 'En lo que vayas necesitando: orientarte por la ciudad, presentarte a los vecinos, conocer los oficios…\n\nA mí suelen dejarme los recados y recoger lo que se les cae a otros. Bueno, a otros y a mí. Hoy me han dejado acompañarte. Me gustaría hacerlo bien. Y si algo no lo sé, lo preguntamos juntos.',
+    text: "Los talleres están en el Barrio de los Artesanos. Te enseño cuál es cuál y tú preguntas lo que te interese. Si un maestro se pone a hablar como si ya supieras, lo paramos. Yo también pregunto; no me da vergüenza.\n\nBueno, un poco sí. Pero me fastidia más quedarme sin entender.",
     next: 'offer',
   };
   const quest = {
@@ -46,36 +52,36 @@ export function welcomeConversation(data: CharData, act: (action: WelcomeAction,
     conversation.nodes.intro = { text: '¡Buen camino! Si necesitas ayuda con algo, estaré por aquí. Para alcanzar los estantes altos tendremos que buscar a otro, eso sí.' };
   } else if (progress.origin === null) {
     conversation.nodes.intro = {
-      text: '¡Te doy la bienvenida a Brumaluz! Soy Gnomi, del Gremio de Ayudantes. Voy a ser tu ayudante de bienvenida. Los demás ya tenían encargo y yo… bueno, yo estaba libre.\n\nNo suelo llevar una bienvenida entera, pero me hace mucha ilusión. Espera, que me sacuda las rodillas… Ya. ¿Qué te trae por aquí?',
+      text: "¡Ah, hola! Si ves algo dorado por el suelo, avísame. Redondo. Con una abolladura…\n\n¡La bienvenida! Eso iba primero. Soy Gnomi, del Gremio de Ayudantes. Me han mandado a recibirte; los demás ya estaban ocupados. A mí suelen dejarme los recados, pero hoy me toca alguien con quien hablar.\n\n¿Vienes a conocer Brumaluz o ya vives aquí?",
       choices: ORIGINS[data.race].map((text, i) => ({ text, action: () => act('origin', i), next: `offer-${i}` })),
     };
     ORIGINS[data.race].forEach((_, i) => {
       conversation.nodes[`offer-${i}`] = {
-        text: `${t(ORIGIN_REPLIES[i])}\n\n${t(offer)}`,
+        text: `${t(ORIGIN_REPLIES[data.race][i])}\n\n${t(offer)}`,
         quest,
         choices: offerChoices,
       };
     });
   } else if (progress.stage === 'available') {
-    conversation.nodes.intro = { text: `${t(ORIGIN_REPLIES[progress.origin])}\n\n${t(offer)}`, quest,
+    conversation.nodes.intro = { text: `${t(ORIGIN_REPLIES[data.race][progress.origin])}\n\n${t(offer)}`, quest,
       choices: offerChoices };
   } else if (progress.stage === 'active') {
     conversation.nodes.intro = {
-      text: 'La plaza del Levante está aquí al lado. Mira junto a los puestos; es redondo, dorado y tiene una abolladura en el borde.\n\nYo miraré por debajo. Tú ves más lejos; yo veo mejor lo que se cae.',
+      text: "Tiene que estar junto a los puestos de la plaza del Levante. Mira si ves un borde dorado entre las patas.\n\nYo me agacho. Tú no te preocupes por mí, que a esta altura ya estoy bastante cerca del suelo.",
       choices: [{ text: 'Vamos a encontrarlo.' }, { text: '¿Y si no aparece?', next: 'worry' }],
     };
-    conversation.nodes.worry = { text: 'David, mi jefe, ya me riñó la última vez. Esta vez… mejor no darle otro motivo.\n\nPero no es solo por la bronca. Me gusta que los vecinos vean el distintivo y sepan que pueden pedirme ayuda. A veces hasta me llaman por mi nombre.' };
+    conversation.nodes.worry = { text: "David, el jefe del gremio, ya me riñó la última vez. Todavía me acuerdo de la cara. De lo que dijo, también, pero de la cara sobre todo.\n\nSin el distintivo, los vecinos creen que estoy de paseo. Con él me paran para pedirme cosas. Y yo quiero que me paren. No me gusta ser siempre el que sobra." };
   } else if (progress.stage === 'found') {
     conversation.nodes.intro = {
-      text: '¡Lo tienes! Ese es, con su abolladura. Me daba mucha pena pensar que se quedara ahí, entre las patas de los puestos.\n\n¿Me lo das? Esta vez voy a cerrar bien el broche. Mira que siempre me digo lo mismo…',
+      text: "¡Ese es! A ver el borde… sí, esa abolladura es mía.\n\nPásamelo. Quiero ponérmelo antes de que alguien me pregunte por él. Y luego vamos a ocuparnos de lo tuyo, que vaya ayudante te has buscado.",
       quest: { ...quest, objective: 'Devuelve a Gnomi su distintivo del Gremio de Ayudantes.', turnIn: true },
       choices: [{ text: 'Completar misión', action: () => act('claim'), next: 'thanks' }],
     };
     conversation.nodes.thanks = {
-      text: 'Ahí… bien sujeto. Gracias, de veras. Yo venía a echarte una mano y al final me la has echado tú.\n\nCuando te haga falta algo, ven a buscarme. Aunque no sea cosa del gremio.\n\nAhora podemos… Espera. ¿Oyes esas botas? Me parece que viene Isberto.',
+      text: "Ya está. Tira un poco… ahora sí aguanta. Gracias, de veras. Yo venía a echarte una mano y al final me la has echado tú.\n\nBueno, te debía una visita a los talleres. Podemos… anda, Isberto. Viene hacia aquí.",
     };
   } else if (progress.stage === 'completed') {
-    conversation.nodes.intro = { text: 'Isberto quiere hablar contigo. Es el herrero que vive al sur, cerca de la fragua. Gruñe un poco, pero escucha lo que tenga que decirte.\n\nYo voy contigo. Y el distintivo también; esta vez no se escapa.' };
+    conversation.nodes.intro = { text: 'Isberto es el herrero de las afueras, al sur. Iba a llevarte a conocer los oficios, pero parece que necesita algo. Vamos a escucharlo.' };
   } else conversation.nodes.intro = { text: '¡Mi compañero de búsqueda! El distintivo sigue en su sitio. Lo he comprobado. Dos veces.' };
   return conversation;
 }
@@ -107,7 +113,7 @@ export function createQuestItems(data: CharData) {
   return section;
 }
 
-function createQuestRewards(completed: boolean) {
+function createQuestRewards(completed: boolean,rewards=WELCOME_REWARD) {
   const footer = document.createElement('footer');
   footer.className = 'quest-rewards';
   footer.classList.toggle('received', completed);
@@ -118,9 +124,10 @@ function createQuestRewards(completed: boolean) {
   heading.append(title); footer.append(heading);
   const list = document.createElement('div'); list.className = 'quest-reward-list';
   for (const reward of [
-    { kind: 'experience', value: WELCOME_REWARD.experience, label: 'Experiencia', icon: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 3.7 8.6 9.3 1-7 6.2 2 9.2-8-4.8L8 28l2-9.2-7-6.2 9.3-1Z" fill="#b0c590" stroke="#58774f" stroke-width="1.5"/><path d="m16 9 1.7 5 5.3.3-4.2 3.2 1.4 5-4.2-3-4.2 3 1.4-5L9 14.3l5.3-.3Z" fill="#f9ebbd"/></svg>' },
-    { kind: 'pelines', value: WELCOME_REWARD.pelines, label: 'Pelines', icon: currencyIcon('pelines') },
+    { kind: 'experience', value: rewards.experience, label: 'Experiencia', icon: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 3.7 8.6 9.3 1-7 6.2 2 9.2-8-4.8L8 28l2-9.2-7-6.2 9.3-1Z" fill="#b0c590" stroke="#58774f" stroke-width="1.5"/><path d="m16 9 1.7 5 5.3.3-4.2 3.2 1.4 5-4.2-3-4.2 3 1.4-5L9 14.3l5.3-.3Z" fill="#f9ebbd"/></svg>' },
+    { kind: 'pelines', value: rewards.pelines, label: 'Pelines', icon: currencyIcon('pelines') },
   ]) {
+    if(reward.value<=0)continue;
     const card = document.createElement('div'); card.className = `quest-reward ${reward.kind}`;
     const icon = document.createElement('span'); icon.className = 'quest-reward-icon'; icon.innerHTML = reward.icon;
     const body = document.createElement('div');
@@ -164,6 +171,40 @@ export function renderQuestJournal(container: HTMLElement, data: CharData, track
   function display(completed: boolean) {
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === Number(completed))));
     content.replaceChildren();
+    const lesson=tutorialProgress(data);
+    if(lesson&&(lesson.status==='completed')===completed){
+      const entry=document.createElement('article');entry.className='quest-entry profession-quest';entry.dataset.quest='profession';entry.classList.toggle('tracked',!completed&&tracking.isTracked('profession'));
+      const seal=document.createElement('span');seal.className='quest-seal';seal.textContent=completed?'✓':'!';
+      const header=document.createElement('header'),left=document.createElement('div');left.className='quest-header-left';
+      const title=document.createElement('h3');title.textContent=`${t(PROFESSION_TUTORIAL.title)} · ${t(RPG_CATALOG.professions[lesson.job])}`;
+      const giver=document.createElement('span');giver.className='quest-giver';giver.textContent=t('Gnomi y el maestro del oficio');left.append(title,giver);header.append(left);
+      if(!completed)header.append(createTrackButton(tracking,'profession'));
+      const description=document.createElement('p');description.textContent=t('Prueba un oficio con sus herramientas, materiales y encargos normales. La elección del tutorial no limita los oficios que puedes aprender.');
+      const steps=document.createElement('ol');steps.className='quest-steps';const list=tutorialSteps(data);let first=true;
+      list.forEach((s,i)=>{const li=document.createElement('li');li.className=s.done?'done':first?'current':'';if(!s.done&&first){li.setAttribute('aria-current','step');first=false;}const mark=document.createElement('span');mark.textContent=s.done?'✓':String(i+1);mark.setAttribute('aria-hidden','true');li.append(mark,t(s.label));steps.append(li);});
+      const objective=document.createElement('section');objective.className='quest-objective';const label=document.createElement('small');label.textContent=t(completed?'Completada':'Siguiente paso');const text=document.createElement('p');text.textContent=t(tutorialObjective(data));objective.append(label,text);
+      entry.append(seal,header,description,steps,objective,createQuestRewards(completed,PROFESSION_TUTORIAL.reward));appendEntry(entry,completed);
+    }
+    if (data.fairyDustQuest && !completed) {
+      const entry = document.createElement('article'); entry.className = 'quest-entry fairy-dust-quest';
+      entry.dataset.quest = 'fairy-dust';
+      const seal = document.createElement('span'); seal.className = 'quest-seal'; seal.textContent = '!';
+      const header = document.createElement('header'), left = document.createElement('div'); left.className = 'quest-header-left';
+      const title = document.createElement('h3'); title.textContent = t(FAIRY_DUST_QUEST_TITLE);
+      const giver = document.createElement('span'); giver.className = 'quest-giver'; giver.textContent = 'Gnomi';
+      left.append(title, giver); header.append(left, createTrackButton(tracking, 'fairy-dust'));
+      const description = document.createElement('p'); description.textContent = t('Has encontrado polvo de hada. Quizá Gnomi sepa algo sobre él.');
+      const objective = document.createElement('section'); objective.className = 'quest-objective';
+      const label = document.createElement('small'); label.textContent = t(data.fairyDustQuest === 'arboleda' ? 'Continuará' : 'Siguiente paso');
+      const text = document.createElement('p'); text.textContent = t(fairyDustObjective(data.fairyDustQuest));
+      objective.append(label, text);
+      entry.append(seal, header, description, objective);
+      if (data.fairyDustQuest === 'arboleda') {
+        const pending = document.createElement('p'); pending.className = 'quest-journal-intro'; pending.textContent = t('La historia continuará en una próxima etapa.');
+        entry.append(pending);
+      }
+      appendEntry(entry, false);
+    }
     if ((data.shadowQuest || data.welcome?.stage === 'completed') && (data.shadowQuest === 'returned') === completed) {
       const shadow = document.createElement('article'); shadow.className = 'quest-entry shadow-quest';
       shadow.dataset.quest = SHADOW_QUEST_KEY;
@@ -265,25 +306,30 @@ export function createQuestTracker(open: () => void, tracking: QuestTracking) {
   let signature = '';
   return {
     update(data: CharData, visible: boolean, looted = true) {
-      const quest = tracking.current(data), shadow = quest === SHADOW_QUEST_KEY;
+      const quest = tracking.current(data), shadow = quest === SHADOW_QUEST_KEY, dust = quest === 'fairy-dust';
       root.hidden = !visible || !quest;
       if (root.hidden) return;
-      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${looted}:${data.location}:${t('Diario')}`;
+      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${data.fairyDustQuest}:${looted}:${data.location}:${JSON.stringify([data.rpg?.tutorial,data.rpg?.learned,data.rpg?.dailyOrders,new Date().toISOString().slice(0,10),data.inventory.map(item=>item?[item.id,item.count]:null)])}:${t('Diario')}`;
       if (key === signature) return;
       signature = key;
+      if(quest==='profession'){
+        const q=tutorialProgress(data)!,steps=tutorialSteps(data),index=steps.findIndex(s=>!s.done);
+        root.setAttribute('aria-label',t('Misión seguida'));heading.textContent=t('Misiones');journal.setAttribute('aria-label',t('Abrir diario'));refreshToggle();label.textContent=t('Iniciación al oficio');title.textContent=`${t(PROFESSION_TUTORIAL.title)} · ${t(RPG_CATALOG.professions[q.job])}`;objective.textContent=t(tutorialObjective(data));progress.textContent=t('Paso {current} de {total}',{current:index+1,total:steps.length});progress.style.setProperty('--quest-progress',`${index/(steps.length-1)*100}%`);button.setAttribute('aria-label',`${t('Abrir diario')}: ${title.textContent}`);return;
+      }
       root.setAttribute('aria-label', t('Misión seguida'));
       heading.textContent = t('Misiones');
       journal.setAttribute('aria-label', t('Abrir diario'));
       refreshToggle();
-      label.textContent = shadow ? 'Isberto' : t('Bienvenida · Obligatoria');
-      title.textContent = t(shadow ? SHADOW_TITLE : WELCOME_TITLE);
-      if (shadow) objective.textContent = t(shadowObjective(data.shadowQuest, looted, data.location));
+      label.textContent = shadow ? 'Isberto' : dust ? 'Gnomi' : t('Bienvenida · Obligatoria');
+      title.textContent = t(dust ? FAIRY_DUST_QUEST_TITLE : shadow ? SHADOW_TITLE : WELCOME_TITLE);
+      if (dust && data.fairyDustQuest) objective.textContent = t(fairyDustObjective(data.fairyDustQuest));
+      else if (shadow) objective.textContent = t(shadowObjective(data.shadowQuest, looted, data.location));
       else if (data.welcome) objective.textContent = t(welcomeObjective(data.welcome));
       const step = shadow ? data.shadowQuest === 'returning' ? 3 : data.shadowQuest === 'defeated' ? 2 : data.shadowQuest === 'active' ? 1 : 0 : data.welcome?.stage === 'found' ? 2 : data.welcome?.stage === 'active' ? 1 : 0;
       const total = shadow ? 4 : 3;
-      progress.textContent = t('Paso {current} de {total}', { current: step + 1, total });
-      progress.style.setProperty('--quest-progress', `${step / (total - 1) * 100}%`);
-      button.setAttribute('aria-label', `${t('Abrir diario')}: ${t(shadow ? SHADOW_TITLE : WELCOME_TITLE)}`);
+      progress.textContent = dust ? t(data.fairyDustQuest === 'arboleda' ? 'Continuará' : 'Pregunta a Gnomi') : t('Paso {current} de {total}', { current: step + 1, total });
+      progress.style.setProperty('--quest-progress', `${dust ? data.fairyDustQuest === 'arboleda' ? 100 : 0 : step / (total - 1) * 100}%`);
+      button.setAttribute('aria-label', `${t('Abrir diario')}: ${t(dust ? FAIRY_DUST_QUEST_TITLE : shadow ? SHADOW_TITLE : WELCOME_TITLE)}`);
     },
   };
 }

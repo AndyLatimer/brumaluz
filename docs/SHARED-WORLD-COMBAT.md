@@ -2,13 +2,17 @@
 
 24 de octubre de 2026. Sustituye la limitación de un enemigo individual descrita en la primera revisión del combate.
 
+**Actualización del 26 de octubre:** [IA de enemigos](ENEMY-AI.md) documenta patrullas, navegación, grupos y personalidades. Hay nueve emplazamientos de cinco tipos; el combate normal conserva ataques a un solo oponente, sin fases de área.
+
+**Actualización del 27 de octubre:** [Obtención de materiales](OBTAINABILITY.md) amplía la población a 14 emplazamientos y diez perfiles, con cinco jabalíes superiores solitarios. La reaparición compartida consulta el tiempo de cada emplazamiento: 90 s para los anteriores y 210–330 s para los nuevos. Los cadáveres existentes conservan el temporizador que ya tenían; el cálculo corregido se aplica a las nuevas muertes.
+
 ## Reglas implementadas
 
-- Los cinco enemigos de Pompelín tienen una única instancia, posición, vida, objetivo, preparación de ataque, muerte y reaparición para todos los jugadores. No se generan copias privadas ni recuperaciones individuales.
+- Los catorce emplazamientos de Pompelín tienen una única instancia, posición, vida, objetivo, preparación de ataque, muerte y reaparición para todos los jugadores. No se generan copias privadas ni recuperaciones individuales.
 - Cada criatura detecta por separado a los jugadores vivos cercanos con línea de visión. No hay límite artificial de enemigos que puedan participar contra un personaje. Seleccionar un enemigo no detiene a los demás.
 - Los jugadores pueden atacar a la misma criatura, ayudar y cambiar su objetivo con clic. F mantiene el acceso al ataque automático y la aproximación. La selección no reinicia la cadencia del arma ni elimina la agresión.
 - Cada criatura elige un objetivo por amenaza. El objetivo actual tiene un margen del 20 % para evitar cambios constantes. El daño añade amenaza; curar a un participante añade la mitad de la curación efectiva. Recibir golpes cuenta como participación defensiva.
-- Conos, cargas y círculos mantienen su dirección o punto anunciado durante la preparación. Al terminar, el servidor comprueba a **todos** los jugadores dentro del área, su posición y los obstáculos. Guardia se calcula al impactar; barrera, sobrecuración y vida absorben el resultado en orden.
+- Los ataques normales comprueban al oponente elegido al terminar la preparación: alcance, posición y cobertura. No dañan a un transeúnte por estar cerca. Guardia se calcula al impactar; barrera, sobrecuración y vida absorben el resultado en orden.
 - Un golpe pendiente se cancela sin consumir recurso ni activar la recarga si su criatura ya murió o cambió de generación. Nunca se aplica automáticamente al siguiente enemigo seleccionado.
 - El encantamiento Rayo puede alcanzar a otra criatura compartida válida a 4 m y provocar su agresión. Las muertes secundarias también reparten sus recompensas una sola vez.
 
@@ -18,11 +22,11 @@ La detección inicial sigue los radios del catálogo de cada enemigo. Hay tres s
 
 1. Alejarse más de `max(radio de agresión + 5 m, alcance + 3 m)` sin contacto durante seis segundos.
 2. Perder la línea de visión durante seis segundos.
-3. Salir del límite de 24 m desde el origen de esa criatura. Un perseguidor bloqueado también abandona tras cuatro segundos sin avanzar.
+3. Salir del límite de su territorio: 20–26 m desde su origen según el perfil. Un perseguidor bloqueado también abandona tras cuatro segundos sin avanzar.
 
-Muerte, salida del mapa y pérdida de presencia válida retiran al jugador de la lista de amenazas. Si quedan otros participantes válidos, la criatura sigue combatiendo con ellos. Si no queda ninguno, cancela su ataque y regresa invulnerable. Recupera la vida al llegar a su origen. Se conservan puntos del camino de persecución para el regreso cuando un obstáculo impide el trayecto directo.
+Muerte, salida del mapa y pérdida de presencia válida retiran al jugador de la lista de amenazas. Si quedan otros participantes válidos, la criatura sigue combatiendo con ellos. Si no queda ninguno, cancela su ataque y regresa invulnerable. Recupera la vida al llegar a su origen. Persecución, patrulla y regreso usan celdas conectadas verificadas contra colisiones, agua y desniveles del mapa publicado; se calcula una ruta cuando el paso directo no es válido.
 
-Esto mejora el retorno sin sustituir a un sistema completo de navegación: todavía faltan rutas alrededor de obstáculos complejos, navegación por agua/desniveles y patrullas. La simulación avanza con las sincronizaciones de los jugadores; no es un proceso de IA independiente. Volver tras una pausa no ejecuta de golpe los ataques acumulados.
+La navegación está limitada a los hábitats horneados: no hay nado, saltos ni navegación global entre regiones. La simulación avanza con las sincronizaciones de los jugadores; no es un proceso de IA independiente. Volver tras una pausa no ejecuta de golpe los ataques acumulados.
 
 ## Botín y cooperación
 
@@ -56,5 +60,5 @@ Compilar TypeScript/Vite y aplicar el SQL no acredita una sesión multijugador r
 - La barra muestra cola, aproximación, preparación, recuperación corta y falta de recurso con señales pequeñas. Sus iconos y referencias DOM se conservan; el reloj sigue animándose sin reconstruir el inventario a cada frame. Los tooltips mantienen su referencia al equipo actual tras recibir un snapshot.
 - Las recargas usan marcas absolutas del servidor y se recuperan por sincronización si se pierde una respuesta. Peticiones de combate limitadas a ocho segundos evitan un estado ocupado indefinido. No se predice daño ni se reembolsan recursos desde el cliente.
 - Movimiento y giro de criaturas interpolados entre muestras. Las barras y cifras se proyectan después de actualizar la cámara para evitar retraso visual al girar. Las victorias con botín nuevo tienen aviso, sin repetir el historial al entrar.
-- Señales sonoras procedurales cortas para ataque, impacto, curación, daño recibido y preparación enemiga. Respetan el volumen general, el bloqueo de reproducción del navegador y la pestaña oculta.
+- Señales sonoras para preparación, lanzamiento, impacto, curación, daño recibido, ataques enemigos y muerte, con timbres por arma y familia, distancia y posición estéreo. Los cadáveres conservan los ojos cerrados hasta reaparecer. Véase [Sonidos de combate y expresión al morir](COMBAT-AUDIO.md).
 - La autocuración y la curación de aliados consumen primero el daño y recompensas pendientes. La IA prioriza participantes visibles, conserva el margen de amenaza y evita escaneos repetidos de jugadores dentro del mismo paso.

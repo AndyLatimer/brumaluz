@@ -1,0 +1,18 @@
+{
+  "limit": 3,
+  "reset": "UTC",
+  "orders": {
+    "suministro_minero": {"id":"suministro_minero","job":"minero","label":"Minerales para el taller","ingredients":{"material_minero_0":4,"gema_0":2},"reward":50},
+    "suministro_lenador": {"id":"suministro_lenador","job":"lenador","label":"Una pequeña reserva de roble","ingredients":{"material_lenador_0":6},"reward":50},
+    "suministro_recolector": {"id":"suministro_recolector","job":"recolector","label":"Ingredientes de campo","ingredients":{"material_recolector_0":2,"grano_0":2,"fruta_0":2},"reward":50},
+    "piezas_herreria": {"id":"piezas_herreria","job":"herreria","label":"Componentes para la forja","ingredients":{"componente_herreria_0":2},"reward":75},
+    "piezas_peleteria": {"id":"piezas_peleteria","job":"peleteria","label":"Preparativos de Peletería","ingredients":{"componente_peleteria_0":2},"reward":75},
+    "piezas_sastreria": {"id":"piezas_sastreria","job":"sastreria","label":"Preparativos de Sastrería","ingredients":{"componente_sastreria_0":2},"reward":75},
+    "piezas_carpinteria": {"id":"piezas_carpinteria","job":"carpinteria","label":"Componentes de madera","ingredients":{"componente_carpinteria_0":2},"reward":75},
+    "piezas_ebanisteria": {"id":"piezas_ebanisteria","job":"ebanisteria","label":"Preparativos de Ebanistería","ingredients":{"componente_ebanisteria_0":2},"reward":75},
+    "piezas_joyeria": {"id":"piezas_joyeria","job":"joyeria","label":"Preparativos de Joyería","ingredients":{"componente_joyeria_0":2},"reward":75},
+    "piezas_alquimia": {"id":"piezas_alquimia","job":"alquimia","label":"Preparativos de Alquimia","ingredients":{"componente_alquimia_0":2},"reward":75},
+    "piezas_encantamiento": {"id":"piezas_encantamiento","job":"encantamiento","label":"Preparativos de Encantamiento","ingredients":{"componente_encantamiento_0":2},"reward":75},
+    "piezas_cocina": {"id":"piezas_cocina","job":"cocina","label":"Preparativos de Cocina","ingredients":{"componente_cocina_0":2},"reward":75}
+  }
+}

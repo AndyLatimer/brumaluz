@@ -42,13 +42,20 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
     const realmLabel = realms.find(realm => realm.id === realmId)?.label ?? realmId;
     return COIN_BAGS.filter(bag => bag.realm === realmLabel);
   };
+  const realmDusts = (realmId: string) => {
+    const realmLabel = realms.find(realm => realm.id === realmId)?.label ?? realmId;
+    return FAIRY_DUST_SPOTS.filter(dust => dust.realm === realmLabel);
+  };
   const foundIn = (bags: readonly (typeof COIN_BAGS)[number][]) => bags.filter(bag => collected.has(bag.id)).length;
   const foundInDust = (dusts: readonly (typeof FAIRY_DUST_SPOTS)[number][]) => dusts.filter(dust => collectedDust.has(dust.id)).length;
-  const percentIn = (bags: readonly (typeof COIN_BAGS)[number][]) => bags.length ? Math.round(foundIn(bags) / bags.length * 100) : 0;
+  const percentIn = (bags: readonly (typeof COIN_BAGS)[number][], dusts: readonly (typeof FAIRY_DUST_SPOTS)[number][]) => {
+    const total = bags.length + dusts.length;
+    return total ? Math.round((foundIn(bags) + foundInDust(dusts)) / total * 100) : 0;
+  };
   const completionTone = (percent: number) => percent >= 100 ? 'legendary' : percent >= 50 ? 'silver' : 'bronze';
 
   function renderHeader() {
-    const percent = percentIn(COIN_BAGS);
+    const percent = percentIn(COIN_BAGS, FAIRY_DUST_SPOTS);
     const header = el('header', 'collections-hero');
     const emblem = el('span', 'collections-hero-emblem');
     emblem.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M16 5v22M5 16h22M8.2 8.2l15.6 15.6m0-15.6L8.2 23.8" fill="none" stroke="currentColor" stroke-width=".9"/><path d="m16 9 1.5 5.5L23 16l-5.5 1.5L16 23l-1.5-5.5L9 16l5.5-1.5Z" fill="currentColor"/></svg>';
@@ -85,14 +92,11 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
       details.append(summary, category);
       const dusts = FAIRY_DUST_SPOTS.filter(dust => dust.realm === realmLabel && dust.area === area);
       const foundDust = foundInDust(dusts);
-      const detailsDust = el('details', 'collection-subzone');
-      const summaryDust = el('summary', 'collection-subzone-summary');
-      summaryDust.append(el('strong', undefined, t(area)));
       const categoryDust = el('div', `collection-category${dusts.length > 0 && foundDust === dusts.length ? ' complete' : ''}`);
       categoryDust.append(dustIcon(), el('strong', undefined, t('Polvos de hada')),
         el('span', 'collection-category-count', `${foundDust}/${dusts.length}`));
-      detailsDust.append(summaryDust, categoryDust);
-      list.append(detailsDust);
+      details.append(categoryDust);
+      list.append(details);
     }
     return list;
   }
@@ -115,17 +119,18 @@ export function renderCollections(container: HTMLElement, collectedIds: readonly
     const grid = el('div', 'collections-realm-grid');
     for (const realm of realms) {
       const bags = realmBags(realm.id);
+      const dusts = realmDusts(realm.id);
       const tile = el('button', `collections-realm-tile${realm.available ? '' : ' locked'}`);
       tile.type = 'button';
       tile.disabled = !realm.available;
       tile.setAttribute('aria-label', t(realm.available ? '{realm}, {found} de {total} encontrados' : '{realm}, próximamente', {
-        realm: t(realm.label), found: foundIn(bags), total: bags.length,
+        realm: t(realm.label), found: foundIn(bags) + foundInDust(dusts), total: bags.length + dusts.length,
       }));
       const icon = el('span', 'collections-realm-icon');
       icon.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="realm-emblem-field" cx="32" cy="32" r="30"/><g class="realm-emblem-art">${realm.icon}</g></svg>`;
       tile.append(icon, el('strong', undefined, t(realm.label)));
       if (realm.available) {
-        const percent = percentIn(bags);
+        const percent = percentIn(bags, dusts);
         tile.append(el('span', `collections-tile-progress ${completionTone(percent)}`, `${percent}% ${t('completado')}`));
         tile.onclick = () => { activeRealm = realm.id; render(); };
       } else tile.append(el('span', 'collections-tile-locked', t('Próximamente')));

@@ -8,6 +8,13 @@ const names=['Aprendiz','Iniciado','Oficial','Experto','Maestro','Gran maestro']
 const rarities=['common','uncommon','rare','epic','legendary','artifact'];
 const professions={herreria:'Herrería',peleteria:'Peletería',sastreria:'Sastrería',carpinteria:'Carpintería',ebanisteria:'Ebanistería',joyeria:'Joyería',alquimia:'Alquimia',encantamiento:'Encantamiento',cocina:'Cocina',minero:'Minero',lenador:'Leñador',recolector:'Recolector'};
 const catalog={professions,ranks:names,items:{},recipes:{},nodes:{},stations:{},sets:{},equipment};
+catalog.teachers={};
+const recipePrices=[50,250,1250,6250,25000,0];
+catalog.rareRecipeDrop={tier:5,chance:.005,minEnemyLevel:26};
+catalog.dailyOrders=JSON.parse(fs.readFileSync('src/data/dailyOrders.json','utf8'));
+catalog.professionTutorial=JSON.parse(fs.readFileSync('src/data/professionTutorial.json','utf8'));
+const previous=process.argv.includes('--preserve-placements')&&fs.existsSync('src/data/generated/rpg-catalog.json')
+ ?JSON.parse(fs.readFileSync('src/data/generated/rpg-catalog.json','utf8')):null;
 const mats={minero:['Cobre','Hierro','Acero lunar','Mitril','Oro solar','Mineral de fénix'],lenador:['Roble','Fresno','Abedul plateado','Madera umbría','Cedro áureo','Madera ancestral'],recolector:['Hierbas silvestres','Hierbas de rocío','Flor azul','Flores nocturnas','Hierba solar','Flor estelar']};
 const icon='<path d="M5 6 12 2l7 5 2 10-9 5-9-6Z" fill="#9fae86" stroke="#4c6346"/><path d="m5 6 7 5 7-4m-7 4v11" fill="none" stroke="#dce7bc"/>';
 // Gathering belongs to the continent, while production stations remain in cities.
@@ -27,6 +34,17 @@ for(const[kind,label]of Object.entries({fibra:'Fibra textil',fruta:'Fruta y baya
 }
 for(const [job,label] of Object.entries(professions))if(!mats[job])catalog.stations[job]={id:job,job,label:`Taller de ${label}`,location:'brumaluz',x:120+(Object.keys(professions).indexOf(job)%3)*6,z:-18-Math.floor(Object.keys(professions).indexOf(job)/3)*6,radius:4};
 catalog.stations.reparacion={id:'reparacion',job:'herreria',label:'Herrero · reparaciones',location:'brumaluz',x:117,z:-18,radius:4};
+if(fs.existsSync('src/data/workshops.json')){
+ const {workshops}=JSON.parse(fs.readFileSync('src/data/workshops.json','utf8'));
+ catalog.stations=Object.fromEntries(workshops.map(w=>[w.job,{id:w.job,job:w.job,label:w.name,location:w.mapId,...w.station}]));
+ catalog.stations.reparacion={...catalog.stations.herreria,id:'reparacion',label:'Herrería · herramientas y reparaciones'};
+ for(const w of workshops){
+  const map=JSON.parse(fs.readFileSync(`src/data/world/maps/${w.mapId}.json`,'utf8'));
+  const master=map.markers.find(marker=>marker.type==='npc'&&marker.npcId===w.masterId);
+  if(!master)throw new Error(`Missing profession master ${w.masterId} in ${w.mapId}`);
+  catalog.teachers[w.job]={id:w.masterId,label:`Maestro de ${w.label}`,job:w.job,location:w.mapId,x:master.position[0],z:master.position[2],radius:3};
+ }
+}
 const toolNames={minero:'Pico',lenador:'Hacha de tala',recolector:'Hoz'};
 for(const [job,label]of Object.entries(toolNames))for(let tier=0;tier<6;tier++){const id=`herramienta_${job}_${tier}`;catalog.items[id]={id,label:`${label} · ${names[tier]}`,category:'Herramienta',description:'Pierde durabilidad al completar extracciones. Se repara con Pelines y puede restaurarse con Lágrimas de fénix o un núcleo de restauración.',tier,tool:job,rarity:rarities[tier],value:20*3**tier,stack:1,icon};}
 const enchantNames={fire:'Fuego',vampirism:'Vampirismo',frost:'Escarcha',lightning:'Rayo',dark:'Maldición umbría'};
@@ -69,7 +87,18 @@ for(const job of Object.keys(professions).filter(job=>!mats[job])){
  const id=`componente_${job}_0`;catalog.items[id]={id,label:`Componente de ${professions[job]}`,category:'Componente de artesanía',description:'Componente básico utilizado también en recetas avanzadas del oficio.',tier:0,rarity:'common',value:6,stack:99,icon};recipe(id,job,0);
  for(const r of Object.values(catalog.recipes))if(r.job===job&&r.tier>0)r.ingredients[id]=1+Math.floor(r.tier/2);
 }
-for(const r of Object.values(catalog.recipes))if(r.tier>0){const id=`receta_${r.id}`;catalog.items[id]={id,label:`Receta: ${r.label}`,category:'Receta',description:'Aprendizaje permanente para este personaje. Se consume al aprenderla y puede comerciarse antes.',tier:r.tier,recipe:r.id,rarity:rarities[r.tier],value:20*3**r.tier,stack:1,icon};}
+// A slower alternative to hunting: four lower hides plus herbs make one higher hide.
+// The master teaches processing at its own rank; equipment recipes remain discoveries.
+for(let tier=1;tier<6;tier++){
+ const id=`curtir_cuero_${tier}`;
+ catalog.recipes[id]={id,job:'peleteria',tier,label:`Preparar cuero · ${names[tier]}`,output:`cuero_${tier}`,count:1,seconds:120*tier,ingredients:{[`cuero_${tier-1}`]:4,[`material_recolector_${tier}`]:2},source:'trainer',processing:true};
+ catalog.items[`cuero_${tier}`].description='Botín de jabalíes de mayor dificultad en Pompelín. También se prepara en Peletería con cuatro cueros del rango anterior, hierbas del mismo rango y tiempo de taller.';
+}
+for(const recipe of Object.values(catalog.recipes)){
+ recipe.source=recipe.tier===5?'drop':'trainer';recipe.price=recipe.tier===5?0:recipePrices[recipe.tier];
+}
+// Every recipe is a consumable scroll; exceptional scrolls remain loot only.
+for(const r of Object.values(catalog.recipes)){const id=`receta_${r.id}`;catalog.items[id]={id,label:`Receta: ${r.label}`,category:'Receta',description:'Usa este pergamino desde la mochila para aprender la receta. Se consume al aprenderla y exige el rango del oficio indicado.',tier:r.tier,recipe:r.id,rarity:rarities[r.tier],value:20*3**r.tier,stack:1,icon};}
 for(const item of Object.values(catalog.items)){
  const c=['#a5aeb2','#77ac73','#79abd4','#ac89ca','#d8bc65','#e29b58'][item.tier];
  if(item.enchant||item.recipe)item.icon=`<path d="M6 3h12v17H6Q3 20 3 17V5q0-2 3-2Z" fill="#d7c6a2" stroke="#655442"/><path d="M6 3v14H3m5-11h7m-7 3h5" stroke="#8e7858" fill="none"/><path d="m12 10 4 4-4 4-4-4Z" fill="${item.enchant?({fire:'#dc8055',vampirism:'#bb5472',frost:'#83c5d6',lightning:'#dcca69',dark:'#9272bd'})[item.enchant]:c}"/><path d="m12 11-1 3 2 1-1 2" stroke="#fff0cc" fill="none"/>`;
@@ -85,6 +114,11 @@ for(const item of Object.values(catalog.items)){
  if(item.recipe||item.tool||item.enchant||item.furniture)item.usable=true;
  if(item.recipe){const r=catalog.recipes[item.recipe];item.stats=[{label:'Oficio',value:professions[r.job]},{label:'Dominio necesario',value:names[r.tier]}];}
  else if(item.tool)item.stats=[{label:'Oficio',value:professions[item.tool]},{label:'Menos desgaste por calidad',value:`${item.tier*4} %`}];
+}
+if(previous){
+ for(const site of Object.values(catalog.nodes)){const old=previous.nodes?.[site.id];if(old?.job===site.job&&old.item===site.item)Object.assign(site,{x:old.x,z:old.z,location:old.location});}
+ for(const site of Object.values(catalog.stations)){const old=previous.stations?.[site.id];if(old?.job===site.job&&old.location===site.location)Object.assign(site,{x:old.x,z:old.z,radius:old.radius});}
+ if(previous.camp)catalog.camp=previous.camp;
 }
 fs.mkdirSync('src/data/generated',{recursive:true});fs.writeFileSync('src/data/generated/rpg-catalog.json',JSON.stringify(catalog));
 const literal=JSON.stringify(catalog).replaceAll("'","''");

@@ -1,11 +1,13 @@
 import rawCatalog from './generated/rpg-catalog.json';
 import type { CharData } from './data';
 import type { ItemStack } from './inventory';
+import {DAILY_ORDERS,deliverDailyOrder,type DailyOrderCatalog} from './dailyOrders';
+import {tutorialAction,tutorialEvent,type ProfessionTutorial} from './professionTutorial';
 
-export interface Recipe { id:string; label:string; job:string; tier:number; output:string; count:number; seconds:number; ingredients:Record<string,number>; source:string }
+export interface Recipe { id:string; label:string; job:string; tier:number; output:string; count:number; seconds:number; ingredients:Record<string,number>; source:string; price:number; processing?:boolean }
 export interface ProfessionSite { id:string; label:string; job:string; location:string; x:number; z:number; radius?:number; tier?:number; item?:string; seconds?:number; respawn?:number }
 export interface ExtraItem { id:string; label:string; category:string; description:string; tier:number; rarity:string; value:number; stack:number; icon:string; tool?:string; enchant?:string; recipe?:string; furniture?:string }
-export const RPG_CATALOG = rawCatalog as unknown as { camp:ProfessionSite; professions:Record<string,string>; ranks:string[]; items:Record<string,ExtraItem>; recipes:Record<string,Recipe>; nodes:Record<string,ProfessionSite>; stations:Record<string,ProfessionSite>; sets:Record<string, {id:string;name:string;family:number;tier:number;slot:string;cls:string}>; equipment:Record<string, {tier:number;slot:string;cls?:string}> };
+export const RPG_CATALOG = rawCatalog as unknown as { dailyOrders:DailyOrderCatalog; camp:ProfessionSite; professions:Record<string,string>; ranks:string[]; items:Record<string,ExtraItem>; recipes:Record<string,Recipe>; nodes:Record<string,ProfessionSite>; stations:Record<string,ProfessionSite>; teachers:Record<string,ProfessionSite>; sets:Record<string, {id:string;name:string;family:number;tier:number;slot:string;cls:string}>; equipment:Record<string, {tier:number;slot:string;cls?:string}> };
 export const ENCHANT_LABELS: Record<string,string> = {fire:'Fuego',vampirism:'Vampirismo',frost:'Escarcha',lightning:'Rayo',dark:'Maldición umbría'};
 export const ENCHANT_VALUES = {fire:[0,.05,.06,.07,.08,.09],vampirism:[0,.02,.03,.04,.05,.06],frost:[0,.20,.25,.30,.35,.40],lightning:[0,.40,.50,.60,.70,.80],dark:[0,.20,.25,.30,.35,.40]};
 export function enchantmentDescription(id:keyof typeof ENCHANT_VALUES,grade:number){
@@ -19,6 +21,8 @@ export function enchantmentDescription(id:keyof typeof ENCHANT_VALUES,grade:numb
 export const RANK_XP = [0,100,500,1500,4000,10000];
 export interface CraftJob {id:string;recipe:string;job:string;start:number;end:number;done:boolean;ingredients:Record<string,number>;output:ItemStack;xp:number}
 export interface RpgState {
+  tutorial?:ProfessionTutorial;
+  dailyOrders?:{day:string;completed:number};
   version:1; revision?:number; energy:number; at:number; xp:Record<string,number>; mastery:Record<string,number>;
   learned:string[]; tools:Record<string,ItemStack|null>; jobs:CraftJob[]; deliveries:ItemStack[];
   nodes:Record<string,number>; gathering:{node:string;start:number;x:number;z:number}|null;
@@ -26,7 +30,7 @@ export interface RpgState {
 }
 export function professionState(value:unknown, now=Date.now()/1000):RpgState {
   const source=value&&typeof value==='object'?value as Partial<RpgState>:{};
-  return {version:1,revision:source.revision??0,energy:Math.min(100,Math.max(0,Number.isFinite(source.energy)?source.energy!:100)),at:Number.isFinite(source.at)?source.at!:now,xp:source.xp??{},mastery:source.mastery??{},learned:source.learned??[],tools:source.tools??{},jobs:source.jobs??[],deliveries:source.deliveries??[],nodes:source.nodes??{},gathering:source.gathering??null,crafts:source.crafts??{},projects:source.projects??{},furniture:source.furniture??[]};
+  return {version:1,revision:source.revision??0,energy:Math.min(100,Math.max(0,Number.isFinite(source.energy)?source.energy!:100)),at:Number.isFinite(source.at)?source.at!:now,xp:source.xp??{},mastery:source.mastery??{},learned:source.learned??[],tools:source.tools??{},jobs:source.jobs??[],deliveries:source.deliveries??[],nodes:source.nodes??{},gathering:source.gathering??null,crafts:source.crafts??{},projects:source.projects??{},dailyOrders:source.dailyOrders,tutorial:source.tutorial,furniture:source.furniture??[]};
 }
 export function professionRank(state:RpgState, job:string) {
   const earned=RANK_XP.filter(x=>(state.xp[job]??0)>=x).length-1;
@@ -35,9 +39,10 @@ export function professionRank(state:RpgState, job:string) {
 export const gatherEnergy = (rank:number,tier:number) => [1,2.5,8,25,70,120][Math.max(0,Math.min(5,tier-rank))];
 export const professionExperience = (rank:number,tier:number) => tier<rank-1?0:tier<rank?4:10+Math.min(10,Math.max(0,tier-rank)*3);
 export const craftingExperience = (rank:number,tier:number) => professionExperience(rank,tier)*3**tier;
+export const recipeExperience = (rank:number,recipe:Pick<Recipe,'tier'|'processing'>) => recipe.processing?professionExperience(rank,recipe.tier):craftingExperience(rank,recipe.tier);
 export function reconcileProfessions(state:RpgState,now=Date.now()/1000) {
   state.energy=Math.min(100,state.energy+Math.max(0,now-state.at)*100/(276*60));state.at=now;
-  for(const task of [...state.jobs].sort((a,b)=>a.end-b.end))if(!task.done&&task.end<=now){task.done=true;const recipe=RPG_CATALOG.recipes[task.recipe];state.xp[task.job]=(state.xp[task.job]??0)+craftingExperience(professionRank(state,task.job),recipe?.tier??0);state.crafts[task.job]=(state.crafts[task.job]??0)+1;}
+  for(const task of [...state.jobs].sort((a,b)=>a.end-b.end))if(!task.done&&task.end<=now){task.done=true;const recipe=RPG_CATALOG.recipes[task.recipe];state.xp[task.job]=(state.xp[task.job]??0)+recipeExperience(professionRank(state,task.job),recipe??{tier:0});state.crafts[task.job]=(state.crafts[task.job]??0)+1;}
   for(const [id,at]of Object.entries(state.nodes))if(at<=now)delete state.nodes[id];
 }
 function meta(id:string){return RPG_CATALOG.items[id]??{stack:RPG_CATALOG.equipment[id]?1:50};}
@@ -64,18 +69,32 @@ export function professionAction(data:CharData,action:string,args:Record<string,
  const id=String(args.id??''), job=String(args.job??''), slot=Number(args.slot),rank=professionRank(s,job);
  if(action==='state'){Object.assign(data,d);return;}
  if(d.health===0)throw new Error('Debes estar vivo para realizar esta acción.');
- if(action==='learn'){
-  const r=RPG_CATALOG.recipes[id];if(!r||professionRank(s,r.job)<r.tier)throw new Error('No tienes el dominio necesario.');siteRequired(d,r.job);
+ if(action==='learn')throw new Error('Habla con el maestro del oficio para aprender recetas.');
+ if(['tutorial_accept','tutorial_visit','tutorial_complete'].includes(action)){
+  tutorialAction(d,action,args,now);
+ }else if(action==='daily_order'){
+  const order=DAILY_ORDERS.orders[id];deliverDailyOrder(d,order,args,RPG_CATALOG.teachers[order?.job],now);
+ }else if(action==='buy_recipe'){
+  const r=RPG_CATALOG.recipes[id];if(!r||professionRank(s,r.job)<r.tier)throw new Error('No tienes el dominio necesario.');
+  const teacher=RPG_CATALOG.teachers[r.job];
+  if(!teacher||args.master!==teacher.id||d.location!==teacher.location||!d.position||Math.hypot(d.position.x-teacher.x,d.position.z-teacher.z)>(teacher.radius??3))throw new Error('Habla con el maestro de este oficio.');
   if(s.learned.includes(id))throw new Error('Ya conoces esta receta.');
-  if(r.tier>0)consume(d,`receta_${id}`,1);else pay(d,'pelines',2);
-  s.learned.push(id);
+  if(args.price!==r.price)throw new Error('El precio ha cambiado. Consulta de nuevo al maestro.');
+  if(r.source==='drop')throw new Error('Esta receta excepcional no está en venta.');
+  pay(d,'pelines',r.price);if(!giveStack(d,newRpgItem(`receta_${id}`)))throw new Error('Tu mochila está llena.');
+ }else if(action==='use_recipe'){
+  const item=d.inventory[slot],r=RPG_CATALOG.recipes[RPG_CATALOG.items[item?.id??'']?.recipe??''];
+  if(!r||item?.id!==id||args.instanceId!==undefined&&item.instanceId!==args.instanceId)throw new Error('La receta de esa casilla ha cambiado.');
+  if(professionRank(s,r.job)<r.tier)throw new Error('No tienes el dominio necesario.');
+  if(s.learned.includes(r.id))throw new Error('Ya conoces esta receta.');
+  if(item.count===1)d.inventory[slot]=null;else item.count--;s.learned.push(r.id);
  }else if(action==='craft'){
   const r=RPG_CATALOG.recipes[id];if(!r||!s.learned.includes(id)||professionRank(s,r.job)<r.tier)throw new Error('Debes aprender la receta y dominar su rango.');siteRequired(d,r.job);
   const count=Math.max(1,Math.min(99,Math.floor(Number(args.count)||1)));
   if(r.seconds>0&&s.jobs.filter(j=>!j.done&&j.job===r.job).length+count>5)throw new Error('Máximo cinco trabajos por oficio.');
   for(const[item,n]of Object.entries(r.ingredients))consume(d,item,n*count);
   for(let n=0;n<count;n++){
-   const xp=craftingExperience(professionRank(s,r.job),r.tier), output=newRpgItem(r.output,r.count);
+   const xp=recipeExperience(professionRank(s,r.job),r), output=newRpgItem(r.output,r.count);
    if(!r.seconds){if(d.race==='elfo'&&r.job==='alquimia'&&r.output.startsWith('pocion_')&&Math.random()<.25)output.count++;if(!giveStack(d,output))throw new Error('Tu mochila está llena.');s.xp[r.job]=(s.xp[r.job]??0)+xp;s.crafts[r.job]=(s.crafts[r.job]??0)+1;}
    else {const start=Math.max(now,...s.jobs.filter(j=>j.job===r.job&&!j.done).map(j=>j.end));s.jobs.push({id:crypto.randomUUID(),recipe:id,job:r.job,start,end:start+r.seconds*(d.race==='humano'?.85:1),done:false,ingredients:{...r.ingredients},output,xp});}
   }
@@ -119,7 +138,6 @@ export function professionAction(data:CharData,action:string,args:Record<string,
  }else if(action==='mastery'){
   siteRequired(d,job);const next=(s.mastery[job]??0)+1;if(next>3||(s.xp[job]??0)<RANK_XP[next+2]||(s.crafts[job]??0)<next*50)throw new Error('Completa experiencia y práctica para tu proyecto de maestría.');
   const mat=job==='minero'||job==='herreria'||job==='joyeria'?'minero':job==='lenador'||job==='carpinteria'||job==='ebanisteria'?'lenador':'recolector';consume(d,`material_${mat}_0`,next*20);consume(d,`material_${mat}_${next+1}`,next*10);s.mastery[job]=next;
-  const learned=Object.values(RPG_CATALOG.recipes).filter(r=>r.job===job&&r.tier===next+2).sort((a,b)=>a.id.localeCompare(b.id))[0];if(learned&&!s.learned.includes(learned.id))s.learned.push(learned.id);
  }else throw new Error('Acción de oficio no válida.');
- Object.assign(data,d);
+ tutorialEvent(d,action,args,data);Object.assign(data,d);
 }

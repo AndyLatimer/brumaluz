@@ -41,6 +41,10 @@ import { installProfessions } from './game/professions';
 import './styles/game/15-rpg.css';
 import './styles/game/16-professions.css';
 import './styles/game/17-wilderness.css';
+import './styles/game/18-combat-polish.css';
+import './styles/game/19-mobile-hud.css';
+import './styles/game/21-resources.css';
+import './styles/game/22-workshops.css';
 
 if (!session.state.name) session.state.name = randomName(session.state.race);
 installStoryLines();
@@ -48,7 +52,7 @@ installArrivalOverlay();
 installInput();
 initUiMotion();
 animateVisibility(...['window-backdrop', 'options-backdrop', 'delete-dialog-backdrop', 'game-menu-panel', 'player-menu-panel', 'world-menu-panel',
-  'dialog', 'interact-prompt', 'combat-controls', 'death-screen', 'player-interactions'].map(id => document.getElementById(id)));
+  'dialog', 'interact-prompt', 'death-screen', 'player-interactions'].map(id => document.getElementById(id)));
 installInteraction();
 installRestFade();
 installActionBar();
@@ -95,6 +99,7 @@ story.NPCS = createNpcDefinitions();
 placeCityNpcs();
 installNpcBarks();
 ui.targetFrame = createTargetFrame(canvas, camera, () => play.city.root, (from, to) => play.city.lineOfSight?.(from, to) ?? true);
+if(import.meta.hot)import.meta.hot.dispose(()=>ui.targetFrame.dispose());
 holder.position.copy(play.city.spawn);
 holder.rotation.y = play.city.spawnYaw - 0.3;
 rebuildNow();

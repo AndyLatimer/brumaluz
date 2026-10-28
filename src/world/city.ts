@@ -3,7 +3,6 @@ import { loadGLB } from './load';
 import cityUrl from '../assets/models/city.glb?url';
 import { buildCityDetails } from './cityDetails';
 import { COIN_BAGS } from '../data/coinBags';
-import { FAIRY_DUST_SPOTS } from '../data/fairyDust';
 import { WELCOME_START, WELCOME_BADGE, SHADOW_RETURN } from '../data/quests';
 import { brumaluzGateMarkers } from '../data/pompelin';
 import type { MapMarker } from '../data/maps';
@@ -583,7 +582,6 @@ export async function buildCity(): Promise<City> {
       };
     })),
     interactables: (() => { const w = hexToWorld(0, 0); return [{ id: 'well', position: new THREE.Vector3(w.x, groundY(w.x, w.y), w.y), radius: 3.4, label: 'Asomarse al pozo' }]; })(),
-    fairyDustSpots: FAIRY_DUST_SPOTS.map(d => ({ id: d.id, x: d.x, z: d.z, yaw: d.yaw })),
     vendorSpots,
     collide,
     groundY,

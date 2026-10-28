@@ -1,0 +1,17 @@
+export const RESOURCE_TRANSLATIONS:Record<string,string>={
+ 'Minerales':'Ores','Gemas':'Gems','Maderas':'Timber','Hierbas y flores':'Herbs and flowers','Fibras':'Fibres','Frutas y bayas':'Fruit and berries','Hongos':'Mushrooms','Cereales':'Grain',
+ 'Extraer':'Mine','Cortar':'Chop','Recoger':'Collect','Cosechar':'Harvest','Recolección':'Gathering','energía':'energy',
+ '{energy} energía · {seconds} s':'{energy} energy · {seconds} s','{energy} energía':'{energy} energy',
+ 'Moverte interrumpe la recolección.':'Moving interrupts gathering.','Terminando…':'Finishing…','Recurso obtenido':'Resource gathered','Guardado en tu mochila.':'Stored in your bag.',
+ 'Cuaderno de campo':'Field notebook','Reconoce cada recurso por su forma. Encuentra los disponibles y prepara tu herramienta antes de salir.':'Recognise each resource by its shape. Find available nodes and prepare your tool before heading out.',
+ '{n} en la mochila':'{n} in your bag','{available} / {total} disponibles':'{available} / {total} available','{n} m':'{n} m',
+ 'Localizar {resource}':'Locate {resource}','Marcar el recurso disponible más cercano':'Mark the nearest available resource','Disponible al explorar Pompelín':'Available while exploring Pompelín','Deja que se recupere tu energía.':'Let your energy recover.',
+ 'Tu taller en marcha':'Your workshop at work','Un trabajo activo y cuatro pendientes. Los resultados terminados te esperan sin ocupar la cola.':'One active job and four queued jobs. Finished items wait for you without taking up queue space.',
+ 'En fabricación':'In progress','En cola':'Queued','Para recoger':'To collect','Cola de fabricación':'Crafting queue','Terminado':'Finished','Termina en {time}':'Finishes in {time}','Empieza en {time}':'Starts in {time}','{count} unidad · {xp} EXP':'{count} item · {xp} XP',
+ 'Materiales para {n} fabricaciones':'Materials for {n} crafts','Fabricación':'Crafting','Resultado':'Result','Botín de criaturas':'Creature loot','Minerales y gemas':'Ores and gems','Plantas y alimentos':'Plants and food',
+ 'Activo':'Active',
+ '{n} recursos cercanos · acercar':'{n} nearby resources · zoom in','Acercar estos recursos':'Zoom in on these resources',
+ 'Herrería':'Smithing','Peletería':'Leatherworking','Sastrería':'Tailoring','Carpintería':'Carpentry','Ebanistería':'Furniture making','Joyería':'Jewellery','Alquimia':'Alchemy','Encantamiento':'Enchanting','Cocina':'Cooking','Minero':'Mining','Leñador':'Woodcutting','Recolector':'Gathering',
+ 'Roble':'Oak','Fresno':'Ash','Abedul plateado':'Silver birch','Madera umbría':'Umbral wood','Cedro áureo':'Golden cedar','Madera ancestral':'Ancient wood','Cobre':'Copper','Hierro':'Iron','Acero lunar':'Moon steel','Mitril':'Mithril','Oro solar':'Sun gold','Mineral de fénix':'Phoenix ore',
+ 'Hierbas silvestres':'Wild herbs','Hierbas de rocío':'Dew herbs','Flor azul':'Blue flower','Flores nocturnas':'Night flowers','Hierba solar':'Sun herb','Flor estelar':'Star flower',
+};

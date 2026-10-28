@@ -10,6 +10,8 @@ import { beginMapTransition } from '../ui/transitionLoading';
 import { locationName, MAX_LEVEL, unspentAttributePoints } from '../data/data';
 import { collectCoinBag, collectFairyDust } from '../services/account';
 import { addItem } from '../services/devActions';
+import { COIN_BAGS } from '../data/coinBags';
+import { FAIRY_DUST_QUEST_TITLE } from '../data/quests';
 import { updateHud } from './hud';
 import { setWindow, setGameMenuOpen, setPlayerMenuOpen, setWorldMenuOpen } from '../ui/menus';
 import { serverAction, errorMessage, runOnServer } from './server';
@@ -213,7 +215,8 @@ export async function pickUpCoinBag(bagId: string) {
   const collected = await runOnServer(id => collectCoinBag(id, bagId), () => {
     if (session.state.coinBags.includes(bagId)) throw new Error(t('Ya has recogido esta bolsa de pelines.'));
     session.state.coinBags = [...session.state.coinBags, bagId];
-    session.state.wallet.pelines += 10 + Math.floor(Math.random() * 21);
+    const spot = COIN_BAGS.find(bag => bag.id === bagId)!;
+    session.state.wallet.pelines += spot.min + Math.floor(Math.random() * (spot.max - spot.min + 1));
   });
   if (!collected) return;
   play.char.pickUp();
@@ -229,18 +232,29 @@ export async function pickUpFairyDust(dustId: string) {
   keys.clear();
   play.moveTarget = null;
   marker.visible = false;
-  const amount = 1 + Math.floor(Math.random() * 5);
+  const dustCount = () => session.state.inventory.reduce((total, item) => total + (item?.id === 'polvo_de_hada' ? item.count : 0), 0);
+  const before = dustCount();
+  const hadQuest = session.state.fairyDustQuest !== null;
   const collected = await runOnServer(id => collectFairyDust(id, dustId), () => {
     const fairyDust = session.state.fairyDust ?? [];
     if (fairyDust.includes(dustId)) throw new Error(t('Ya has recogido estos polvos de hada.'));
+    const amount = 1 + Math.floor(Math.random() * 5);
+    const next = { ...session.state, inventory: session.state.inventory.map(item => item ? { ...item } : null) };
+    for (let i = 0; i < amount; i++) addItem(next, 'polvo_de_hada');
+    session.state.inventory = next.inventory;
     session.state.fairyDust = [...fairyDust, dustId];
-    for (let i = 0; i < amount; i++) addItem(session.state, 'polvo_de_hada');
+    session.state.fairyDustQuest ??= 'ask_gnomi';
   });
   if (!collected) return;
   play.char.pickUp();
+  const amount = dustCount() - before;
   floatText(`+${amount} ${t('Polvo de hada')}`, 'item');
   chatSystem(t('Has encontrado {n} {item}.', { n: amount, item: t('Polvo de hada') }));
   sparkBurst(10, 'item', '✦');
+  if (!hadQuest && session.state.fairyDustQuest === 'ask_gnomi') {
+    toast(FAIRY_DUST_QUEST_TITLE, 'Has encontrado polvo de hada. Quizá Gnomi sepa algo sobre él.', false, {}, 'quest');
+    updateHud();
+  }
   if (ui.openWindow === 'inventory') setWindow('inventory', false);
   else if (ui.openWindow === 'collections') setWindow('collections', false);
 }

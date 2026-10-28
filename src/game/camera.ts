@@ -110,8 +110,13 @@ export function updateCamera(dt: number) {
   const mobile = window.innerWidth <= 760;
   let ty: number, dist: number;
   if (view.focus === 'face') { ty = head.y - 0.06; dist = 2.6; }
-  else { ty = head.y * 0.5; dist = 3.6 + head.y * 1.3; }
-  if (mobile) { dist *= view.focus === 'face' ? 1.5 : 1.75; ty += view.focus === 'face' ? 0.02 : 0.15; }
+  else { const headHeight = head.y - holder.position.y; ty = holder.position.y + headHeight * 0.5; dist = 3.6 + headHeight * 1.3; }
+  if (mobile) {
+    const previewTop = Math.min(136, window.innerHeight * .18);
+    const available = Math.max(64, document.getElementById('panel')!.getBoundingClientRect().top - previewTop - 18);
+    const subjectHeight = view.focus === 'face' ? .85 : (head.y - holder.position.y) * 1.25;
+    dist = Math.max(dist, subjectHeight / (2 * Math.tan(Math.PI / 12)) * window.innerHeight / available * 1.12);
+  }
   dist *= view.zoom;
   const k = 1 - Math.exp(-dt * 4);
   camTarget.y += (ty - camTarget.y) * k;

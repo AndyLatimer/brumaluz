@@ -1,5 +1,6 @@
 -- ---------- Bolsas de pelines del mundo ----------
--- Catálogo de bolsas: posición y rango de pelines. Mantener ids y posiciones iguales a src/data/coinBags.ts.
+-- Catálogo inicial de bolsas. Al publicar, world.sql lo sustituye por los puntos del editor,
+-- coordinados con src/data/world/collectibles.json (posición, mapa y rango de pelines).
 create or replace function public.game_coin_bag(p_id text)
 returns jsonb language sql immutable set search_path='' as $$
   select jsonb_build_object('x',b.x,'z',b.z,'min',b.lo,'max',b.hi) from (values
@@ -23,7 +24,7 @@ begin
   if taken ? p_bag_id then raise exception 'COIN_BAG_TAKEN'; end if;
   select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
     and seen_at>now()-interval '15 seconds';
-  if pos is null or coalesce(d->>'location','brumaluz')<>'brumaluz' then raise exception 'COIN_BAG_NOT_PLAYING'; end if;
+  if pos is null or coalesce(d->>'location','brumaluz')<>coalesce(bag->>'location','brumaluz') then raise exception 'COIN_BAG_NOT_PLAYING'; end if;
   if power((pos->>'x')::numeric-(bag->>'x')::numeric,2)+power((pos->>'z')::numeric-(bag->>'z')::numeric,2)>9
     then raise exception 'COIN_BAG_TOO_FAR'; end if;
   amount:=(bag->>'min')::int+floor(random()*((bag->>'max')::int-(bag->>'min')::int+1))::int;

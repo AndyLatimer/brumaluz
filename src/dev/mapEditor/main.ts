@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import './mapEditor.css';
 import npcCatalogJson from '../../data/npcs.json';
 import { validateNpcCatalog } from '../../data/npcs';
 import { defaultChar } from '../../data/data';
@@ -118,6 +117,7 @@ function setView(key: keyof typeof state.view, value: boolean) {
   if (key === 'collisions') void rebuildCollision();
 }
 const ACTIONS: Record<string, () => unknown> = {
+  'add-collectibles': () => setTool('collectible'),
   new: newDialog, open: openDialog, save: () => save(), 'save-as': () => save(true), export: exportJson,
   undo: () => restore('undo'), redo: () => restore('redo'), 'top-view': topView, 'frame-all': frameAll,
   walk: toggleWalk, help: () => $<HTMLDialogElement>('help-dialog').showModal(), pompelin: fromPompelin, overworld: fromOverworld, publish,
@@ -151,7 +151,7 @@ function initTopbar() {
 // Teclado
 // ---------------------------------------------------------------------------
 
-const TOOL_KEYS: Record<string, ToolId> = { KeyV: 'select', KeyB: 'place', KeyN: 'scatter', KeyX: 'erase', KeyT: 'sculpt', KeyP: 'paint', KeyH: 'grass', KeyC: 'collider', KeyM: 'marker' };
+const TOOL_KEYS: Record<string, ToolId> = { KeyV: 'select', KeyB: 'place', KeyN: 'scatter', KeyX: 'erase', KeyT: 'sculpt', KeyP: 'paint', KeyH: 'grass', KeyC: 'collider', KeyM: 'marker', KeyL: 'collectible' };
 const held = new Set<string>();
 let clipboard: { kind: Entity['kind']; data: Entity['data'] }[] = [];
 

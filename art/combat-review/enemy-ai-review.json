@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "SQL patrol moves in the real Pompelín map.",
+    "Two independent game clients render the same nine authoritative creatures.",
+    "The three bandits assist their group and pursue the moving opponent.",
+    "Pursuers walk back and resume their ambient behavior."
+  ],
+  "errors": [],
+  "clients": 2,
+  "connectedToLiveServer": false
+}

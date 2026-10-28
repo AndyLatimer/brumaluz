@@ -28,10 +28,10 @@ body.playing .world-menu { display: block; position: fixed; top: 18px; right: 13
 .player-menu .pm-spark { fill: #fff3c4; stroke: #c98f2e; stroke-width: .6; stroke-linejoin: round; }
 .player-menu .game-menu-panel { right: 0; }
 .player-menu .game-menu-panel > .btn,.world-menu .game-menu-panel > .btn { display:flex; align-items:center; gap:12px; min-height:44px; }
-.menu-option-icon { flex:none; margin-left:auto; width:32px; height:32px; padding:2px; border:1px solid #a47c4655; border-radius:8px; background:radial-gradient(ellipse at 35% 20%,#fff5d599,transparent 65%),linear-gradient(145deg,#dcc39144,#98774a22); fill:none; stroke:#76512d; stroke-width:1.45; stroke-linecap:round; stroke-linejoin:round; box-shadow:inset 0 1px #fff5d5aa,0 1px 3px #48321b22; }
+.menu-option-icon { flex:none; margin-left:auto; width:34px; height:34px; padding:2.5px; border:1px solid rgba(226,186,116,.34); border-radius:10px; background:radial-gradient(circle at 32% 24%,rgba(255,236,190,.2),rgba(34,20,10,.46) 78%); fill:none; stroke:none; box-shadow:inset 0 1px 1px rgba(255,244,214,.22),0 2px 5px rgba(18,10,4,.36); filter:drop-shadow(0 1px 1.5px rgba(20,11,4,.35)); transition:transform .22s cubic-bezier(.22,1,.36,1),border-color .22s ease,background-color .22s ease,box-shadow .22s ease,filter .22s ease; }
 .menu-option-icon .menu-icon-fill { fill:url(#pm-gold); }
-.menu-option-icon .menu-icon-shine { fill:#fff0bb; stroke:#a16d28; stroke-width:1; }
-.player-menu .game-menu-panel > .btn:hover .menu-option-icon,.world-menu .game-menu-panel > .btn:hover .menu-option-icon { border-color:#c19b5b; background-color:#edce8f44; }
+.menu-option-icon .menu-icon-shine { fill:#fff6d6; stroke:#b87d28; stroke-width:.65; }
+.player-menu .game-menu-panel > .btn:hover .menu-option-icon,.world-menu .game-menu-panel > .btn:hover .menu-option-icon { border-color:rgba(255,222,150,.65); background-color:rgba(255,225,156,.1); box-shadow:inset 0 1px 2px rgba(255,248,225,.35),0 3px 8px rgba(18,10,4,.45),0 0 10px rgba(235,185,92,.2); transform:translateY(-1px) scale(1.06); filter:drop-shadow(0 2px 2.5px rgba(20,11,4,.45)) brightness(1.05); }
 .player-menu .game-menu-panel > .btn.has-points,.player-menu .game-menu-panel > .btn.has-friend-requests { gap:32px; }
 .player-menu .game-menu-panel > .btn.has-points::after,.player-menu .game-menu-panel > .btn.has-friend-requests::after { right:51px; width:14px; height:14px; font-size:10px; }
 .btn.soon { opacity: .55; cursor: not-allowed; }

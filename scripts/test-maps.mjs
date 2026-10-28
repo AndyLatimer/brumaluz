@@ -20,8 +20,8 @@ before(async () => {
   directory = await mkdtemp(join(tmpdir(), 'brumaluz-maps-'));
   publishDirectory = await mkdtemp(join(tmpdir(), 'brumaluz-world-'));
   server = await createServer({
-    configFile: false, logLevel: 'error', plugins: [mapEditorPlugin({ mapsDir: directory, publishDir: publishDirectory, sqlFile: join(publishDirectory, 'world.sql') })], assetsInclude: ['**/*.glb'],
-    server: { host: '127.0.0.1', port, strictPort: true, fs: { allow: [process.cwd(), directory, publishDirectory] } },
+    cacheDir: `node_modules/.vite-maps-test-${port}`, configFile: false, logLevel: 'error', plugins: [mapEditorPlugin({ mapsDir: directory, publishDir: publishDirectory, sqlFile: join(publishDirectory, 'world.sql') })], assetsInclude: ['**/*.glb'],
+    server: { host: '127.0.0.1', port, strictPort: true, hmr:false, watch:null, fs: { allow: [process.cwd(), directory, publishDirectory] } },
   });
   await server.listen();
   maps = await server.ssrLoadModule('/src/data/maps.ts');
@@ -61,23 +61,23 @@ test('minimap uses the atlas icons and tracking preferences stay isolated by cha
         return path?stroke(path):stroke();
       };
       updateMinimap();
-      const colors=calls.map(call=>call.color);
-      const npcCalls=calls.filter(call=>call.color==='#8be07a'),questCalls=calls.filter(call=>call.color==='#ffe19b');
-      const npcStyle={fill:npcCalls[0].fill,dotFill:npcCalls[1]?.fill,size:npcCalls[0].scale*24/(canvas.width/176),questSize:questCalls[0].scale*24/(canvas.width/176)};
+      const colors=calls.map(call=>call.fill);
+      const npcCalls=calls.filter(call=>call.fill==='#8be07a'),questCalls=calls.filter(call=>call.fill==='#ffe19b');
+      const npcStyle={fill:npcCalls[0].fill,dark:calls.some(call=>call.fill==='#36574c'),size:npcCalls[0].scale*24/(canvas.width/176),questSize:questCalls[0].scale*24/(canvas.width/176)};
       markers.find(marker=>marker.kind==='exit').closed=true;
       calls.length=0; updateMinimap();
-      const faded=calls.some(call=>call.color==='#d1c7ff'&&Math.abs(call.alpha-.45)<.001);
+      const faded=calls.some(call=>call.fill==='#d1c7ff'&&Math.abs(call.alpha-.45)<.001);
       for(const [i,marker] of markers.entries()){marker.x=1000+i*100;marker.z=0;}
       calls.length=0;arrows.length=0;updateMinimap();
-      const farPortalHidden=calls.every(call=>call.color!=='#d1c7ff'&&call.color!=='#ffc69d');
+      const farPortalHidden=calls.every(call=>call.fill!=='#d1c7ff'&&call.fill!=='#ffc69d');
       const farArrows=[...arrows];
       const exit=markers.find(marker=>marker.kind==='exit');
       exit.x=25.5;
       calls.length=0;updateMinimap();
-      const nearExit=calls.some(call=>call.color==='#d1c7ff');
+      const nearExit=calls.some(call=>call.fill==='#d1c7ff');
       exit.x=25.7;
       calls.length=0;updateMinimap();
-      const distantExit=calls.some(call=>call.color==='#d1c7ff');
+      const distantExit=calls.some(call=>call.fill==='#d1c7ff');
       const drawings=[];
       for(const kind of [...kinds,'player']){
         const reference=document.createElement('canvas');reference.width=reference.height=32;
@@ -106,8 +106,8 @@ test('minimap uses the atlas icons and tracking preferences stay isolated by cha
         defaultQuest,untracked,otherCharacter,restored,nextQuest,shadowUntracked,completed,unchanged};
     });
     assert.ok(result.icons);
-    assert.equal(result.npcStyle.fill,'#262c31','NPC portraits use a quiet dark fill rather than a solid green silhouette');
-    assert.equal(result.npcStyle.dotFill,'#8be07a','NPCs have a bright center dot');
+    assert.equal(result.npcStyle.fill,'#8be07a','Painted NPC portraits preserve the friendly semantic accent');
+    assert.equal(result.npcStyle.dark,true,'Portraits retain a dark enamel background for readability');
     assert.ok(Math.abs(result.npcStyle.size-16)<.001,'NPC minimap icons are 16 CSS pixels at the standard size');
     assert.ok(result.npcStyle.size<result.npcStyle.questSize,'NPC portraits are more subtle than objective icons');
     assert.equal(result.unique,6,'Each atlas/minimap symbol has a distinct shape');
@@ -207,7 +207,13 @@ test('Pompelín starter follows the continent layout and connects all five capit
   const entries = map.markers.filter(marker => marker.type === 'portal' && marker.target?.map === 'brumaluz');
   assert.equal(entries.length, 5);
   const capital = { markers: brumaluzGateMarkers() };
-  for (const entry of entries) assert.ok(maps.arrivalPoint(capital, entry.target.arrival));
+  for (const entry of entries) {
+    assert.equal(entry.trigger, 'walk', 'las cinco puertas se cruzan al acercarse, sin pulsar E');
+    assert.ok(maps.arrivalPoint(capital, entry.target.arrival));
+    const arrival = maps.arrivalPoint(map, `desde_brumaluz_${entry.id.slice('entrada_brumaluz_'.length)}`);
+    assert.ok(Math.hypot(arrival.position[0]-entry.position[0],arrival.position[2]-entry.position[2])>entry.radius+2,
+      'la llegada exterior queda fuera del portal para poder volver a entrar sin rebotes');
+  }
   const regions = Object.fromEntries(map.markers.filter(marker => marker.type === 'zone').map(marker => [marker.id, marker.position]));
   assert.ok(regions.arboleda[0] > regions.region_brumaluz[0]);
   assert.ok(regions.cumbres_cobre[2] > regions.region_brumaluz[2]);
@@ -367,7 +373,7 @@ test('game crosses walk and E portals with loading screens and without arrival b
     assert.equal(await page.locator('.zone-map-chart canvas').getAttribute('aria-label'),'Mapa completo de Brumaluz');
     await page.locator('.zone-map-player').waitFor();
     assert.ok(await page.locator('.zone-map-north svg').isVisible());
-    assert.equal(await page.locator('.zone-map-key > span').count(),6);
+    assert.equal(await page.locator('.zone-map-key > span').count(),9);
     assert.match(await page.locator('.zone-map-key-npc').evaluate(icon=>icon.parentElement.innerText),/NPC/);
     assert.ok(await page.locator('.zone-map-poi-exit').isVisible());
     const initialScale=await page.locator('.zone-map-scale').textContent();
@@ -539,9 +545,11 @@ test('published Isberto doors and capital gates are reachable with matching clie
     await page.route(/https:\/\/[^/]+\.supabase\.co\//,route=>route.fulfill({status:200,contentType:'application/json',body:'null'}));
     await page.goto(`${url}/?graphics=compatible`);
     await page.waitForFunction(()=>!!window.brumaluz,null,{timeout:90000});
-    await page.evaluate(()=>{
+    await page.evaluate(async()=>{
+      window.__portalPlay=(await import('/src/game/state.ts')).play;
       document.getElementById('account-gate').hidden=true;
       document.body.classList.remove('auth-visible','characters-visible');
+      window.brumaluz.set({introSeen:true});
       window.brumaluz.play();
       window.brumaluz.move(24.5,-48.5);
     });
@@ -554,20 +562,36 @@ test('published Isberto doors and capital gates are reachable with matching clie
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
     await page.waitForFunction(()=>!document.querySelector('.map-transition'));
     // La puerta este está en la muralla exterior publicada: se llega a ella desde dentro y se pisa su portal.
-    const eastGate=(await readFile(join(process.cwd(),'src','data','world','maps','brumaluz.json'),'utf8').then(JSON.parse)).markers.find(m=>m.id==='salida_este');
-    await page.evaluate(x=>window.brumaluz.move(x-9,0),eastGate.position[0]);
-    await page.waitForTimeout(150);
-    await page.evaluate(x=>window.brumaluz.move(x,0),eastGate.position[0]);
+    await page.evaluate(async()=>{
+      const {play}=await import('/src/game/state.ts');
+      const arrival=play.city.arrivals.llegada_este.position;
+      window.brumaluz.move(arrival.x,arrival.z);
+      play.moveTarget=play.city.portals.find(p=>p.id==='salida_este').position.clone();
+    });
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='pompelin',null,{timeout:90000});
     await page.waitForFunction(()=>!document.querySelector('.map-transition'));
     const eastEntry=(await readFile(join(process.cwd(),'src','data','world','maps','pompelin.json'),'utf8').then(JSON.parse)).markers.find(m=>m.id==='entrada_brumaluz_este');
-    await page.evaluate(([x,z])=>window.brumaluz.move(x,z),[eastEntry.position[0],eastEntry.position[2]]);
-    await page.locator('#interact-label').filter({hasText:'Brumaluz'}).waitFor();
-    await page.keyboard.press('e');
+    assert.equal(eastEntry.trigger,'walk','la entrada publicada a Brumaluz es de proximidad');
+    // La llegada exterior deja espacio para que se rearme el viaje y no vuelva de inmediato a la ciudad.
+    await page.waitForFunction(()=>window.__portalPlay.portalsArmed&&!window.__portalPlay.mapTravelling);
+    assert.equal(await page.evaluate(()=>window.brumaluz.city().locationId),'pompelin');
+    await page.evaluate(async()=>{const {play}=await import('/src/game/state.ts');play.moveTarget=play.city.portals.find(p=>p.id==='entrada_brumaluz_este').position.clone();});
     await page.waitForFunction(()=>window.brumaluz.city().locationId==='brumaluz');
     await page.waitForFunction(()=>!document.querySelector('.map-transition'));
+    await page.waitForTimeout(250);
+    assert.equal(await page.evaluate(()=>window.brumaluz.city().locationId),'brumaluz','la llegada interior tampoco rebota al mundo');
     assert.deepEqual(dialogs,[],'actual house and city travel never prompt for confirmation');
     assert.deepEqual(errors,[]);
+  } catch(error) {
+    const diagnostic=await page.evaluate(async()=>{
+      const {play,story,talk,ui,session,fight}=await import('/src/game/state.ts'),{holder}=await import('/src/game/stage.ts'),{cinematic}=await import('/src/story/scenes.ts');
+      return {map:play.city.locationId,travelling:play.mapTravelling,armed:play.portalsArmed,mode:play.mode,
+        position:holder.position.toArray(),nearby:play.city.portals.map(p=>({id:p.id,trigger:p.trigger,distance:Math.hypot(holder.position.x-p.position.x,holder.position.z-p.position.z),radius:p.radius})).filter(p=>p.distance<20),
+        dead:play.dead,combat:fight.combatEncounter,cinematic:cinematic.active,introSeen:session.state.introSeen,introArmed:story.introArmed,introFinishing:story.introFinishing,resting:story.resting,
+        openWindow:ui.openWindow,dialog:document.querySelector('#dialog')?.textContent,storyScript:!!story.playerScript,arrival:talk.isbertoArrival};
+    }).catch(()=>null);
+    console.error('Published gate travel diagnostic',JSON.stringify({diagnostic,errors}));
+    throw error;
   } finally { await page.close(); }
 });
 

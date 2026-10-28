@@ -21,8 +21,8 @@ export function updateProfessionEnergy(){
  const hud=document.getElementById('gathering-energy-hud');
  if(hud)hud.title=`${t('Energía')}|${text} / 100 · ${value>=100?t('Reserva completa'):`${t('Completa en')} ${professionTime(untilFull)}`} · ${t('Abrir profesiones')} (P)`;
  for(const timer of document.querySelectorAll<HTMLElement>('[data-profession-end]')){
-  const remaining=Number(timer.dataset.professionEnd)-Date.now()/1000;
-  timer.textContent=remaining>0?professionTime(remaining):t('Listo para recoger');
+  const now=Date.now()/1000,remaining=Number(timer.dataset.professionEnd)-now,start=Number(timer.dataset.professionStart);
+  timer.textContent=remaining<=0?t('Listo para recoger'):start>now?t('Empieza en {time}',{time:professionTime(start-now)}):t('Termina en {time}',{time:professionTime(remaining)});
   const progress=timer.closest('.profession-order')?.querySelector<HTMLProgressElement>('progress');
   if(progress){const start=Number(timer.dataset.professionStart);progress.value=Math.min(1,Math.max(0,(Date.now()/1000-start)/(Number(timer.dataset.professionEnd)-start)));}
  }

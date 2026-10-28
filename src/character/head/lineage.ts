@@ -2,10 +2,11 @@
 import * as THREE from 'three';
 import { LoopSubdivision } from 'three-subdivide';
 import type { HeadKit, HeadOptions } from './types';
+import type { HeadAnatomy } from './anatomy';
 import { smoothNormals, V, mergeGeoms, HEAD_C, paintCell, C_SKIN, CENTER } from './geometry';
 
 /** Anclajes para rasgos del linaje de la cabeza (parte de buildHead). */
-export function buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, headAt, skinParts }: { hairPieces: { geo: THREE.BufferGeometry; kit: HeadKit }[]; pushOut: (g: THREE.BufferGeometry, margin: number) => THREE.BufferGeometry<THREE.NormalBufferAttributes>; extras: { geo: THREE.BufferGeometry; kit: HeadKit }[]; headRay: THREE.Mesh<THREE.BufferGeometry<THREE.NormalBufferAttributes>, THREE.MeshBasicMaterial, THREE.Object3DEventMap>; o: HeadOptions; headAt: (dir: THREE.Vector3, out?: number) => THREE.Vector3; skinParts: THREE.BufferGeometry[] }) {
+export function buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, headAt, skinParts, anatomy }: { hairPieces: { geo: THREE.BufferGeometry; kit: HeadKit }[]; pushOut: (g: THREE.BufferGeometry, margin: number) => THREE.BufferGeometry<THREE.NormalBufferAttributes>; extras: { geo: THREE.BufferGeometry; kit: HeadKit }[]; headRay: THREE.Mesh<THREE.BufferGeometry<THREE.NormalBufferAttributes>, THREE.MeshBasicMaterial, THREE.Object3DEventMap>; o: HeadOptions; headAt: (dir: THREE.Vector3, out?: number) => THREE.Vector3; skinParts: THREE.BufferGeometry[]; anatomy: HeadAnatomy }) {
   // subdivisión: cara y pelo redondeados en vez de facetados
   // (Loop encoge un poco las formas convexas: se infla lo mismo para no abrir huecos)
   const subdiv = (g: THREE.BufferGeometry, deg: number, inflate = 0) => {
@@ -28,28 +29,22 @@ export function buildLineageFeatures({ hairPieces, pushOut, extras, headRay, o, 
   for (const h of hairPieces) (byKit.get(h.kit) ?? byKit.set(h.kit, []).get(h.kit)!).push(h.geo);
   const finalHair: { geo: THREE.BufferGeometry; kit: HeadKit }[] = [];
   for (const [kit, gs] of byKit) {
-    const g = mergeGeoms(gs);
-    if (g) finalHair.push({ geo: smoothNormals(pushOut(subdiv(g, 70, 0.003), o.hair === 7 ? -0.012 : 0.012), 70), kit });
+    const ready = gs.filter(geometry => geometry.userData.surfaceReady);
+    const raw = mergeGeoms(gs.filter(geometry => !geometry.userData.surfaceReady));
+    if (raw) ready.push(smoothNormals(pushOut(subdiv(raw, 70, 0.003), o.hair === 7 ? -0.012 : 0.012), 70));
+    const g = mergeGeoms(ready);
+    if (g) finalHair.push({ geo: g, kit });
   }
   const hairGeos = [...finalHair, ...extras].map((h) => h.geo);
   const topRay = new THREE.Group();
   for (const g of hairGeos) topRay.add(new THREE.Mesh(g, headRay.material));
-  // orejas humanas: medio disco suave a cada lado, sólo si el peinado no las tapa
-  if (o.race === 'humano') for (const s of [-1, 1]) {
-    const dir = V(s, -0.12, -0.06).normalize(), c = headAt(dir);
-    // si el pelo pasa por cualquier punto de la zona de la oreja, la tapa
-    let covered = false;
-    for (const [dy, dz] of [[0, 0], [0.12, 0], [-0.12, 0], [0, 0.12], [0, -0.12], [0.08, 0.08], [-0.08, -0.08]]) {
-      const d2 = V(s, -0.12 + dy, -0.06 + dz).normalize(), c2 = headAt(d2);
-      const h2 = new THREE.Raycaster(HEAD_C.clone().addScaledVector(d2, 2), d2.clone().negate()).intersectObject(topRay, true)[0];
-      if (h2 && h2.point.distanceTo(HEAD_C) > c2.distanceTo(HEAD_C) + 0.005) { covered = true; break; }
-    }
-    if (o.hat === 'helmet' || (covered && o.hat === 'none')) continue;
-    const e = new THREE.SphereGeometry(1, 16, 12);
-    e.scale(0.035, 0.1, 0.07);
-    e.rotateZ(s * 0.12);
-    e.translate(c.x, c.y, c.z);
-    skinParts.push(paintCell(e, C_SKIN, 0.3, 0.6));
+  // Human ears grow from the same anatomical landmarks used by their jewellery.
+  if (o.race === 'humano' || !o.race) for (const side of [-1, 1]) {
+    const ear = anatomy.ear(side); if (!ear.visible) continue;
+    const geometry = new THREE.SphereGeometry(1, 20, 16);
+    geometry.scale(.035, .1, .07); geometry.applyQuaternion(ear.rotation); geometry.translate(ear.root.x, ear.root.y, ear.root.z);
+    geometry.userData.earSide = side;
+    skinParts.push(paintCell(geometry, C_SKIN, .3, .6));
   }
   const topAt = (x: number, z: number) => {
     const rc = new THREE.Raycaster(V(x, 3, z), V(0, -1, 0));

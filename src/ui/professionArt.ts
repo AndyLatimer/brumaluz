@@ -13,7 +13,7 @@ const paths:Record<string,string>={
  recolector:'<path d="M16 29V10m0 10Q1 20 4 9q13-1 12 11Zm0-6Q15 1 28 4q1 11-12 10Z"/><path d="m7 13 9 10m8-15-8 10"/>',
  energy:'<path d="M16 29V12m0 10Q2 23 5 11q12-1 11 11ZM16 15Q15 1 28 4q2 11-12 11Z"/><path d="m12 4-2 4m-6-4 2 2"/>',
  recipes:'<path d="M4 5q7-2 12 2 5-4 12-2v23q-7-3-12 1-5-4-12-1Z"/><path d="M16 7v22M8 12h4m-4 5h4m8-5h4m-4 5h4"/>',
- jobs:'<path d="M5 7h22v21H5Zm4 0V3m14 4V3M5 12h22"/><path d="m10 20 4 4 8-9"/>',
+ jobs:'<path d="M4 20h24v5H4Zm3 5v5m18-5v5M8 4l4-2 7 8-4 4Z"/><path d="m15 12 10 11m-9-5 8-7m-1-5 4 4"/>',
  tools:'<path d="m4 28 15-15m-2-8a8 8 0 0 0 10 10l-5-5 1-5 5 5A8 8 0 0 0 17 5Z"/><path d="m4 8 4-4 18 23-3 3Z"/>',
  enchants:'<path d="m16 3 4 9 9 4-9 4-4 9-4-9-9-4 9-4Z"/><path d="m16 10 2 6-2 6-2-6ZM26 3v5m-2-3h5"/>',
  furniture:'<path d="M5 3h22v26H5Zm0 8h22M5 20h22M11 4v7m5-7v7m7-7v7M9 14v6m7-6v6m6-6v6"/>',
@@ -27,6 +27,8 @@ const paths:Record<string,string>={
  arrow:'<path d="M5 16h22m-8-8 8 8-8 8"/>',
 };
 const artwork:Record<string,string>={
+ jobs:'<path fill="#a88554" d="M3 20h26v5H3Zm3 5h3v5H6Zm17 0h3v5h-3Z"/><path fill="#bec9c7" d="m7 5 6-3 7 8-5 5Z"/><path stroke="#b8905a" stroke-width="4" d="m16 13 10 12"/><path fill="#d4bd83" d="m18 17 8-7 3 3-8 8Z"/><path stroke="#f1dfb6" d="M5 21h22m-16-15 5 5"/>',
+ recipes:'<path fill="#d9c296" d="M3 5q7-3 13 2 6-5 13-2v23q-7-3-13 1-6-4-13-1Z"/><path fill="#f0dfb9" d="M5 7q6-1 10 2v17q-5-3-10-1Zm12 2q5-3 10-2v18q-5-2-10 1Z"/><path stroke="#977a51" d="M16 7v22M8 12h4m-4 5h4m8-5h4m-4 5h4"/><path fill="#83976b" d="M21 4h3v10l-1.5-2-1.5 2Z"/>',
  tools:'<path fill="#b89360" d="m5 28-2-3L23 5l3 3Z"/><path fill="#b6c3c2" d="M18 3q-7 4-3 10l9 1 5-7-6 3-4-4Z"/><path fill="#b89360" d="m5 5 3-2 19 23-3 3Z"/><path fill="#c4ccca" d="m3 6 7-4 7 8-5 5Z"/><path stroke="#f1e4bf" d="m5 7 4-2 4 5m7 2h4"/>',
  enchants:'<path fill="#afbfbb" d="m8 24 4-12 15-9-9 15Z"/><path fill="#b697c4" d="m12 12 15-9-9 15Z"/><path fill="#d3b97c" d="m4 18 10 10 3-3L7 15Z"/><path stroke="#b08a5b" stroke-width="4" d="m8 25-4 4"/><path stroke="#f3deb0" d="M5 3v6m-3-3h6m18 17v6m-3-3h6"/>',
  furniture:'<path fill="#a58a62" d="M4 12 16 3l12 9v17H4Z"/><path fill="#d6bc83" d="m2 12 14-11 14 11-3 3L16 6 5 15Z"/><path fill="#65533f" d="M13 18h8v11h-8Z"/><path fill="#b1c3ae" d="M7 15h5v7H7Z"/><path stroke="#ede0b6" d="M9.5 15v7M7 18h5"/><circle fill="#dcc485" cx="19" cy="24" r="1"/>',

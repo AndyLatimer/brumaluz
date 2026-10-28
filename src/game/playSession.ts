@@ -24,6 +24,9 @@ import { playerInteractions } from './interaction';
 import { clearScreenEffects } from './camera';
 import { setGameMenuOpen, setPlayerMenuOpen, setWorldMenuOpen, setWindow } from '../ui/menus';
 import { clearToasts } from '../ui/toast';
+import { clearCombatFeedback } from './combatFeedback';
+import { releaseCombatTarget,resetCombatActions } from './combat';
+import { resetSkillCooldown } from './skillCooldown';
 
 export function enterPlay() {
   clearToasts();
@@ -88,6 +91,7 @@ export function stopChat() {
 }
 export function exitPlay() {
   clearToasts();
+  releaseCombatTarget();resetCombatActions();resetSkillCooldown();clearCombatFeedback();
   talk.pendingIsbertoIntroduction = false;
   endIsbertoArrival();
   story.playerScript = null;

@@ -1,0 +1,221 @@
+{
+  "report": [
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.023639053663747633,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.02586449293629639,
+      "minimumMaskSkullGap": 0.00930588129799137
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.02776321358855738,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.03778968839373553,
+      "minimumMaskSkullGap": 0.014382765618360493
+    },
+    {
+      "race": "elfo",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.023639053663747633,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "elfo",
+      "trait": 1,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.02586449293629639,
+      "minimumMaskSkullGap": 0.00930588129799137
+    },
+    {
+      "race": "elfo",
+      "trait": 2,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.02776321358855738,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "elfo",
+      "trait": 3,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.03778968839373553,
+      "minimumMaskSkullGap": 0.014382765618360493
+    },
+    {
+      "race": "elfo",
+      "trait": 4,
+      "face": 0,
+      "hair": 25,
+      "acc": 77,
+      "minimumLensSkullGap": 0.024826472939034006,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.023639053663747633,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 1,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.02586449293629639,
+      "minimumMaskSkullGap": 0.00930588129799137
+    },
+    {
+      "race": "lagto",
+      "trait": 2,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.02776321358855738,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 3,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.03778968839373553,
+      "minimumMaskSkullGap": 0.014382765618360493
+    },
+    {
+      "race": "lagto",
+      "trait": 4,
+      "face": 0,
+      "hair": 25,
+      "acc": 77,
+      "minimumLensSkullGap": 0.024826472939034006,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "lagto",
+      "trait": 5,
+      "face": 1,
+      "hair": 27,
+      "acc": 177,
+      "minimumLensSkullGap": 0.024773625518217046,
+      "minimumMaskSkullGap": 0.009131349612589545
+    },
+    {
+      "race": "pelso",
+      "trait": 0,
+      "face": 0,
+      "hair": 0,
+      "acc": 194,
+      "minimumLensSkullGap": 0.023639053663747633,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "pelso",
+      "trait": 1,
+      "face": 1,
+      "hair": 8,
+      "acc": 60,
+      "minimumLensSkullGap": 0.02586449293629639,
+      "minimumMaskSkullGap": 0.00930588129799137
+    },
+    {
+      "race": "pelso",
+      "trait": 2,
+      "face": 2,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.02776321358855738,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "pelso",
+      "trait": 3,
+      "face": 3,
+      "hair": 23,
+      "acc": 173,
+      "minimumLensSkullGap": 0.03778968839373553,
+      "minimumMaskSkullGap": 0.014382765618360493
+    },
+    {
+      "race": "pelso",
+      "trait": 4,
+      "face": 0,
+      "hair": 25,
+      "acc": 77,
+      "minimumLensSkullGap": 0.024826472939034006,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 0,
+      "hair": 23,
+      "acc": 194,
+      "minimumLensSkullGap": 0.023679973780064922,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "elfo",
+      "trait": 4,
+      "face": 1,
+      "hair": 8,
+      "acc": 77,
+      "minimumLensSkullGap": 0.027792931014987365,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "pelso",
+      "trait": 3,
+      "face": 2,
+      "hair": 27,
+      "acc": 173,
+      "minimumLensSkullGap": 0.025946971215628112,
+      "minimumMaskSkullGap": 0.01230270225268515
+    },
+    {
+      "race": "lagto",
+      "trait": 2,
+      "face": 3,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.03888717630487898,
+      "minimumMaskSkullGap": null
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,65 @@
+{
+  "map": "pompelin",
+  "objects": 6243,
+  "checks": {
+    "originalMountains": {
+      "count": 32,
+      "maxFootprintRise": 0.086,
+      "maxRaiseFromOriginal": 0
+    },
+    "originalSeaAndRiver": {
+      "vertices": 248146,
+      "filled": 0,
+      "raisedBanks": 0,
+      "maxBankRaise": 0
+    },
+    "preservedSettlementObjects": 71,
+    "gameplaySites": {
+      "resources": 216,
+      "enemies": 9
+    },
+    "capitalEntrances": [
+      {
+        "id": "entrada_brumaluz_este",
+        "distance": 14,
+        "remaining": 3.8,
+        "maxDeflection": 0
+      },
+      {
+        "id": "entrada_brumaluz_noreste",
+        "distance": 14,
+        "remaining": 3.8,
+        "maxDeflection": 0
+      },
+      {
+        "id": "entrada_brumaluz_oeste",
+        "distance": 14,
+        "remaining": 3.8,
+        "maxDeflection": 0
+      },
+      {
+        "id": "entrada_brumaluz_sureste",
+        "distance": 14,
+        "remaining": 3.8,
+        "maxDeflection": 0
+      },
+      {
+        "id": "entrada_brumaluz_suroeste",
+        "distance": 14,
+        "remaining": 3.8,
+        "maxDeflection": 0
+      }
+    ],
+    "bridges": [
+      {
+        "id": "paisaje_155",
+        "maxDeflection": 0,
+        "wetSteps": 0,
+        "maxSideTravel": 1.405
+      }
+    ],
+    "detachedLandscapeProps": 0
+  },
+  "errors": [],
+  "warnings": []
+}

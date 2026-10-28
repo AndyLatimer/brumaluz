@@ -1,0 +1,54 @@
+/* The same lower safe area serves the two-row action bar, combat prompts and support panels. */
+@media (max-width: 640px) {
+  body.playing { --mobile-support-bottom: calc(var(--combat-bar-height, 100px) + 20px); }
+  body.playing:has(.combat-dashboard:not([hidden])) { --mobile-support-bottom: calc(var(--combat-bar-height, 100px) + 90px); }
+
+  body.playing #player-hud { top: 8px; left: 8px; width: min(270px, calc(100vw - 132px)); transform: none; }
+  body.playing .hud-class-icon { width: 50px; height: 50px; border-width: 2px; }
+  body.playing .hud-class-icon .class-icon { width: 36px; height: 36px; }
+  body.playing .hud-bars { flex: 1; min-width: 0; width: auto; gap: 3px; margin-left: -20px; padding: 5px 8px 5px 25px; }
+  body.playing .hud-name-row { gap: 4px; font-size: 10px; }
+  body.playing .hud-name-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.playing .hud-name-row span { flex: none; font-size: 9px; }
+  body.playing .hud-bar { height: 13px; }
+  body.playing .hud-bar span { font-size: 9px; }
+  body.playing .hud-bar.hud-xp { height: 13px; }
+  body.playing #game-menu { top: 10px; right: 8px; }
+  body.playing #player-menu { top: 10px; right: 47px; }
+  body.playing #world-menu { top: 10px; right: 86px; }
+  body.playing .game-menu-toggle { width: 34px; height: 34px; border-radius: 9px; font-size: 19px; }
+  body.playing #player-menu .game-menu-toggle svg, body.playing #world-menu .game-menu-toggle svg { width: 23px; height: 23px; }
+  body.playing .menu-key { right: -2px; bottom: -7px; padding: 0 3px; font-size: 8px; }
+  body.playing .game-menu-panel { position: fixed; top: 61px; right: 8px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 80px); overflow-y: auto; }
+  body.playing #target-frame { top: 108px; }
+  body.playing #interact-prompt { bottom: calc(var(--mobile-support-bottom) + 142px); max-width: calc(100vw - 24px); padding: 6px 12px 6px 8px; font-size: 12px; }
+  body.playing:has(#chat:not(.collapsed), #chat.peek-expanded) #interact-prompt { bottom: calc(var(--mobile-support-bottom) + 246px); }
+
+  body.playing #chat, body.playing #chat.peek-expanded {
+    right: 8px; bottom: var(--mobile-support-bottom); width: min(320px, calc(100vw - 146px));
+    height: min(var(--chat-h), 230px, calc(100dvh - 350px)); min-height: 142px;
+  }
+  body.playing #chat.collapsed:not(.peek-expanded) { right: 8px; bottom: var(--mobile-support-bottom); width: 112px; height: 36px; min-height: 0; }
+  body.playing .chat-peek { right: 8px; bottom: var(--mobile-support-bottom); }
+  body.playing .chat-resize { display: none; }
+  body.playing .chat-head { padding: 4px 5px; gap: 4px; }
+  body.playing .chat-filters { gap: 3px; }
+  body.playing .chat-filter { min-height: 22px; padding: 3px 5px; font-size: 10px; }
+  body.playing .chat-log { font-size: 12px; }
+  body.playing .chat-time { display: none; }
+  body.playing .chat-channel { padding: 0 5px; font-size: 11px; }
+  body.playing .chat-input { padding-inline: 5px; font-size: 12px; }
+
+  body.playing .minimap { --map: 96px; left: 8px; bottom: var(--mobile-support-bottom); }
+  body.playing .minimap-frame { border-width: 3px; }
+  body.playing .minimap-zoom { top: 10px; right: -20px; gap: 5px; }
+  body.playing .minimap-zoom button { width: 24px; height: 24px; }
+  body.playing .minimap-zoom button:first-child { right: 13px; }
+  body.playing .minimap-zoom button:last-child { right: 4px; }
+  body.playing .minimap-plate { gap: 2px 3px; padding: 3px 4px; border-width: 1px; }
+  body.playing .minimap-zone { font-size: 9px; }
+  body.playing .minimap-players { min-width: 19px; font-size: 9px; padding: 1px 2px; }
+  body.playing .minimap-players svg { width: 10px; height: 10px; }
+  body.playing .minimap-clock { font-size: 9px; }
+  body.playing .minimap-location-icon { width: 10px; height: 12px; }
+}

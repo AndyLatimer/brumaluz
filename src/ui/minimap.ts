@@ -190,6 +190,8 @@ export function updateMinimap() {
     const distance = Math.hypot(dx, dz);
     const inside = distance < half - 13 * u;
     const kind = marker.kind ?? 'npc';
+    if(marker.resource&&!inside)continue;
+    if(marker.resource&&drawn.some(d=>d.marker.resource&&Math.hypot(d.sx-half-dx,d.sy-half-dz)<13*u))continue;
     const color = kind === 'waypoint' ? '#a5edff' : kind === 'quest' ? '#ffe19b' : kind === 'exit' ? '#d1c7ff' : kind === 'interior' ? '#ffc69d' : '#8be07a';
     if (!inside && (kind === 'exit' || kind === 'interior')) continue;
     if (!marker.party && inside) {
@@ -197,7 +199,8 @@ export function updateMinimap() {
       drawn.push({ marker, sx, sy, inside });
       ctx.save();
       ctx.globalAlpha = marker.closed ? .45 : 1;
-      drawMapIcon(ctx, kind, sx, sy, (kind === 'npc' ? 16 : 22) * u, color);
+      if(marker.resource){ctx.beginPath();ctx.arc(sx,sy,9*u,0,Math.PI*2);ctx.fillStyle='#ede0b5e8';ctx.fill();ctx.lineWidth=u;ctx.strokeStyle='#5f563c';ctx.stroke();}
+      drawMapIcon(ctx, kind, sx, sy, (marker.resource?17:kind === 'npc' ? 16 : 22) * u, marker.resource?'':color);
       ctx.restore();
       continue;
     }

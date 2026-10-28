@@ -9,7 +9,14 @@ import type { BuildOpts } from '../character/character';
 import { NPC_CLOTHING_SLOTS, REQUIRED_CLOTHING_SLOTS, clothingPiece, defaultNpcClothing, type NpcClothing } from './npcClothing';
 import { NPC_BADGE_ID } from './npcBadges';
 
-export const WORLD_NPC_IDS = ['testiculos', 'gnomi', 'isberto'] as const;
+export const PROFESSION_MASTER_IDS = {
+  herreria: 'isberto', peleteria: 'maestro_peleteria', sastreria: 'maestro_sastreria',
+  carpinteria: 'maestro_carpinteria', ebanisteria: 'maestro_ebanisteria', joyeria: 'maestro_joyeria',
+  alquimia: 'maestro_alquimia', encantamiento: 'maestro_encantamiento', cocina: 'maestro_cocina',
+  minero: 'maestro_minero', lenador: 'maestro_lenador', recolector: 'maestro_recolector',
+} as const;
+export type ProfessionMasterId = typeof PROFESSION_MASTER_IDS[keyof typeof PROFESSION_MASTER_IDS];
+export const WORLD_NPC_IDS = ['testiculos', 'gnomi', ...Object.values(PROFESSION_MASTER_IDS)] as const;
 export type WorldNpcId = typeof WORLD_NPC_IDS[number];
 export const isWorldNpcId = (id: string): id is WorldNpcId => WORLD_NPC_IDS.some(value => value === id);
 

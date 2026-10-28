@@ -2,11 +2,12 @@
 import * as THREE from 'three';
 import type { HeadOptions } from './types';
 import { V, HEAD_C, paintCell, piece, compose, mergeGeoms } from './geometry';
+import { hasTravelerMask } from './accessoryLayers';
 
 /** Barba de la cabeza (parte de buildHead). */
 export function buildBeard({ o, mouthY, rayHead, headR, hairCell }: { o: HeadOptions; mouthY: number; rayHead: (o: THREE.Vector3, d: THREE.Vector3) => { point: THREE.Vector3; normal: THREE.Vector3; } | null; headR: (d: THREE.Vector3) => number; hairCell: number }) {
   const beardGeos: THREE.BufferGeometry[] = [];
-  if (o.beard > 0 && o.acc !== 7) {
+  if (o.beard > 0 && !hasTravelerMask(o.acc ?? 0)) {
     const my = mouthY;
     const beardPatch = (distance: (x: number, y: number) => number, wrapSides = false) => {
       const xMin = -0.48, xMax = 0.48, yMin = 1.02, yMax = 1.68, nx = 120, ny = 110;

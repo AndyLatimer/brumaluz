@@ -1,0 +1,18 @@
+.ui-art-icon { display:inline-block; width:24px; height:24px; flex:none; vertical-align:middle; overflow:visible; }
+#tabs button > span { display:grid; place-items:center; }
+#tabs .ui-art-icon { width:25px; height:25px; }
+.game-menu-toggle .ui-art-icon { width:31px; height:31px; }
+.game-menu-panel .ui-art-icon.menu-option-icon { width:29px; height:29px; padding:2px; border:1px solid #ac895b66; border-radius:6px; background:#eed6a236; box-shadow:inset 0 1px #fff3ca55; }
+#game-menu-panel > .btn { display:flex; align-items:center; gap:12px; }
+.inv-heading .ui-art-icon,.bank-panel-icon .ui-art-icon { width:28px; height:28px; }
+.inv-hint .ui-art-icon { width:20px; height:20px; }
+.minimap-players .ui-art-icon { width:14px; height:14px; }
+.ui-art-icon.minimap-location-icon,.ui-art-icon.minimap-clock-icon { width:15px; height:15px; }
+.sheet-bar-label .ui-art-icon { width:20px; height:20px; }
+.zone-map-poi-npc .zone-map-poi-icon svg { width:16px; height:16px; }
+.zone-map-key-npc svg { width:16px; height:16px; }
+@media(max-width:640px){
+  body.playing .game-menu-toggle .ui-art-icon { width:24px; height:24px; }
+  body.playing .minimap-players .ui-art-icon { width:11px; height:11px; }
+  body.playing .ui-art-icon.minimap-location-icon,body.playing .ui-art-icon.minimap-clock-icon { width:12px; height:12px; }
+}

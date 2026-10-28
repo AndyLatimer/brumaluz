@@ -1,5 +1,10 @@
 # Misiones: primera implementación
 
+El [creador de misiones](QUEST-EDITOR.md) permite preparar fichas reutilizables
+con objetivos sencillos, requisitos, recompensas y diálogos ramificados en
+`/quests.html`. Guardar estas fichas no sustituye las misiones guionizadas ni
+las publica en el mundo; su ensayo es local y no modifica personajes.
+
 El canon se mantiene en [LORE.md](./LORE.md). El guion, el aspecto de Gnomi y la
 posición del distintivo de esta versión son una presentación de desarrollo
 para probar los sistemas. Su activación pública se autorizó el 19 de octubre
@@ -19,7 +24,7 @@ de 2026 junto al combate y las habilidades iniciales.
   progreso enviado por el navegador.
 - Los personajes anteriores no se migran ni reciben la misión retroactivamente.
   La ausencia de `welcome` significa que están exentos, no que deban empezarla.
-- El diario aparece en el menú de personajes elegibles. `J` permite abrirlo;
+- El diario aparece en el menú de personajes con bienvenida o misión del polvo de hada. `J` permite abrirlo;
   los personajes sin misiones ven un estado vacío.
 
 ## Progreso y acciones
@@ -141,6 +146,8 @@ quedan bloqueados.
 
 ## Después de Gnomi: Isberto
 
+**Continuación de oficios del 27 de octubre:** tras el regreso a casa de Isberto, Gnomi ofrece [Manos a la obra](PROFESSION-TUTORIAL.md). El usuario elige oficio y recorre sus acciones normales con oferta y entrega de misión, diario, rastreador y marcadores. La elección y el progreso se guardan por personaje; no se acepta automáticamente ni se regalan materiales o recetas. El cierre se confirma con el maestro elegido. La tarjeta concede 40 XP una sola vez y el suministro paga mediante el sistema diario existente.
+
 Después de devolver el distintivo se ve llegar a Isberto andando en una breve
 escena: recorre hasta 6 m a paso normal, con animación de marcha, suelo y ruta
 comprobados contra las colisiones de la ciudad. La cámara sigue su llegada y
@@ -198,6 +205,39 @@ permite volver a investigar. Ambas misiones quedan en el diario completado.
 El acompañamiento consume los puntos alcanzados de la estela antes de mover,
 mantiene la animación entre segmentos y gira según el desplazamiento resuelto
 por colisiones. Durante un diálogo Gnomi descansa sin deslizarse.
+
+## Descubrimiento del polvo de hada
+
+Decisión confirmada el 27 de octubre de 2026. La primera recogida confirmada
+activa automáticamente **Un polvo misterioso**: preguntar a Gnomi por el polvo.
+Funciona también para personajes anteriores que no tienen bienvenida.
+
+- `collect_fairy_dust` entrega el objeto, registra la recogida y guarda
+  `fairyDustQuest: ask_gnomi` en la misma transacción. Un rechazo por distancia,
+  personaje muerto o mochila llena no inicia la misión. Las recogidas posteriores
+  no reinician ni duplican su progreso.
+- No se migra a los personajes que ya tenían polvo antes de esta incorporación;
+  si aún no tienen misión, su próxima recogida confirmada la activa.
+- Gnomi ofrece una pregunta sobre el polvo y permite volver a su conversación
+  habitual para continuar la bienvenida o el encargo de Isberto. Solo elegir
+  la pregunta y confirmar el RPC avanza el progreso; abrir o cerrar el diálogo
+  no basta.
+- `fairy_dust_quest_action` exige personaje vivo y presencia reciente en Brumaluz.
+  Comprueba la proximidad a Gnomi cuando espera en la entrada o junto al pozo.
+  Durante su acompañamiento personal usa el mismo criterio de presencia que
+  la entrega del distintivo; el cliente comprueba además el alcance real.
+- Tras preguntar, la fase es `arboleda`: el diario recoge la recomendación de
+  visitar La Arboleda y muestra **Continuará**. No hay marcador de destino,
+  portal, nuevo NPC, consumo de polvo ni recompensa añadida. El hilo permanece
+  pendiente para la futura continuación, sin fingir que se puede entregar allí.
+- El progreso se conserva por personaje al desconectarse. Diario, seguimiento,
+  aviso de descubrimiento y conversación se traducen al español e inglés.
+  La bienvenida y el encargo de Isberto conservan prioridad de seguimiento;
+  se puede dejar de seguirlos para seguir el hallazgo.
+
+Pruebas: `node --test scripts/world/fairy-dust-quest.mjs` tras compilar y
+`node --test --test-name-pattern="generated SQL" scripts/test-collectibles-editor.mjs`
+para el servidor aislado. Capturas en `art/collectibles-review/`.
 
 ## Validación de desarrollo
 

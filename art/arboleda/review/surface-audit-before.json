@@ -1,0 +1,5797 @@
+{
+  "distanceTolerance": 0.0004,
+  "minimumOverlapArea": 2e-07,
+  "assets": [
+    {
+      "name": "house_leafhaven",
+      "triangles": 14566,
+      "degenerateTriangles": 18,
+      "degenerateParts": {
+        "Roof / bud finial": 18
+      },
+      "coplanarTrianglePairs": 5,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 11973,
+      "roofCrossingParts": [
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.037"
+          ],
+          "count": 158
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 157
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.038"
+          ],
+          "count": 156
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.041",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 156
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.042",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 155
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.039",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 154
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.043",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 154
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.044",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 153
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 147
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.040",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 147
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.040",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 92
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 90
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.041",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 90
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 89
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.024",
+            "Roof / overlapping leaf shingle.025"
+          ],
+          "count": 88
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.039",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 88
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.043",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 88
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.027",
+            "Roof / overlapping leaf shingle.028"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.030",
+            "Roof / overlapping leaf shingle.031"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.038"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.024",
+            "Roof / overlapping leaf shingle.035"
+          ],
+          "count": 86
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.032",
+            "Roof / overlapping leaf shingle.033"
+          ],
+          "count": 86
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.034",
+            "Roof / overlapping leaf shingle.035"
+          ],
+          "count": 85
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.029",
+            "Roof / overlapping leaf shingle.030"
+          ],
+          "count": 83
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 83
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.042",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 83
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.026",
+            "Roof / overlapping leaf shingle.027"
+          ],
+          "count": 82
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.031",
+            "Roof / overlapping leaf shingle.032"
+          ],
+          "count": 81
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.012",
+            "Roof / overlapping leaf shingle.013"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.033",
+            "Roof / overlapping leaf shingle.034"
+          ],
+          "count": 79
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.013",
+            "Roof / overlapping leaf shingle.014"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.016",
+            "Roof / overlapping leaf shingle.017"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.021",
+            "Roof / overlapping leaf shingle.022"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.015",
+            "Roof / overlapping leaf shingle.016"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.025",
+            "Roof / overlapping leaf shingle.026"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.028",
+            "Roof / overlapping leaf shingle.029"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.018",
+            "Roof / overlapping leaf shingle.019"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.019",
+            "Roof / overlapping leaf shingle.020"
+          ],
+          "count": 73
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.022",
+            "Roof / overlapping leaf shingle.023"
+          ],
+          "count": 72
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.014"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.015"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.016"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.013"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.017"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.012"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.023"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.018"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.022"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.019"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.021"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.020"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.026"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.028"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.029"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.034"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.025"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.032"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.031"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.002",
+            "Roof / overlapping leaf shingle.003"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.014",
+            "Roof / overlapping leaf shingle.015"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle",
+            "Roof / overlapping leaf shingle.001"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.012",
+            "Roof / overlapping leaf shingle.023"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.017",
+            "Roof / overlapping leaf shingle.018"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.020",
+            "Roof / overlapping leaf shingle.021"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.009",
+            "Roof / overlapping leaf shingle.010"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.027"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.024"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.030"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.035"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.033"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.005",
+            "Roof / overlapping leaf shingle.006"
+          ],
+          "count": 65
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.003",
+            "Roof / overlapping leaf shingle.004"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.002",
+            "Roof / overlapping leaf shingle.014"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.003",
+            "Roof / overlapping leaf shingle.015"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.004",
+            "Roof / overlapping leaf shingle.016"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.001",
+            "Roof / overlapping leaf shingle.013"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle",
+            "Roof / overlapping leaf shingle.012"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.005",
+            "Roof / overlapping leaf shingle.017"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.006",
+            "Roof / overlapping leaf shingle.018"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.011",
+            "Roof / overlapping leaf shingle.023"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.007",
+            "Roof / overlapping leaf shingle.019"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.010",
+            "Roof / overlapping leaf shingle.022"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.009",
+            "Roof / overlapping leaf shingle.021"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.008",
+            "Roof / overlapping leaf shingle.020"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.001",
+            "Roof / overlapping leaf shingle.002"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle",
+            "Roof / overlapping leaf shingle.011"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.006",
+            "Roof / overlapping leaf shingle.007"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.007",
+            "Roof / overlapping leaf shingle.008"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.008",
+            "Roof / overlapping leaf shingle.009"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.004",
+            "Roof / overlapping leaf shingle.005"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.013",
+            "Roof / overlapping leaf shingle.025"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.012",
+            "Roof / overlapping leaf shingle.024"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.014",
+            "Roof / overlapping leaf shingle.026"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.015",
+            "Roof / overlapping leaf shingle.027"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.016",
+            "Roof / overlapping leaf shingle.028"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.017",
+            "Roof / overlapping leaf shingle.029"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.018",
+            "Roof / overlapping leaf shingle.030"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.023",
+            "Roof / overlapping leaf shingle.035"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.022",
+            "Roof / overlapping leaf shingle.034"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.021",
+            "Roof / overlapping leaf shingle.033"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.020",
+            "Roof / overlapping leaf shingle.032"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.019",
+            "Roof / overlapping leaf shingle.031"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.003",
+            "Roof / overlapping leaf shingle.014"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.004",
+            "Roof / overlapping leaf shingle.015"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.002",
+            "Roof / overlapping leaf shingle.013"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.005",
+            "Roof / overlapping leaf shingle.016"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.001",
+            "Roof / overlapping leaf shingle.012"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle",
+            "Roof / overlapping leaf shingle.023"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.006",
+            "Roof / overlapping leaf shingle.017"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.011",
+            "Roof / overlapping leaf shingle.022"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.007",
+            "Roof / overlapping leaf shingle.018"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.010",
+            "Roof / overlapping leaf shingle.011"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.010",
+            "Roof / overlapping leaf shingle.021"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.009",
+            "Roof / overlapping leaf shingle.020"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.008",
+            "Roof / overlapping leaf shingle.019"
+          ],
+          "count": 55
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.028",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.034",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.025",
+            "Roof / overlapping leaf shingle.037"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.026",
+            "Roof / overlapping leaf shingle.037"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.027",
+            "Roof / overlapping leaf shingle.038"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.024",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.030",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.033",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.032",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.031",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.012",
+            "Roof / overlapping leaf shingle.025"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.013",
+            "Roof / overlapping leaf shingle.026"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.014",
+            "Roof / overlapping leaf shingle.027"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.023",
+            "Roof / overlapping leaf shingle.024"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.015",
+            "Roof / overlapping leaf shingle.028"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.016",
+            "Roof / overlapping leaf shingle.029"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.017",
+            "Roof / overlapping leaf shingle.030"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.022",
+            "Roof / overlapping leaf shingle.035"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.021",
+            "Roof / overlapping leaf shingle.034"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.020",
+            "Roof / overlapping leaf shingle.033"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.019",
+            "Roof / overlapping leaf shingle.032"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.018",
+            "Roof / overlapping leaf shingle.031"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.024",
+            "Roof / overlapping leaf shingle.036"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.030",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.029",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.029",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.035",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.035",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.002"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.003"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.004"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.001"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.005"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.006"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.011"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.010"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.007"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.008"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.009"
+          ],
+          "count": 45
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.025",
+            "Roof / overlapping leaf shingle.036"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.031",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 39
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.042",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.040",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 37
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.041",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 37
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.039",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.036"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.026",
+            "Roof / overlapping leaf shingle.038"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.039",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.032",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.037"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.039",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 31
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.038"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 29
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.040",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 27
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 26
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.041",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 25
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.028",
+            "Roof / overlapping leaf shingle.038"
+          ],
+          "count": 24
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.040"
+          ],
+          "count": 24
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.034",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 24
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.027",
+            "Roof / overlapping leaf shingle.037"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.033",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.039",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 15
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.027",
+            "Roof / overlapping leaf shingle.039"
+          ],
+          "count": 14
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.033",
+            "Roof / overlapping leaf shingle.044"
+          ],
+          "count": 14
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.036",
+            "Roof / overlapping leaf shingle.041"
+          ],
+          "count": 12
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.040",
+            "Roof / overlapping leaf shingle.045"
+          ],
+          "count": 9
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.037",
+            "Roof / overlapping leaf shingle.042"
+          ],
+          "count": 8
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.038",
+            "Roof / overlapping leaf shingle.043"
+          ],
+          "count": 7
+        }
+      ],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "laboratory_dew",
+      "triangles": 12734,
+      "degenerateTriangles": 18,
+      "degenerateParts": {
+        "Roof / bud finial.001": 18
+      },
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 8976,
+      "roofCrossingParts": [
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.082",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 135
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.078",
+            "Roof / overlapping leaf shingle.079"
+          ],
+          "count": 134
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.080",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 134
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.077"
+          ],
+          "count": 133
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.077",
+            "Roof / overlapping leaf shingle.078"
+          ],
+          "count": 129
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 128
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.079",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 128
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.081",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 128
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.069",
+            "Roof / overlapping leaf shingle.070"
+          ],
+          "count": 89
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.074",
+            "Roof / overlapping leaf shingle.075"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.072",
+            "Roof / overlapping leaf shingle.073"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.071",
+            "Roof / overlapping leaf shingle.072"
+          ],
+          "count": 86
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.067",
+            "Roof / overlapping leaf shingle.068"
+          ],
+          "count": 85
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.066",
+            "Roof / overlapping leaf shingle.067"
+          ],
+          "count": 85
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.066",
+            "Roof / overlapping leaf shingle.075"
+          ],
+          "count": 85
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.070",
+            "Roof / overlapping leaf shingle.071"
+          ],
+          "count": 85
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.056",
+            "Roof / overlapping leaf shingle.057"
+          ],
+          "count": 84
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.063",
+            "Roof / overlapping leaf shingle.064"
+          ],
+          "count": 82
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.058",
+            "Roof / overlapping leaf shingle.059"
+          ],
+          "count": 82
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.068",
+            "Roof / overlapping leaf shingle.069"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.061",
+            "Roof / overlapping leaf shingle.062"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.059",
+            "Roof / overlapping leaf shingle.060"
+          ],
+          "count": 79
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.073",
+            "Roof / overlapping leaf shingle.074"
+          ],
+          "count": 79
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.057",
+            "Roof / overlapping leaf shingle.058"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.062",
+            "Roof / overlapping leaf shingle.063"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.064",
+            "Roof / overlapping leaf shingle.065"
+          ],
+          "count": 76
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.078"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.077",
+            "Roof / overlapping leaf shingle.079"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.077",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 72
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.060",
+            "Roof / overlapping leaf shingle.061"
+          ],
+          "count": 71
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.078",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 71
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.079",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 71
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.056",
+            "Roof / overlapping leaf shingle.065"
+          ],
+          "count": 70
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 70
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.080",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.081",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.046",
+            "Roof / overlapping leaf shingle.047"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.069"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.050",
+            "Roof / overlapping leaf shingle.051"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.051",
+            "Roof / overlapping leaf shingle.052"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.052",
+            "Roof / overlapping leaf shingle.053"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.047",
+            "Roof / overlapping leaf shingle.048"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.046",
+            "Roof / overlapping leaf shingle.055"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.067"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.068"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.070"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.075"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.073"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.047",
+            "Roof / overlapping leaf shingle.056"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.046",
+            "Roof / overlapping leaf shingle.065"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.055",
+            "Roof / overlapping leaf shingle.064"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.048",
+            "Roof / overlapping leaf shingle.057"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.066"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.074"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.054",
+            "Roof / overlapping leaf shingle.055"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.054",
+            "Roof / overlapping leaf shingle.063"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.049",
+            "Roof / overlapping leaf shingle.058"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.049",
+            "Roof / overlapping leaf shingle.050"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.072"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.053",
+            "Roof / overlapping leaf shingle.062"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.050",
+            "Roof / overlapping leaf shingle.059"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.071"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.051",
+            "Roof / overlapping leaf shingle.060"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.052",
+            "Roof / overlapping leaf shingle.061"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.046",
+            "Roof / overlapping leaf shingle.056"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.047",
+            "Roof / overlapping leaf shingle.057"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.055",
+            "Roof / overlapping leaf shingle.065"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.048",
+            "Roof / overlapping leaf shingle.058"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.054",
+            "Roof / overlapping leaf shingle.064"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.049",
+            "Roof / overlapping leaf shingle.059"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.053",
+            "Roof / overlapping leaf shingle.063"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.050",
+            "Roof / overlapping leaf shingle.060"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.051",
+            "Roof / overlapping leaf shingle.061"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.052",
+            "Roof / overlapping leaf shingle.062"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.048",
+            "Roof / overlapping leaf shingle.049"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.057"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.056"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.065"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.064"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.058"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.063"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.059"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.062"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.060"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.061"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.058",
+            "Roof / overlapping leaf shingle.068"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.056",
+            "Roof / overlapping leaf shingle.066"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.057",
+            "Roof / overlapping leaf shingle.067"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.065",
+            "Roof / overlapping leaf shingle.075"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.064",
+            "Roof / overlapping leaf shingle.074"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.059",
+            "Roof / overlapping leaf shingle.069"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.063",
+            "Roof / overlapping leaf shingle.073"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.062",
+            "Roof / overlapping leaf shingle.072"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.053",
+            "Roof / overlapping leaf shingle.054"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.060",
+            "Roof / overlapping leaf shingle.070"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.061",
+            "Roof / overlapping leaf shingle.071"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.069",
+            "Roof / overlapping leaf shingle.078"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.074",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.057",
+            "Roof / overlapping leaf shingle.068"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.056",
+            "Roof / overlapping leaf shingle.067"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.065",
+            "Roof / overlapping leaf shingle.066"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.064",
+            "Roof / overlapping leaf shingle.075"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.063",
+            "Roof / overlapping leaf shingle.074"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.058",
+            "Roof / overlapping leaf shingle.069"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.068",
+            "Roof / overlapping leaf shingle.077"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.059",
+            "Roof / overlapping leaf shingle.070"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.073",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.062",
+            "Roof / overlapping leaf shingle.073"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.060",
+            "Roof / overlapping leaf shingle.071"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.061",
+            "Roof / overlapping leaf shingle.072"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.066",
+            "Roof / overlapping leaf shingle.076"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.070",
+            "Roof / overlapping leaf shingle.079"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.071",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.075",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.067",
+            "Roof / overlapping leaf shingle.076"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.066",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.071",
+            "Roof / overlapping leaf shingle.079"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.072",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.067",
+            "Roof / overlapping leaf shingle.077"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.078"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.072",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 38
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.077"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.047"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.046"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.055"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.048"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.054"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.049"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.053"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.050"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.051"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.052"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.070",
+            "Roof / overlapping leaf shingle.078"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.075",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.076"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.079"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.001",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.078",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.077",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 29
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.079",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 29
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.079"
+          ],
+          "count": 25
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.077",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 25
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.078",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 25
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.080",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 25
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.069",
+            "Roof / overlapping leaf shingle.077"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.074",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.068",
+            "Roof / overlapping leaf shingle.078"
+          ],
+          "count": 16
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.073",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 16
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.079",
+            "Roof / overlapping leaf shingle.083"
+          ],
+          "count": 15
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.078",
+            "Roof / overlapping leaf shingle.082"
+          ],
+          "count": 11
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.076",
+            "Roof / overlapping leaf shingle.080"
+          ],
+          "count": 11
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.077",
+            "Roof / overlapping leaf shingle.081"
+          ],
+          "count": 11
+        }
+      ],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "pavilion_moonwell",
+      "triangles": 8690,
+      "degenerateTriangles": 18,
+      "degenerateParts": {
+        "Roof / bud finial.002": 18
+      },
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 11767,
+      "roofCrossingParts": [
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 161
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.121"
+          ],
+          "count": 158
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.123",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 157
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.128",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 156
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.126",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 156
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.125",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 155
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.122"
+          ],
+          "count": 153
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.127",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 153
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 146
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.124",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 145
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 86
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.105",
+            "Roof / overlapping leaf shingle.106"
+          ],
+          "count": 82
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.106",
+            "Roof / overlapping leaf shingle.107"
+          ],
+          "count": 81
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.099",
+            "Roof / overlapping leaf shingle.100"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.102",
+            "Roof / overlapping leaf shingle.103"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.122"
+          ],
+          "count": 80
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.096",
+            "Roof / overlapping leaf shingle.097"
+          ],
+          "count": 79
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.127",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 79
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.110",
+            "Roof / overlapping leaf shingle.111"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.108",
+            "Roof / overlapping leaf shingle.119"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.111",
+            "Roof / overlapping leaf shingle.112"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.117",
+            "Roof / overlapping leaf shingle.118"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.113",
+            "Roof / overlapping leaf shingle.114"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.118",
+            "Roof / overlapping leaf shingle.119"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.116",
+            "Roof / overlapping leaf shingle.117"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.123",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 77
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.112",
+            "Roof / overlapping leaf shingle.113"
+          ],
+          "count": 76
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.108",
+            "Roof / overlapping leaf shingle.109"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.100",
+            "Roof / overlapping leaf shingle.101"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.124",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.125",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.097",
+            "Roof / overlapping leaf shingle.098"
+          ],
+          "count": 74
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.114",
+            "Roof / overlapping leaf shingle.115"
+          ],
+          "count": 73
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.103",
+            "Roof / overlapping leaf shingle.104"
+          ],
+          "count": 72
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 71
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.126",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 71
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.101",
+            "Roof / overlapping leaf shingle.102"
+          ],
+          "count": 70
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.104",
+            "Roof / overlapping leaf shingle.105"
+          ],
+          "count": 70
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.098",
+            "Roof / overlapping leaf shingle.099"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.096",
+            "Roof / overlapping leaf shingle.107"
+          ],
+          "count": 69
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.084",
+            "Roof / overlapping leaf shingle.095"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.086",
+            "Roof / overlapping leaf shingle.087"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.109",
+            "Roof / overlapping leaf shingle.110"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.115",
+            "Roof / overlapping leaf shingle.116"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.089",
+            "Roof / overlapping leaf shingle.090"
+          ],
+          "count": 67
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.097"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.098"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.099"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.100"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.101"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.096"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.107"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.106"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.102"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.105"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.104"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.103"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.092",
+            "Roof / overlapping leaf shingle.093"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.088",
+            "Roof / overlapping leaf shingle.089"
+          ],
+          "count": 65
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.112"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.119"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.115"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.094",
+            "Roof / overlapping leaf shingle.095"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.116"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.087",
+            "Roof / overlapping leaf shingle.088"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.110"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.109"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.113"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.118"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.111"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.084",
+            "Roof / overlapping leaf shingle.085"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.108"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.114"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.117"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.093",
+            "Roof / overlapping leaf shingle.094"
+          ],
+          "count": 60
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.086",
+            "Roof / overlapping leaf shingle.097"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.087",
+            "Roof / overlapping leaf shingle.098"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.088",
+            "Roof / overlapping leaf shingle.099"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.089",
+            "Roof / overlapping leaf shingle.100"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.085",
+            "Roof / overlapping leaf shingle.096"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.084",
+            "Roof / overlapping leaf shingle.107"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.090",
+            "Roof / overlapping leaf shingle.101"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.091",
+            "Roof / overlapping leaf shingle.102"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.095",
+            "Roof / overlapping leaf shingle.106"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.094",
+            "Roof / overlapping leaf shingle.105"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.093",
+            "Roof / overlapping leaf shingle.104"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.092",
+            "Roof / overlapping leaf shingle.103"
+          ],
+          "count": 59
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.090",
+            "Roof / overlapping leaf shingle.091"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.113",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.119",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.086",
+            "Roof / overlapping leaf shingle.098"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.087",
+            "Roof / overlapping leaf shingle.099"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.088",
+            "Roof / overlapping leaf shingle.100"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.085",
+            "Roof / overlapping leaf shingle.097"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.084",
+            "Roof / overlapping leaf shingle.096"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.095",
+            "Roof / overlapping leaf shingle.107"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.089",
+            "Roof / overlapping leaf shingle.101"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.090",
+            "Roof / overlapping leaf shingle.102"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.094",
+            "Roof / overlapping leaf shingle.106"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.093",
+            "Roof / overlapping leaf shingle.105"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.092",
+            "Roof / overlapping leaf shingle.104"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.091",
+            "Roof / overlapping leaf shingle.103"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.085",
+            "Roof / overlapping leaf shingle.086"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.091",
+            "Roof / overlapping leaf shingle.092"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.098",
+            "Roof / overlapping leaf shingle.110"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.097",
+            "Roof / overlapping leaf shingle.109"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.096",
+            "Roof / overlapping leaf shingle.108"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.107",
+            "Roof / overlapping leaf shingle.119"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.099",
+            "Roof / overlapping leaf shingle.111"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.100",
+            "Roof / overlapping leaf shingle.112"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.101",
+            "Roof / overlapping leaf shingle.113"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.102",
+            "Roof / overlapping leaf shingle.114"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.106",
+            "Roof / overlapping leaf shingle.118"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.105",
+            "Roof / overlapping leaf shingle.117"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.104",
+            "Roof / overlapping leaf shingle.116"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.103",
+            "Roof / overlapping leaf shingle.115"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.109",
+            "Roof / overlapping leaf shingle.121"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.112",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.108",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.114",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.118",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.115",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.109",
+            "Roof / overlapping leaf shingle.120"
+          ],
+          "count": 52
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.113",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 52
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.119",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 52
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.115",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 52
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.111",
+            "Roof / overlapping leaf shingle.122"
+          ],
+          "count": 51
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.098",
+            "Roof / overlapping leaf shingle.111"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.097",
+            "Roof / overlapping leaf shingle.110"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.096",
+            "Roof / overlapping leaf shingle.109"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.107",
+            "Roof / overlapping leaf shingle.108"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.099",
+            "Roof / overlapping leaf shingle.112"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.100",
+            "Roof / overlapping leaf shingle.113"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.101",
+            "Roof / overlapping leaf shingle.114"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.102",
+            "Roof / overlapping leaf shingle.115"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.106",
+            "Roof / overlapping leaf shingle.119"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.105",
+            "Roof / overlapping leaf shingle.118"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.104",
+            "Roof / overlapping leaf shingle.117"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.103",
+            "Roof / overlapping leaf shingle.116"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.117",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.110",
+            "Roof / overlapping leaf shingle.121"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.108",
+            "Roof / overlapping leaf shingle.120"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.114",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.116",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 48
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.086"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.088"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.085"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.084"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.087"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.089"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.090"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.095"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.092"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.091"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.094"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.093"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.110",
+            "Roof / overlapping leaf shingle.122"
+          ],
+          "count": 40
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.116",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 40
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.124",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.125",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.121"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.120"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.126",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 33
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.122"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.002",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 31
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 31
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 31
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.123",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.123",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.124",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 30
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.112",
+            "Roof / overlapping leaf shingle.122"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.118",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.123",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.124"
+          ],
+          "count": 26
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.125",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 25
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.111",
+            "Roof / overlapping leaf shingle.121"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.111",
+            "Roof / overlapping leaf shingle.123"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.117",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.117",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.120",
+            "Roof / overlapping leaf shingle.125"
+          ],
+          "count": 14
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.123",
+            "Roof / overlapping leaf shingle.128"
+          ],
+          "count": 12
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.121",
+            "Roof / overlapping leaf shingle.126"
+          ],
+          "count": 11
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.124",
+            "Roof / overlapping leaf shingle.129"
+          ],
+          "count": 8
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.122",
+            "Roof / overlapping leaf shingle.127"
+          ],
+          "count": 7
+        }
+      ],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "tower_starwatch",
+      "triangles": 9858,
+      "degenerateTriangles": 18,
+      "degenerateParts": {
+        "Roof / bud finial.003": 18
+      },
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 9027,
+      "roofCrossingParts": [
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.161"
+          ],
+          "count": 138
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.166",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 138
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.162",
+            "Roof / overlapping leaf shingle.163"
+          ],
+          "count": 138
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.164",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 138
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.165",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 130
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.161",
+            "Roof / overlapping leaf shingle.162"
+          ],
+          "count": 129
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 129
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.163",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 129
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.158",
+            "Roof / overlapping leaf shingle.159"
+          ],
+          "count": 88
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.155",
+            "Roof / overlapping leaf shingle.156"
+          ],
+          "count": 87
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.153",
+            "Roof / overlapping leaf shingle.154"
+          ],
+          "count": 86
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.150",
+            "Roof / overlapping leaf shingle.151"
+          ],
+          "count": 85
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.150",
+            "Roof / overlapping leaf shingle.159"
+          ],
+          "count": 84
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.154",
+            "Roof / overlapping leaf shingle.155"
+          ],
+          "count": 82
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.156",
+            "Roof / overlapping leaf shingle.157"
+          ],
+          "count": 81
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.151",
+            "Roof / overlapping leaf shingle.152"
+          ],
+          "count": 78
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.145",
+            "Roof / overlapping leaf shingle.146"
+          ],
+          "count": 76
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.157",
+            "Roof / overlapping leaf shingle.158"
+          ],
+          "count": 76
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.140",
+            "Roof / overlapping leaf shingle.141"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.141",
+            "Roof / overlapping leaf shingle.142"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.147",
+            "Roof / overlapping leaf shingle.148"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.152",
+            "Roof / overlapping leaf shingle.153"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.162"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.164",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 75
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.148",
+            "Roof / overlapping leaf shingle.149"
+          ],
+          "count": 74
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.142",
+            "Roof / overlapping leaf shingle.143"
+          ],
+          "count": 74
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.146",
+            "Roof / overlapping leaf shingle.147"
+          ],
+          "count": 74
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.161",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 74
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.162",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 74
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.143",
+            "Roof / overlapping leaf shingle.144"
+          ],
+          "count": 73
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 73
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.165",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 73
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.161",
+            "Roof / overlapping leaf shingle.163"
+          ],
+          "count": 72
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.163",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 72
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.133",
+            "Roof / overlapping leaf shingle.134"
+          ],
+          "count": 68
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.140",
+            "Roof / overlapping leaf shingle.149"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.144",
+            "Roof / overlapping leaf shingle.145"
+          ],
+          "count": 66
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.138",
+            "Roof / overlapping leaf shingle.139"
+          ],
+          "count": 65
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.136",
+            "Roof / overlapping leaf shingle.137"
+          ],
+          "count": 65
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.130",
+            "Roof / overlapping leaf shingle.139"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.135",
+            "Roof / overlapping leaf shingle.136"
+          ],
+          "count": 64
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.130",
+            "Roof / overlapping leaf shingle.149"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.132",
+            "Roof / overlapping leaf shingle.141"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.138",
+            "Roof / overlapping leaf shingle.147"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.133",
+            "Roof / overlapping leaf shingle.142"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.135",
+            "Roof / overlapping leaf shingle.144"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.137",
+            "Roof / overlapping leaf shingle.146"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.131",
+            "Roof / overlapping leaf shingle.140"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.139",
+            "Roof / overlapping leaf shingle.148"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.134",
+            "Roof / overlapping leaf shingle.143"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.136",
+            "Roof / overlapping leaf shingle.145"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.134",
+            "Roof / overlapping leaf shingle.135"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.151"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.159"
+          ],
+          "count": 63
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.130",
+            "Roof / overlapping leaf shingle.140"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.132",
+            "Roof / overlapping leaf shingle.142"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.138",
+            "Roof / overlapping leaf shingle.148"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.133",
+            "Roof / overlapping leaf shingle.143"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.135",
+            "Roof / overlapping leaf shingle.145"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.137",
+            "Roof / overlapping leaf shingle.147"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.131",
+            "Roof / overlapping leaf shingle.132"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.131",
+            "Roof / overlapping leaf shingle.141"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.130",
+            "Roof / overlapping leaf shingle.131"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.139",
+            "Roof / overlapping leaf shingle.149"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.134",
+            "Roof / overlapping leaf shingle.144"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.136",
+            "Roof / overlapping leaf shingle.146"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.152"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.158"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.153"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.157"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.154"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.156"
+          ],
+          "count": 62
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.150"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.155"
+          ],
+          "count": 61
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.141"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.140"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.149"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.148"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.142"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.147"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.143"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.146"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.144"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.145"
+          ],
+          "count": 58
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.132",
+            "Roof / overlapping leaf shingle.133"
+          ],
+          "count": 57
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.137",
+            "Roof / overlapping leaf shingle.138"
+          ],
+          "count": 56
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.141",
+            "Roof / overlapping leaf shingle.151"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.140",
+            "Roof / overlapping leaf shingle.150"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.149",
+            "Roof / overlapping leaf shingle.159"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.142",
+            "Roof / overlapping leaf shingle.152"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.143",
+            "Roof / overlapping leaf shingle.153"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.148",
+            "Roof / overlapping leaf shingle.158"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.147",
+            "Roof / overlapping leaf shingle.157"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.144",
+            "Roof / overlapping leaf shingle.154"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.145",
+            "Roof / overlapping leaf shingle.155"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.146",
+            "Roof / overlapping leaf shingle.156"
+          ],
+          "count": 54
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.158",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 52
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.153",
+            "Roof / overlapping leaf shingle.162"
+          ],
+          "count": 52
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.149",
+            "Roof / overlapping leaf shingle.150"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.148",
+            "Roof / overlapping leaf shingle.159"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.140",
+            "Roof / overlapping leaf shingle.151"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.141",
+            "Roof / overlapping leaf shingle.152"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.142",
+            "Roof / overlapping leaf shingle.153"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.147",
+            "Roof / overlapping leaf shingle.158"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.146",
+            "Roof / overlapping leaf shingle.157"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.143",
+            "Roof / overlapping leaf shingle.154"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.144",
+            "Roof / overlapping leaf shingle.155"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.145",
+            "Roof / overlapping leaf shingle.156"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.152",
+            "Roof / overlapping leaf shingle.161"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.157",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 50
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.150",
+            "Roof / overlapping leaf shingle.160"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.159",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.154",
+            "Roof / overlapping leaf shingle.163"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.155",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 46
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.151",
+            "Roof / overlapping leaf shingle.160"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.150",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.155",
+            "Roof / overlapping leaf shingle.163"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.156",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 44
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.151",
+            "Roof / overlapping leaf shingle.161"
+          ],
+          "count": 40
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.156",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 40
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.162",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 37
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.162"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.163"
+          ],
+          "count": 36
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.131"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.130"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.139"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.132"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.133"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.138"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.134"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.137"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.136"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.135"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.163",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 35
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.159",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.154",
+            "Roof / overlapping leaf shingle.162"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.160"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 34
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.161",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 33
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.161"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / continuous dark understructure.003",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 32
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.161",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 29
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.163"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.162",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.164",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 28
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.153",
+            "Roof / overlapping leaf shingle.161"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.152",
+            "Roof / overlapping leaf shingle.162"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.158",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.157",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 18
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.163",
+            "Roof / overlapping leaf shingle.167"
+          ],
+          "count": 16
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.162",
+            "Roof / overlapping leaf shingle.166"
+          ],
+          "count": 12
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.160",
+            "Roof / overlapping leaf shingle.164"
+          ],
+          "count": 8
+        },
+        {
+          "parts": [
+            "Roof / overlapping leaf shingle.161",
+            "Roof / overlapping leaf shingle.165"
+          ],
+          "count": 8
+        }
+      ],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "greenhouse_moonfern",
+      "triangles": 8882,
+      "degenerateTriangles": 18,
+      "degenerateParts": {
+        "Greenhouse / finial": 18
+      },
+      "coplanarTrianglePairs": 8,
+      "exposedCoplanarPairs": 4,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [
+        {
+          "parts": [
+            "Fern / arched rachis.017",
+            "Fern / arched rachis.021"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.018",
+            "Fern / arched rachis.020"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.011",
+            "Fern / arched rachis.015"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.012",
+            "Fern / arched rachis.014"
+          ],
+          "count": 1
+        }
+      ],
+      "samples": [
+        {
+          "parts": [
+            "Fern / arched rachis.017",
+            "Fern / arched rachis.021"
+          ],
+          "area": 3.171323091523572e-05,
+          "point": [
+            5.287280082702637,
+            15.580082893371582,
+            0.5805749297142029
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.018",
+            "Fern / arched rachis.020"
+          ],
+          "area": 1.948540565098167e-06,
+          "point": [
+            5.283555507659912,
+            15.578797340393066,
+            0.5884071588516235
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.011",
+            "Fern / arched rachis.015"
+          ],
+          "area": 3.1713325161556514e-05,
+          "point": [
+            2.7272799015045166,
+            15.580082893371582,
+            0.5805749893188477
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.012",
+            "Fern / arched rachis.014"
+          ],
+          "area": 1.948540565098167e-06,
+          "point": [
+            2.72355580329895,
+            15.578797340393066,
+            0.5884071588516235
+          ]
+        }
+      ]
+    },
+    {
+      "name": "gateway_twining",
+      "triangles": 3792,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "bridge_rootwoven",
+      "triangles": 5080,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "fence_vinepanel",
+      "triangles": 1408,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "table_alchemist",
+      "triangles": 3008,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 2,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "chair_leafback",
+      "triangles": 568,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "bench_bough",
+      "triangles": 1144,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "bed_ferncanopy",
+      "triangles": 2244,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "cabinet_seedkeeper",
+      "triangles": 1772,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "shelf_herbarium",
+      "triangles": 7290,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 3,
+      "exposedCoplanarPairs": 2,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [
+        {
+          "parts": [
+            "Fern / arched rachis.023",
+            "Fern / arched rachis.026"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.024",
+            "Fern / arched rachis.025"
+          ],
+          "count": 1
+        }
+      ],
+      "samples": [
+        {
+          "parts": [
+            "Fern / arched rachis.023",
+            "Fern / arched rachis.026"
+          ],
+          "area": 9.399037283657104e-06,
+          "point": [
+            5.174141883850098,
+            -4.999955654144287,
+            2.041015863418579
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.024",
+            "Fern / arched rachis.025"
+          ],
+          "area": 1.699645149963011e-05,
+          "point": [
+            5.1719279289245605,
+            -4.999932765960693,
+            2.044027328491211
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cauldron_bloom",
+      "triangles": 1904,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "distiller_spiral",
+      "triangles": 3492,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "lantern_budpost",
+      "triangles": 1404,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "fountain_lotus",
+      "triangles": 2668,
+      "degenerateTriangles": 22,
+      "degenerateParts": {
+        "Fountain / lotus heart": 22
+      },
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "waystone_leafrune",
+      "triangles": 978,
+      "degenerateTriangles": 12,
+      "degenerateParts": {
+        "Waystone / monolith": 12
+      },
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "armillary_moon",
+      "triangles": 2600,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "rack_dryingherbs",
+      "triangles": 7554,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "planter_moonlily",
+      "triangles": 5362,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 4,
+      "exposedCoplanarPairs": 2,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [
+        {
+          "parts": [
+            "Fern / arched rachis.029",
+            "Fern / arched rachis.031"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.028",
+            "Fern / arched rachis.032"
+          ],
+          "count": 1
+        }
+      ],
+      "samples": [
+        {
+          "parts": [
+            "Fern / arched rachis.029",
+            "Fern / arched rachis.031"
+          ],
+          "area": 1.4102203537164373e-06,
+          "point": [
+            5.003025054931641,
+            -9.001023292541504,
+            0.5971522331237793
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.028",
+            "Fern / arched rachis.032"
+          ],
+          "area": 2.2951276795526516e-05,
+          "point": [
+            5.006193161010742,
+            -8.999930381774902,
+            0.5904890894889832
+          ]
+        }
+      ]
+    },
+    {
+      "name": "potion_tray",
+      "triangles": 2456,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "tree_ancient_oak",
+      "triangles": 10210,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 12,
+      "exposedCoplanarPairs": 6,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [
+        {
+          "parts": [
+            "Fern / arched rachis.046",
+            "Fern / arched rachis.050"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.047",
+            "Fern / arched rachis.049"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.034",
+            "Fern / arched rachis.038"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.035",
+            "Fern / arched rachis.037"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.040",
+            "Fern / arched rachis.044"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.041",
+            "Fern / arched rachis.043"
+          ],
+          "count": 1
+        }
+      ],
+      "samples": [
+        {
+          "parts": [
+            "Fern / arched rachis.046",
+            "Fern / arched rachis.050"
+          ],
+          "area": 2.136935944045644e-05,
+          "point": [
+            13.692208290100098,
+            -0.5577409267425537,
+            0.10936930775642395
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.047",
+            "Fern / arched rachis.049"
+          ],
+          "area": 1.3129619208219998e-06,
+          "point": [
+            13.689151763916016,
+            -0.5587962865829468,
+            0.11579864472150803
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.034",
+            "Fern / arched rachis.038"
+          ],
+          "area": 2.136921615345226e-05,
+          "point": [
+            14.645975112915039,
+            6.759789539501071e-05,
+            0.10936930775642395
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.035",
+            "Fern / arched rachis.037"
+          ],
+          "area": 1.312954722259372e-06,
+          "point": [
+            14.642918586730957,
+            -0.0009877360425889492,
+            0.11579862982034683
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.040",
+            "Fern / arched rachis.044"
+          ],
+          "area": 2.1369352136277736e-05,
+          "point": [
+            13.68287467956543,
+            0.5525215864181519,
+            0.10936930775642395
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.041",
+            "Fern / arched rachis.043"
+          ],
+          "area": 1.312960536291301e-06,
+          "point": [
+            13.679817199707031,
+            0.5514662265777588,
+            0.11579863727092743
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tree_weeping_willow",
+      "triangles": 11662,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "tree_young_rowan",
+      "triangles": 2632,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "fern_cluster",
+      "triangles": 8106,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 12,
+      "exposedCoplanarPairs": 4,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [
+        {
+          "parts": [
+            "Fern / arched rachis.066",
+            "Fern / arched rachis.071"
+          ],
+          "count": 2
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.052",
+            "Fern / arched rachis.057"
+          ],
+          "count": 1
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.059",
+            "Fern / arched rachis.064"
+          ],
+          "count": 1
+        }
+      ],
+      "samples": [
+        {
+          "parts": [
+            "Fern / arched rachis.052",
+            "Fern / arched rachis.057"
+          ],
+          "area": 7.28093784095527e-05,
+          "point": [
+            13.690400123596191,
+            7.000127792358398,
+            0.00730872293934226
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.066",
+            "Fern / arched rachis.071"
+          ],
+          "area": 2.056512858661533e-06,
+          "point": [
+            14.138008117675781,
+            6.698884963989258,
+            0.010080871172249317
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.066",
+            "Fern / arched rachis.071"
+          ],
+          "area": 2.9045312668731886e-05,
+          "point": [
+            14.136569023132324,
+            6.700080394744873,
+            0.007296185474842787
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.059",
+            "Fern / arched rachis.064"
+          ],
+          "area": 3.730601799648749e-05,
+          "point": [
+            14.357443809509277,
+            7.170091152191162,
+            0.007299068383872509
+          ]
+        }
+      ]
+    },
+    {
+      "name": "mushrooms_mooncap",
+      "triangles": 4438,
+      "degenerateTriangles": 210,
+      "degenerateParts": {
+        "Mushroom / bell cap": 30,
+        "Mushroom / bell cap.001": 30,
+        "Mushroom / bell cap.002": 30,
+        "Mushroom / bell cap.003": 30,
+        "Mushroom / bell cap.004": 30,
+        "Mushroom / bell cap.005": 30,
+        "Mushroom / bell cap.006": 30
+      },
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    },
+    {
+      "name": "crystals_dewstone",
+      "triangles": 2334,
+      "degenerateTriangles": 60,
+      "degenerateParts": {
+        "Crystal / hexagonal point": 10,
+        "Crystal / hexagonal point.001": 10,
+        "Crystal / hexagonal point.002": 10,
+        "Crystal / hexagonal point.003": 10,
+        "Crystal / hexagonal point.004": 10,
+        "Crystal / hexagonal point.005": 10
+      },
+      "coplanarTrianglePairs": 4,
+      "exposedCoplanarPairs": 3,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [
+        {
+          "parts": [
+            "Fern / arched rachis.074",
+            "Fern / arched rachis.075"
+          ],
+          "count": 2
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.073",
+            "Fern / arched rachis.076"
+          ],
+          "count": 1
+        }
+      ],
+      "samples": [
+        {
+          "parts": [
+            "Fern / arched rachis.073",
+            "Fern / arched rachis.076"
+          ],
+          "area": 7.570855600864483e-06,
+          "point": [
+            24.603717803955078,
+            7.120039463043213,
+            0.17081701755523682
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.074",
+            "Fern / arched rachis.075"
+          ],
+          "area": 1.3690837755232552e-05,
+          "point": [
+            24.601730346679688,
+            7.120059967041016,
+            0.17351968586444855
+          ]
+        },
+        {
+          "parts": [
+            "Fern / arched rachis.074",
+            "Fern / arched rachis.075"
+          ],
+          "area": 1.3629459484112533e-06,
+          "point": [
+            24.600317001342773,
+            7.119317531585693,
+            0.17562641203403473
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flowers_starmeadow",
+      "triangles": 5454,
+      "degenerateTriangles": 0,
+      "degenerateParts": {},
+      "coplanarTrianglePairs": 0,
+      "exposedCoplanarPairs": 0,
+      "roofCrossings": 0,
+      "roofCrossingParts": [],
+      "exposedParts": [],
+      "samples": []
+    }
+  ],
+  "degenerateTriangles": 394,
+  "roofCrossings": 41743,
+  "exposedCoplanarPairs": 21
+}

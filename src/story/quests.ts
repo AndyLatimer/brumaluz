@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { session, play, story, fight, talk, ui } from '../game/state';
 import { ISBERTO_HOUSE, type ShadowAction, ISBERTO_TALK_RADIUS, SHADOW_REPORT_RADIUS, ISBERTO_WAY, SHADOW_RETURN, SHADOW_TITLE, HOUSE_BED, BED_RADIUS, type WelcomeAction, WELCOME_BADGE, WELCOME_START, WELCOME_TALK_RADIUS, WELCOME_TITLE, ISBERTO_INSIDE, ISBERTO_DOOR } from '../data/quests';
 import { welcomeConversation } from '../ui/questWindow';
-import { shadowAction, restAction, welcomeAction } from '../services/account';
+import { shadowAction, restAction, welcomeAction, askGnomiAboutDust } from '../services/account';
 import { t } from '../ui/i18n';
 import { storyPath } from '../world/storyPath';
 import { isInCombat } from '../data/combat';
@@ -24,12 +24,16 @@ import { updateHud, speechSeconds } from '../game/hud';
 import { characterContext } from '../game/avatar';
 import { tradeWindow, questTracking, personalWaypoints } from '../ui/gameInterface';
 import { settings } from '../game/audio';
+import {professionTutorialConversation} from './professionTutorial';
+import {performProfession} from '../game/professions';
+import {tutorialTarget} from '../data/professionTutorial';
 
 export function isbertoUnlocked() {
   return session.state.welcome?.stage === 'completed';
 }
 /** Isberto se ve en Brumaluz hasta que invita al jugador a casa; desde entonces, dentro de ella. */
 export function isbertoVisible() {
+  if (play.city.locationId === 'taller_herreria_interior') return true;
   if (!isbertoUnlocked()) return false;
   // Al entregar el distintivo aún estamos hablando con Gnomi: Isberto entra después.
   if (talk.pendingIsbertoIntroduction) return false;
@@ -40,29 +44,55 @@ export function isbertoVisible() {
 export function houseOpen() {
   return !session.state.welcome || session.state.shadowQuest === 'returning' || session.state.shadowQuest === 'returned';
 }
-export function talkGnomi() {
+export function talkGnomi(showDust = true) {
   if (play.actionBusy) return;
   keys.clear(); play.moveTarget = null; play.pendingTalk = null; marker.visible = false;
+  if (showDust && session.state.fairyDustQuest === 'ask_gnomi') {
+    beginConversation(story.welcomeWorld.root, {
+      speaker: session.registeredNpcs.gnomi.name, subtitle: session.registeredNpcs.gnomi.subtitle, emblem: 'guild', start: 'intro',
+      nodes: {
+        intro: { text: '¡Hola! ¿En qué puedo echarte una mano?', choices: [
+          { text: 'He encontrado este polvo. ¿Sabes qué es?', action: performFairyDustQuest, next: 'dust' },
+          { text: 'Quería hablar de otra cosa.', action: () => { talkGnomi(false); return false; } },
+        ] },
+        dust: { text: "Oh… parece polvo de hada. Mira cómo brilla. Hasta en la palma de la mano parece que le han quedado estrellitas.\n\nNo sé para qué sirve. Yo preguntaría en La Arboleda; quizá allí sepan más. Guárdalo bien mientras tanto, ¿sí?", choices: [
+          { text: 'Gracias, Gnomi.' },
+          { text: 'Quería hablar de otra cosa.', action: () => { talkGnomi(false); return false; } },
+        ] },
+      },
+    });
+    return;
+  }
   if (session.state.shadowQuest === 'returning' || session.state.shadowQuest === 'returned') {
+    if(session.state.shadowQuest==='returned'){
+      beginConversation(story.welcomeWorld.root,professionTutorialConversation(()=>session.state,performProfession,session.registeredNpcs.gnomi.name,session.registeredNpcs.gnomi.subtitle));return;
+    }
     beginConversation(story.welcomeWorld.root, {
       speaker:session.registeredNpcs.gnomi.name, subtitle:session.registeredNpcs.gnomi.subtitle, emblem:'guild', start:'intro',
       nodes:{
-        intro: session.state.shadowQuest === 'returned'
-          ? {text:'¡Qué bien verte! ¿Has descansado? Isberto tiene cara de pocos amigos, pero no le abre su casa a cualquiera.\n\nYo estaré por la plaza del pozo. Cuando salgas a conocer la ciudad, pásate a verme. Me gustará saber cómo te va.'}
-          : {text:'Ve con Isberto; su casa está junto al camino de la herrería. Y entra, que si tiene que invitarte dos veces se le acaba la paciencia.\n\nYo me vuelvo a la plaza del pozo. Gracias por hoy… por el distintivo y por dejarme acompañarte.'},
+        intro: {text:"Ve con Isberto; su casa está junto al camino de la herrería. Tiene cara de pocos amigos, pero ya ves… te está esperando.\n\nYo me vuelvo a la plaza del pozo. Descansa, que los talleres no se van a ir a ninguna parte."},
       },
     });
     return;
   }
   if (!session.state.welcome) {
-    beginConversation(story.welcomeWorld.root, {
-      speaker:session.registeredNpcs.gnomi.name,subtitle:session.registeredNpcs.gnomi.subtitle,emblem:'guild',start:'intro',
-      nodes:{intro:{text:'¡Hola! Soy Gnomi, del Gremio de Ayudantes. Si necesitas que te eche una mano, pregunta. Las dos están libres; lo que llevaba ya se me ha caído.'}},
-    });
-    return;
+    beginConversation(story.welcomeWorld.root,professionTutorialConversation(()=>session.state,performProfession,session.registeredNpcs.gnomi.name,session.registeredNpcs.gnomi.subtitle));return;
   }
   if (session.state.welcome.origin === null) story.welcomeWorld.greet();
   beginConversation(story.welcomeWorld.root, { ...welcomeConversation(session.state, performWelcome), speaker: session.registeredNpcs.gnomi.name, subtitle: session.registeredNpcs.gnomi.subtitle });
+}
+export async function performFairyDustQuest() {
+  if (play.city.locationId !== 'brumaluz' || !story.welcomeWorld.root.visible
+    || Math.hypot(holder.position.x-story.welcomeWorld.root.position.x,holder.position.z-story.welcomeWorld.root.position.z)>3.5) {
+    toast('No se pudo completar la acción', 'Acércate a Gnomi para preguntarle por el polvo de hada.', true);
+    return false;
+  }
+  const success = await runOnServer(askGnomiAboutDust, () => {
+    if (session.state.fairyDustQuest !== 'ask_gnomi') throw new Error(t('Esta conversación sobre el polvo de hada ya no está pendiente.'));
+    session.state.fairyDustQuest = 'arboleda';
+  });
+  if (success) updateHud();
+  return success;
 }
 export async function performShadow(action: ShadowAction) {
   const target = npcActors.find(npc => npc.id === 'isberto')?.character.root.position;
@@ -151,10 +181,12 @@ export function shadowQuestTarget(): { x: number; z: number } {
 }
 export function updateWelcome(dt: number, time: number) {
   story.welcomeWorld.update(session.state.welcome, play.mode === 'play' && play.city.locationId === 'brumaluz', holder.position, play.dead || talk.isbertoArrival || isDialogOpen() || !!ui.openWindow ? 0 : dt, time, talk.conversationActor === story.welcomeWorld.root, session.state.shadowQuest === 'returning' || session.state.shadowQuest === 'returned');
-  const visible = play.mode === 'play' && play.city.locationId === 'brumaluz' && !play.dead && !storyLock() && !ui.openWindow && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
+  const visible = play.mode === 'play' && !play.dead && !storyLock() && !ui.openWindow && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   ui.questTracker.update(session.state, visible, corpseLooted());
   ui.welcomePlate.hidden = true;
   ui.questIndicator.hide();
+  const professionTracked=questTracking.current(session.state)==='profession';
+  if(visible&&professionTracked){const target=tutorialTarget(session.state,play.city.locationId);if(target)ui.questIndicator.update({...target,y:play.city.groundY(target.x,target.z)+1},holder.position,camera);}
   if (!story.welcomeWorld.root.visible || !visible) return;
   camera.updateMatrixWorld();
   const welcomeHeight = 1.1 * session.registeredNpcs.gnomi.render.scale / .48 * session.registeredNpcs.gnomi.render.height / .92;
@@ -162,6 +194,14 @@ export function updateWelcome(dt: number, time: number) {
   if (settings.nameplates && story.welcomeWorld.root.position.distanceToSquared(holder.position) <= TARGET_RANGE * TARGET_RANGE && questAnchor.z > -1 && questAnchor.z < 1 && Math.abs(questAnchor.x) < 1 && Math.abs(questAnchor.y) < 1) {
     ui.welcomePlate.hidden = false;
     ui.welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+  }
+  if(professionTracked)return;
+  if (questTracking.current(session.state) === 'fairy-dust') {
+    if (session.state.fairyDustQuest === 'ask_gnomi') {
+      const target = story.welcomeWorld.root.position;
+      ui.questIndicator.update({ x: target.x, y: target.y + 1.3, z: target.z }, holder.position, camera);
+    }
+    return;
   }
   if (!session.state.welcome) return;
   if (session.state.welcome.stage === 'completed' && session.state.shadowQuest === 'returned') return;

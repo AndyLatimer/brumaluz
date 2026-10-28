@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor de mapas · Brumaluz</title>
+    <link rel="stylesheet" href="/src/dev/mapEditor/mapEditor.css">
   </head>
   <body class="map-editor">
     <header id="topbar">
@@ -36,7 +37,7 @@
       <span id="map-title" class="map-title"></span>
       <span id="save-state" class="save-state" role="status" aria-live="polite"></span>
       <span id="published-state" class="published-state" hidden></span>
-      <nav class="dev-links"><a href="./npcs.html">NPCs</a> · <a href="./assets.html">Recursos</a> · <a href="./wardrobe.html">Vestuario</a> · <button type="button" data-action="help" class="link">Ayuda (F1)</button></nav>
+      <nav class="dev-links"><a href="./npcs.html">NPCs</a> · <a href="./quests.html">Misiones</a> · <a href="./assets.html">Recursos</a> · <a href="./wardrobe.html">Vestuario</a> · <button type="button" data-action="help" class="link">Ayuda (F1)</button></nav>
     </header>
 
     <nav id="tools" aria-label="Herramientas"></nav>
@@ -47,6 +48,7 @@
         <button type="button" role="tab" data-tab="outliner" aria-selected="false">Escena</button>
       </div>
       <section data-panel="catalog" class="catalog">
+        <button type="button" data-action="add-collectibles" title="Colocar bolsas de pelines y polvos de hada (L)">✦ Añadir coleccionables</button>
         <input id="catalog-search" type="search" placeholder="Buscar recursos (casa, árbol, barril…)" autocomplete="off">
         <div id="catalog-groups" class="chips"></div>
         <div id="catalog-categories" class="chips small"></div>
@@ -121,6 +123,6 @@
       </form>
     </dialog>
 
-    <script type="module" src="/src/dev/mapEditor/main.ts"></script>
+    <script type="module" src="/src/dev/mapEditor/main.ts" onerror="document.getElementById('loading').textContent = 'No se pudo cargar el editor. Recarga la página con Ctrl+F5 para volver a intentarlo.';"></script>
   </body>
 </html>

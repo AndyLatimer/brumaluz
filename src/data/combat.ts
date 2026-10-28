@@ -18,8 +18,8 @@ export type SkillId = 'heavy_strike' | 'arcane_discharge' | 'double_slash' | 'he
 export const MAX_SKILL_RANK = 5;
 export type SkillRanks = Partial<Record<SkillId, number>>;
 type SkillProgress = Pick<CharData, 'cls' | 'level' | 'skillRanks'>;
-export const skillPointsAllowed = (level: number) => Math.floor(Math.min(50, Math.max(1, level)) / 2);
-export const skillRankLevel = (rank: number) => rank === 1 ? 1 : (rank - 1) * 2;
+export const skillPointsAllowed = (level: number) => Math.floor(Math.min(50, Math.max(1, level))) - 1;
+export const skillRankLevel = (rank: number) => rank;
 export interface CombatKit {
   weapon: string;
   offhand?: string;

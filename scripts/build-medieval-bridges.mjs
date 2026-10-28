@@ -148,9 +148,10 @@ function makeStoneDetail(size, seed) {
       const joint = 1 - Math.min(1, edge / 0.05);
       // Tono propio de cada sillar, estable por bloque.
       const tone = (hash(column, row, seed) - 0.5) * 0.16;
-      const grain = (fbm(u * period, v * period, seed + 7, period, 4) - 0.5) * 0.18;
-      const speck = hash(x, y, seed + 31) > 0.985 ? -0.08 : 0;
-      const value = clamp255(255 * (1 + tone + grain + speck) * (1 - joint * 0.45));
+      // Quiet stone grain: isolated dark texels and a strong normal derivative
+      // shimmered into speckled bands on the continent's long, shallow bridge.
+      const grain = (fbm(u * period, v * period, seed + 7, period, 3) - 0.5) * 0.06;
+      const value = clamp255(255 * (1 + tone * .65 + grain) * (1 - joint * 0.3));
       const index = (y * size + x) * 3;
       pixels[index] = value; pixels[index + 1] = value; pixels[index + 2] = value;
     }
@@ -227,7 +228,7 @@ function makeRoofDetail(size, seed) {
 }
 
 /** Relieve suave derivado del detalle; PNG estándar con compresión zlib, no DEFLATE crudo. */
-function normalMap(png) {
+function normalMap(png, strength = 2.5) {
   const idat = [], view = new DataView(png.buffer, png.byteOffset, png.byteLength);
   for (let offset = 8; offset < png.length;) {
     const length = view.getUint32(offset);
@@ -237,8 +238,8 @@ function normalMap(png) {
   const pixels = inflateSync(Buffer.concat(idat)), output = Buffer.alloc(SIZE * SIZE * 3);
   const height = (x, y) => pixels[((y + SIZE) % SIZE) * (SIZE * 3 + 1) + 1 + ((x + SIZE) % SIZE) * 3] / 255;
   for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
-    const nx = (height(x - 1, y) - height(x + 1, y)) * 2.5;
-    const ny = (height(x, y - 1) - height(x, y + 1)) * 2.5;
+    const nx = (height(x - 1, y) - height(x + 1, y)) * strength;
+    const ny = (height(x, y - 1) - height(x, y + 1)) * strength;
     const length = Math.hypot(nx, ny, 1), i = (y * SIZE + x) * 3;
     output[i] = clamp255((nx / length * 0.5 + 0.5) * 255);
     output[i + 1] = clamp255((ny / length * 0.5 + 0.5) * 255);
@@ -306,7 +307,8 @@ for (const name of ['bridge', 'bridge_roofed']) {
   function surfaceMaterial(material, detail, label, roughness) {
     const texture = (suffix, png) => document.createTexture(`${label}-${suffix}`).setImage(png).setMimeType('image/png');
     material.setBaseColorTexture(texture('color', detail));
-    material.setNormalTexture(texture('normal', normalMap(detail))).setNormalScale(0.45);
+    const stoneSurface = label === 'stone';
+    material.setNormalTexture(texture('normal', normalMap(detail, stoneSurface ? .8 : 2.5))).setNormalScale(stoneSurface ? .2 : .45);
     material.setMetallicRoughnessTexture(texture('roughness', makeRoughnessTexture(SIZE, 17, roughness - 12, roughness + 12)));
     material.setMetallicFactor(0).setRoughnessFactor(1);
     for (const info of [material.getBaseColorTextureInfo(), material.getNormalTextureInfo(), material.getMetallicRoughnessTextureInfo()]) info.setWrapS(10497).setWrapT(10497);

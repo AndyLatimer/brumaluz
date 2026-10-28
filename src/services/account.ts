@@ -105,6 +105,7 @@ interface Database {
       loot_corpse: { Args: { p_character_id: string; p_instance_id: string; p_slot?: number | null }; Returns: Json };
       collect_coin_bag: { Args: { p_character_id: string; p_bag_id: string }; Returns: Json };
       collect_fairy_dust: { Args: { p_character_id: string; p_dust_id: string }; Returns: Json };
+      fairy_dust_quest_action: { Args: { p_character_id: string }; Returns: Json };
       bank_action: { Args: { p_character_id: string; p_action: string; p_slot?: number | null; p_expected?: Json | null; p_amount?: number | null; p_target?: number | null }; Returns: Json };
       friends_list: { Args: Record<string, never>; Returns: Json };
       party_state: { Args: Record<string, never>; Returns: Json };
@@ -269,6 +270,13 @@ const SERVER_ERRORS: Record<string, string> = {
   COIN_BAG_TOO_FAR: 'Acércate a la bolsa para recogerla.',
   COIN_BAG_DEAD: 'Debes volver a la vida para recoger la bolsa.',
   COIN_BAG_NOT_PLAYING: 'Entra en Brumaluz para recoger la bolsa.',
+  FAIRY_DUST_INVALID: 'Estos polvos de hada ya no están aquí.',
+  FAIRY_DUST_TAKEN: 'Ya has recogido estos polvos de hada.',
+  FAIRY_DUST_TOO_FAR: 'Acércate a los polvos de hada para recogerlos.',
+  FAIRY_DUST_DEAD: 'Debes volver a la vida para recoger los polvos de hada.',
+  FAIRY_DUST_NOT_PLAYING: 'Entra en Brumaluz para recoger los polvos de hada.',
+  FAIRY_DUST_QUEST_STATE: 'Esta conversación sobre el polvo de hada ya no está pendiente.',
+  FAIRY_DUST_QUEST_TOO_FAR: 'Acércate a Gnomi para preguntarle por el polvo de hada.',
   SHADOW_QUEST_COMPLETED: 'Ya has completado el encargo de Isberto.',
   SHADOW_ALREADY_DEFEATED: 'La criatura ya ha sido derrotada. Continúa la misión.',
   SHADOW_INVALID_STATE: 'No puedes continuar este paso de la misión todavía.',
@@ -382,10 +390,10 @@ export const characterActions: Record<CharacterAction, (id: string) => Promise<R
 };
 
 export async function startCombat(id: string) {
-  return asRecord(await serverCall(requireClient().rpc('combat_start',{p_character_id:id})));
+  return asRecord(await serverCall(requireClient().rpc('combat_start',{p_character_id:id}).abortSignal(AbortSignal.timeout(4000))));
 }
-export async function combatAction(id: string, action: 'attack' | SkillId) {
-  return asRecord(await serverCall(requireClient().rpc('combat_action',{p_character_id:id,p_action:action}).abortSignal(AbortSignal.timeout(8000))));
+export async function combatAction(id: string, action: 'attack' | SkillId,signal?:AbortSignal) {
+  return asRecord(await serverCall(requireClient().rpc('combat_action',{p_character_id:id,p_action:action}).abortSignal(signal??AbortSignal.timeout(4000))));
 }
 export async function stopCombat(id: string) {
   return asRecord(await serverCall(requireClient().rpc('combat_stop',{p_character_id:id})));
@@ -411,6 +419,11 @@ export async function collectCoinBag(id: string, bagId: string) {
 export async function collectFairyDust(id: string, dustId: string) {
   return asRecord(await serverCall(requireClient().rpc('collect_fairy_dust', {
     p_character_id: id, p_dust_id: dustId,
+  }).abortSignal(AbortSignal.timeout(10000))));
+}
+export async function askGnomiAboutDust(id: string) {
+  return asRecord(await serverCall(requireClient().rpc('fairy_dust_quest_action', {
+    p_character_id: id,
   }).abortSignal(AbortSignal.timeout(10000))));
 }
 
@@ -471,8 +484,8 @@ export function joinWorld(characterId: string, sessionId: string) {
   return serverCall(requireClient().rpc('world_join', { p_character_id: characterId, p_session_id: sessionId }).abortSignal(AbortSignal.timeout(8000)));
 }
 
-export function syncWorld(characterId: string, sessionId: string, state: { x: number; z: number; yaw: number; facing: number; jump: number; wave: number }) {
-  return requireClient().rpc('world_sync', { p_character_id: characterId, p_session_id: sessionId, p_state: state }).abortSignal(AbortSignal.timeout(8000)).then(({ data, error }) => {
+export function syncWorld(characterId: string, sessionId: string, state: { x: number; z: number; yaw: number; facing: number; jump: number; wave: number },signal?:AbortSignal) {
+  return requireClient().rpc('world_sync', { p_character_id: characterId, p_session_id: sessionId, p_state: state }).abortSignal(signal??AbortSignal.timeout(4000)).then(({ data, error }) => {
     if (error) throw new Error(error.message);
     return data;
   });
@@ -589,9 +602,9 @@ export const rpgAction = async (id:string,action:string,args:Record<string,unkno
   const result=await serverCall(requireClient().rpc('rpg_action',{p_character_id:id,p_action:action,p_args:args as Json,p_request:crypto.randomUUID(),p_revision:revision}));
   if(!result||typeof result!=='object'||Array.isArray(result))throw new Error('Respuesta de oficios no válida.');return result;
 };
-export const expeditionAction=async(id:string,action:string,target?:number)=>await serverCall(requireClient().rpc('expedition_action',{p_character_id:id,p_action:action,...(target===undefined?{}:{p_target:target})})) as Record<string,unknown>;
-export const wildernessAction=async(id:string,action:string,spawn?:string|null,slot?:number|null)=>await serverCall(requireClient().rpc('wilderness_action',{p_character_id:id,p_action:action,p_spawn:spawn??null,p_slot:slot??null}).abortSignal(AbortSignal.timeout(8000))) as Record<string,unknown>;
-export const healAlly=async(id:string,target:string)=>await serverCall(requireClient().rpc('heal_ally',{p_character_id:id,p_target:target}).abortSignal(AbortSignal.timeout(8000))) as Record<string,unknown>;
+export const expeditionAction=async(id:string,action:string,target?:number,signal?:AbortSignal)=>await serverCall(requireClient().rpc('expedition_action',{p_character_id:id,p_action:action,...(target===undefined?{}:{p_target:target})}).abortSignal(signal??AbortSignal.timeout(4000))) as Record<string,unknown>;
+export const wildernessAction=async(id:string,action:string,spawn?:string|null,slot?:number|null,signal?:AbortSignal)=>await serverCall(requireClient().rpc('wilderness_action',{p_character_id:id,p_action:action,p_spawn:spawn??null,p_slot:slot??null}).abortSignal(signal??AbortSignal.timeout(action==='loot'?8000:4000))) as Record<string,unknown>;
+export const healAlly=async(id:string,target:string,signal?:AbortSignal)=>await serverCall(requireClient().rpc('heal_ally',{p_character_id:id,p_target:target}).abortSignal(signal??AbortSignal.timeout(4000))) as Record<string,unknown>;
 
 function requireClient() {
   const configured = getAccountClient();

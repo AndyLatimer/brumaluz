@@ -164,7 +164,7 @@ export async function storyCombat(t, { client, a, b, ca, sa, location, user, rpc
         await client.query('release savepoint named_skills');
       }
     });
-    await t.test('skill upgrades grant even-level points, validate ownership and expected rank, and scale real combat', async () => {
+    await t.test('skill upgrades grant points every level, validate ownership and expected rank, and scale real combat', async () => {
       await client.query('savepoint skill_ranks');
       try{
         await client.query('reset role');
@@ -192,7 +192,7 @@ export async function storyCombat(t, { client, a, b, ca, sa, location, user, rpc
           }
           for(let rank=1;rank<5;rank++){
             await client.query('reset role');
-            await client.query("update public.characters set data=jsonb_set(data,'{level}',to_jsonb($1::int)) where id=$2",[rank*2,ca]);
+            await client.query("update public.characters set data=jsonb_set(data,'{level}',to_jsonb($1::int)) where id=$2",[rank+1,ca]);
             await user(a);
             const result=await rpc('upgrade_skill',[ca,id,rank]);
             assert.equal(result.skillRanks[id],rank+1);
@@ -202,6 +202,9 @@ export async function storyCombat(t, { client, a, b, ca, sa, location, user, rpc
           await rejected(()=>rpc('upgrade_skill',[ca,id,5]),/SKILL_MAX_RANK/);
           const entered=await rpc('character_enter',[ca]);
           assert.equal(entered.skillRanks[id],5);
+          await client.query('reset role');
+          await client.query("update public.characters set data=jsonb_set(data,'{level}','8') where id=$1",[ca]);
+          await user(a);
           await rpc('world_join',[ca,sa]);
           await rpc('combat_start',[ca]);
           const attack=await rpc('combat_action',[ca,'attack']);

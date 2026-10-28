@@ -51,6 +51,8 @@ export const hash2 = (i: number, j: number) => {
 export const GROUND_COLORS = GROUND_MATERIALS.map(material => new THREE.Color(material.color));
 /** Malla del terreno, textura de alturas para piezas deformables y uniforms compartidos. */
 export class TerrainSurface {
+  private chunks: {mesh:THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;i0:number;j0:number;i1:number;j1:number}[]=[];
+  private drawMaterial:THREE.MeshStandardMaterial|null=null;
   readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   readonly heightTexture: THREE.DataTexture;
   readonly uniforms = {
@@ -58,7 +60,7 @@ export class TerrainSurface {
     mapTerrain: { value: new THREE.Vector4() },
     mapTerrainSize: { value: new THREE.Vector2() },
   };
-  constructor(readonly field: TerrainField) {
+  constructor(readonly field: TerrainField, chunked=false) {
     const { columns, rows } = field;
     const positions = new Float32Array(columns * rows * 3), colors = new Float32Array(columns * rows * 3);
     const indexCount = (columns - 1) * (rows - 1) * 6;
@@ -88,6 +90,28 @@ export class TerrainSurface {
     this.uniforms.mapTerrain.value.set(field.minX, field.minZ, field.cell, 0);
     this.uniforms.mapTerrainSize.value.set(columns, rows);
     this.update();
+    // Keep the master grid for editing, height queries and tile sinking. Large
+    // game worlds draw small patches so the GPU can cull distant terrain.
+    if(chunked&&columns*rows>200000){
+      this.drawMaterial=material;
+      this.mesh.material=material.clone();this.mesh.material.visible=false;
+      const size=64;
+      for(let j0=0;j0<rows-1;j0+=size)for(let i0=0;i0<columns-1;i0+=size){
+        const i1=Math.min(columns-1,i0+size),j1=Math.min(rows-1,j0+size),width=i1-i0+1,height=j1-j0+1;
+        const geometry=new THREE.BufferGeometry(),indices=new Uint16Array((width-1)*(height-1)*6);
+        geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(width*height*3),3));
+        geometry.setAttribute('color',new THREE.BufferAttribute(new Float32Array(width*height*3),3));
+        let k=0;
+        for(let z=0;z<height-1;z++)for(let x=0;x<width-1;x++){
+          const a=z*width+x,b=a+1,c=a+width,d=c+1;
+          indices.set((i0+x+j0+z)%2?[a,c,b,b,c,d]:[a,c,d,a,d,b],k);k+=6;
+        }
+        geometry.setIndex(new THREE.BufferAttribute(indices,1));
+        const patch=new THREE.Mesh(geometry,material);patch.name='terrain-patch';patch.receiveShadow=true;patch.userData.mapChunk=true;
+        this.mesh.add(patch);this.chunks.push({mesh:patch,i0,j0,i1,j1});
+      }
+      this.refreshRenderedChunks();
+    }
   }
   update(region?: TerrainRegion) {
     const { columns, rows, cell, minX, minZ, data } = this.field;
@@ -108,6 +132,28 @@ export class TerrainSurface {
     this.heightTexture.needsUpdate = true;
     this.mesh.geometry.computeBoundingSphere();
     this.mesh.geometry.computeBoundingBox();
+    this.refreshRenderedChunks(r);
   }
-  dispose() { this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.heightTexture.dispose(); }
+  /** Also called after the visual-only depression beneath pavement tiles. */
+  refreshRenderedChunks(region?:TerrainRegion){
+    const master=this.mesh.geometry.getAttribute('position'),colors=this.mesh.geometry.getAttribute('color');
+    for(const patch of this.chunks){
+      if(region&&(patch.i1<region.i0||patch.i0>region.i1||patch.j1<region.j0||patch.j0>region.j1))continue;
+      const position=patch.mesh.geometry.getAttribute('position') as THREE.BufferAttribute,color=patch.mesh.geometry.getAttribute('color') as THREE.BufferAttribute;
+      let n=0;
+      for(let j=patch.j0;j<=patch.j1;j++)for(let i=patch.i0;i<=patch.i1;i++){
+        const index=j*this.field.columns+i;position.setXYZ(n,master.getX(index),master.getY(index),master.getZ(index));color.setXYZ(n,colors.getX(index),colors.getY(index),colors.getZ(index));n++;
+      }
+      position.needsUpdate=true;color.needsUpdate=true;patch.mesh.geometry.computeBoundingBox();patch.mesh.geometry.computeBoundingSphere();
+    }
+  }
+  cull(focus:THREE.Vector3,distance:number){
+    const limit=distance*distance;
+    for(const patch of this.chunks){
+      const box=patch.mesh.geometry.boundingBox!;
+      const dx=Math.max(box.min.x-focus.x,0,focus.x-box.max.x),dz=Math.max(box.min.z-focus.z,0,focus.z-box.max.z);
+      patch.mesh.visible=dx*dx+dz*dz<=limit;
+    }
+  }
+  dispose() { for(const patch of this.chunks)patch.mesh.geometry.dispose();this.drawMaterial?.dispose();this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.heightTexture.dispose(); }
 }

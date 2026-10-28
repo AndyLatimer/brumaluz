@@ -180,12 +180,13 @@ export function mountWardrobe(
     if (!hat && 'attachment' in piece && piece.attachment === 'head') continue;
     const source = asset.scene.getObjectByName(piece.node);
     if (!source) throw new Error(`Falta la pieza de vestuario: ${piece.node}`);
-    mountCharacterPiece(source, model, bones, material, own, piece.attachment);
+    const copy = mountCharacterPiece(source, model, bones, material, own, piece.attachment);
+    if (piece.attachment === 'head') copy.userData.characterHeadwear = true;
   }
 }
 
 export function modularHairFit(cls:ClassId,equipment:Equipment):HeadOptions['hat'] {
-  return equippedArmor(cls,equipment,'head') ? cls==='mago'?'wizard':cls==='clerigo'?'none':'cap' : 'none';
+  return equippedArmor(cls,equipment,'head') ? cls==='mago'?'wizard':'cap' : 'none';
 }
 
 /** Each slot mounts only its own patterns. Empty slots use complete neutral underclothes. */
@@ -212,7 +213,7 @@ export function mountModularWardrobe(
     for(const name of names){
       const node=asset.scene.getObjectByName(name);if(!node)throw new Error(`Falta pieza modular: ${name}`);
       const copy=mountCharacterPiece(node,model,bones,material,own);
-      if(slot==='head'&&head)seatHeadwear(copy,head,own);
+      if(slot==='head') { copy.userData.characterHeadwear = true; if(head)seatHeadwear(copy,head,own); }
     }
   }
   for(const slot of ARMOR_SLOTS){

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { before, after, test } from 'node:test';
@@ -64,7 +64,11 @@ test('looking at a target never scans distant obstacles after indexing', () => {
 let server, browser;
 const url = 'http://127.0.0.1:4187';
 before(async () => {
-  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '4187', '--strictPort']);
+  server = spawn(process.execPath, ['--input-type=module', '-e', `
+    const { createServer } = await import('vite');
+    const server = await createServer({ cacheDir: 'node_modules/.vite-intro-combat', server: { host: '127.0.0.1', port: 4187, strictPort: true, hmr: false, watch: null } });
+    await server.listen(); server.printUrls();
+  `]);
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Intro combat server did not start')), 15000);
     server.once('error', reject);
@@ -98,38 +102,42 @@ async function openFight(cls = 'guerrero', welcome = false) {
     const { beginIsbertoEncounter } = await import('/src/game/combat.ts');
     await beginIsbertoEncounter();
     const { fight } = await import('/src/game/state.ts');
+    // Playwright 1.48 treats an async polling predicate as truthy immediately.
+    // Keep live module references so all waitForFunction checks are synchronous.
+    window.combatTestState=await import('/src/game/state.ts');
+    window.combatTestScene=(await import('/src/game/stage.ts')).scene;
     window.brumaluz.move(fight.combatEncounter.x - 5, fight.combatEncounter.z);
     window.brumaluz.view(-Math.PI / 2, .55, 12);
   }, cls);
   return { context, page, errors };
 }
 
-test('intro teaches targeting, basic attacks, the class skill, movement and loot', { timeout: 90000 }, async () => {
+test('click targeting starts a complete fight and loot without tutorial panels or extra combat buttons', { timeout: 90000 }, async () => {
   const { context, page, errors } = await openFight();
   try {
-    await page.locator('#combat-tutorial strong').filter({ hasText: 'Fija a la sombra' }).waitFor();
+    assert.equal(await page.locator('#combat-tutorial, #combat-controls, .ab-feedback').count(),0);
     await page.waitForFunction(() => document.querySelector('#target-frame')?.dataset.targetId === 'enemy:shadowling');
-    await page.keyboard.press('KeyF');
-    await page.locator('#combat-tutorial strong').filter({ hasText: 'Prueba Golpe contundente' }).waitFor();
-    await page.keyboard.press('Digit1');
-    await page.waitForFunction(async () => {
-      const { vitals } = await import('/src/game/state.ts'); return vitals.skillReadyAt > performance.now();
+    const enemy=await page.evaluate(async()=>{
+      const {fight}=await import('/src/game/state.ts');const {camera}=await import('/src/game/stage.ts');
+      const p=fight.combatTargetRoot.position.clone();p.y+=.8;p.project(camera);return{x:(p.x*.5+.5)*innerWidth,y:(-.5*p.y+.5)*innerHeight};
     });
-    await page.locator('#combat-tutorial strong').filter({ hasText: /movimiento|círculo/ }).waitFor();
-    await page.waitForFunction(async () => (await import('/src/game/state.ts')).fight.combatEncounter.status === 'defeated', null, { timeout: 30000 });
-    await page.locator('#combat-tutorial strong').filter({ hasText: 'Recoge el botín' }).waitFor();
+    await page.mouse.click(enemy.x,enemy.y);
+    await page.waitForFunction(()=>window.combatTestState.fight.combatEncounter.health<110);
+    await page.keyboard.press('Digit1');
+    await page.waitForFunction(() => window.combatTestState.vitals.skillReadyAt > performance.now());
+    await page.waitForFunction(() => window.combatTestState.fight.combatEncounter.status === 'defeated', null, { timeout: 30000 });
     await page.evaluate(async () => {
       const { fight } = await import('/src/game/state.ts');
       window.brumaluz.move(fight.combatEncounter.x, fight.combatEncounter.z + 1);
     });
     await page.keyboard.press('KeyE');
     await page.getByRole('button', { name: 'Recoger todo', exact: true }).click();
-    await page.locator('#combat-tutorial').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('#combat-tutorial, #combat-controls, .ab-feedback').count(),0);
     assert.deepEqual(errors, []);
   } finally { await context.close(); }
 });
 
-test('shadow announces a fixed impact zone; moving out avoids damage and standing still takes damage', { timeout: 60000 }, async () => {
+test('shadow attacks use ordinary reach and never create floor warnings or area phases', { timeout: 60000 }, async () => {
   const { context, page, errors } = await openFight('mago');
   try {
     await page.evaluate(async () => {
@@ -137,7 +145,7 @@ test('shadow announces a fixed impact zone; moving out avoids damage and standin
       fight.nextLocalEnemyAttack = 0;
       window.brumaluz.move(fight.combatEncounter.x - 1, fight.combatEncounter.z);
     });
-    await page.locator('#combat-tutorial strong').filter({ hasText: '¡Sal del círculo!' }).waitFor();
+    await page.waitForFunction(()=>window.combatTestState.fight.combatEncounter.attackKind==='melee'&&!!window.combatTestState.fight.combatEncounter.windup);
     const before = await page.evaluate(async () => {
       const { fight, session } = await import('/src/game/state.ts');
       const hp = session.state.health;
@@ -148,9 +156,9 @@ test('shadow announces a fixed impact zone; moving out avoids damage and standin
     });
     await page.waitForTimeout(1800);
     assert.equal(await page.evaluate(async () => (await import('/src/game/state.ts')).session.state.health), before.hp);
-    await page.waitForFunction(async () => !!(await import('/src/game/state.ts')).fight.combatEncounter.windup);
-    await page.evaluate(async () => { (await import('/src/game/combat.ts')).releaseCombatTarget(); });
-    await page.waitForFunction(async hp => (await import('/src/game/state.ts')).session.state.health < hp, before.hp);
+    await page.evaluate(()=>{const {fight}=window.combatTestState;window.brumaluz.move(fight.combatEncounter.x-1,fight.combatEncounter.z);fight.nextLocalEnemyAttack=0;});
+    await page.waitForFunction(hp => window.combatTestState.session.state.health < hp, before.hp);
+    assert.equal(await page.evaluate(()=>window.combatTestScene.getObjectByName('shadow-attack-warning')===undefined),true);
     assert.deepEqual(errors, []);
   } finally { await context.close(); }
 });
@@ -210,11 +218,10 @@ test('targeting enemies in the full city does not raycast render meshes', { time
     await page.waitForFunction(() => document.querySelector('#target-frame')?.dataset.targetId === 'enemy:shadowling');
     await page.screenshot({ path: 'art/intro-review/combat-tutorial.png' });
     await page.setViewportSize({ width: 390, height: 844 });
-    assert.equal(await page.locator('#combat-tutorial').evaluate(element => {
+    assert.equal(await page.locator('#target-frame').evaluate(element => {
       const rect=element.getBoundingClientRect(); return rect.left>=0 && rect.right<=innerWidth && element.scrollWidth<=element.clientWidth;
-    }), true, 'The tutorial fits a mobile viewport');
-    assert.equal(await page.locator('#combat-tutorial').evaluate(element => element.getBoundingClientRect().top >= document.querySelector('#target-frame').getBoundingClientRect().bottom), true, 'The lesson stays clear of the target frame');
-    assert.equal(await page.locator('#quest-tracker').isVisible(), false, 'The mobile lesson temporarily replaces the quest summary');
+    }), true, 'The selected enemy fits a mobile viewport');
+    assert.equal(await page.locator('#combat-tutorial, #combat-controls, .enemy-cast').count(),0);
     await page.screenshot({ path: 'art/intro-review/combat-tutorial-mobile.png' });
     assert.deepEqual(errors, []);
   } finally { await context.close(); }
@@ -297,9 +304,20 @@ test('skill recasts resist pending heartbeats, stale snapshots, repeated deadlin
   cd.syncSkillCooldown({deadline:500006,serverTime:500000,revision:12});
   assert.equal(cd.state.skillReadyAt,12400,'The server sample works even when the PC clock is wrong');
   cd.resetSkillCooldown();
+  const relative=cd.predictSkillCooldown(6);
+  cd.advance(700);
+  cd.finishSkillCooldown(relative,{remaining:6,revision:30},6400);
+  const relativeDeadline=cd.state.skillReadyAt;
+  cd.advance(1000);
+  cd.syncSkillCooldown({remaining:6,revision:30});
+  assert.equal(cd.state.skillReadyAt,relativeDeadline,'Replayed relative samples of one revision cannot extend the recast');
+  cd.advance(6000);
+  cd.syncSkillCooldown({remaining:6,revision:30});
+  assert.ok(cd.state.skillReadyAt<13400,'An expired relative sample stays expired');
+  cd.resetSkillCooldown();
 });
 
-test('the shadow cinematic has Isberto dialogue and the tutorial follows remapped skill keys without naming him', {timeout:60000},async()=>{
+test('the shadow cinematic and remapped skill binding work without adding a tutorial panel', {timeout:60000},async()=>{
   const {context,page,errors}=await openFight();
   try{
     await page.evaluate(async()=>{
@@ -307,7 +325,7 @@ test('the shadow cinematic has Isberto dialogue and the tutorial follows remappe
     });
     await page.locator('#cinematic .cinematic-line strong').filter({hasText:'Isberto'}).waitFor();
     assert.match(await page.locator('#cinematic .cinematic-line span').textContent(),/carbón/);
-    await page.evaluate(async()=>{(await import('/src/story/scenes.ts')).cinematic.frame(4.6);});
+    await page.evaluate(async()=>{(await import('/src/story/scenes.ts')).cinematic.frame(7.1);});
     await page.locator('#cinematic[data-shot="creature"]').waitFor();
     assert.match(await page.locator('#cinematic .cinematic-line span').textContent(),/madera negra/);
     await page.evaluate(async()=>{
@@ -318,11 +336,10 @@ test('the shadow cinematic has Isberto dialogue and the tutorial follows remappe
       const data=new DataTransfer();data.setData('application/x-brumaluz-item',JSON.stringify({id:'skill:heavy_strike',from:0,page:0}));
       document.querySelector('.ab-slot[data-index="4"]').dispatchEvent(new DragEvent('drop',{dataTransfer:data,bubbles:true}));
     });
-    await page.locator('#combat-tutorial kbd').filter({hasText:'5'}).waitFor();
-    assert.doesNotMatch(await page.locator('#combat-tutorial').textContent(),/Isberto/);
-    assert.equal(await page.locator('.combat-lesson-heading span').textContent(),'Tutorial de combate');
+    assert.deepEqual(await page.evaluate(async()=>(await import('/src/ui/actionBar.ts')).actionBarSkillBinding()),{key:'5',otherPage:false});
+    assert.equal(await page.locator('#combat-tutorial').count(),0);
     await page.evaluate(async()=>{(await import('/src/ui/actionBar.ts')).toggleActionBarPage();});
-    await page.locator('#combat-tutorial kbd').filter({hasText:'Z → 5'}).waitFor();
+    assert.deepEqual(await page.evaluate(async()=>(await import('/src/ui/actionBar.ts')).actionBarSkillBinding()),{key:'5',otherPage:true});
     assert.deepEqual(errors,[]);
   }finally{await context.close();}
 });
@@ -330,20 +347,26 @@ test('the shadow cinematic has Isberto dialogue and the tutorial follows remappe
 test('a slow skill response keeps one visible recast, rejects stale heartbeats and preserves the action slot', {timeout:60000},async()=>{
   const {context,page,errors}=await openFight();
   let calls=0;
+  const actions=[];
   try{
     const reply=await page.evaluate(async()=>{
       const {fight,session}=await import('/src/game/state.ts');
       const {vitalsOf}=await import('/src/data/stats.ts');
+      const {setCombatEncounter,lockCombatTarget}=await import('/src/game/combat.ts');
+      const {renderActionBar}=await import('/src/ui/actionBar.ts');
       session.activeCharacterId=crypto.randomUUID();
       window.brumaluz.move(fight.combatEncounter.x-1,fight.combatEncounter.z);
-      (await import('/src/game/combat.ts')).setCombatEncounter({...fight.combatEncounter,engaged:true});
-      (await import('/src/game/combat.ts')).lockCombatTarget(true);fight.combatAuto=false;
-      (await import('/src/ui/actionBar.ts')).renderActionBar(true);
+      // Keep this setup synchronous: engaging enables auto-attack, so yielding to
+      // an import before disabling it can send a basic attack instead of the skill.
+      setCombatEncounter({...fight.combatEncounter,engaged:true});
+      lockCombatTarget(true);fight.combatAuto=false;
+      renderActionBar(true);
       const slot=document.querySelector('.ab-slot[data-skill-id]');slot.dataset.preserved='yes';
       return {encounter:{...fight.combatEncounter,health:82,engaged:true},vitals:{...vitalsOf(session.state),resource:65,serverRevision:20},damage:18,healing:0,skillCooldown:6};
     });
     await page.route('**/rest/v1/rpc/combat_action',async route=>{
-      calls++;await new Promise(resolve=>setTimeout(resolve,700));await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(reply)});
+      calls++;actions.push(route.request().postDataJSON().p_action);
+      await new Promise(resolve=>setTimeout(resolve,700));await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(reply)});
     });
     const response=page.waitForResponse(response=>response.url().includes('/rpc/combat_action')&&response.request().method()==='POST');
     await page.keyboard.press('Digit1');
@@ -357,13 +380,14 @@ test('a slow skill response keeps one visible recast, rejects stale heartbeats a
     assert.ok(pending>5&&pending<=6,'The recast is visible before the response and cannot be cleared by an old heartbeat');
     await page.keyboard.press('Digit1');
     await response;
-    await page.waitForFunction(async()=>!(await import('/src/game/state.ts')).fight.combatBusy);
+    await page.waitForFunction(()=>!window.combatTestState.fight.combatBusy);
     const after=await page.evaluate(async()=>{
       const {vitals}=await import('/src/game/state.ts');
       const {syncSkillCooldown}=await import('/src/game/skillCooldown.ts');
       syncSkillCooldown({deadline:0,serverTime:0,revision:1});
       return (vitals.skillReadyAt-performance.now())/1000;
     });
+    assert.deepEqual(actions,['heavy_strike'],'The delayed RPC must be the skill, not a setup auto-attack');
     assert.ok(after>4&&after<5.9,`Acknowledgement does not restart a full six seconds: ${after}; calls=${calls}`);
     assert.equal(calls,1,'Repeated presses do not cast again during the cooldown');
     assert.equal(await slot.getAttribute('data-preserved'),'yes');
@@ -397,7 +421,7 @@ test('ranged damage waits for projectile arrival, attacks keep their full recove
     });
     assert.equal(result.inFlight,true);assert.equal(result.before,110);assert.ok(result.after<110);
     assert.equal(result.recovery.state,'recovering');assert.equal(result.recovery.duration,.55);
-    assert.equal(result.count,12);assert.equal(result.geometries,1,'Repeated hits share geometry instead of allocating it per spark');
+    assert.equal(result.count,8,'Compatible mode reduces the spark budget for repeated impacts');assert.equal(result.geometries,1,'Repeated hits share geometry instead of allocating it per spark');
     assert.deepEqual(errors,[]);
   }finally{await context.close();}
 });
@@ -411,12 +435,12 @@ test('the shadow fires a tracking bolt at a moving ranged player and melee attac
    (await import('/src/game/combat.ts')).releaseCombatTarget();
    window.brumaluz.move(fight.combatEncounter.x-8,fight.combatEncounter.z);fight.nextLocalEnemyAttack=0;
   });
-  await page.waitForFunction(async()=>{const {fight}=await import('/src/game/state.ts');return fight.combatEncounter.attackKind==='bolt'&&!!fight.combatEncounter.windup;});
+  await page.waitForFunction(()=>{const {fight}=window.combatTestState;return fight.combatEncounter.attackKind==='bolt'&&!!fight.combatEncounter.windup;});
   const hp=await page.evaluate(async()=>{
    const {fight,session}=await import('/src/game/state.ts');const before=session.state.health;
    window.brumaluz.move(fight.combatEncounter.x-10,fight.combatEncounter.z+1);return before;
   });
-  await page.waitForFunction(async hp=>(await import('/src/game/state.ts')).session.state.health<hp,hp,{timeout:6000});
+  await page.waitForFunction(hp=>window.combatTestState.session.state.health<hp,hp,{timeout:6000});
   const clips=await page.evaluate(async()=>{
    const {starterEquipment}=await import('/src/data/combat.ts');
    window.brumaluz.set({cls:'guerrero',equipment:starterEquipment('guerrero')});
@@ -425,6 +449,104 @@ test('the shadow fires a tracking bolt at a moving ranged player and melee attac
    return names;
   });
   assert.equal(new Set(clips).size,3);assert.ok(clips.includes('Combat_Thrust'));assert.ok(clips.includes('Combat_Backhand'));
+  assert.deepEqual(errors,[]);
+ }finally{await context.close();}
+});
+
+test('skills interrupt automatic windup and recovery, while rejected presses never cast later', {timeout:60000},async()=>{
+ const {context,page,errors}=await openFight();
+ try{
+  const first=await page.evaluate(async()=>{
+   const {fight,play}=await import('/src/game/state.ts');const combat=await import('/src/game/combat.ts');
+   const {holder}=await import('/src/game/stage.ts');
+   window.brumaluz.move(fight.combatEncounter.x-1,fight.combatEncounter.z);fight.nextLocalEnemyAttack=performance.now()/1000+100;
+   play.moveTarget=holder.position.clone().addScalar(10);combat.lockCombatTarget(true);fight.combatAuto=false;
+   const clearedDestination=play.moveTarget===null,before=fight.combatEncounter.health;
+   const basic=combat.performWorldCombatAction('attack');combat.useWorldCombatSkill();await basic;
+   return {clearedDestination,before,feedback:combat.getCombatActionFeedback()};
+  });
+  await page.waitForFunction(()=>!window.combatTestState.fight.combatBusy);
+  const after=await page.evaluate(async()=>{
+   const {fight}=await import('/src/game/state.ts');return {health:fight.combatEncounter.health,nextAttack:fight.localCombatState.nextAttack,nextSkill:fight.localCombatState.nextSkill};
+  });
+  assert.equal(first.clearedDestination,true,'Selecting an enemy clears the previous movement destination');
+  assert.ok(after.health<first.before,JSON.stringify({first,after}));assert.equal(after.nextAttack,0,'The interrupted basic swing never deals damage');assert.ok(after.nextSkill>0);
+  assert.equal(await page.evaluate(async()=>(await import('/src/game/state.ts')).fight.combatAuto),false,'The first confirmed hit does not re-enable stopped automatic attacks');
+  await page.waitForTimeout(1000);
+  const recovery=await page.evaluate(async()=>{
+   const {fight,session}=await import('/src/game/state.ts');const combat=await import('/src/game/combat.ts');
+   (await import('/src/game/skillCooldown.ts')).resetSkillCooldown();fight.localCombatState.nextSkill=0;session.state.resource=-1;
+   await combat.performWorldCombatAction('attack');const before=combat.getCombatActionFeedback();combat.useWorldCombatSkill();
+   return {before,after:combat.getCombatActionFeedback()};
+  });
+  assert.equal(recovery.before.state,'recovering');assert.equal(recovery.after.state,'casting','Skills start during basic recovery');
+  await page.waitForFunction(()=>!window.combatTestState.fight.combatBusy);
+  await page.waitForTimeout(1000);
+  const deadline=await page.evaluate(async()=>{
+   const {fight,vitals}=await import('/src/game/state.ts');vitals.skillReadyAt=performance.now()+120;
+   (await import('/src/ui/actionBar.ts')).useActionBarSlot(0);return fight.localCombatState.nextSkill;
+  });
+  await page.waitForTimeout(1200);
+  assert.equal(await page.evaluate(async()=>(await import('/src/game/state.ts')).fight.localCombatState.nextSkill),deadline,'Pressing just before ready does not schedule another cast');
+  assert.doesNotMatch(await page.locator('#action-bar').textContent(),/cola/i);
+  const blocked=await page.evaluate(async()=>{
+   const {fight,play,session,vitals}=await import('/src/game/state.ts');const combat=await import('/src/game/combat.ts');
+   vitals.skillReadyAt=0;const sight=play.city.lineOfSight;play.city.lineOfSight=()=>false;
+   const before=session.state.resource;combat.useWorldCombatSkill();play.city.lineOfSight=sight;
+   return {busy:fight.combatBusy,resource:session.state.resource,before};
+  });
+  assert.equal(blocked.busy,false);assert.equal(blocked.resource,blocked.before,'An obstructed skill spends no resource');
+  assert.equal(await page.locator('.ab-feedback').count(),0);
+  assert.deepEqual(errors,[]);
+ }finally{await context.close();}
+});
+
+test('contact feedback follows the swing, rewards explain progress and combat stays readable on mobile', {timeout:60000},async()=>{
+ const {context,page,errors}=await openFight('guerrero',true);
+ try{
+  const contact=await page.evaluate(async()=>{
+   const {fight,session}=await import('/src/game/state.ts');const combat=await import('/src/game/combat.ts');
+   const {scene}=await import('/src/game/stage.ts');const {vitalsOf}=await import('/src/data/stats.ts');
+   session.activeCharacterId=crypto.randomUUID();window.brumaluz.move(fight.combatEncounter.x-1,fight.combatEncounter.z);
+   combat.lockCombatTarget(true);fight.combatAuto=false;
+   return {encounter:{...fight.combatEncounter,engaged:true,health:95},vitals:{...vitalsOf(session.state),serverRevision:100},damage:15,healing:0,action:'attack',attackCooldown:1.5};
+  });
+  await page.route('**/rest/v1/rpc/combat_action',async route=>{
+   await new Promise(r=>setTimeout(r,700));await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(contact)});
+  });
+  await page.evaluate(async()=>{window.contactAction=(await import('/src/game/combat.ts')).performWorldCombatAction('attack');});
+  await page.waitForFunction(()=>!!window.combatTestScene.getObjectByName('combat-slash'));
+  assert.equal(await page.evaluate(async()=>(await import('/src/game/state.ts')).fight.combatEncounter.health),110,'Contact appears before the delayed authoritative health update');
+  await page.evaluate(()=>window.contactAction);
+  assert.equal(await page.evaluate(async()=>(await import('/src/game/state.ts')).fight.combatEncounter.health),95);
+  await page.evaluate(async()=>{
+   const {session,fight}=await import('/src/game/state.ts');const {combatReward}=await import('/src/game/combatFeedback.ts');
+   const combat=await import('/src/game/combat.ts');const {vitalsOf}=await import('/src/data/stats.ts');
+   combat.releaseCombatTarget();session.activeCharacterId=null;fight.nextLocalEnemyAttack=performance.now()/1000+100;
+   combat.applyCombatResult({data:{...session.state,experience:42,level:2},vitals:{...vitalsOf(session.state),serverRevision:101}});
+   combatReward(18,3);combatReward(12,2);
+  });
+  await page.locator('#combat-reward:not([hidden])').waitFor();
+  assert.match(await page.locator('#combat-reward strong').textContent(),/\+30 EXP.*\+5 Pelines/);
+  await page.waitForFunction(()=>document.querySelector('#combat-reward span').textContent.includes('42 / 283 EXP'));
+  assert.match(await page.locator('#combat-reward span').textContent(),/faltan 241/);
+  assert.equal(await page.locator('#hud-xp-text').isVisible(),true);
+  assert.equal(await page.locator('#levelup-title').textContent(),'Nivel 2');
+  await page.waitForTimeout(3100);
+  await mkdir('art/combat-review',{recursive:true});
+  await page.screenshot({path:'art/combat-review/combat-desktop.png'});
+  for(const width of [320,390]){
+   await page.setViewportSize({width,height:844});
+   assert.equal(await page.locator('#hud-xp-text').isVisible(),true);
+   const layout=await page.evaluate(()=>{
+    const reward=document.querySelector('#combat-reward').getBoundingClientRect(),target=document.querySelector('#target-frame').getBoundingClientRect();
+    return {fits:reward.left>=0&&reward.right<=innerWidth,overlap:!document.querySelector('#target-frame').hidden&&reward.left<target.right&&reward.right>target.left&&reward.top<target.bottom&&reward.bottom>target.top};
+   });
+   assert.equal(layout.fits,true);assert.equal(layout.overlap,false);
+  }
+  await page.screenshot({path:'art/combat-review/combat-mobile.png'});
+  await page.evaluate(async()=>{(await import('/src/game/playSession.ts')).exitPlay();});
+  assert.equal(await page.locator('#combat-reward').isVisible(),false,'Leaving play clears recent rewards');
   assert.deepEqual(errors,[]);
  }finally{await context.close();}
 });

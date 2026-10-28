@@ -2,6 +2,8 @@
 
 Este acabado es la referencia elegida para la ciudad de **Rusty Hearts**. Se conserva el nombre del grupo y los identificadores de los recursos para mantener las referencias de los mapas.
 
+La colección `brumaluz-hamlet` se reserva para Rusty Hearts. No debe utilizarse para amueblar los talleres de Brumaluz. La colección `brumaluz-arboleda` queda igualmente reservada a La Arboleda.
+
 Pack original de edificios, mobiliario y decoración para el editor de mapas. Comparte una paleta de madera cálida, piedra gris, revoco crema, teja de terracota y acentos verde azulado. Los volúmenes facetados, cantos suavizados y detalles de oficio mantienen la lectura a distancia del juego. El atlas pintado se incrusta en cada GLB para que el recurso funcione por sí solo.
 
 Son **30 piezas**: seis edificios (Casa del Sauce, Casa del Farol, Herbolario de la Bruma, Horno de la Plaza, Taller del Roble y Torre del Alba), doce muebles y doce elementos de decoración. Los muebles incluyen mesa servida, sillas, banco, taburete, cama, alacena, librería, escritorio, mostrador, arcón, hogar y alfombra. La decoración incluye faroles, señal, jardineras, barril, caja de cosecha, carro, pozo, fuente, valla y portilla.

@@ -20,7 +20,7 @@ export * from './map/collision';
 export async function loadMapWorld(doc: MapDocument, scene: THREE.Scene, provider: MapAssetProvider, /** `hide`: recursos que no se dibujan (el juego pone su propia agua en lugar de la casilla opaca). */
   options: { lighting?: boolean; batch?: boolean; hide?: (asset: string) => boolean } = {}) {
   const field = new TerrainField(decodeTerrain(doc.terrain));
-  const surface = new TerrainSurface(field);
+  const surface = new TerrainSurface(field,!!options.batch);
   const materials = new MaterialVariants(surface);
   const environment = new MapEnvironment(scene, options.lighting ?? true);
   const grass = new GrassField();
@@ -45,8 +45,8 @@ export async function loadMapWorld(doc: MapDocument, scene: THREE.Scene, provide
     spawnYaw: spawn?.rotationY ?? 0,
     /** `view`: campo de visión (m) para edificios y para detalles; sin él se dibuja todo. */
     update(t: number, focus: THREE.Vector3, view?: { distance: number; detail: number }) {
-      if (view) objects.cull(focus, view.distance, view.detail);
-      grass.update(t); objects.update(t); environment.update(t, focus);
+      if (view) { objects.cull(focus, view.distance, view.detail);surface.cull(focus,view.distance); }
+      grass.update(t, view ? focus : undefined, view ? Math.min(60, view.detail) : undefined); objects.update(t); environment.update(t, focus);
     },
   };
 }

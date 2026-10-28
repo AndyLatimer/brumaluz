@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { MapCollider, MapLayer, MapMarker, MarkerType } from '../../data/maps';
 import type { MapCollision, TerrainField } from '../../world/mapRuntime';
+import { loadProp } from '../../world/props';
 
 // Ayudas visuales del editor: colisiones resultantes, colisionadores propios y marcadores.
 
@@ -123,7 +124,7 @@ export class MarkerLayer {
     for (const marker of markers) {
       seen.add(marker.id);
       const color = marker.color ?? MARKER_COLORS[marker.type];
-      const key = `${marker.type}|${color}|${marker.radius}`;
+      const key = `${marker.type}|${color}|${marker.radius}|${marker.text === 'coin-bag' || marker.text === 'fairy-dust' ? marker.text : ''}`;
       let view = this.views.get(marker.id);
       if (view && view.key !== key) { this.drop(view); this.views.delete(marker.id); view = undefined; }
       if (!view) {
@@ -153,6 +154,15 @@ export class MarkerLayer {
     offset.name = 'pin';
     offset.add(pin, head);
     group.add(offset);
+    if (marker.type === 'interaction' && (marker.text === 'coin-bag' || marker.text === 'fairy-dust')) {
+      offset.position.y = .6;
+      void loadProp(marker.text).then(model => {
+        if (!group.parent) return;
+        model.name = 'collectible-model';
+        model.traverse(part => { part.userData.entity = `m:${marker.id}`; });
+        group.add(model);
+      }).catch(() => undefined);
+    }
     if (marker.type === 'spawn' || marker.type === 'npc' || marker.type === 'arrival') {
       const arrow = new THREE.Mesh(arrowGeometry, material);
       arrow.renderOrder = 8; arrow.userData.entity = `m:${marker.id}`;

@@ -18,6 +18,10 @@ es ropa base, sin estadísticas, sin ocupar ranuras y visible al desequiparse.
 
 ## Pelo y complementos del creador
 
+La ampliación del taller de personajes del 27 de octubre, sus combinaciones
+faciales y sus herramientas de edición se describen en
+[CHARACTER-CREATOR.md](CHARACTER-CREATOR.md).
+
 `npm run art:creator` extrae de Adventurers 2.0 tres piezas sin cuerpos,
 esqueletos ni texturas adicionales: el pelo de Ranger, el flequillo de
 Rogue Hooded y su pañuelo. El archivo de producción `creator-parts.glb`
@@ -64,6 +68,30 @@ estado accesible y los nombres nuevos se traducen al inglés.
   detalles, complementos y linajes en `art/creator-review/`.
 
 Es ajuste geométrico durante el montaje, sin simulación física del pelo o las joyas.
+
+La segunda ampliación del taller lleva el pelo a **28 peinados** (IDs 22–27:
+trenza alta, moño trenzado, melena de lado, rizos cortos, trenzas recogidas y
+moños trenzados dobles). Los complementos combinan gafas, cuello, pendientes y
+pañuelo mediante **200 IDs estables**, conservando los anteriores y añadiendo
+gafas cuadradas, medallón y perlas. Se mantienen las piezas de cuello sobre el
+pecho y la ocultación de boca/barba cuando se lleva el pañuelo, también en una
+combinación. No se regeneran los GLB ni se cambian los uniformes de NPCs.
+`node tools/review-creator-options.mjs` genera la lámina de frente, perfil y
+espalda en `art/creator-studio-review/expanded-options.png`; el contrato de IDs,
+controles y validación está en [el taller](CHARACTER-CREATOR.md).
+
+La revisión de modelado del creador sustituye las masas procedurales anteriores
+por superficies continuas de pelo con borde e interior, rizos esculpidos, trenzas
+con cruces planos y moños con pliegues. También retira el parche de color pelo
+del cráneo en esos estilos y ajusta las cejas sobre la superficie real. Bufanda,
+lazo y pétalos se modelan con espesor y pliegues; cadenas, bisagras y anillas
+completan los complementos. Los IDs y recursos GLB se conservan. Contrato y
+revisión visual en [Taller de personajes](CHARACTER-CREATOR.md#revisión-de-modelado-solicitada-después).
+
+El pulido posterior diferencia flequillos, nucas, rayas y direcciones de
+mechones por peinado. Las lunas se modelan como crecientes biselados y las hojas
+como superficies con nervadura y tallo común. La lámina adicional
+`art/creator-studio-review/refined-options.png` permite revisar sus tres vistas.
 
 ## Primera pieza de producción
 

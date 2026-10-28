@@ -1,0 +1,41 @@
+{
+  "report": [
+    {
+      "race": "humano",
+      "trait": 0,
+      "face": 0,
+      "hair": 23,
+      "acc": 194,
+      "minimumLensSkullGap": 0.05481579344035992,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "elfo",
+      "trait": 4,
+      "face": 1,
+      "hair": 8,
+      "acc": 77,
+      "minimumLensSkullGap": 0.057485652229845585,
+      "minimumMaskSkullGap": null
+    },
+    {
+      "race": "pelso",
+      "trait": 3,
+      "face": 2,
+      "hair": 27,
+      "acc": 173,
+      "minimumLensSkullGap": 0.0555544555858043,
+      "minimumMaskSkullGap": 0.03489999544281874
+    },
+    {
+      "race": "lagto",
+      "trait": 2,
+      "face": 3,
+      "hair": 12,
+      "acc": 198,
+      "minimumLensSkullGap": 0.0574280367866109,
+      "minimumMaskSkullGap": null
+    }
+  ],
+  "errors": []
+}

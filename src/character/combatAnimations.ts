@@ -1,6 +1,19 @@
 import * as THREE from 'three';
 import combatDuration from '../data/combatDuration.json';
 const refinedCache=new WeakMap<THREE.AnimationClip,{signature:string;clips:THREE.AnimationClip[]}>();
+const gestureCache=new WeakMap<THREE.AnimationClip,THREE.AnimationClip>();
+
+/** Additive hands/torso gesture: drinking or using an item keeps the legs moving. */
+export function upperBodyGesture(clip:THREE.AnimationClip){
+ const cached=gestureCache.get(clip);if(cached)return cached;
+ const tracks=clip.tracks.filter(track=>{
+  const node=THREE.PropertyBinding.parseTrackName(track.name).nodeName??'';
+  return /^(spine|chest|neck|head|(upperarm|lowerarm|hand)[._]?[lr])$/.test(node);
+ }).map(track=>track.clone());
+ const gesture=new THREE.AnimationClip(`${clip.name}_UpperBody`,clip.duration,tracks);
+ THREE.AnimationUtils.makeClipAdditive(gesture,0);
+ gestureCache.set(clip,gesture);return gesture;
+}
 
 /** Retimed clips preserve the authored KayKit rig, with clear preparation, impact and recovery. */
 export function refinedCombatClips(clips:THREE.AnimationClip[]){

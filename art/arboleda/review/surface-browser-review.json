@@ -1,0 +1,197 @@
+{
+  "frames": [
+    {
+      "asset": "brumaluz-arboleda/objects/house_leafhaven",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/house_leafhaven",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/house_leafhaven",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/house_leafhaven",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/laboratory_dew",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/laboratory_dew",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/laboratory_dew",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/laboratory_dew",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/pavilion_moonwell",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/tower_starwatch",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/tower_starwatch",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/tower_starwatch",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/tower_starwatch",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bridge_rootwoven",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bridge_rootwoven",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bridge_rootwoven",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bridge_rootwoven",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/fence_vinepanel",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/fence_vinepanel",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/fence_vinepanel",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/fence_vinepanel",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bench_bough",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bench_bough",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bench_bough",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bench_bough",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bed_ferncanopy",
+      "view": "Frente · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bed_ferncanopy",
+      "view": "Perfil · editor",
+      "near": 0.1,
+      "far": 4000
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bed_ferncanopy",
+      "view": "Reverso · juego",
+      "near": 0.05,
+      "far": 900
+    },
+    {
+      "asset": "brumaluz-arboleda/objects/bed_ferncanopy",
+      "view": "Lejos · editor",
+      "near": 0.1,
+      "far": 4000
+    }
+  ],
+  "issues": []
+}

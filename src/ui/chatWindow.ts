@@ -216,7 +216,7 @@ export function focusChat(prefill?: string) {
 }
 export const isChatFocused = () => document.activeElement === $<HTMLInputElement>('.chat-input');
 
-function setCollapsed(collapsed: boolean) {
+function setCollapsed(collapsed: boolean, persist = true) {
   root().classList.toggle('collapsed', collapsed);
   root().classList.remove('hover-revealed', 'peek-expanded');
   if (collapsed) $<HTMLInputElement>('.chat-input').blur();
@@ -227,7 +227,7 @@ function setCollapsed(collapsed: boolean) {
   button.title = label;
   button.setAttribute('aria-label', label);
   if (!collapsed) { unread = 0; delete button.dataset.unread; $<HTMLElement>('.chat-log').scrollTop = 1e9; }
-  store.set('collapsed', collapsed);
+  if (persist) store.set('collapsed', collapsed);
 }
 
 function help() {
@@ -349,7 +349,9 @@ export function initChat(h: ChatHooks) {
     };
   }
   $<HTMLButtonElement>('.chat-collapse').onclick = () => setCollapsed(!root().classList.contains('collapsed'));
-  if (store.get('collapsed', false)) setCollapsed(true);
+  const savedCollapsed = store.get<unknown>('collapsed', null);
+  // A compact first visit leaves room for mobile play. Only an explicit player choice is saved.
+  setCollapsed(typeof savedCollapsed === 'boolean' ? savedCollapsed : matchMedia('(max-width: 640px)').matches, false);
   initResize();
   setSendChannel(sendChannel);
   $<HTMLButtonElement>('.chat-channel').onclick = () => { setSendChannel(sendChannel === 'general' ? 'zone' : sendChannel==='zone'?'party':'general'); input.focus(); };

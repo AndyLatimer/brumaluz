@@ -1,0 +1,6 @@
+[
+  {"name":"brumaluz-exterior","target":[-120,8,-90],"position":[-220,100,55]},
+  {"name":"puerta-este","target":[-67,3,-90],"position":[-24,20,-49]},
+  {"name":"praderas-y-colinas","target":[-80,16,-300],"position":[120,88,-90]},
+  {"name":"cumbres-de-cobre","target":[700,35,440],"position":[920,140,680]}
+]

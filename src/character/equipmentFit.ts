@@ -108,10 +108,14 @@ function fitSculptedHeadwear(object:THREE.Object3D,head:HeadResult,own:Own){
 }
 
 /** Rest-pose garment envelope shared with the accessory authoring pattern. */
-export function torsoSurface(x:number,y:number){
+export function torsoRadii(y:number){
  const rows=[[.52,.327,.269],[.68,.31,.258],[.80,.297,.249],[.98,.31,.255],[1.10,.30,.248],[1.17,.25,.213],[1.245,.145,.135]];
  let a=rows[0],b=a;for(const row of rows){b=row;if(row[0]>=y)break;a=row}
  const t=a===b?0:THREE.MathUtils.clamp((y-a[0])/(b[0]-a[0]),0,1),rx=THREE.MathUtils.lerp(a[1],b[1],t),rz=THREE.MathUtils.lerp(a[2],b[2],t);
+ return {rx,rz};
+}
+export function torsoSurface(x:number,y:number){
+ const {rx,rz}=torsoRadii(y);
  return rz*Math.sqrt(Math.max(0,1-(x/rx)**2));
 }
 
@@ -134,7 +138,7 @@ function garmentProjection(geometry:THREE.BufferGeometry){
 }
 
 /** Jewellery rests on the equipped cloth and uses that cloth's weights, including its spine blend. */
-export function settleAccessory(object:THREE.Object3D,garment:THREE.Object3D,own:Own){
+export function settleAccessory(object:THREE.Object3D,garment:THREE.Object3D,own:Own,maxOffset=.028){
  const surfaces:{mesh:THREE.SkinnedMesh;cells:Map<string,ProjectedFace[]>}[]=[];
  // A garment with several GLB materials is a Group, not a single SkinnedMesh.
  // Fit against its outer plate, collar and belt as well as the cloth beneath.
@@ -161,7 +165,7 @@ export function settleAccessory(object:THREE.Object3D,garment:THREE.Object3D,own
    }
    if(!surface||!face)continue;
    const weights=surface.geometry.getAttribute('skinWeight'),joints=surface.geometry.getAttribute('skinIndex');
-   const depth=THREE.MathUtils.clamp(Math.abs(z)-torsoSurface(x,y),.003,.028);
+   const depth=THREE.MathUtils.clamp(Math.abs(z)-torsoSurface(x,y),.003,maxOffset);
    p.setZ(i,hitZ+side*depth);
    const influence=new Map<number,number>();
    const skeleton=surface.skeleton;

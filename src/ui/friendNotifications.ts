@@ -2,13 +2,13 @@ import type { FriendEntry } from '../services/account';
 import { observeFriends, readFriends } from '../services/friends';
 import { chatSystem } from './chatWindow';
 import { t } from './i18n';
+import { toast } from './toast';
 
 export function startFriendNotifications() {
   let closed = false;
   let previous = new Map<string, FriendEntry['status']>();
   let failed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let toastTimer: ReturnType<typeof setTimeout> | undefined;
   const toggle = document.getElementById('player-menu-toggle')!;
   const social = document.querySelector<HTMLButtonElement>('[data-window="social"]')!;
   const badge = document.createElement('span');
@@ -16,28 +16,9 @@ export function startFriendNotifications() {
   badge.hidden = true;
   badge.textContent = '!';
   toggle.append(badge);
-  const toast = document.createElement('div');
-  toast.className = 'friend-notification';
-  toast.hidden = true;
-  toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
-  document.body.append(toast);
-  const queue: string[] = [];
-  function showNext() {
-    const text = queue.shift();
-    if (!text || closed) return;
-    toast.textContent = text;
-    toast.hidden = false;
-    toastTimer = setTimeout(() => {
-      toast.hidden = true;
-      toastTimer = undefined;
-      showNext();
-    }, 4500);
-  }
-  function notify(text: string) {
-    chatSystem(text);
-    queue.push(text);
-    if (!toastTimer) showNext();
+  function notify(text: string, name: string) {
+    // One queue respects conversations, cinematics and reading time for every notice.
+    toast('Amistades', text, false, { name });
   }
   const unsubscribe = observeFriends((entries) => {
     if (closed) return;
@@ -48,8 +29,8 @@ export function startFriendNotifications() {
     social.setAttribute('aria-label', incoming ? t('Social: {n} solicitudes pendientes', { n: incoming }) : t('Social'));
     for (const entry of entries) {
       const before = previous.get(entry.userId);
-      if (entry.status === 'incoming' && before !== 'incoming') notify(t('{name} te ha enviado una solicitud de amistad.', { name: `~${entry.username}` }));
-      if (entry.status === 'friend' && before === 'outgoing') notify(t('{name} ha aceptado tu solicitud de amistad.', { name: `~${entry.username}` }));
+      if (entry.status === 'incoming' && before !== 'incoming') notify('{name} te ha enviado una solicitud de amistad.', `~${entry.username}`);
+      if (entry.status === 'friend' && before === 'outgoing') notify('{name} ha aceptado tu solicitud de amistad.', `~${entry.username}`);
     }
     previous = new Map(entries.map((entry) => [entry.userId, entry.status]));
   });
@@ -69,9 +50,7 @@ export function startFriendNotifications() {
     closed = true;
     unsubscribe();
     clearTimeout(timer);
-    clearTimeout(toastTimer);
     badge.remove();
-    toast.remove();
     social.classList.remove('has-friend-requests');
     social.setAttribute('aria-label', t('Social'));
   };

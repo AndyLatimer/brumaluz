@@ -23,6 +23,7 @@ import { setWindow } from './menus';
 import { keys, marker, TEST, holder } from '../game/stage';
 import { corpseLooted } from '../story/scenes';
 import { shadowQuestTarget } from '../story/quests';
+import {tutorialTarget,tutorialObjective} from '../data/professionTutorial';
 import { npcActors } from '../game/cities';
 import { $ } from './dom';
 import { toast, renderToast } from './toast';
@@ -31,6 +32,8 @@ import { focusConversationSpeaker } from '../game/conversation';
 import { refreshUI } from './creator';
 import { refreshAmbientControls } from '../game/audio';
 import { displayCharacters } from './characterSelect';
+import { RPG_CATALOG, gatherEnergy, professionState, professionRank } from '../data/professions';
+import { resourceFamily } from '../data/resourceAppearance';
 
 export const tradeWindow = createTradeWindow({
   active(id) { return play.mode==='play' && session.activeCharacterId===id && !play.dead; },
@@ -49,20 +52,28 @@ export const tradeWindow = createTradeWindow({
 export const personalWaypoints = new Map<string, { x: number; z: number }>();
 export const questTracking = createQuestTracking(() => `brumaluz-quest-tracking:${session.activeCharacterId ?? 'test'}`);
 export function zoneMapPoints(): MapPoint[] {
-  const quest = play.city.locationId === 'brumaluz' ? questTracking.current(session.state) : null;
-  const objective = quest === 'shadow'
+  const resources=professionState(session.state.rpg),now=Date.now()/1000;
+  const tracked=questTracking.current(session.state);
+  const quest = play.city.locationId === 'brumaluz'||tracked==='profession' ? tracked : null;
+  const objective = quest === 'profession' ? tutorialTarget(session.state,play.city.locationId) : quest === 'shadow'
     ? { name:t(shadowObjective(session.state.shadowQuest, corpseLooted(), play.city.locationId)), ...shadowQuestTarget() }
     : quest === 'welcome' && session.state.welcome
       ? { name:t(welcomeObjective(session.state.welcome)), ...(session.state.welcome.stage === 'active' ? WELCOME_BADGE : story.welcomeWorld.root.position) }
-      : null;
+        : quest === 'fairy-dust' && session.state.fairyDustQuest === 'ask_gnomi'
+          ? { name: t('Pregunta a Gnomi por el polvo de hada que has encontrado.'), ...story.welcomeWorld.root.position }
+          : null;
   return [
+    ...Object.values(RPG_CATALOG.nodes).filter(node=>node.location===play.city.locationId&&(resources.nodes[node.id]??0)<=now).map(node=>({
+      id:`resource:${node.id}`,name:`${t(node.label)} · ${gatherEnergy(professionRank(resources,node.job),node.tier??0)} ${t('energía')} · ${node.seconds} s`,
+      x:node.x,z:node.z,kind:resourceFamily(node.item??'')??'herb',resource:true,
+    })),
     ...npcActors.filter(npc => npc.character.root.visible)
-      .map(npc => ({ id:npc.id, name:story.NPCS[npc.id].name, x:npc.character.root.position.x, z:npc.character.root.position.z })),
+      .map(npc => ({ id:npc.id, name:story.NPCS[npc.id].name, x:npc.character.root.position.x, z:npc.character.root.position.z,kind:story.NPCS[npc.id].type==='trainer'?'workshop' as const:'npc' as const })),
     ...(story.welcomeWorld.root.visible ? [{id:'gnomi',name:session.registeredNpcs.gnomi.name,x:story.welcomeWorld.root.position.x,z:story.welcomeWorld.root.position.z}] : []),
     ...play.city.portals.map(portal => ({
       id:`portal:${portal.id}`, name:`${portal.name}${!portal.target || (portal.target.map !== 'brumaluz' && !publishedMaps()[portal.target.map]) ? ` · ${t('Camino cerrado')}` : ''}`,
       x:portal.position.x, z:portal.position.z,
-      kind:publishedMaps()[portal.target?.map ?? '']?.kind === 'interior' ? 'interior' as const : 'exit' as const,
+      kind:portal.target?.map.startsWith('taller_')?'workshop' as const:publishedMaps()[portal.target?.map ?? '']?.kind === 'interior' ? 'interior' as const : 'exit' as const,
       closed:!portal.target || (portal.target.map !== 'brumaluz' && !publishedMaps()[portal.target.map]),
     })),
     ...(objective ? [{id:'quest-objective',...objective,kind:'quest' as const}] : []),
@@ -81,7 +92,7 @@ export function refreshLanguageDependentUI() {
   renderBuffs(session.state, !vitals.foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (ui.openWindow === 'sheet' || ui.openWindow === 'vendor' || ui.openWindow === 'bank' || ui.openWindow === 'quests' || ui.openWindow === 'skills' || ui.openWindow === 'map' || ui.openWindow === 'collections') setWindow(ui.openWindow, false);
+  if (ui.openWindow === 'sheet' || ui.openWindow === 'vendor' || ui.openWindow === 'bank' || ui.openWindow === 'quests' || ui.openWindow === 'skills' || ui.openWindow === 'map' || ui.openWindow === 'collections' || ui.openWindow === 'professions') setWindow(ui.openWindow, false);
   if (session.currentUser) displayCharacters(session.cachedCharacters);
   $('#auth-submit').textContent = session.authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -138,13 +149,11 @@ export function installGameInterface() {
     document.querySelector('[data-window="social"]')?.classList.toggle('has-party-invite',party.incoming.length>0);
     for(const invite of party.incoming) if(!session.previousPartyInvites.has(invite.id)){
       toast('Invitación de grupo','~{name} te invita a su grupo. Abre Social → Grupo para responder.',false,{name:invite.username});
-      chatSystem(t('~{name} te invita a su grupo. Abre Social → Grupo para responder.',{name:invite.username}));
     }
     session.previousPartyInvites=new Set(party.incoming.map(invite=>invite.id));
     for(const response of party.responses){
       const message=response.accepted?'~{name} ha aceptado tu invitación y se ha unido al grupo.':'~{name} ha rechazado tu invitación de grupo.';
       toast('Invitación de grupo',message,false,{name:response.username});
-      chatSystem(t(message,{name:response.username}));
     }
     if(play.mode==='play') {
       updateHud();

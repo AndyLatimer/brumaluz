@@ -1,5 +1,5 @@
 import projectCatalog from './npcs.json';
-import { validateNpcCatalog, type WorldNpcId } from './npcs';
+import { validateNpcCatalog, WORLD_NPC_IDS, type NpcDefinition, type WorldNpcId } from './npcs';
 
 export function loadWorldNpcs() {
   const catalog = validateNpcCatalog(projectCatalog);
@@ -8,5 +8,5 @@ export function loadWorldNpcs() {
     if (!definition) throw new Error(`Falta el NPC del mundo "${id}" en src/data/npcs.json.`);
     return definition;
   };
-  return { testiculos: get('testiculos'), gnomi: get('gnomi'), isberto: get('isberto') };
+  return Object.fromEntries(WORLD_NPC_IDS.map(id => [id, get(id)])) as Record<WorldNpcId, NpcDefinition>;
 }

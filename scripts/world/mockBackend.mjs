@@ -148,8 +148,9 @@ export async function openPlayer(world, account, compatible = true, clockTime) {
       const taken=character.data.fairyDust??[];
       if(!['plaza_fuente','arco_entrada'].includes(args.p_dust_id))return fulfill({message:'FAIRY_DUST_INVALID'},400);
       if(taken.includes(args.p_dust_id))return fulfill({message:'FAIRY_DUST_TAKEN'},400);
-      const amount=1+Math.floor(Math.random()*5);
-      let inv=character.data.inventory??[];
+      if(world.fail.has('fairydust'))return fulfill({message:'FAIRY_DUST_TOO_FAR'},400);
+      const amount=3;
+      let inv=(character.data.inventory??[]).map(item=>item?{...item}:null);
       for(let i=0;i<amount;i++){
         const slot=inv.findIndex(s=>s&&s.id==='polvo_de_hada'&&s.count<50);
         if(slot>=0){inv[slot].count++;}
@@ -161,6 +162,13 @@ export async function openPlayer(world, account, compatible = true, clockTime) {
       }
       character.data.inventory=inv;
       character.data.fairyDust=[...taken,args.p_dust_id];
+      character.data.fairyDustQuest??='ask_gnomi';
+      return fulfill(character.data);
+    }
+    if(fn==='fairy_dust_quest_action'){
+      if(world.fail.has('dustquest'))return fulfill({message:'FAIRY_DUST_QUEST_TOO_FAR'},400);
+      if(character.data.fairyDustQuest!=='ask_gnomi')return fulfill({message:'FAIRY_DUST_QUEST_STATE'},400);
+      character.data.fairyDustQuest='arboleda';
       return fulfill(character.data);
     }
     if(fn==='shadow_action'){
@@ -191,7 +199,7 @@ export async function openPlayer(world, account, compatible = true, clockTime) {
       if(args.p_skill_id!==id)return fulfill({message:'SKILL_INVALID'},400);
       if(args.p_expected_rank!==rank)return fulfill({message:'SKILL_CHANGED'},400);
       if(rank>=5)return fulfill({message:'SKILL_MAX_RANK'},400);
-      if(character.data.level<rank*2)return fulfill({message:'SKILL_LEVEL_REQUIRED'},400);
+      if(character.data.level<rank+1)return fulfill({message:'SKILL_LEVEL_REQUIRED'},400);
       character.data.skillRanks={...(character.data.skillRanks??{}),[id]:rank+1};
       return fulfill(character.data);
     }

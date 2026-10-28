@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "revision": 2,
   "title": "Arboleda · Cuna de los Elfos",
   "author": "Brumaluz",
   "description": "Arte original de Blender: arquitectura de madera viva, hojas, piedra lunar y alquimia botánica. Escala métrica. GLB +Y arriba, +Z frente.",
@@ -9,8 +10,8 @@
       "label": "Casa Brote del Alba",
       "category": "Edificios",
       "description": "Vivienda élfica circular con tejado de hojas solapadas, ventanales ojivales y raíces habitables.",
-      "triangles": 14584,
-      "parts": 240,
+      "triangles": 18552,
+      "parts": 271,
       "galleryPosition": [
         -9,
         8,
@@ -22,8 +23,8 @@
       "label": "Alquimería del Rocío",
       "category": "Edificios",
       "description": "Laboratorio arbóreo de dos alturas, alambique exterior, balcón y cubierta vegetal.",
-      "triangles": 12752,
-      "parts": 144,
+      "triangles": 15990,
+      "parts": 168,
       "galleryPosition": [
         0,
         8,
@@ -35,8 +36,8 @@
       "label": "Pabellón del Manantial",
       "category": "Edificios",
       "description": "Santuario abierto con seis columnas ramificadas y rosetón vegetal.",
-      "triangles": 8708,
-      "parts": 92,
+      "triangles": 12740,
+      "parts": 127,
       "galleryPosition": [
         8,
         8,
@@ -48,8 +49,8 @@
       "label": "Atalaya de las Copas",
       "category": "Edificios",
       "description": "Torre de vigía de madera viva, escalera helicoidal y mirador de hojas.",
-      "triangles": 9876,
-      "parts": 140,
+      "triangles": 13204,
+      "parts": 169,
       "galleryPosition": [
         -5,
         17,
@@ -61,8 +62,8 @@
       "label": "Invernadero de Lunhelecho",
       "category": "Edificios",
       "description": "Invernadero octogonal de cristal de jade con nervaduras, parterres y flores lunares.",
-      "triangles": 8900,
-      "parts": 205,
+      "triangles": 8848,
+      "parts": 204,
       "galleryPosition": [
         4,
         17,
@@ -74,8 +75,8 @@
       "label": "Umbral de las Dos Ramas",
       "category": "Construcción",
       "description": "Gran arco transitable de ramas entrelazadas, hojas y faroles de luciérnaga.",
-      "triangles": 3792,
-      "parts": 46,
+      "triangles": 3750,
+      "parts": 44,
       "galleryPosition": [
         -9,
         0,
@@ -113,7 +114,7 @@
       "label": "Mesa de la Transmutación",
       "category": "Alquimia",
       "description": "Mesa de trabajo con herbario abierto, matraces, mortero, retorta y diagrama alquímico.",
-      "triangles": 3008,
+      "triangles": 2976,
       "parts": 36,
       "galleryPosition": [
         -10.0,
@@ -126,8 +127,8 @@
       "label": "Silla Hoja de Laurel",
       "category": "Mobiliario",
       "description": "Silla con respaldo lanceolado, incrustación vegetal y cojín verde.",
-      "triangles": 568,
-      "parts": 10,
+      "triangles": 558,
+      "parts": 9,
       "galleryPosition": [
         -7.0,
         -5.0,
@@ -139,8 +140,8 @@
       "label": "Banco de Ramas Gemelas",
       "category": "Mobiliario",
       "description": "Banco de jardín con asiento entablado, brazos curvos y respaldo trenzado.",
-      "triangles": 1144,
-      "parts": 13,
+      "triangles": 1134,
+      "parts": 12,
       "galleryPosition": [
         -4.0,
         -5.0,
@@ -152,8 +153,8 @@
       "label": "Lecho del Sueño Verde",
       "category": "Mobiliario",
       "description": "Cama con dosel de hojas, sábanas de lino, manta cosida y cuatro postes orgánicos.",
-      "triangles": 2244,
-      "parts": 39,
+      "triangles": 2268,
+      "parts": 41,
       "galleryPosition": [
         -1.0,
         -5.0,
@@ -165,8 +166,8 @@
       "label": "Armario del Guardasemillas",
       "category": "Mobiliario",
       "description": "Armario ojival con puertas talladas, cajones, herrajes de latón y pequeñas semillas de cristal.",
-      "triangles": 1772,
-      "parts": 30,
+      "triangles": 1752,
+      "parts": 28,
       "galleryPosition": [
         2.0,
         -5.0,
@@ -178,7 +179,7 @@
       "label": "Estantería del Herbario",
       "category": "Alquimia",
       "description": "Estantes curvos con libros encuadernados, frascos de colores y plantas medicinales.",
-      "triangles": 7290,
+      "triangles": 7226,
       "parts": 127,
       "galleryPosition": [
         5.0,
@@ -191,7 +192,7 @@
       "label": "Caldero de Savia Lunar",
       "category": "Alquimia",
       "description": "Caldero abierto con infusión luminosa, hojas flotantes y soporte de raíces.",
-      "triangles": 1904,
+      "triangles": 1896,
       "parts": 14,
       "galleryPosition": [
         8.0,
@@ -204,7 +205,7 @@
       "label": "Alambique de la Espiral",
       "category": "Alquimia",
       "description": "Alambique completo con retorta de cobre, serpentín helicoidal, baño refrigerante y matraz receptor.",
-      "triangles": 3492,
+      "triangles": 3460,
       "parts": 13,
       "galleryPosition": [
         11.0,
@@ -217,7 +218,7 @@
       "label": "Farola Capullo de Luciérnagas",
       "category": "Decoración",
       "description": "Farola vegetal de pie con jaula de seis pétalos y remate de hojas.",
-      "triangles": 1404,
+      "triangles": 1396,
       "parts": 15,
       "galleryPosition": [
         -10.0,
@@ -230,7 +231,7 @@
       "label": "Fuente del Loto Esmeralda",
       "category": "Decoración",
       "description": "Fuente de dos niveles con receptáculo abierto, pétalos tallados y agua turquesa.",
-      "triangles": 2690,
+      "triangles": 2668,
       "parts": 27,
       "galleryPosition": [
         -7.0,
@@ -243,7 +244,7 @@
       "label": "Menhir del Pacto Verde",
       "category": "Decoración",
       "description": "Monolito facetado de piedra clara, runas talladas, medallón y musgo.",
-      "triangles": 990,
+      "triangles": 970,
       "parts": 13,
       "galleryPosition": [
         -4.0,
@@ -256,7 +257,7 @@
       "label": "Esfera de las Tres Lunas",
       "category": "Alquimia",
       "description": "Instrumento astral con tres aros inclinados, esfera central y base tallada.",
-      "triangles": 2600,
+      "triangles": 2576,
       "parts": 9,
       "galleryPosition": [
         -1.0,
@@ -269,7 +270,7 @@
       "label": "Secadero de Hierbas",
       "category": "Alquimia",
       "description": "Bastidor con cinco manojos de plantas suspendidos de cuerdas de lino.",
-      "triangles": 7554,
+      "triangles": 7514,
       "parts": 115,
       "galleryPosition": [
         2.0,
@@ -282,7 +283,7 @@
       "label": "Jardinera de Flores Lunares",
       "category": "Decoración",
       "description": "Macetero de cerámica verde con borde dorado, helechos y flores de cinco pétalos.",
-      "triangles": 5362,
+      "triangles": 5354,
       "parts": 104,
       "galleryPosition": [
         5.0,
@@ -295,7 +296,7 @@
       "label": "Bandeja de Elixires",
       "category": "Alquimia",
       "description": "Bandeja de latón con cinco frascos etiquetados de distintos tamaños y colores.",
-      "triangles": 2456,
+      "triangles": 2416,
       "parts": 21,
       "galleryPosition": [
         8.0,
@@ -360,7 +361,7 @@
       "label": "Setas de Luna",
       "category": "Naturaleza",
       "description": "Grupo de siete setas con sombrerillos de jade, motas claras y láminas radiales.",
-      "triangles": 4648,
+      "triangles": 4438,
       "parts": 105,
       "galleryPosition": [
         19.5,
@@ -373,7 +374,7 @@
       "label": "Cristales de Rocío",
       "category": "Naturaleza",
       "description": "Drusa de cuarzo verde con puntas facetadas, vetas doradas y base musgosa.",
-      "triangles": 2394,
+      "triangles": 2334,
       "parts": 68,
       "galleryPosition": [
         25.0,

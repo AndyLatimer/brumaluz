@@ -52,17 +52,20 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
   const relative = new THREE.Vector2();
   let overCanvas = false;
   let nextCheck = 0;
-  let signature = '';
+  let identitySignature = '';
   let selectedId: string | null = null;
   let current: TargetDetails | null = null;
-  window.addEventListener('pointermove', (event) => {
+  const movePointer = (event: PointerEvent) => {
     overCanvas = event.target === canvas && event.pointerType !== 'touch';
     if (!overCanvas) return;
     const rect = canvas.getBoundingClientRect();
     pointer.set(event.clientX - rect.left, event.clientY - rect.top);
-  });
-  canvas.addEventListener('pointerleave', () => { overCanvas = false; });
-  window.addEventListener('blur', () => { overCanvas = false; panel.hidden = true; });
+  };
+  const leavePointer = () => { overCanvas = false; };
+  const blur = () => { overCanvas = false; panel.hidden = true; };
+  window.addEventListener('pointermove', movePointer);
+  canvas.addEventListener('pointerleave', leavePointer);
+  window.addEventListener('blur', blur);
 
   function visible(target: TargetDetails, origin:THREE.Vector3=camera.position) {
     // Test stable body anchors, not animated meshes or small gaps between limbs.
@@ -125,19 +128,33 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
     return hovered ?? (previous && previous.score <= aimScore + THREE.MathUtils.degToRad(2) ? previous.target : aimed);
   }
   function meter(element: HTMLElement, label: string, value: number, max: number, extra = 0) {
+    // NPCs and newly received snapshots can have an empty resource pool.
+    // A zero/invalid maximum must never produce NaN widths or invalid ARIA.
+    max = Number.isFinite(max) && max > 0 ? max : 1;
+    value = Number.isFinite(value) ? Math.max(0, Math.min(max, value)) : 0;
+    extra = Number.isFinite(extra) ? Math.max(0, extra) : 0;
     element.setAttribute('role', 'meter');
     element.setAttribute('aria-label', label);
     element.setAttribute('aria-valuemin', '0');
     element.setAttribute('aria-valuemax', String(max));
     element.setAttribute('aria-valuenow', String(value));
-    element.querySelector<HTMLElement>('i')!.style.width = `${value / max * 100}%`;
+    const fill = element.querySelector<HTMLElement>('i')!;
+    const width = `${Math.round(value / max * 1000) / 10}%`;
+    if (fill.style.width !== width) fill.style.width = width;
     const text = `${Math.ceil(value)} / ${Math.ceil(max)}${extra ? ` (+${Math.ceil(extra)})` : ''}`;
-    element.querySelector('span')!.textContent = text;
+    const caption = element.querySelector('span')!;
+    if (caption.textContent !== text) caption.textContent = text;
     element.setAttribute('aria-valuetext', `${label} ${text}`);
   }
   return {
     canSee:visible,
     current: () => panel.hidden ? null : current,
+    dispose() {
+      window.removeEventListener('pointermove', movePointer);
+      canvas.removeEventListener('pointerleave', leavePointer);
+      window.removeEventListener('blur', blur);
+      panel.remove(); current = null;
+    },
     update(targets: TargetDetails[], enabled: boolean, origin: THREE.Vector3, lockedId: string | null = null) {
       if (!enabled) { panel.hidden = true; nextCheck = 0; selectedId = null; current = null; return; }
       const now = performance.now();
@@ -152,11 +169,13 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
       panel.setAttribute('data-locked', String(!!target && target.id === lockedId));
       panel.hidden = !target;
       if (!target) return;
-      const key = JSON.stringify([target.id, target.name, target.level, target.identity, target.vitals, target.cast, t('Nivel {n}')]);
-      if (key === signature) return;
-      signature = key;
+      // A cast changes every tick, but its badge/name do not. Rebuilding the
+      // emblem during every windup used to churn SVG nodes ten times a second.
+      const key = JSON.stringify([target.id, target.name, target.level, target.identity, t('Nivel {n}')]);
       const npc = target.identity.kind === 'npc';
       const hostile=npc&&target.identity.kind==='npc'&&target.identity.type==='hostile';
+      if (key !== identitySignature) {
+      identitySignature = key;
       panel.classList.toggle('npc', npc&&!hostile);
       panel.classList.toggle('hostile',hostile);
       panel.dataset.targetId = target.id;
@@ -183,12 +202,12 @@ export function createTargetFrame(canvas: HTMLCanvasElement, camera: THREE.Camer
         username.textContent = '';
       }
       username.hidden = !username.textContent;
+      }
       const v = target.vitals;
-      resource.hidden=hostile&&!target.cast;resource.classList.toggle('enemy-cast',!!target.cast);
+      resource.hidden=hostile||v.maxResource<=0;
       meter(health, t('Vida'), v.health, v.maxHealth, v.overheal);
       resource.classList.toggle('stamina', v.resourceKind === 'stamina');
-      meter(resource, t(v.resourceKind === 'mana' ? 'Maná' : 'Estamina'), v.resource, v.maxResource);
-      if(target.cast){meter(resource,target.cast.label,Math.max(0,target.cast.duration-target.cast.remaining),target.cast.duration);resource.querySelector('span')!.textContent=`${target.cast.label} · ${Math.max(0,target.cast.remaining).toFixed(1)} s`;}
+      if(!resource.hidden) meter(resource, t(v.resourceKind === 'mana' ? 'Maná' : 'Estamina'), v.resource, v.maxResource);
     },
   };
 }

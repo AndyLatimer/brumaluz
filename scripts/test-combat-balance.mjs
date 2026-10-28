@@ -37,9 +37,9 @@ test('starting class damage stays close while every normal monster survives enou
  assert.ok(Math.max(...offensive)/Math.min(...offensive)<1.2,'Offensive starter rotations remain within 20% before movement and mitigation');
 });
 
-test('the shadow threatens maximum player range with bolts as well as avoidable area attacks',()=>{
+test('the shadow fights with ordinary melee strikes and ranged bolts without area phases',()=>{
  assert.ok(game.SHADOW_COMBAT.range>Math.max(...Object.values(game.COMBAT_KITS).map(kit=>kit.range)));
- assert.equal(game.shadowAttack(8,0),'area');assert.equal(game.shadowAttack(8,1),'bolt');assert.equal(game.shadowAttack(8,2),'bolt');assert.equal(game.shadowAttack(8,3),'area');
+ for(let sequence=0;sequence<12;sequence++){assert.equal(game.shadowAttack(8,sequence),'bolt');assert.equal(game.shadowAttack(1,sequence),'melee');}
  assert.equal(game.shadowAttack(1,1),'melee');
  assert.ok(game.SHADOW_COMBAT.damage.bolt>0);assert.ok(game.shadowWindup('bolt')<game.shadowWindup('area'));
 });

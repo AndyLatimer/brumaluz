@@ -6,7 +6,7 @@
       "id": "brumaluz-arboleda/objects/house_leafhaven",
       "url": "/src/assets/library/brumaluz-arboleda/objects/house_leafhaven.glb",
       "meshes": 1,
-      "triangles": 14584,
+      "triangles": 18552,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -15,7 +15,7 @@
       "id": "brumaluz-arboleda/objects/laboratory_dew",
       "url": "/src/assets/library/brumaluz-arboleda/objects/laboratory_dew.glb",
       "meshes": 1,
-      "triangles": 12752,
+      "triangles": 15990,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -24,7 +24,7 @@
       "id": "brumaluz-arboleda/objects/pavilion_moonwell",
       "url": "/src/assets/library/brumaluz-arboleda/objects/pavilion_moonwell.glb",
       "meshes": 1,
-      "triangles": 8708,
+      "triangles": 12740,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -33,7 +33,7 @@
       "id": "brumaluz-arboleda/objects/tower_starwatch",
       "url": "/src/assets/library/brumaluz-arboleda/objects/tower_starwatch.glb",
       "meshes": 1,
-      "triangles": 9876,
+      "triangles": 13204,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -42,7 +42,7 @@
       "id": "brumaluz-arboleda/objects/greenhouse_moonfern",
       "url": "/src/assets/library/brumaluz-arboleda/objects/greenhouse_moonfern.glb",
       "meshes": 1,
-      "triangles": 8900,
+      "triangles": 8848,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -51,7 +51,7 @@
       "id": "brumaluz-arboleda/objects/gateway_twining",
       "url": "/src/assets/library/brumaluz-arboleda/objects/gateway_twining.glb",
       "meshes": 1,
-      "triangles": 3792,
+      "triangles": 3750,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -78,7 +78,7 @@
       "id": "brumaluz-arboleda/objects/table_alchemist",
       "url": "/src/assets/library/brumaluz-arboleda/objects/table_alchemist.glb",
       "meshes": 1,
-      "triangles": 3008,
+      "triangles": 2976,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -87,7 +87,7 @@
       "id": "brumaluz-arboleda/objects/chair_leafback",
       "url": "/src/assets/library/brumaluz-arboleda/objects/chair_leafback.glb",
       "meshes": 1,
-      "triangles": 568,
+      "triangles": 558,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -96,7 +96,7 @@
       "id": "brumaluz-arboleda/objects/bench_bough",
       "url": "/src/assets/library/brumaluz-arboleda/objects/bench_bough.glb",
       "meshes": 1,
-      "triangles": 1144,
+      "triangles": 1134,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -105,7 +105,7 @@
       "id": "brumaluz-arboleda/objects/bed_ferncanopy",
       "url": "/src/assets/library/brumaluz-arboleda/objects/bed_ferncanopy.glb",
       "meshes": 1,
-      "triangles": 2244,
+      "triangles": 2268,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -114,7 +114,7 @@
       "id": "brumaluz-arboleda/objects/cabinet_seedkeeper",
       "url": "/src/assets/library/brumaluz-arboleda/objects/cabinet_seedkeeper.glb",
       "meshes": 1,
-      "triangles": 1772,
+      "triangles": 1752,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -123,7 +123,7 @@
       "id": "brumaluz-arboleda/objects/shelf_herbarium",
       "url": "/src/assets/library/brumaluz-arboleda/objects/shelf_herbarium.glb",
       "meshes": 1,
-      "triangles": 7290,
+      "triangles": 7226,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -132,7 +132,7 @@
       "id": "brumaluz-arboleda/objects/cauldron_bloom",
       "url": "/src/assets/library/brumaluz-arboleda/objects/cauldron_bloom.glb",
       "meshes": 1,
-      "triangles": 1904,
+      "triangles": 1896,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -141,7 +141,7 @@
       "id": "brumaluz-arboleda/objects/distiller_spiral",
       "url": "/src/assets/library/brumaluz-arboleda/objects/distiller_spiral.glb",
       "meshes": 1,
-      "triangles": 3492,
+      "triangles": 3460,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -150,7 +150,7 @@
       "id": "brumaluz-arboleda/objects/lantern_budpost",
       "url": "/src/assets/library/brumaluz-arboleda/objects/lantern_budpost.glb",
       "meshes": 1,
-      "triangles": 1404,
+      "triangles": 1396,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -159,7 +159,7 @@
       "id": "brumaluz-arboleda/objects/fountain_lotus",
       "url": "/src/assets/library/brumaluz-arboleda/objects/fountain_lotus.glb",
       "meshes": 1,
-      "triangles": 2690,
+      "triangles": 2668,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -168,7 +168,7 @@
       "id": "brumaluz-arboleda/objects/waystone_leafrune",
       "url": "/src/assets/library/brumaluz-arboleda/objects/waystone_leafrune.glb",
       "meshes": 1,
-      "triangles": 990,
+      "triangles": 970,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -177,7 +177,7 @@
       "id": "brumaluz-arboleda/objects/armillary_moon",
       "url": "/src/assets/library/brumaluz-arboleda/objects/armillary_moon.glb",
       "meshes": 1,
-      "triangles": 2600,
+      "triangles": 2576,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -186,7 +186,7 @@
       "id": "brumaluz-arboleda/objects/rack_dryingherbs",
       "url": "/src/assets/library/brumaluz-arboleda/objects/rack_dryingherbs.glb",
       "meshes": 1,
-      "triangles": 7554,
+      "triangles": 7514,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -195,7 +195,7 @@
       "id": "brumaluz-arboleda/objects/planter_moonlily",
       "url": "/src/assets/library/brumaluz-arboleda/objects/planter_moonlily.glb",
       "meshes": 1,
-      "triangles": 5362,
+      "triangles": 5354,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -204,7 +204,7 @@
       "id": "brumaluz-arboleda/objects/potion_tray",
       "url": "/src/assets/library/brumaluz-arboleda/objects/potion_tray.glb",
       "meshes": 1,
-      "triangles": 2456,
+      "triangles": 2416,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -249,7 +249,7 @@
       "id": "brumaluz-arboleda/objects/mushrooms_mooncap",
       "url": "/src/assets/library/brumaluz-arboleda/objects/mushrooms_mooncap.glb",
       "meshes": 1,
-      "triangles": 4648,
+      "triangles": 4438,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -258,7 +258,7 @@
       "id": "brumaluz-arboleda/objects/crystals_dewstone",
       "url": "/src/assets/library/brumaluz-arboleda/objects/crystals_dewstone.glb",
       "meshes": 1,
-      "triangles": 2394,
+      "triangles": 2334,
       "materials": 1,
       "textures": 3,
       "texturedMaterials": 1
@@ -278,9 +278,9 @@
       "file": "house_leafhaven.png",
       "asset": "brumaluz-arboleda/objects/house_leafhaven",
       "size": [
-        4.631041526794434,
+        4.509282112121582,
         5.570000171661377,
-        4.640520811080933
+        4.579641103744507
       ]
     },
     {
@@ -288,7 +288,7 @@
       "asset": "brumaluz-arboleda/objects/laboratory_dew",
       "size": [
         5.438488245010376,
-        6.949999809265137,
+        6.950000286102295,
         4.816484451293945
       ]
     },

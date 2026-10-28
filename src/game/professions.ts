@@ -1,11 +1,14 @@
-import { professionAction, RPG_CATALOG } from '../data/professions';
+import { professionAction, RPG_CATALOG, professionState, professionRank, gatherEnergy } from '../data/professions';
 import { rpgAction } from '../services/account';
-import { session,play,ui } from './state';
+import { session,play,ui,fight } from './state';
 import { holder } from './stage';
 import { runOnServer } from './server';
 import { updateHud } from './hud';
 import { setWindow } from '../ui/menus';
 import { updateProfessionEnergy } from '../ui/professionEnergy';
+import { isInCombat } from '../data/combat';
+import { gatheringFeedback } from './gatheringFeedback';
+import { refreshProfessionWorld } from '../world/professionWorld';
 
 export async function performProfession(action:string,args:Record<string,unknown>={}) {
   const success=await runOnServer(id=>rpgAction(id,action,args,session.state.rpg?.revision??0),()=>{
@@ -20,22 +23,35 @@ export async function gatherResource(id:string) {
  if(activeGather)return;
  const node=RPG_CATALOG.nodes[id];if(!node)return;
  activeGather=id;
- if(!await performProfession('gather_start',{id})){activeGather=null;return;}
- const generation=play.playGeneration,started=performance.now(),origin=holder.position.clone();
- const hud=document.createElement('div');hud.className='gather-progress';hud.setAttribute('role','status');
- const label=document.createElement('span'),progress=document.createElement('progress'),cancel=document.createElement('button');
- label.textContent=node.label;progress.max=node.seconds!;cancel.textContent='Cancelar';hud.append(label,progress,cancel);document.body.append(hud);
- let cancelled=false;cancel.onclick=()=>{cancelled=true;};
+ const generation=play.playGeneration,origin=holder.position.clone(),actor=play.char,location=play.city.locationId;
+ let feedback:ReturnType<typeof gatheringFeedback>|undefined,completed=false;
  try {
+  if(!await performProfession('gather_start',{id}))return;
+  const health=session.state.health;
+  const interrupted=()=>play.playGeneration!==generation||play.mode!=='play'||play.dead||play.city.locationId!==location||holder.position.distanceTo(origin)>.5||session.state.health<health||isInCombat(fight.combatEncounter);
+  if(interrupted()||!actor.beginGathering(node.job,RPG_CATALOG.items[session.state.rpg?.tools[node.job]?.id??'']?.tier??0)){
+   if(play.playGeneration===generation)await performProfession('gather_cancel',{id});return;
+  }
+  const state=professionState(session.state.rpg),cost=gatherEnergy(professionRank(state,node.job),node.tier??0),xpBefore=state.xp[node.job]??0;
+  let cancelled=false;
+  feedback=gatheringFeedback(node,cost,()=>{cancelled=true;});
+  const started=performance.now();
   const complete=await new Promise<boolean>(resolve=>{
    const step=()=>{
-    const elapsed=(performance.now()-started)/1000;progress.value=elapsed;
-    if(cancelled||play.playGeneration!==generation||play.mode!=='play'||play.dead||holder.position.distanceTo(origin)>.5){resolve(false);return;}
+    if(cancelled||interrupted()){resolve(false);return;}
+    const elapsed=(performance.now()-started)/1000;feedback!.update(elapsed);
     if(elapsed>=node.seconds!+.15){resolve(true);return;}requestAnimationFrame(step);
    };step();
   });
-  if(play.playGeneration===generation)await performProfession(complete?'gather_finish':'gather_cancel',{id});
- }finally {hud.remove();activeGather=null;}
+  actor.endGathering();
+  if(play.playGeneration!==generation)return;
+  if(!complete){await performProfession('gather_cancel',{id});return;}
+  feedback.waiting();
+  if(await performProfession('gather_finish',{id})){
+   refreshProfessionWorld(play.city,session.state.rpg);
+   feedback.complete(Math.max(0,(session.state.rpg?.xp[node.job]??0)-xpBefore));completed=true;
+  }
+ }finally {if(!completed)feedback?.dispose();actor.endGathering();activeGather=null;}
 }
 export function installProfessions(){
  const open=()=>{setWindow('professions');void performProfession('state');};

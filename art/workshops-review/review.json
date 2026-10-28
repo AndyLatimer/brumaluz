@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "herreria: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "peleteria: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "sastreria: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "carpinteria: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "ebanisteria: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "joyeria: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "alquimia: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "encantamiento: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "cocina: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "minero: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "lenador: door roundtrip, master dialogue, bank, guide and clear arrival.",
+    "recolector: door roundtrip, master dialogue, bank, guide and clear arrival."
+  ],
+  "errors": [],
+  "localFixtures": true,
+  "normalGameRenderer": true,
+  "editor": true
+}

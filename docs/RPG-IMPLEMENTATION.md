@@ -4,6 +4,10 @@ Actualizado: 24 de octubre de 2026. Este documento describe el código implement
 
 ## Acceso en el juego
 
+El acabado de recursos, herramientas, iconos, recolección y trabajos se revisó el 26 de octubre de 2026. Modelos, integración del editor y comprobaciones: [Recursos y fabricación](RESOURCES-ART.md).
+
+La siguiente etapa del 26 de octubre incorpora los [doce talleres interiores y sus maestros](PROFESSION-WORKSHOPS.md), conectados desde Brumaluz y editables como mapas normales. Sustituye los emplazamientos públicos provisionales retirados.
+
 - **P**, menú **Mundo → Profesiones** o pulsar la reserva de energía del HUD: doce oficios, recetas, trabajos, entregas, herramientas, encantamientos y muebles.
 - El libro de oficios incluye navegación por profesión y rango, búsqueda y filtros de recetas, detalle del resultado, materiales disponibles y cantidades, proyectos de maestría y cinco puestos de fabricación. La energía de recolección permanece integrada en la insignia del personaje como una barra fina; «Energía», el valor sobre 100 y la recuperación aparecen en su tooltip; el libro muestra además el tiempo restante para recuperar la reserva.
 - Ilustraciones SVG propias para las familias de recursos, herramientas y muebles. La ficha de receta conserva visibles los controles de fabricación en escritorio; la navegación se adapta a pantallas pequeñas y conserva filtros, selección, desplazamiento y secciones desplegadas al actualizar trabajos.
@@ -12,7 +16,7 @@ Actualizado: 24 de octubre de 2026. Este documento describe el código implement
 - Maestría muestra los seis rangos, los ascensos automáticos a Iniciado y Oficial y los proyectos posteriores. Los proyectos futuros se presentan desplegables hasta llegar a Oficial. Los avisos de trabajos listos cuentan únicamente los del oficio seleccionado.
 - Iconos de oficios y utilidades ilustrados en color. En móvil, un selector agrupado sustituye la tira horizontal de doce oficios; las cuatro utilidades permanecen accesibles.
 - **E** cerca de un banco de trabajo instalado en casa: abrir su oficio.
-- Retirados los talleres públicos provisionales: mesas, rótulos flotantes, colisiones, interacciones, indicaciones de proximidad e iconos de mapa y minimapa. Quedan pendientes de integrarlos en sus ubicaciones definitivas.
+- Los talleres públicos se encuentran en doce interiores de Brumaluz. Cada uno incluye maestro, banco, acceso de entrada y salida, colisiones y una guía del oficio. Sus puertas se identifican con el icono de taller en mapa y minimapa.
 - Comprar las herramientas básicas en el apartado Herramientas, cerca de Herrería; equiparlas y acercarse a un recurso para recolectar con **E**. Moverse, cancelar, morir o recibir daño interrumpe la extracción.
 - La **ficha de personaje** muestra daño básico, intervalo, habilidad, coste real, mitigación y progreso de conjuntos.
 - **Expediciones retiradas provisionalmente**: sin tablón, colisión, iconos de mapa/minimapa, interacción ni acceso para iniciarlas. Los encuentros antiguos recibidos del servidor se abandonan y se retiran de la escena. Su implementación definitiva queda pendiente.
@@ -66,6 +70,10 @@ Un encantamiento universal por arma principal desde verde. Un pergamino consumib
 Rayo conserva una descarga preparada si no hay segundo objetivo. Escarcha y Rayo mantienen contador al cambiar de enemigo; Oscuro guarda marcas independientes durante seis segundos. Arma nueva, encantamiento nuevo, muerte o seis segundos sin básicos válidos eliminan cargas.
 
 ## Oficios y economía
+
+La regla vigente de aprendizaje del 27 de octubre está en [Recetas y maestros](RECIPE-TRAINING.md): compra presencial al maestro, precios por rango y excepción de pergaminos naranjas de botín muy raro. Sustituye las referencias históricas siguientes a compra desde el libro, precios de 2 Pelines y descubrimientos de otros rangos.
+
+Actualización del 27 de octubre: [Obtención de materiales y primera mejora](OBTAINABILITY.md) incorpora cinco preparaciones de cuero, cinco jabalíes de dificultad progresiva y una primera receta exterior de arma principal de clase. El catálogo local tiene ahora 441 recetas; ese documento distingue las comprobaciones locales de la publicación pendiente.
 
 Implementados Herrería, Peletería, Sastrería, Carpintería, Ebanistería, Joyería, Alquimia, Encantamiento, Cocina, Minero, Leñador y Recolector. El catálogo inicial contiene **436 recetas**, **216 recursos** y **541 definiciones adicionales**, que incluyen materiales, pergaminos de receta, herramientas, muebles y consumibles; no son 541 modelos nuevos.
 
@@ -141,3 +149,11 @@ Entrega técnica del 24 de octubre: `npm run build` completado correctamente (Ty
 El detector de visibilidad recorría los nuevos rótulos Sprite de los talleres sin asignar cámara al Raycaster. Sprite.raycast lanzaba una excepción al consultar camera.matrixWorld y detenía el bucle de animación. Se asignó la cámara en objetivos y diálogos y se excluyeron rótulos y llamas decorativas de los impactos. El bucle muestra ahora un error con controles de recuperación si falla una actualización. El diagnóstico del navegador capturó la excepción original en targetFrame.ts.
 
 Después de corregirlo se repitió el movimiento junto al vendedor: el bucle siguió avanzando 13,7 segundos, con renderizado activo y sin la excepción de Sprite. Compilación TypeScript/Vite completada. Es una reproducción local del fallo concreto, no una validación completa de todos los recorridos multijugador.
+
+### Corrección de presencia al recolectar
+
+25 de octubre de 2026. `rpg_action` declaraba una variable local `found` inicializada a falso que ocultaba el indicador `FOUND` de PL/pgSQL. La consulta encontraba la presencia del personaje, pero las acciones de oficio respondían «Entra en el mundo para realizar esta acción». Se elimina esa declaración para consultar el resultado real, conservando los controles de identidad y los 15 segundos de vigencia de la presencia.
+
+`node --test scripts/test-professions-sql-local.mjs` reproduce el rechazo antes de la corrección y verifica después inicio, finalización, cancelación, recompensa, energía, desgaste, experiencia, recuperación del nodo y reintentos sin duplicados para Minero, Leñador y Recolector. También rechaza presencias ausentes, caducadas o ajenas, distancia excesiva y falta de herramienta. Usa PostgreSQL/WASM aislado, con el módulo PGlite indicado en `PGLITE_TEST_MODULE` o la misma instalación temporal que `test-combat-sql-local.mjs`; sin ese módulo la prueba se omite.
+
+La corrección se aplicó a la función del servidor configurado, comprobando que su cuerpo coincide con el probado y conservando sus permisos. No se modificaron datos de personajes ni se aplicaron otras migraciones. Queda pendiente comprobar la recolección en una sesión real del navegador.

@@ -15,6 +15,21 @@ contenido del juego relacionado.
   pueblos, oficios y vida de barrio. Los faroles y la bruma, los jardines y
   los talleres complementan esa identidad, sin desplazarla.
 - La magia existe, pero es discreta: la mayoría de las cosas se hacen a mano.
+- Al recoger **polvo de hada por primera vez**, se inicia una misión para
+  preguntarle a **Gnomi** por el hallazgo. Gnomi orienta al jugador hacia
+  **La Arboleda** para averiguar más. La continuación se implementará después:
+  no se han definido el origen ni el uso del polvo, nuevos interlocutores,
+  recompensas ni un acceso a la futura ciudad por esta misión.
+- Las colecciones artísticas de Rusty Hearts (`brumaluz-hamlet`) y La Arboleda (`brumaluz-arboleda`) se reservan para sus respectivas ciudades; los interiores de los talleres de Brumaluz usan las otras bibliotecas.
+- En el mapa exterior de Pompelín, las cinco puertas de Brumaluz se muestran
+  cerradas. Acercarse a ellas sigue trasladando al jugador al mapa de la ciudad.
+- **La Arboleda** se representa en el continente como un bosque frondoso.
+  Su futura ciudad tendrá un mapa propio; el exterior conserva una llegada
+  reservada, sin publicar todavía una ciudad ni un portal provisional.
+- Los enemigos normales del exterior pueden moverse en reposo, perseguir al
+  jugador y vivir solos o en pequeños grupos. Cada tipo tendrá su propia
+  conducta y personalidad, conservando el combate habitual con experiencia
+  y botín, sin convertir cada enemigo o grupo en una misión.
 - La bienvenida tiene un tono acogedor y cotidiano, sin amenaza inicial.
 - El comienzo debe distinguirse según la raza. A largo plazo, cada raza
   empezará en su propia región; durante esta etapa todas comienzan en Brumaluz.
@@ -67,6 +82,17 @@ contenido del juego relacionado.
   será extenso y se ampliará con más oficios. Conocer o probar uno durante
   la bienvenida no supone elegirlo ni comprometerse con él. No se han
   definido todavía sus reglas de progresión ni sus restricciones.
+- Para la primera implantación de los doce oficios actuales, se acuerda un
+  **taller interior por oficio en Brumaluz**, con un **maestro dentro de cada
+  taller** que orienta al jugador. Los nombres personales y las historias de
+  los demás maestros siguen pendientes; sus fichas usan títulos funcionales.
+- Los doce talleres de oficio se agrupan en el **Barrio de los Artesanos**, que sustituye al antiguo Barrio de los Canteros dentro del mapa actual de Brumaluz, sin ampliar el terreno ni la ciudad.
+- **Isberto es el maestro de Herrería** de Brumaluz, además del herrero y explorador retirado que participa en la bienvenida. Conserva su identidad, apariencia y papel en esa historia.
+- El 27 de octubre se prioriza cerrar la obtención de materiales, dejando la continuación después de Isberto para más adelante. Los cueros superiores tendrán dos vías: criaturas de dificultad progresiva y transformación en Peletería que exija más trabajo. Reglas iniciales y estado de implementación en [Obtención](OBTAINABILITY.md).
+- Las recetas se compran hablando con los maestros de oficio, fuera del menú de profesiones, y deben costar mucho más que antes. Las mejores se reservan a botín muy raro. La implementación usa Gran maestro/naranja para esa excepción y precios iniciales por rango; detalles y comprobaciones en [Recetas y maestros](RECIPE-TRAINING.md). Se conserva el aprendizaje previo de los personajes.
+- El usuario concreta que las recetas vendidas por los maestros son **objetos consumibles**: comprar coloca el pergamino en la mochila y usarlo lo consume para aprender la receta. Los pergaminos excepcionales de botín se aprenden de la misma forma, conservando su exclusividad de botín.
+- El usuario pide una misión de iniciación que recorra el ciclo normal del oficio elegido y confirma que Gnomi la ofrece tras el regreso a casa de Isberto. Se elige un oficio para el tutorial, sin limitar el aprendizaje de los demás. La práctica usa herramientas, pergaminos consumibles, materiales, trabajos y encargos diarios normales; su implementación y valores iniciales están en [Iniciación a un oficio](PROFESSION-TUTORIAL.md). Esto concreta la orientación a los talleres; no continúa el misterio de la criatura ni el del polvo de hada.
+- Los maestros ofrecen encargos diarios sencillos para obtener Pelines entregando materiales básicos o piezas fabricadas. Deben tener límites diarios y ser distintos de los proyectos de maestría. La primera implementación usa tres entregas por personaje entre todos los maestros, con cantidades de Aprendiz; reglas y valores iniciales en [Encargos diarios](DAILY-ORDERS.md).
 - La introducción al combate será un **pequeño incidente con una criatura
   fuera de la ciudad**. Gnomi acompañará y comentará, pero no combatirá.
   Enseñará paso a paso a seleccionar objetivo, atacar, usar una habilidad
@@ -169,6 +195,23 @@ contenido del juego relacionado.
 - Los diálogos mezclan cercanía y naturalidad con calidez de cuento:
   humor suave, expresiones coloquiales sin sonar modernas y un toque
   pintoresco, sin solemnidad.
+- Al revisar el guion, el usuario reafirma el tono cozy y mono de la versión
+  anterior: conservar ternura, ilusión y hospitalidad, además de la relación
+  con el mundo y las acciones del jugador. Gnomi puede bromear con dulzura
+  y mostrar lo que siente; la concisión no debe volverlo seco.
+- El usuario pide después más personalidad y menos simplicidad genérica:
+  voces con preferencias, picardía y diferencias de criterio, y respuestas
+  del jugador que permitan un intercambio con carácter. Se mantiene la
+  calidez y la relación con las acciones y los oficios del mundo. Las voces
+  del guion se concretan en [Diálogos](DIALOGUES.md), sin aprobar biografías
+  nuevas para los maestros.
+- El 27 de octubre se pide una revisión de los diálogos: voces más naturales
+  y trabajadas, ligadas al juego y al mundo, sin conversación de relleno.
+  Cada intervención debe responder a una necesidad, una acción o un hallazgo.
+  El humor nace de la situación; se evitan moralejas, aforismos y bromas
+  repetidas sobre la torpeza de Gnomi. Los residentes reciben respuestas de
+  residentes y cada motivo de comienzo tiene su propia contestación.
+  Criterios y alcance de la revisión en [Diálogos](DIALOGUES.md).
 - El lore se construye junto al creador del proyecto, por etapas, y se
   documenta conforme se aprueba. No se dan por aprobados nombres, instituciones,
   acontecimientos ni reglas del mundo por aparecer en una propuesta.

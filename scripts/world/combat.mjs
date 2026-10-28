@@ -94,7 +94,7 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.locator('#interact-label').filter({hasText:'Hablar'}).waitFor();
     await page.keyboard.press('KeyE');
     await page.getByRole('button',{name:'Completar misión'}).click();
-    await page.locator('.dialog-text').filter({hasText:'bien sujeto'}).waitFor();
+    await page.locator('.dialog-text').filter({hasText:'ahora sí aguanta'}).waitFor();
     assert.equal(await page.locator('#story-arrival').isVisible(),false,'Gnomi finishes thanking the player before the arrival');
     await page.keyboard.press('KeyE');
     await page.locator('#story-arrival').waitFor({state:'visible'});
@@ -157,7 +157,7 @@ test('Gnomi unlocks Isberto, whose accepted quest leaves a lootable corpse and e
     await page.locator('#cinematic').waitFor({state:'visible'});
     await page.keyboard.press('Escape');
     await page.getByRole('button',{name:'Gracias, Isberto.',exact:true}).click();
-    await page.locator('.dialog-text').filter({hasText:'Descansa'}).waitFor();
+    await page.locator('.dialog-text').filter({hasText:'Voy a dejarte descansar.'}).waitFor();
     await page.keyboard.press('KeyE');
     await page.locator('#quest-tracker').waitFor({state:'hidden'});
     await page.keyboard.press('KeyI');

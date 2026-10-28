@@ -121,7 +121,7 @@ export function renderToolOptions() {
 export function renderToolbar() {
   const box = $('tools');
   box.replaceChildren();
-  const order: ToolId[] = ['select', 'place', 'scatter', 'erase', 'sculpt', 'paint', 'water', 'grass', 'collider', 'marker'];
+  const order: ToolId[] = ['select', 'place', 'scatter', 'erase', 'sculpt', 'paint', 'water', 'grass', 'collider', 'marker', 'collectible'];
   order.forEach((id, i) => {
     const tool = tools.get(id);
     if (!tool) return;
@@ -174,7 +174,7 @@ export const gizmoState = { mode: 'translate' as 'translate' | 'rotate' | 'scale
 
 const transformable = () => selected().filter(item => !(item.kind === 'o' && item.data.locked) && pickable(item));
 export function updateGizmo() {
-  const items = state.tool === 'select' || state.tool === 'collider' || state.tool === 'marker' ? transformable() : [];
+  const items = state.tool === 'select' || state.tool === 'collider' || state.tool === 'marker' || state.tool === 'collectible' ? transformable() : [];
   if (!items.length || transform.dragging) {
     if (!transform.dragging) { transform.detach(); }
     return;

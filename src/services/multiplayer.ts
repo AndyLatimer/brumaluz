@@ -54,6 +54,7 @@ export interface CombatEncounter {
 export interface WildernessMob extends Omit<CombatEncounter,'status'> {
   status:'idle'|'active'|'returning'|'defeated';revision:number;attackingYou:boolean;
   target?:string;targetX?:number;targetZ?:number;respawnAt?:number;
+  activity?:string;ambientSeq?:number;lookX?:number;lookZ?:number;attackStyle?:'normal'|'heavy';
 }
 export interface WildernessSnapshot {shared:true;serverTime:number;mobs:WildernessMob[];corpses:CombatEncounter[];inCombat:boolean;skillReadyAt?:number;attackReadyAt?:number}
 export function parseWilderness(value:unknown):WildernessSnapshot|undefined{
@@ -64,7 +65,8 @@ export function parseWilderness(value:unknown):WildernessSnapshot|undefined{
     if(!['idle','active','returning','defeated'].includes(String(status)))throw new Error('Estado de criatura no válido.');
     const parsed=parseCombatEncounter({...m,status:status==='idle'?'active':status==='returning'?'fled':status});
     if(!parsed||!parsed.spawn||!parsed.instanceId)throw new Error('Identidad de criatura no válida.');
-    return {...parsed,status,revision:number(m.revision),attackingYou:m.attackingYou===true,target:typeof m.target==='string'?m.target:undefined,targetX:typeof m.targetX==='number'?number(m.targetX):undefined,targetZ:typeof m.targetZ==='number'?number(m.targetZ):undefined,respawnAt:typeof m.respawnAt==='number'?number(m.respawnAt):undefined} as WildernessMob;
+    return {...parsed,status,revision:number(m.revision),attackingYou:m.attackingYou===true,target:typeof m.target==='string'?m.target:undefined,targetX:typeof m.targetX==='number'?number(m.targetX):undefined,targetZ:typeof m.targetZ==='number'?number(m.targetZ):undefined,respawnAt:typeof m.respawnAt==='number'?number(m.respawnAt):undefined,
+      activity:typeof m.activity==='string'?m.activity:undefined,ambientSeq:typeof m.ambientSeq==='number'?number(m.ambientSeq):undefined,lookX:typeof m.lookX==='number'?number(m.lookX):undefined,lookZ:typeof m.lookZ==='number'?number(m.lookZ):undefined,attackStyle:m.attackStyle==='heavy'?'heavy':'normal'} as WildernessMob;
   });
   const corpses=data.corpses.map(value=>{const e=parseCombatEncounter(value);if(!e||e.status!=='defeated')throw new Error('Cuerpo no válido.');return e;});
   return {shared:true,serverTime:number(data.serverTime),mobs,corpses,inCombat:data.inCombat===true,skillReadyAt:typeof data.skillReadyAt==='number'?number(data.skillReadyAt):undefined,attackReadyAt:typeof data.attackReadyAt==='number'?number(data.attackReadyAt):undefined};
@@ -174,6 +176,7 @@ export class WorldConnection {
   private retrying = false;
   private paused = false;
   private lastSuccess = performance.now();
+  private inFlight:AbortController|null=null;
 
   constructor(private characterId: string, private hooks: WorldHooks) {}
 
@@ -194,9 +197,11 @@ export class WorldConnection {
 
   private tick() {
     if (this.closed) return;
+    const started=performance.now(),controller=new AbortController();this.inFlight=controller;
+    const deadline=setTimeout(()=>controller.abort(),4000);
     this.pending = (async () => {
       try {
-        const value = snapshot(await syncWorld(this.characterId, this.session, this.hooks.motion()));
+        const value = snapshot(await syncWorld(this.characterId, this.session, this.hooks.motion(),controller.signal));
         if (this.closed) return;
         this.lastSuccess = performance.now();
         this.hooks.receive(value);
@@ -214,7 +219,10 @@ export class WorldConnection {
           this.hooks.stale();
         }
       } finally {
-        if (!this.closed && !this.paused) this.timer = setTimeout(() => this.tick(), this.retrying ? 1500 : 250);
+        clearTimeout(deadline);if(this.inFlight===controller)this.inFlight=null;
+        // Keep one request in flight and a 250 ms start-to-start budget. RTT
+        // is part of that budget, rather than an extra pause after every reply.
+        if (!this.closed && !this.paused) this.timer = setTimeout(() => this.tick(), this.retrying ? 1000 : Math.max(20,250-(performance.now()-started)));
       }
     })();
   }
@@ -223,9 +231,10 @@ export class WorldConnection {
     const finalMotion = this.started && !this.closed && !this.paused ? this.hooks.motion() : null;
     this.closed = true;
     clearTimeout(this.timer);
+    this.inFlight?.abort();
     await this.pending;
     if (finalMotion && this.joined) {
-      try { await syncWorld(this.characterId, this.session, finalMotion); }
+      try { await syncWorld(this.characterId, this.session, finalMotion,AbortSignal.timeout(1500)); }
       catch (error) { console.error('[Brumaluz multiplayer] No se pudo enviar la última posición.', error); }
     }
     if (this.joined) await this.leave();

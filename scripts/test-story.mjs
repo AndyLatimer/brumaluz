@@ -100,9 +100,13 @@ test('the personal Gnomi marker leaves his meeting point reachable while fixed N
 
 // Small DOM stand-in: these checks exercise the actual controller without a renderer or a timer.
 class Element {
-  hidden=false;dataset={};children=new Map();classList={add(){},remove(){},toggle(){}};
+  hidden=false;dataset={};children=new Map();listeners=new Map();classList={add(){},remove(){},toggle(){}};
   querySelector(selector){if(!this.children.has(selector))this.children.set(selector,new Element());return this.children.get(selector);}
-  append(){} addEventListener(){} setAttribute(){}
+  append(child){this.lastChild=child;} addEventListener(type,callback){this.listeners.set(type,callback);} setAttribute(){}
+  removeEventListener(type,callback){if(this.listeners.get(type)===callback)this.listeners.delete(type);}
+  remove(){this.removed=true;}
+  focus(){document.activeElement=this;}
+  contains(node){return this===node||[...this.children.values()].some(child=>child.contains(node));}
 }
 globalThis.document={createElement:()=>new Element(),body:new Element()};
 const {createCinematics}=await load('../src/world/cinematic.ts',s=>s.replace(/import \{ t \} from ['"]\.\.\/ui\/i18n['"];?/, 'const t = s => s;'));
@@ -122,4 +126,63 @@ test('cinematics initialise their render focus and honour a shot minimum',()=>{
   assert.equal(controller.focus.x,4);assert.equal(controller.scriptedCamera,true);
   controller.frame(.5);assert.equal(controller.active,true);
   controller.frame(.5);assert.deepEqual(events,[false]);assert.equal(controller.active,false);
+});
+
+test('cancelling and replacing scenes cleans their resources once without running story progress',()=>{
+  const controller=createCinematics(),events=[];
+  controller.play([{duration:2}],()=>events.push('progress'),()=>events.push('cleanup'));
+  controller.cancel();controller.cancel();controller.skip();
+  assert.deepEqual(events,['cleanup']);
+  controller.play([{duration:2}],()=>events.push('old progress'),()=>events.push('replace cleanup'));
+  controller.play([{duration:1}],skipped=>events.push(skipped),()=>events.push('new cleanup'));
+  controller.frame(1);
+  assert.deepEqual(events,['cleanup','replace cleanup',false]);
+});
+
+test('a start or update callback can change scenes without the old frame finishing the new one',()=>{
+  const controller=createCinematics(),events=[];
+  const camera=target=>()=>({position:point(1,0),target:point(target,0)});
+  controller.play([{duration:.1,start:()=>controller.play([{duration:2,camera:camera(8)}],()=>events.push('new')),camera:camera(3)}],()=>events.push('old'));
+  assert.equal(controller.focus.x,8,'The stale start must not overwrite the replacement camera focus');
+  controller.cancel();
+  controller.play([{duration:.1,update:()=>{controller.play([{duration:2,camera:camera(9)}],()=>events.push('next'));return true;},camera:camera(3)}],()=>events.push('stale'));
+  assert.equal(controller.frame(.5),null);
+  assert.equal(controller.active,true);assert.equal(controller.focus.x,9);assert.deepEqual(events,[]);
+  controller.frame(1);assert.equal(controller.active,true);
+  controller.frame(1);assert.deepEqual(events,['next']);
+});
+
+test('ending a scene hands the same frame to its dialogue and invalid clocks cannot poison the camera',()=>{
+  const controller=createCinematics();let finished=0;
+  controller.play([{duration:1,camera:k=>({position:point(k,0),target:point(1,0)})}],()=>finished++);
+  assert.equal(controller.frame(NaN).position.x,0);
+  assert.equal(controller.frame(-1).position.x,0);
+  assert.equal(controller.frame(1),null,'The old camera cannot override a dialogue started on completion');
+  assert.equal(finished,1);
+  controller.play([{duration:NaN}],()=>finished++);controller.frame(.1);
+  assert.equal(controller.active,false);assert.equal(finished,2);
+});
+
+test('the skip button works with Enter despite the gameplay input lock',()=>{
+  const controller=createCinematics();let finished=0,prevented=0,stopped=0;
+  controller.play([{duration:10}],()=>finished++);
+  const button=document.body.lastChild.querySelector('.cinematic-skip');
+  button.listeners.get('keydown')({code:'Enter',repeat:false,preventDefault:()=>prevented++,stopPropagation:()=>stopped++});
+  assert.equal(finished,1);assert.equal(prevented,1);assert.equal(stopped,1);assert.equal(controller.active,false);
+});
+
+test('disposing for a module reload removes the old overlay and listeners without advancing the story',()=>{
+  const controller=createCinematics(),events=[];
+  controller.play([{duration:10,line:{speaker:'Isberto',text:'A'}}],()=>events.push('progress'),()=>events.push('cleanup'));
+  const oldRoot=document.body.lastChild,oldButton=oldRoot.querySelector('.cinematic-skip');
+  controller.dispose();controller.dispose();
+  assert.equal(oldRoot.removed,true);assert.equal(oldButton.listeners.size,0);
+  assert.equal(controller.active,false);assert.equal(controller.frame(20),null);
+  controller.play([{duration:1}],()=>events.push('stale'));
+  assert.equal(controller.active,false);assert.deepEqual(events,['cleanup']);
+  const replacement=createCinematics();
+  replacement.play([{duration:1}],()=>events.push('new'));
+  assert.notEqual(document.body.lastChild,oldRoot);
+  replacement.frame(1);assert.deepEqual(events,['cleanup','new']);
+  replacement.dispose();
 });

@@ -1,5 +1,6 @@
 // Tipos de las cabezas modulares: modelos de origen, opciones y resultado.
 import type * as THREE from 'three';
+import type { HeadAnatomy } from './anatomy';
 
 export type HeadKit = 'Mage' | 'Knight' | 'Rogue' | 'Barbarian';
 export interface HeadSource { kit: HeadKit; geometry: THREE.BufferGeometry; toBone: THREE.Matrix4 }
@@ -19,6 +20,9 @@ export interface HeadOptions {
   hat: 'none' | 'helmet' | 'wizard' | 'bear' | 'cap';
   /** Linaje: cambia nariz, pupilas y marcas de la cara. */
   race?: 'humano' | 'elfo' | 'lagto' | 'pelso';
+  trait?: number;
+  /** Closed side walls of the equipped headwear cover ears without changing the saved trait. */
+  coveredEars?: boolean;
   skin?: string;
   /** Complementos: adorno del pelo, gafas/bufanda/joyas, maquillaje y su color. */
   hairAcc?: number;
@@ -30,6 +34,7 @@ export interface HeadOptions {
 }
 export interface HeadResult {
   group: THREE.Group;
+  anatomy: HeadAnatomy;
   ownedMaterials: THREE.Material[];
   /** Puntos de anclaje en el espacio de la malla original (pasar por toBone). */
   anchors: { ear: (s: number) => THREE.Vector3; top: (s: number) => THREE.Vector3; crest: { p: THREE.Vector3; n: THREE.Vector3 }[]; surf: (dir: THREE.Vector3, sink?: number) => { p: THREE.Vector3; n: THREE.Vector3 } };
@@ -40,6 +45,8 @@ export interface HeadResult {
   eyes: THREE.Object3D[];
   /** Ojos cerrados de alegría (^ ^), ocultos hasta que el personaje saluda. */
   happy: THREE.Object3D[];
+  /** Párpados en reposo para los cuerpos; sin iris ni brillos. */
+  closed: THREE.Object3D[];
   /** Boca en reposo y boca abierta (óvalo): al hablar se alternan y la abierta se abre y cierra. */
   mouth: { rest: THREE.Object3D; open: THREE.Object3D };
 }

@@ -116,40 +116,26 @@
         "race": "humano",
         "cls": "guerrero",
         "sex": 0,
-        "height": 0.25,
+        "height": 0.2,
         "build": 0.7,
-        "skin": 1,
-        "face": 0,
+        "skin": 0,
+        "face": 2,
         "hair": 0,
         "hairColor": 6,
-        "beard": 1,
-        "eyeShape": 4,
+        "beard": 2,
+        "eyeShape": 6,
         "eyeColor": 2,
-        "brows": 0,
-        "nose": 5,
+        "brows": 8,
+        "nose": 2,
         "mouth": 0,
         "detail": 1,
         "trait": 0,
-        "hairAcc": 0,
         "hairAccColor": 0,
         "acc": 0,
+        "accColor": 0,
         "makeup": 0,
         "makeupColor": 2,
-        "accColor": 0
-      },
-      "stats": {
-        "level": 1,
-        "maxHealth": 100,
-        "health": 100,
-        "attributes": {
-          "fuerza": 5,
-          "intelecto": 5,
-          "corpulencia": 5,
-          "agilidad": 5,
-          "pericia": 8,
-          "presencia": 7,
-          "percepcion": 5
-        }
+        "hairAcc": 0
       },
       "render": {
         "scale": 0.48,
@@ -209,13 +195,27 @@
             "secondary": -1
           }
         }
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 15,
+          "intelecto": 8,
+          "corpulencia": 5,
+          "agilidad": 13,
+          "pericia": 13,
+          "presencia": 13,
+          "percepcion": 10
+        }
       }
     },
     {
       "id": "isberto",
       "name": "Isberto",
       "subtitle": "Herrero · explorador retirado",
-      "notes": "NPC existente de la historia. Conserva la aparición, acercamiento, posición por jugador y la misión de la criatura.",
+      "notes": "NPC existente de la historia. Conserva la aparición, acercamiento, posición por jugador y la misión de la criatura. Maestro de Herrería en el taller de Brumaluz; conserva su identidad y funciones en la bienvenida.",
       "badgeIcon": "herrero",
       "appearance": {
         "race": "humano",
@@ -314,6 +314,1161 @@
           "presencia": 3,
           "percepcion": 10
         }
+      }
+    },
+    {
+      "id": "maestro_peleteria",
+      "name": "Maestro de Peletería",
+      "subtitle": "Taller de Peletería",
+      "notes": "Ficha funcional del taller de Peletería en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.45,
+        "build": 0.6,
+        "skin": 4,
+        "face": 0,
+        "hair": 3,
+        "hairColor": 1,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 2,
+        "nose": 5,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 3,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 8,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 9
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 5,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 5,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 5,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 5,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 5,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 16
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 16
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_sastreria",
+      "name": "Maestra de Sastrería",
+      "subtitle": "Taller de Sastrería",
+      "notes": "Ficha funcional del taller de Sastrería en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.4,
+        "build": 0.35,
+        "skin": 4,
+        "face": 1,
+        "hair": 5,
+        "hairColor": 0,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 1,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 1
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 14,
+            "secondary": 7
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 14,
+            "secondary": 7
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 14,
+            "secondary": 7
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 14,
+            "secondary": 7
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 14,
+            "secondary": 7
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 7
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 7
+          },
+          "head": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 7
+          },
+          "cape": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 7
+          },
+          "back": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 7
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_carpinteria",
+      "name": "Maestro de Carpintería",
+      "subtitle": "Taller de Carpintería",
+      "notes": "Ficha funcional del taller de Carpintería en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.65,
+        "build": 0.7,
+        "skin": 6,
+        "face": 2,
+        "hair": 2,
+        "hairColor": 2,
+        "beard": 3,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "helpers.torso",
+            "primary": 7,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "helpers.leftArm",
+            "primary": 7,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "helpers.rightArm",
+            "primary": 7,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "helpers.leftLeg",
+            "primary": 5,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "helpers.rightLeg",
+            "primary": 5,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "helpers.overlay",
+            "primary": 5,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "helpers.footwear",
+            "primary": 5,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 16
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_ebanisteria",
+      "name": "Maestra de Ebanistería",
+      "subtitle": "Taller de Ebanistería",
+      "notes": "Ficha funcional del taller de Ebanistería en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.6,
+        "build": 0.3,
+        "skin": 0,
+        "face": 2,
+        "hair": 9,
+        "hairColor": 6,
+        "beard": 0,
+        "eyeShape": 3,
+        "eyeColor": 2,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 1,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 3,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 9
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 8,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 8,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 8,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 8,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 8,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 16
+          },
+          "head": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 16
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_joyeria",
+      "name": "Maestro de Joyería",
+      "subtitle": "Taller de Joyería",
+      "notes": "Ficha funcional del taller de Joyería en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.35,
+        "build": 0.4,
+        "skin": 4,
+        "face": 1,
+        "hair": 0,
+        "hairColor": 7,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 4,
+        "brows": 2,
+        "nose": 3,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 4,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 5,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 16,
+            "secondary": 4
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 16,
+            "secondary": 4
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 16,
+            "secondary": 4
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 16,
+            "secondary": 4
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 16,
+            "secondary": 4
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 4
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 4
+          },
+          "head": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 4
+          },
+          "cape": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 4
+          },
+          "back": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 4
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_alquimia",
+      "name": "Maestra de Alquimia",
+      "subtitle": "Taller de Alquimia",
+      "notes": "Ficha funcional del taller de Alquimia en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.55,
+        "build": 0.3,
+        "skin": 6,
+        "face": 1,
+        "hair": 8,
+        "hairColor": 4,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 2,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 3,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 10,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 9
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "Mage.torso",
+            "primary": 12,
+            "secondary": 7
+          },
+          "leftArm": {
+            "piece": "Mage.leftArm",
+            "primary": 12,
+            "secondary": 7
+          },
+          "rightArm": {
+            "piece": "Mage.rightArm",
+            "primary": 12,
+            "secondary": 7
+          },
+          "leftLeg": {
+            "piece": "Mage.leftLeg",
+            "primary": 12,
+            "secondary": 7
+          },
+          "rightLeg": {
+            "piece": "Mage.rightLeg",
+            "primary": 12,
+            "secondary": 7
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 7
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 7
+          },
+          "head": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 7
+          },
+          "cape": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 7
+          },
+          "back": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 7
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_encantamiento",
+      "name": "Maestro de Encantamiento",
+      "subtitle": "Taller de Encantamiento",
+      "notes": "Ficha funcional del taller de Encantamiento en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.6,
+        "build": 0.45,
+        "skin": 3,
+        "face": 1,
+        "hair": 3,
+        "hairColor": 6,
+        "beard": 1,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 3,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "Mage.torso",
+            "primary": 3,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "Mage.leftArm",
+            "primary": 3,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "Mage.rightArm",
+            "primary": 3,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "Mage.leftLeg",
+            "primary": 3,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "Mage.rightLeg",
+            "primary": 3,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 16
+          },
+          "head": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 16
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_cocina",
+      "name": "Maestro de Cocina",
+      "subtitle": "Taller de Cocina",
+      "notes": "Ficha funcional del taller de Cocina en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.4,
+        "build": 0.8,
+        "skin": 0,
+        "face": 0,
+        "hair": 13,
+        "hairColor": 1,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 2,
+        "nose": 5,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 1,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "helpers.torso",
+            "primary": 7,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "helpers.leftArm",
+            "primary": 7,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "helpers.rightArm",
+            "primary": 7,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "helpers.leftLeg",
+            "primary": 6,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "helpers.rightLeg",
+            "primary": 6,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "helpers.overlay",
+            "primary": 15,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "helpers.footwear",
+            "primary": 5,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 16
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_minero",
+      "name": "Maestro de Minería",
+      "subtitle": "Taller de Minería",
+      "notes": "Ficha funcional del taller de Minería en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.4,
+        "build": 0.8,
+        "skin": 6,
+        "face": 3,
+        "hair": 0,
+        "hairColor": 7,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 4,
+        "brows": 2,
+        "nose": 3,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 4,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 1,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 9
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "helpers.torso",
+            "primary": 16,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "helpers.leftArm",
+            "primary": 16,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "helpers.rightArm",
+            "primary": 16,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "helpers.leftLeg",
+            "primary": 6,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "helpers.rightLeg",
+            "primary": 6,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "helpers.overlay",
+            "primary": 6,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "helpers.footwear",
+            "primary": 5,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 5
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_lenador",
+      "name": "Maestra de Tala",
+      "subtitle": "Taller de Tala",
+      "notes": "Ficha funcional del taller de Tala en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.75,
+        "skin": 2,
+        "face": 2,
+        "hair": 4,
+        "hairColor": 5,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 2,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 2,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 9
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "Barbarian.torso",
+            "primary": 2,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "Barbarian.leftArm",
+            "primary": 2,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "Barbarian.rightArm",
+            "primary": 2,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "Barbarian.leftLeg",
+            "primary": 2,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "Barbarian.rightLeg",
+            "primary": 2,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 5
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
+      }
+    },
+    {
+      "id": "maestro_recolector",
+      "name": "Maestra de Recolección",
+      "subtitle": "Taller de Recolección",
+      "notes": "Ficha funcional del taller de Recolección en Brumaluz. Identidad nominal y trasfondo pendientes de definir. La enseñanza y el acceso al oficio se conectan desde el sistema de talleres; no añade misiones ni altera a los NPCs de la bienvenida.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.35,
+        "build": 0.35,
+        "skin": 5,
+        "face": 0,
+        "hair": 4,
+        "hairColor": 1,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 1,
+        "nose": 5,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 2,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 2,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 10
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 15,
+          "presencia": 10,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          }
+        },
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": ""
       }
     }
   ]

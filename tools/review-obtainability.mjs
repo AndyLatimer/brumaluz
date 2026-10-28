@@ -1,0 +1,85 @@
+// Real game/editor renderers; isolated/local characters only. No live database writes.
+import assert from 'node:assert/strict';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {createServer} from 'vite';
+import {chromium} from 'playwright';
+import {aiFixture} from '../scripts/wilderness-ai-fixture.mjs';
+const out='art/obtainability-review';await mkdir(out,{recursive:true});
+const catalog=JSON.parse(await readFile('src/data/generated/wilderness.json','utf8'));
+const rpg=JSON.parse(await readFile('src/data/generated/rpg-catalog.json','utf8'));
+const f=await aiFixture(catalog),errors=[],checks=[];
+const server=await createServer({cacheDir:'node_modules/.vite-obtainability-review',server:{host:'127.0.0.1',port:4246,strictPort:true,hmr:false,watch:null},logLevel:'error'});
+let browser;
+try{
+ await server.listen();browser=await chromium.launch({channel:process.env.PLAYWRIGHT_CHANNEL||(process.platform==='win32'?'msedge':undefined),headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});page.on('pageerror',error=>{errors.push(error.message);console.error(error.stack);});
+ await page.addInitScript(()=>{localStorage.setItem('brumaluz-language','es');localStorage.setItem('brumaluz-ambient','off');localStorage.setItem('brumaluz-menu-music','off');});
+ await page.route(/https:\/\/[^/]+\.supabase\.co\//,route=>route.fulfill({status:200,contentType:'application/json',body:'null'}));
+ await page.goto('http://127.0.0.1:4246/?test&welcome&graphics=compatible',{waitUntil:'domcontentloaded',timeout:120000});await page.waitForFunction(()=>window.brumaluz,null,{timeout:120000});
+ await page.evaluate(async()=>{
+  window.brumaluz.set({name:'Visitante',introSeen:true,welcome:{stage:'completed',origin:0},shadowQuest:'returned',health:66});window.brumaluz.play();
+  const {session}=await import('/src/game/state.ts'),{professionState,RPG_CATALOG}=await import('/src/data/professions.ts');
+  await(await import('/src/game/cities.ts')).switchGameMap('taller_peleteria_interior');session.state.location='taller_peleteria_interior';session.state.wallet.pelines=255;
+  session.state.rpg=professionState({xp:{peleteria:100}});session.state.inventory[0]={id:'cuero_0',count:4};session.state.inventory[1]={id:'material_recolector_1',count:2};
+  const station=RPG_CATALOG.stations.peleteria;window.brumaluz.move(station.x,station.z);window.brumaluz.view(.4,.7,10);
+  (await import('/src/ui/menus.ts')).setWindow('professions');
+ });
+ await page.locator('[data-profession-control="job-peleteria"]').click();await page.locator('[data-profession-control="tab-recipes"]').click();
+ await page.locator('[data-profession-control="search"]').fill('Preparar cuero');await page.locator('[data-profession-control="recipe-curtir_cuero_1"]').click();
+ assert.equal(await page.locator('.profession-recipe-checkout button.primary').count(),0,'the profession menu cannot purchase recipes');
+ await page.evaluate(async()=>{(await import('/src/ui/menus.ts')).setWindow(null);const {RPG_CATALOG}=await import('/src/data/professions.ts'),teacher=RPG_CATALOG.teachers.peleteria;window.brumaluz.move(teacher.x,teacher.z+1.3);});
+ await page.keyboard.press('KeyE');
+ const choice=text=>page.locator('#dialog .dialog-choice').filter({hasText:text});
+ await choice('Comprar recetas').click();await choice(/Iniciado$/).click();
+ for(let i=0;i<10&&await choice('Preparar cuero · Iniciado').count()===0;i++)await choice('Página siguiente').click();
+ await choice('Preparar cuero · Iniciado').click();
+ await page.screenshot({path:`${out}/master-purchase-desktop.png`});
+ await page.setViewportSize({width:390,height:844});const buy=choice('Comprar por 250 Pelines');await buy.scrollIntoViewIfNeeded();
+ const buyBounds=await buy.boundingBox();assert.ok(buyBounds&&buyBounds.y>=0&&buyBounds.y+buyBounds.height<=844);await page.screenshot({path:`${out}/master-purchase-mobile.png`});
+ await page.setViewportSize({width:1440,height:1000});await buy.click();
+ await page.waitForFunction(async()=>{const {session}=await import('/src/game/state.ts');return session.state.inventory.some(item=>item?.id==='receta_curtir_cuero_1');});
+ const scroll=await page.evaluate(async()=>{const {session}=await import('/src/game/state.ts');return {slot:session.state.inventory.findIndex(item=>item?.id==='receta_curtir_cuero_1'),known:session.state.rpg.learned.includes('curtir_cuero_1')};});
+ assert.equal(scroll.known,false,'purchasing a scroll does not teach its recipe');
+ await choice('Abrir mochila').click();await page.screenshot({path:`${out}/recipe-in-bag-desktop.png`});
+ await page.setViewportSize({width:390,height:844});const scrollButton=page.locator(`.inv-slot[data-index="${scroll.slot}"]`);await scrollButton.scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/recipe-in-bag-mobile.png`});await scrollButton.click();
+ await page.waitForFunction(async()=>{const {session}=await import('/src/game/state.ts');return session.state.rpg.learned.includes('curtir_cuero_1');});
+ assert.equal(await page.evaluate(async()=>{const {session}=await import('/src/game/state.ts');return session.state.inventory.some(item=>item?.id==='receta_curtir_cuero_1');}),false,'using consumes the scroll');
+ await page.setViewportSize({width:1440,height:1000});
+ await page.keyboard.press('Escape');await page.evaluate(async()=>{(await import('/src/ui/menus.ts')).setWindow('professions');});
+ assert.match(await page.locator('.profession-recipe-detail').innerText(),/10 EXP/);
+ await page.screenshot({path:`${out}/leather-recipe-desktop.png`});
+ await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);
+ const mobileAction=page.locator('.profession-recipe-checkout button.primary');await mobileAction.scrollIntoViewIfNeeded();
+ const actionBounds=await mobileAction.boundingBox();assert.ok(actionBounds&&actionBounds.y>=0&&actionBounds.y+actionBounds.height<=844,'mobile action can be reached by scrolling');
+ await page.screenshot({path:`${out}/leather-recipe-mobile.png`});
+ assert.ok(await mobileAction.isVisible());
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'no page overflow at 390px');
+ await page.setViewportSize({width:1440,height:1000});
+ await page.locator('.profession-recipe-checkout button.primary').click();
+ await page.waitForFunction(async()=>{const {session}=await import('/src/game/state.ts');return session.state.rpg.jobs.some(job=>job.recipe==='curtir_cuero_1');});
+ const task=await page.evaluate(async()=>{const {session}=await import('/src/game/state.ts');return {job:session.state.rpg.jobs.find(job=>job.recipe==='curtir_cuero_1'),wallet:session.state.wallet,inventory:session.state.inventory};});
+ assert.equal(task.wallet.pelines,5);assert.equal(task.job.xp,10);assert.equal(task.inventory.some(item=>item?.id==='cuero_0'),false);checks.push('Recipes are purchased only in the real master conversation, with confirmation at 250 Pelines. The profession book only crafts. Desktop/mobile controls remain accessible.');
+ // Material source identifies the actual creature and provides a continental waypoint.
+ await page.evaluate(async()=>{(await import('/src/ui/menus.ts')).setWindow(null);const {session}=await import('/src/game/state.ts');await(await import('/src/game/cities.ts')).switchGameMap('pompelin');session.state.location='pompelin';(await import('/src/ui/menus.ts')).setWindow('professions');});
+ await page.locator('[data-profession-control="search"]').fill('');
+ const armor=Object.values(rpg.recipes).find(recipe=>recipe.job==='peleteria'&&recipe.tier===1&&!recipe.processing);
+ await page.locator(`[data-profession-control="recipe-${armor.id}"]`).click();
+ assert.match(await page.locator('.profession-recipe-detail').innerText(),/Jabalí robusto/);
+ await page.getByRole('button',{name:'Localizar Jabalí robusto',exact:true}).click();
+ const waypoint=await page.evaluate(async()=>{const {personalWaypoints}=await import('/src/ui/gameInterface.ts');return personalWaypoints.get('pompelin');});assert.ok(waypoint);checks.push('Leather requirements identify the enemy and set its real world position as a waypoint.');
+ await page.evaluate(async()=>{(await import('/src/ui/menus.ts')).setWindow(null);});
+ const rows=await f.rows(),stamp=Number((await f.db.query('select extract(epoch from public.test_now()) s')).rows[0].s);
+ const packet={shared:true,serverTime:stamp,mobs:rows.map(({state,revision})=>({...state,revision,attackingYou:false})),corpses:[],inCombat:false};
+ await page.evaluate(async packet=>{(await import('/src/data/worldClock.ts')).syncWorldClock({hour:10,secondsPerHour:36000,serverTime:packet.serverTime});(await import('/src/game/wilderness.ts')).receiveWilderness({wilderness:packet});},packet);
+ for(const tier of [1,5]){
+  const mob=rows.find(row=>row.spawn===`cuero_${tier}`).state;
+  await page.evaluate(mob=>{window.brumaluz.move(mob.x+2,mob.z+5);window.brumaluz.view(.35,.5,12);},mob);
+  await page.waitForTimeout(600);assert.ok(await page.evaluate(async id=>(await import('/src/game/wilderness.ts')).wildernessTargets().some(target=>target.id===`wild:${id}`),`cuero_${tier}`),'nearby source is rendered and selectable');
+  await page.screenshot({path:`${out}/boar-tier-${tier}-game.png`});
+ }
+ checks.push('Real game accepts the fourteen-creature SQL snapshot and renders/selects nearby new low/high hide suppliers; distance culling remains active.');
+ await page.goto('http://127.0.0.1:4246/maps.html',{waitUntil:'domcontentloaded',timeout:120000});await page.waitForFunction(()=>window.__mapEditor?.state?.surface,null,{timeout:120000});
+ await page.evaluate(async()=>{await(await import('/src/dev/mapEditor/docs.ts')).openById('taller_peleteria_interior');const {camera,controls}=window.__mapEditor;camera.position.set(10,13,15);controls.target.set(0,.5,0);controls.update();});
+ await page.waitForTimeout(500);await page.screenshot({path:`${out}/leather-workshop-editor.png`});checks.push('Existing leather workshop opens in the map editor; authored maps and resource positions are unchanged.');
+ assert.deepEqual(errors,[]);await writeFile(`${out}/browser-review.json`,JSON.stringify({checks,errors,isolatedSql:true,liveDatabaseWrites:false},null,2));console.log(JSON.stringify({checks,errors}));
+}finally{await browser?.close();await server.close();await f.close();}

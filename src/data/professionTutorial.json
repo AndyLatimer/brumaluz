@@ -1,0 +1,20 @@
+{
+ "title":"Manos a la obra",
+ "reward":{"experience":40,"pelines":0},
+ "mentor":{"location":"brumaluz","x":-3.5,"z":0,"radius":4},
+ "legacyMentor":{"location":"brumaluz","x":153.5,"z":0,"radius":4},
+ "jobs":{
+  "herreria":{"gatherJob":"minero","recipe":"componente_herreria_0","order":"piezas_herreria"},
+  "peleteria":{"gatherJob":"minero","recipe":"componente_peleteria_0","order":"piezas_peleteria"},
+  "sastreria":{"gatherJob":"recolector","recipe":"componente_sastreria_0","order":"piezas_sastreria"},
+  "carpinteria":{"gatherJob":"lenador","recipe":"componente_carpinteria_0","order":"piezas_carpinteria"},
+  "ebanisteria":{"gatherJob":"lenador","recipe":"componente_ebanisteria_0","order":"piezas_ebanisteria"},
+  "joyeria":{"gatherJob":"minero","recipe":"componente_joyeria_0","order":"piezas_joyeria"},
+  "alquimia":{"gatherJob":"recolector","recipe":"componente_alquimia_0","order":"piezas_alquimia"},
+  "encantamiento":{"gatherJob":"recolector","recipe":"componente_encantamiento_0","order":"piezas_encantamiento"},
+  "cocina":{"gatherJob":"recolector","recipe":"componente_cocina_0","order":"piezas_cocina"},
+  "minero":{"gatherJob":"minero","recipe":null,"order":"suministro_minero"},
+  "lenador":{"gatherJob":"lenador","recipe":null,"order":"suministro_lenador"},
+  "recolector":{"gatherJob":"recolector","recipe":null,"order":"suministro_recolector"}
+ }
+}

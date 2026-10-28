@@ -7,6 +7,7 @@ import { buildDayNight } from '../world/dayNight';
 import { WaterFx } from '../world/waterFx';
 import { play } from './state';
 import { COMBAT_SITE } from '../world/city';
+import { createCreatorStage } from '../world/creatorStage';
 
 // ---------------- Render ----------------
 export const canvas = document.getElementById('scene') as HTMLCanvasElement;
@@ -33,6 +34,7 @@ export const dayNight = buildDayNight(renderer, scene, stage, !graphics.compatib
 export const waterFx = new WaterFx();
 scene.add(waterFx.root);
 export const holder = new THREE.Group();
+export const creatorStage = createCreatorStage(scene);
 holder.rotation.y = -0.3;
 scene.add(holder);
 export const camTarget = new THREE.Vector3(0, 1, 0);
@@ -48,7 +50,8 @@ export function layout() {
     const panel = document.getElementById('panel')!.getBoundingClientRect();
     const mobile = w <= 760;
     const ox = mobile ? 0 : -(panel.right + 12) / 2;
-    const oy = mobile ? (h - panel.top) / 2 : 0;
+    const previewTop = Math.min(136, h * .18);
+    const oy = mobile ? (h - panel.top - previewTop) / 2 : 0;
     camera.setViewOffset(w, h, ox, oy, w, h);
   }
   camera.updateProjectionMatrix();

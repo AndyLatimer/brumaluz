@@ -1,0 +1,595 @@
+{
+  "checks": [
+    "All eight resource families and all 96 available/depleted geometries have finite vertices.",
+    "minero: timed extraction, held tool, material receipt and depletion.",
+    "lenador: timed extraction, held tool, material receipt and depletion.",
+    "recolector: timed extraction, held tool, material receipt and depletion.",
+    "Cancelling removes progress and held tools without granting another material.",
+    "Movement and damage interrupt extraction and remove its held tool.",
+    "Field guide locates a resource on the real zone map.",
+    "Crafting at an installed home workbench reserves materials and creates a timed job.",
+    "Jobs and field guide fit 390px and 320px.",
+    "Resource availability and gathering details translate to English.",
+    "Resource and held tool checked with the normal game renderer, outside test mode.",
+    "Map editor shows the same 216 resource nodes without storing duplicate map objects."
+  ],
+  "geometryAudit": [
+    {
+      "family": "ore",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 356
+    },
+    {
+      "family": "ore",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "ore",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 356
+    },
+    {
+      "family": "ore",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "ore",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 356
+    },
+    {
+      "family": "ore",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "ore",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 356
+    },
+    {
+      "family": "ore",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "ore",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 356
+    },
+    {
+      "family": "ore",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "ore",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 356
+    },
+    {
+      "family": "ore",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "gem",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 346
+    },
+    {
+      "family": "gem",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "gem",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 346
+    },
+    {
+      "family": "gem",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "gem",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 346
+    },
+    {
+      "family": "gem",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "gem",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 346
+    },
+    {
+      "family": "gem",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "gem",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 346
+    },
+    {
+      "family": "gem",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "gem",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 346
+    },
+    {
+      "family": "gem",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 196
+    },
+    {
+      "family": "wood",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 732
+    },
+    {
+      "family": "wood",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 500
+    },
+    {
+      "family": "wood",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 732
+    },
+    {
+      "family": "wood",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 500
+    },
+    {
+      "family": "wood",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 780
+    },
+    {
+      "family": "wood",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 500
+    },
+    {
+      "family": "wood",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 732
+    },
+    {
+      "family": "wood",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 500
+    },
+    {
+      "family": "wood",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 720
+    },
+    {
+      "family": "wood",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 500
+    },
+    {
+      "family": "wood",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 780
+    },
+    {
+      "family": "wood",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 500
+    },
+    {
+      "family": "herb",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 2780
+    },
+    {
+      "family": "herb",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 236
+    },
+    {
+      "family": "herb",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 2780
+    },
+    {
+      "family": "herb",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 236
+    },
+    {
+      "family": "herb",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 2780
+    },
+    {
+      "family": "herb",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 236
+    },
+    {
+      "family": "herb",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 2780
+    },
+    {
+      "family": "herb",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 236
+    },
+    {
+      "family": "herb",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 2780
+    },
+    {
+      "family": "herb",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 236
+    },
+    {
+      "family": "herb",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 2780
+    },
+    {
+      "family": "herb",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 236
+    },
+    {
+      "family": "fiber",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 1376
+    },
+    {
+      "family": "fiber",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 216
+    },
+    {
+      "family": "fiber",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 1376
+    },
+    {
+      "family": "fiber",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 216
+    },
+    {
+      "family": "fiber",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 1376
+    },
+    {
+      "family": "fiber",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 216
+    },
+    {
+      "family": "fiber",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 1376
+    },
+    {
+      "family": "fiber",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 216
+    },
+    {
+      "family": "fiber",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 1376
+    },
+    {
+      "family": "fiber",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 216
+    },
+    {
+      "family": "fiber",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 1376
+    },
+    {
+      "family": "fiber",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 216
+    },
+    {
+      "family": "fruit",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 1332
+    },
+    {
+      "family": "fruit",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 228
+    },
+    {
+      "family": "fruit",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 1332
+    },
+    {
+      "family": "fruit",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 228
+    },
+    {
+      "family": "fruit",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 1332
+    },
+    {
+      "family": "fruit",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 228
+    },
+    {
+      "family": "fruit",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 1332
+    },
+    {
+      "family": "fruit",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 228
+    },
+    {
+      "family": "fruit",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 1332
+    },
+    {
+      "family": "fruit",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 228
+    },
+    {
+      "family": "fruit",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 1332
+    },
+    {
+      "family": "fruit",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 228
+    },
+    {
+      "family": "mushroom",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 1739
+    },
+    {
+      "family": "mushroom",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 144
+    },
+    {
+      "family": "mushroom",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 1739
+    },
+    {
+      "family": "mushroom",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 144
+    },
+    {
+      "family": "mushroom",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 1739
+    },
+    {
+      "family": "mushroom",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 144
+    },
+    {
+      "family": "mushroom",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 1739
+    },
+    {
+      "family": "mushroom",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 144
+    },
+    {
+      "family": "mushroom",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 1739
+    },
+    {
+      "family": "mushroom",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 144
+    },
+    {
+      "family": "mushroom",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 1739
+    },
+    {
+      "family": "mushroom",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 144
+    },
+    {
+      "family": "grain",
+      "tier": 0,
+      "depleted": false,
+      "triangles": 1880
+    },
+    {
+      "family": "grain",
+      "tier": 0,
+      "depleted": true,
+      "triangles": 260
+    },
+    {
+      "family": "grain",
+      "tier": 1,
+      "depleted": false,
+      "triangles": 1880
+    },
+    {
+      "family": "grain",
+      "tier": 1,
+      "depleted": true,
+      "triangles": 260
+    },
+    {
+      "family": "grain",
+      "tier": 2,
+      "depleted": false,
+      "triangles": 1880
+    },
+    {
+      "family": "grain",
+      "tier": 2,
+      "depleted": true,
+      "triangles": 260
+    },
+    {
+      "family": "grain",
+      "tier": 3,
+      "depleted": false,
+      "triangles": 1880
+    },
+    {
+      "family": "grain",
+      "tier": 3,
+      "depleted": true,
+      "triangles": 260
+    },
+    {
+      "family": "grain",
+      "tier": 4,
+      "depleted": false,
+      "triangles": 1880
+    },
+    {
+      "family": "grain",
+      "tier": 4,
+      "depleted": true,
+      "triangles": 260
+    },
+    {
+      "family": "grain",
+      "tier": 5,
+      "depleted": false,
+      "triangles": 1880
+    },
+    {
+      "family": "grain",
+      "tier": 5,
+      "depleted": true,
+      "triangles": 260
+    }
+  ],
+  "errors": []
+}

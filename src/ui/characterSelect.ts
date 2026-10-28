@@ -9,7 +9,8 @@ import { classIcon } from './classIcons';
 import type { User } from '@supabase/supabase-js';
 import { $ } from './dom';
 import { menuMusic, ambientSoundscape, reportAmbientError } from '../game/audio';
-import { refreshUI, nameInput, selectTab } from './creator';
+import { refreshUI, nameInput, selectTab, resetCreatorNavigation } from './creator';
+import { resetCreatorStudio } from './creatorStudio';
 import { rebuildNow, characterContext } from '../game/avatar';
 import { layout, renderer } from '../game/stage';
 import { loadWorldState, stopMultiplayer } from '../game/worldClient';
@@ -20,6 +21,8 @@ import { toast } from './toast';
 import { setGameMenuOpen } from './menus';
 
 export function showEditor() {
+  resetCreatorStudio();
+  resetCreatorNavigation();
   document.body.classList.remove('auth-visible', 'characters-visible');
   $('#account-gate').hidden = true;
   menuMusic.sync();
@@ -29,6 +32,7 @@ export function showEditor() {
   $('#panel').style.setProperty('--tab-marker-left', '10%');
   view.focus = 'body';
   view.zoom = 1;
+  selectTab('raza');
   refreshUI();
   rebuildNow();
   layout();

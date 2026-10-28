@@ -39,6 +39,8 @@ export type BatchedInstance = [THREE.BatchedMesh, number, THREE.Object3D];
 export const OCCLUDER_OPACITY = 0.18;
 /** Distancia (m) por delante del personaje, vista desde la cámara, a partir de la cual una pared ya no se atenúa. */
 export const OCCLUDER_FRONT_MARGIN = 0.1;
+/** World canopy only: walls, mountains and wooden props keep their full silhouette. */
+export const WORLD_TREE_OCCLUDER = /(?:^|\/)trees?_[^/]+$/i;
 /** Lado (m) de las celdas en que se agrupan los objetos para el campo de visión. */
 export const VIEW_CHUNK = 24;
 /** Objetos cuya diagonal (ya escalada) no llega a esto se consideran detalle y se dejan de dibujar antes. */
@@ -95,7 +97,7 @@ export class ObjectLayer {
     const seen = new Set<string>();
     objects.forEach((object, order) => {
       seen.add(object.id);
-      const key = `${object.asset}|${object.conform ? 1 : 0}|${object.tint ?? ''}`;
+      const key = `${object.asset}|${object.conform ? 1 : 0}|${object.tint ?? ''}|${object.gateClosed ? 1 : 0}`;
       let view = this.views.get(object.id);
       if (!view || view.key !== key) {
         if (view) this.remove(view);
@@ -119,6 +121,11 @@ export class ObjectLayer {
       view.detail = !object.asset.startsWith('city/hex_') && templateSize(template) * Math.max(...object.scale) < DETAIL_SIZE;
       if (container.parent) this.place(view);
       const copy = template.clone(true);
+      if (object.asset === 'city/wall_straight_gate' && object.gateClosed) {
+        copy.traverse(part => {
+          if (part.name === 'wall_straight_gate_door_left' || part.name === 'wall_straight_gate_door_right') part.rotation.y = 0;
+        });
+      }
       const ground = object.asset.startsWith('city/hex_');
       copy.traverse(part => {
         if (!(part instanceof THREE.Mesh)) return;
@@ -264,7 +271,7 @@ export class ObjectLayer {
    * personaje) y el ojo de la cámara se vuelven casi transparentes; al dejar de tapar recuperan su aspecto poco a
    * poco. Sin objetivos, todo vuelve a la normalidad.
    */
-  fadeOccluders(eye: THREE.Vector3, targets: readonly THREE.Vector3[], dt: number, fadeable: RegExp) {
+  fadeOccluders(eye: THREE.Vector3, targets: readonly THREE.Vector3[], dt: number, fadeable: RegExp, opacity = OCCLUDER_OPACITY) {
     const hits = this.hits;
     // Los rayos se lanzan unas 20 veces por segundo; la transición de opacidad sí avanza en cada fotograma.
     this.sinceRays += dt;
@@ -279,9 +286,12 @@ export class ObjectLayer {
       const segment = new THREE.Line3(first, eye), closest = new THREE.Vector3();
       const candidates: THREE.Object3D[] = [];
       for (const chunk of this.chunks.values()) {
+        if (!chunk.visible) continue;
         const center = chunk.userData.center as THREE.Vector2;
         if (Math.hypot(center.x - midX, center.y - midZ) > length / 2 + VIEW_CHUNK) continue;
         for (const child of new Set([...chunk.children, ...(chunk.userData.originals ?? []) as THREE.Object3D[]])) {
+          // Batched originals are intentionally hidden; authored hidden objects are not occluders.
+          if (!child.visible && !child.userData.batched) continue;
           if (!child.userData.mapObjectId || !fadeable.test(child.userData.mapAsset ?? '')) continue;
           const sphere = (child.userData.bounds ??= new THREE.Box3().setFromObject(child, true).getBoundingSphere(new THREE.Sphere())) as THREE.Sphere;
           segment.closestPointToPoint(sphere.center, true, closest);
@@ -308,7 +318,7 @@ export class ObjectLayer {
     const blend = 1 - Math.exp(-dt * 10);
     for (const container of hits) if (!this.faded.has(container)) this.startFade(container);
     for (const [container, state] of this.faded) {
-      const goal = hits.has(container) ? OCCLUDER_OPACITY : 1;
+      const goal = hits.has(container) ? opacity : 1;
       state.opacity += (goal - state.opacity) * blend;
       if (goal === 1 && state.opacity > 0.98) { this.endFade(container); continue; }
       for (const mesh of state.materials.keys()) (mesh.material as THREE.Material).opacity = state.opacity;

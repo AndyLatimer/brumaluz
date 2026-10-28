@@ -10,6 +10,17 @@ export type ShadowAction = 'report' | 'return';
 /** Plaza del pozo: allí vuelve Gnomi cuando Isberto se lleva al jugador a su casa. */
 export const SHADOW_RETURN = { x: -3.5, z: 0 };
 export const SHADOW_TITLE = 'Una sombra junto a la fragua';
+export type FairyDustQuest = 'ask_gnomi' | 'arboleda';
+export const FAIRY_DUST_QUEST_TITLE = 'Un polvo misterioso';
+export function parseFairyDustQuest(value: unknown): FairyDustQuest | null {
+  if (value === undefined || value === null) return null;
+  if (value !== 'ask_gnomi' && value !== 'arboleda') throw new Error('Progreso del polvo de hada no válido.');
+  return value;
+}
+export function fairyDustObjective(stage: FairyDustQuest) {
+  return stage === 'ask_gnomi' ? 'Pregunta a Gnomi por el polvo de hada que has encontrado.'
+    : 'Gnomi te ha recomendado visitar La Arboleda para saber más sobre el polvo de hada.';
+}
 /** `looted`: si ya se registraron los restos de la criatura (solo cuenta tras derrotarla). */
 export function shadowObjective(stage: ShadowQuest | null, looted = true, location = 'brumaluz') {
   return stage === 'returned' ? 'Isberto te ha dado cobijo: usa su cama para descansar y el cofre de la esquina para guardar tus cosas.'
@@ -64,11 +75,28 @@ export const ORIGINS: Record<Race, readonly [string, string, string]> = {
   lagto: ['He bajado de las Cumbres de Cobre para aprender un oficio.', 'Quiero conocer qué hay más allá de las montañas.', 'Vivo aquí y busco un nuevo rumbo.'],
   pelso: ['He llegado desde Luna Argéntea para conocer la capital.', 'Busco oportunidades en tierra firme.', 'Vivo aquí y busco un nuevo rumbo.'],
 };
-export const ORIGIN_REPLIES = [
-  'Entonces tenemos por dónde empezar. Conozco a gente que puede enseñarte; algunos tienen muy buenas manos y un poquito menos de paciencia. Tú pregunta sin miedo.',
-  'Me alegro de que estés aquí. Hay mucho que ver, pero no hace falta hacerlo todo hoy. Podemos ir parando; con mis piernas es lo que mejor me viene.',
-  'Pues vamos a buscar algo que te guste. Yo puedo presentarte a la gente de los talleres. A casi todos les conozco… aunque alguno me esconda las herramientas cuando llego.',
-] as const;
+export const ORIGIN_REPLIES: Record<Race, readonly [string, string, string]> = {
+  "humano": [
+    "¡Vecino, entonces! No te voy a explicar dónde está cada plaza. Para el primer oficio sí puedo ayudarte: vamos a los talleres y preguntamos. Preguntar sale barato; los pergaminos, ya menos.",
+    "Probar suerte… Sí, eso hago yo algunas mañanas. Por aquí puedes empezar con los encargos de los maestros y ver si te gusta algún oficio. No prometo hacerte rico; encontrar el taller sí entra en mis competencias.",
+    "Entonces has venido con tarea para mí. Los talleres están en el Barrio de los Artesanos. Te enseño las puertas; de lo que pasa dentro sabe más cada maestro. Yo prefiero avisarlo antes de que me pregunten cómo se hace una ballesta."
+  ],
+  "elfo": [
+    "¿De La Arboleda? Y has venido a aprender aquí. Pues voy a procurar que merezca la pena el paseo. En los talleres puedes probar distintos oficios; no tienes que quedarte con el primero que te abra la puerta.",
+    "La capital… Dicho así parece que tenga que enseñártela entera antes de comer. Mejor empezamos por el mercado y los talleres, que los tengo bien aprendidos. Lo demás lo vamos viendo.",
+    "¿Vives aquí? Menos mal que he preguntado antes de darte la bienvenida por segunda vez. Si buscas otro rumbo, podemos empezar por los oficios. Cambiar de idea también está permitido; lo digo porque yo cambio bastante."
+  ],
+  "lagto": [
+    "Desde las Cumbres de Cobre hasta nuestros talleres… Como el primer maestro que veamos te diga que vuelvas otro día, le voy a preguntar yo. Por las buenas, eso sí. Primero vemos qué te interesa aprender.",
+    "Fuera de las montañas, pues de momento me has encontrado a mí. No sé si eso compensa el viaje. Brumaluz tiene bastante más: mercado, talleres y vecinos de varias regiones. Vamos por partes.",
+    "Entonces no necesitas una visita a Brumaluz; necesitas encontrar algo que te apetezca hacer en ella. Eso me gusta más. Vamos a mirar los talleres sin decidir todavía nada."
+  ],
+  "pelso": [
+    "¿Desde Luna Argéntea? Pues no voy a despacharte con señalar una calle. Podemos empezar por el mercado y el Barrio de los Artesanos. Si me alargo explicando, me lo dices; cuando me dejan llevar una bienvenida, me entusiasmo.",
+    "Para ganarte unos pelines, los maestros pagan por suministros. Para gastártelos, también venden recetas. Yo te enseño dónde están y tú decides en qué dirección van a moverse los tuyos.",
+    "¿Otro rumbo sin salir de Brumaluz? Eso sí puedo enseñártelo. En los talleres puedes probar varios oficios. Si alguno no te gusta, nos vamos al siguiente; no tengo encargo de convencerte a la fuerza."
+  ]
+};
 export function parseWelcome(value: unknown): WelcomeProgress | null {
   if (value === undefined || value === null) return null;
   if (typeof value !== 'object' || Array.isArray(value)) throw new Error('Progreso de bienvenida no válido.');

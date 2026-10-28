@@ -10,6 +10,10 @@ import { ARMOR, outfitItemStats } from './outfits';
 import { ACCESSORIES } from './accessories';
 import { describeWeapon, describeArmor, describeAccessory, weaponCollection, EQUIPMENT_COLLECTIONS } from './itemDescriptions';
 import rpgCatalog from './generated/rpg-catalog.json';
+import { resourceFamily } from './resourceAppearance';
+import { resourceInventoryDrawing } from './resourceInventoryArt';
+import { craftingComponentDrawing } from './craftingArt';
+import {gatheringToolPainting,equipmentSlotPainting} from '../art/inventoryPaintings';
 
 export interface ItemDef {
   id: string;
@@ -199,14 +203,14 @@ for (const outfit of Object.values(ARMOR)) {
     id: outfit.id, label: outfit.label, category: ({head:'Cabeza',chest:'Pecho',hands:'Manos',legs:'Piernas'} as const)[outfit.slot], stack: 1, value: outfit.value,
     rarity: rarityForTier(outfit.tier), stats: outfitItemStats(outfit.id),
     description: describeArmor(outfit.cls, outfit.slot, outfit.tier, outfit.collection), collection: EQUIPMENT_COLLECTIONS[outfit.collection],
-    icon: weaponPortrait(outfit.id) ?? `<path d="m7 3 5 2 5-2 5 5-4 3-1 11H7L6 11 2 8Z" fill="${outfit.cloth}" stroke="${outfit.trim}"/>`,
+    icon: weaponPortrait(outfit.id) ?? equipmentSlotPainting(outfit.slot) ?? `<path d="m7 3 5 2 5-2 5 5-4 3-1 11H7L6 11 2 8Z" fill="${outfit.cloth}" stroke="${outfit.trim}"/>`,
   };
 }
 for(const item of Object.values(ACCESSORIES))ITEMS[item.id]={
   id:item.id,label:item.label,category:({pendant:'Colgante',ring:'Anillo',trinket:'Abalorio'} as const)[item.slot],stack:1,value:item.value,
   rarity:rarityForTier(item.tier),description:describeAccessory(item.slot,item.collection),collection:EQUIPMENT_COLLECTIONS[item.collection],
   stats:[...(item.maxHealth?[{label:'Vida máxima',value:`+${item.maxHealth}`}]:[]),...(item.maxResource?[{label:'Recurso máximo',value:`+${item.maxResource}`}]:[])],
-  icon:weaponPortrait(item.id)??`<circle cx="12" cy="12" r="7" fill="${item.dark}" stroke="${item.metal}"/><path d="m12 6 4 6-4 6-4-6Z" fill="${item.gem}"/>`,
+  icon:weaponPortrait(item.id)??equipmentSlotPainting(item.slot)??`<circle cx="12" cy="12" r="7" fill="${item.dark}" stroke="${item.metal}"/><path d="m12 6 4 6-4 6-4-6Z" fill="${item.gem}"/>`,
 };
 for (const item of Object.values(ITEMS)) {
   item.rarity ??= WEAPONS[item.id] ? rarityForTier(WEAPONS[item.id].tier) : 'common';
@@ -216,11 +220,18 @@ for (const item of Object.values(ITEMS)) {
   if (WEAPONS[item.id]) item.icon = weaponPortrait(item.id) ?? item.icon;
 }
 Object.assign(ITEMS,rpgCatalog.items as unknown as Record<string,ItemDef>);
+for(const extra of Object.values(rpgCatalog.items)){
+ const family=resourceFamily(extra.id);
+ if(family)ITEMS[extra.id]={...ITEMS[extra.id],icon:resourceInventoryDrawing(family,extra.tier)};
+ else if('tool' in extra && extra.tool){const kind=({minero:'pickaxe',lenador:'axe',recolector:'sickle'} as const)[extra.tool as 'minero'|'lenador'|'recolector'];const drawing=kind&&gatheringToolPainting(kind);if(drawing)ITEMS[extra.id]={...ITEMS[extra.id],icon:drawing};}
+ else{const drawing=craftingComponentDrawing(extra.id);if(drawing)ITEMS[extra.id]={...ITEMS[extra.id],icon:drawing};}
+}
 export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];
 export const itemLabel = (id: string) => ITEMS[id]?.label ?? id;
 export const itemRarity = (id: string) => ITEMS[id]?.rarity ?? 'common';
-export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || ARMOR[id] || ACCESSORIES[id] ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon}</svg>` : '');
+let itemArtSequence=0;
+export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || ARMOR[id] || ACCESSORIES[id] || resourceFamily(id) ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon.replaceAll('resource-art-',`resource-art-${++itemArtSequence}-`)}</svg>` : '');
 
 /** Lo que paga un vendedor por un objeto. */
 export const sellPrice = (id: string) => Math.max(1, Math.floor((ITEMS[id]?.value ?? 0) / 2));

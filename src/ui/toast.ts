@@ -12,12 +12,33 @@ interface Notice {
   values: Record<string, string | number>;
   kind: ToastKind;
   remaining: number;
+  duration: number;
 }
 const pending: Notice[] = [];
 let current: Notice | null = null;
 let lastTick = 0;
 let leaving = 0;
-const captions = { notice: 'Crónicas de Brumaluz', quest: 'Diario de viaje', reward: 'Misión completada' };
+const recent = new Map<string, number>();
+const captions = { notice: 'Aviso', quest: 'Diario de viaje', reward: 'Misión completada' };
+
+function signature(notice: Pick<Notice, 'title' | 'text' | 'error' | 'kind' | 'values'>) {
+  return JSON.stringify([notice.title, notice.text, notice.error, notice.kind,
+    Object.entries(notice.values).sort(([a], [b]) => a.localeCompare(b))]);
+}
+
+function hideToast() {
+  const element = $('#toast');
+  element.classList.remove('show');
+  element.inert = true;
+  element.setAttribute('aria-hidden', 'true');
+}
+
+export function dismissToast() {
+  if (!current) return;
+  hideToast();
+  current = null;
+  leaving = performance.now() + 280;
+}
 
 export function renderToast() {
   if (!current) return;
@@ -26,6 +47,7 @@ export function renderToast() {
   element.dataset.kind = current.kind;
   element.setAttribute('role', current.error ? 'alert' : 'status');
   element.setAttribute('aria-live', current.error ? 'assertive' : 'polite');
+  element.setAttribute('aria-atomic', 'true');
   const seal = document.createElement('span');
   seal.className = 'toast-seal';
   seal.setAttribute('aria-hidden', 'true');
@@ -43,16 +65,33 @@ export function renderToast() {
   const message = document.createElement('p');
   message.textContent = t(ui.toastSourceText, ui.toastValues);
   body.append(caption, heading, message);
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'toast-dismiss';
+  dismiss.setAttribute('aria-label', t('Cerrar aviso'));
+  dismiss.title = t('Cerrar aviso');
+  dismiss.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 6 8 8m0-8-8 8"/></svg>';
+  // Closing an overlay must never also target or interact with the world underneath.
+  dismiss.onpointerdown = event => event.stopPropagation();
+  dismiss.onclick = event => { event.stopPropagation(); dismissToast(); };
+  dismiss.onkeydown = event => {
+    event.stopPropagation();
+    if (event.key === 'Escape') { event.preventDefault(); dismissToast(); }
+  };
+  dismiss.onkeyup = event => event.stopPropagation();
   const progress = document.createElement('span');
   progress.className = 'toast-progress';
   progress.setAttribute('aria-hidden', 'true');
-  element.style.setProperty('--toast-progress', String(current.remaining / duration(current)));
-  element.replaceChildren(seal, body, progress);
+  element.style.setProperty('--toast-progress', String(current.remaining / current.duration));
+  element.replaceChildren(seal, body, dismiss, progress);
 }
 
 function tick() {
-  const now = performance.now(), elapsed = now - lastTick;
+  // Background tabs and a busy renderer can suspend timers. Unseen wall time is not reading time.
+  const now = performance.now(), elapsed = Math.min(250, Math.max(0, now - lastTick));
   lastTick = now;
+  const element = $('#toast');
+  const reading = current && element.matches(':hover, :focus-within');
   const blocked = document.hidden || document.body.classList.contains('cinematic-open')
     || (!(current ?? pending[0])?.error && document.body.classList.contains('conversation-open'));
   if (!blocked && now >= leaving) {
@@ -62,14 +101,14 @@ function tick() {
       ui.toastSourceText = current.text;
       ui.toastValues = current.values;
       renderToast();
-      $('#toast').classList.add('show');
-    } else if (current) {
+      element.inert = false;
+      element.removeAttribute('aria-hidden');
+      element.classList.add('show');
+    } else if (current && !reading) {
       current.remaining -= elapsed;
-      $('#toast').style.setProperty('--toast-progress', String(Math.max(0, current.remaining / duration(current))));
+      element.style.setProperty('--toast-progress', String(Math.max(0, current.remaining / current.duration)));
       if (current.remaining <= 0) {
-        $('#toast').classList.remove('show');
-        current = null;
-        leaving = now + 280;
+        dismissToast();
       }
     }
   }
@@ -77,16 +116,24 @@ function tick() {
   else ui.toastTimer = 0;
 }
 
-const duration = (notice: Pick<Notice, 'title' | 'text' | 'kind' | 'error'>) =>
-  Math.min(7200, Math.max(notice.kind === 'reward' || notice.error ? 4800 : 3600, (notice.title.length + notice.text.length) * 38));
+const duration = (notice: Pick<Notice, 'title' | 'text' | 'kind' | 'error' | 'values'>) =>
+  Math.min(12000, Math.max(notice.kind === 'reward' || notice.error ? 4800 : 3600,
+    (t(notice.title, notice.values).length + t(notice.text, notice.values).length) * 38));
 
 export function toast(title: string, text: string, error = false, values: Record<string, string | number> = {}, kind: ToastKind = 'notice') {
-  const notice: Notice = { title, text, error, values: { ...values }, kind, remaining: duration({ title, text, kind, error }) };
-  chatSystem(`${t(title, values)}: ${t(text, values)}`, error);
-  const same = (other: Notice) => other.title === title && other.text === text && JSON.stringify(other.values) === JSON.stringify(values);
+  const total = duration({ title, text, kind, error, values });
+  const notice: Notice = { title, text, error, values: { ...values }, kind, duration: total, remaining: total };
+  const key = signature(notice), now = performance.now();
+  const same = (other: Notice) => signature(other) === key;
   if ((current && same(current)) || pending.some(same)) return;
+  for (const [key, until] of recent) if (now >= until) recent.delete(key);
+  if ((recent.get(key) ?? 0) > now) return;
+  recent.set(key, now + 1500);
+  if (recent.size > 64) recent.delete(recent.keys().next().value!);
+  // Keep one history entry per accepted notice, including while a conversation hides the card.
+  chatSystem(`${t(title, values)}${text ? `: ${t(text, values)}` : ''}`, error);
   if (error) {
-    if (current) { pending.unshift(current); current = null; $('#toast').classList.remove('show'); }
+    if (current) { pending.unshift(current); current = null; hideToast(); }
     pending.unshift(notice);
     leaving = 0;
   } else pending.push(notice);
@@ -98,9 +145,11 @@ export function clearToasts() {
   window.clearTimeout(ui.toastTimer);
   ui.toastTimer = 0;
   pending.length = 0;
+  recent.clear();
   current = null;
   leaving = 0;
   ui.toastSourceTitle = ''; ui.toastSourceText = '';
-  $('#toast').classList.remove('show');
+  ui.toastValues = {};
+  hideToast();
   $('#toast').replaceChildren();
 }

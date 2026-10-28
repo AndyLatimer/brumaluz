@@ -13,8 +13,6 @@ import { tradeWindow } from '../ui/gameInterface';
 import { playerInteractions } from './interaction';
 import { remotePlayers } from './worldClient';
 import { wildernessTargets } from './wilderness';
-import { serverNow } from '../data/worldClock';
-import { shadowWindup } from '../data/shadowCombat';
 
 // Los NPC comentan algo de vez en cuando si estás cerca (canal NPC del chat).
 export const barkCooldown = new Map<string, number>();
@@ -39,7 +37,6 @@ export function updateTargetFrame() {
     id:'enemy:shadowling',root:fight.combatTargetRoot,name:fight.combatEncounter.label??'Sombra de Isberto',level:fight.combatEncounter.level??(fight.combatEncounter.kind==='expedition'?session.state.level:1),height:1.4,
     vitals:{health:fight.combatEncounter.health,maxHealth:fight.combatEncounter.maxHealth,overheal:0,resource:0,maxResource:1,resourceKind:'stamina'},
     identity:{kind:'npc',type:'hostile',title:fight.combatEncounter.kind==='wilderness'?'Enemigo de Pompelín':'Espectro umbrío'},
-    cast:fight.combatEncounter.windup?{label:fight.combatEncounter.attackKind==='bolt'?'Descarga sombría':'Impacto sombrío',remaining:fight.combatEncounter.windup-serverNow(),duration:shadowWindup(fight.combatEncounter.attackKind??'area')}:undefined,
   });
   if (story.welcomeWorld.root.visible) targets.push({
     id: 'npc:gnomi', root: story.welcomeWorld.root, name: session.registeredNpcs.gnomi.name, level: session.registeredNpcs.gnomi.stats.level, height: session.registeredNpcs.gnomi.appearance.height,

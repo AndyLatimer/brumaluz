@@ -19,6 +19,7 @@ import { EQUIPPABLE } from '../data/equipment';
 import { attackInterval, basicAttackDamage, primaryAttribute, skillCost, skillPower, skillRank, COMBAT_KITS } from '../data/combat';
 import { guardedDamage } from '../data/weapons';
 import { activeSets } from '../data/sets';
+import {equipmentSlotPainting} from '../art/inventoryPaintings';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
   const node = document.createElement(tag);
@@ -66,7 +67,7 @@ function equipCell(d: CharData, slot: EquipmentSlot, onUnequip?: (slot: Equipmen
   if (cell instanceof HTMLButtonElement) cell.type = 'button';
   cell.title = `${t(SLOT_LABEL[slot])}|${t(item ? item.id : 'Ranura vacía')}`;
   cell.dataset.slot = slot;
-  cell.innerHTML = `<svg class="equip-art" viewBox="0 0 24 24" aria-hidden="true">${SLOT_ICON[slot]}</svg>`;
+  cell.innerHTML = `<svg class="equip-art" viewBox="0 0 24 24" aria-hidden="true">${equipmentSlotPainting(slot)??SLOT_ICON[slot]}</svg>`;
   cell.append(el('small', undefined, t(SLOT_LABEL[slot])));
   if (item) {
     cell.removeAttribute('title');

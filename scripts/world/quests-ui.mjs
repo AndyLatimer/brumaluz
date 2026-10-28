@@ -102,7 +102,7 @@ test('quest tracker minimizes in place and offscreen objectives point toward the
     assert.equal(await realms.locator('svg[viewBox="0 0 64 64"] .realm-emblem-art').count(),5);
     assert.ok(await realms.filter({hasText:'Isla de Lunargenta'}).isVisible());
     assert.doesNotMatch(await page.locator('.collections-realm-grid').textContent(),/Luna Argéntea/);
-    assert.match(await realms.first().textContent(),/50%/);
+    assert.match(await realms.first().textContent(),/25%/);
     for(const width of [320,390,1280]){
       await page.setViewportSize({width,height:844});
       assert.ok(await page.locator('.collections-realm-grid').evaluate(grid=>grid.scrollWidth<=grid.clientWidth));

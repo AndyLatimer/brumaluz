@@ -64,8 +64,6 @@ export interface City {
   mapBounds?: { x: number; z: number; extent: number };
   /** Datos de construcción para convertir Brumaluz en un mapa editable. */
   layout?: CityLayout;
-  /** Montones de polvos de hada: marcadores del editor de mapas o lista por defecto. */
-  fairyDustSpots?: readonly { id: string; x: number; z: number; yaw: number }[];
   update(t: number, playerPosition?: THREE.Vector3): void;
   /** Luciérnagas y polen flotando (los interiores no las llevan). */
   fireflies?: boolean;
