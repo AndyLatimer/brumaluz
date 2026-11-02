@@ -8,13 +8,14 @@
     <link rel="alternate icon" href="/favicon.ico" sizes="any">
   </head>
   <body>
+    <!-- CABECERA DEL TALLER -->
     <header class="workshop-header">
       <div>
         <span class="eyebrow">Taller de Brumaluz</span>
         <h1>Editor de objetos y equipamiento</h1>
         <p>Crea, organiza y equilibra todo el catálogo del MMORPG sin escribir código.</p>
       </div>
-      <nav>
+      <nav aria-label="Navegación del taller">
         <a href="./npcs.html">NPCs</a>
         <a href="./maps.html">Mapas</a>
         <a href="./quests.html">Misiones</a>
@@ -23,16 +24,22 @@
       </nav>
     </header>
 
+    <!-- BARRA DE ESTADO GLOBAL -->
     <div id="status" role="status" aria-live="polite">Cargando catálogo…</div>
 
+    <!-- WORKSPACE DE 3 PANELES -->
     <div class="workspace">
       <!-- PANEL IZQUIERDO: BIBLIOTECA Y CATÁLOGO GENERAL -->
-      <aside class="library panel">
-        <h2>Catálogo de objetos</h2>
+      <aside class="library panel" aria-label="Catálogo general">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+          <span class="eyebrow" style="margin: 0;">Biblioteca</span>
+          <span id="items-count-badge" class="pill">Cargando…</span>
+        </div>
+        <h2 style="margin-bottom: 14px;">Catálogo de objetos</h2>
         
         <label>
-          Buscar objeto
-          <input id="search-input" type="search" placeholder="Nombre, ID, descripción o etiqueta…">
+          Buscar en catálogo
+          <input id="search-input" type="search" placeholder="Buscar por nombre, ID o etiqueta…">
         </label>
 
         <div class="library-filter-grid">
@@ -50,7 +57,7 @@
           <label>
             Estado
             <select id="status-filter">
-              <option value="all">Todos</option>
+              <option value="all">Todos los estados</option>
               <option value="active">Solo activos</option>
               <option value="inactive">Solo inactivos</option>
             </select>
@@ -60,7 +67,7 @@
             <select id="sort-select">
               <option value="label:asc">Nombre (A-Z)</option>
               <option value="label:desc">Nombre (Z-A)</option>
-              <option value="id:asc">ID (A-Z)</option>
+              <option value="id:asc">ID técnico (A-Z)</option>
               <option value="rarity:desc">Mayor rareza</option>
               <option value="rarity:asc">Menor rareza</option>
               <option value="value:desc">Mayor precio</option>
@@ -78,6 +85,7 @@
           <button type="button" id="bulk-delete" class="bulk-btn danger" disabled title="Eliminar seleccionados no referenciados">Eliminar</button>
         </div>
 
+        <!-- Listado dinámico de filas de objetos -->
         <div id="items-list" class="items-list" role="listbox"></div>
 
         <div class="pagination-bar">
@@ -86,52 +94,72 @@
           <button type="button" id="next-page-btn">Siguiente →</button>
         </div>
 
-        <button type="button" id="new-item-btn" class="primary" style="width: 100%; margin-bottom: 8px;">+ Crear objeto en blanco</button>
+        <div style="border-top: 1px solid #2d3e33; padding-top: 14px; margin-top: 10px;">
+          <button type="button" id="new-item-btn" class="primary" style="width: 100%; margin-bottom: 10px;">
+            + Crear objeto en blanco
+          </button>
 
-        <label>
-          Plantilla de inicio rápido
-          <select id="template-select"></select>
-        </label>
-        <button type="button" id="apply-template-btn" style="width: 100%; margin-bottom: 12px;">Crear desde plantilla</button>
+          <label>
+            Plantilla de inicio rápido
+            <select id="template-select"></select>
+          </label>
+          <button type="button" id="apply-template-btn" style="width: 100%; margin-bottom: 14px;">
+            ⚡ Aplicar plantilla elegida
+          </button>
+        </div>
 
         <details>
-          <summary>Gestionar biblioteca y archivos</summary>
-          <button type="button" id="duplicate-btn" style="width: 100%; margin-bottom: 6px;">Duplicar este objeto</button>
-          <button type="button" id="reload-btn" style="width: 100%; margin-bottom: 6px;">Recargar desde servidor</button>
-          <button type="button" id="export-all-btn" style="width: 100%; margin-bottom: 6px;">Exportar catálogo JSON completo</button>
-          <button type="button" id="export-current-btn" style="width: 100%; margin-bottom: 6px;">Exportar solo este objeto</button>
-          <label class="file-button" style="width: 100%; margin-top: 6px;">
-            Importar JSON (fusión / reemplazo)
-            <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
-          </label>
-          <p class="muted" style="margin-top: 8px; font-size: 11px;">
-            La importación valida IDs únicos y campos compatibles. Los datos guardados se persisten directamente en el proyecto.
-          </p>
+          <summary>⚙️ Gestionar biblioteca y archivos</summary>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+            <button type="button" id="duplicate-btn">Hacer copia de este objeto</button>
+            <button type="button" id="reload-btn">Recargar desde servidor</button>
+            <button type="button" id="export-all-btn">Exportar catálogo JSON completo</button>
+            <button type="button" id="export-current-btn">Exportar solo este objeto</button>
+            <label class="file-button" style="margin: 0; justify-content: center;">
+              📂 Importar archivo JSON
+              <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
+            </label>
+            <small class="muted" style="margin-top: 4px; font-size: 11px;">
+              Valida identificadores únicos y compatibilidad de campos con persistencia directa en el proyecto.
+            </small>
+          </div>
         </details>
       </aside>
 
       <!-- PANEL CENTRAL: FICHA Y FORMULARIO DE EDICIÓN -->
-      <main class="panel">
+      <main class="panel" aria-label="Editor de objeto">
         <div class="editor-heading">
           <div>
-            <span class="eyebrow">Ficha de objeto</span>
+            <span class="eyebrow">Edición activa</span>
             <h2 id="form-title">Editar objeto</h2>
           </div>
           <span id="dirty-pill" class="pill">Sin cambios</span>
         </div>
 
         <div class="history-toolbar">
-          <button type="button" id="undo-btn" disabled>↶ Deshacer</button>
-          <button type="button" id="redo-btn" disabled>↷ Rehacer</button>
-          <span class="muted" style="margin-left: auto; font-size: 11px;">Ctrl+S para guardar • Ctrl+Z deshacer</span>
+          <button type="button" id="undo-btn" disabled title="Deshacer cambio (Ctrl+Z)">↶ Deshacer</button>
+          <button type="button" id="redo-btn" disabled title="Rehacer cambio (Ctrl+Y)">↷ Rehacer</button>
+          <span class="muted" style="margin-left: auto; font-size: 11.5px;">
+            <kbd style="background: #101815; padding: 2px 5px; border-radius: 4px; border: 1px solid #33443a;">Ctrl+S</kbd> Guardar • <kbd style="background: #101815; padding: 2px 5px; border-radius: 4px; border: 1px solid #33443a;">Ctrl+Z</kbd> Deshacer
+          </span>
         </div>
 
         <nav class="tabs-nav" aria-label="Secciones del editor">
-          <button type="button" class="tab-btn active" data-tab="tab-general">1. Información general</button>
-          <button type="button" class="tab-btn" data-tab="tab-properties">2. Propiedades e inventario</button>
-          <button type="button" class="tab-btn" data-tab="tab-equipment">3. Equipamiento</button>
-          <button type="button" class="tab-btn" data-tab="tab-consumable">4. Efectos y consumibles</button>
-          <button type="button" class="tab-btn" data-tab="tab-visuals">5. Recursos visuales y 3D</button>
+          <button type="button" class="tab-btn active" data-tab="tab-general">
+            📜 1. General
+          </button>
+          <button type="button" class="tab-btn" data-tab="tab-properties">
+            ⚖️ 2. Propiedades
+          </button>
+          <button type="button" class="tab-btn" data-tab="tab-equipment">
+            ⚔️ 3. Equipamiento
+          </button>
+          <button type="button" class="tab-btn" data-tab="tab-consumable">
+            🧪 4. Efectos y consumibles
+          </button>
+          <button type="button" class="tab-btn" data-tab="tab-visuals">
+            🎨 5. Recursos e icono
+          </button>
         </nav>
 
         <form id="item-form" novalidate>
@@ -139,19 +167,19 @@
           <div id="tab-general" class="tab-content">
             <div class="fields-2">
               <label>
-                Identificador único (ID)
+                Identificador único (ID técnico)
                 <input type="text" id="field-id" required pattern="^[a-z0-9_]{2,64}$" placeholder="ej: espada_hierro_pesada">
-                <small class="muted">Inmutable una vez creado. Minúsculas, números y guiones bajos.</small>
+                <small class="muted">Inmutable una vez creado. Minúsculas, números y guiones bajos (snake_case).</small>
               </label>
               <label>
                 Nombre del objeto
                 <input type="text" id="field-label" required placeholder="ej: Espada de hierro pesada">
-                <small class="muted">Nombre visible en español dentro del juego.</small>
+                <small class="muted">Nombre legible que verán los jugadores en el juego.</small>
               </label>
             </div>
 
             <label>
-              Descripción
+              Descripción de ambientación
               <textarea id="field-description" placeholder="Texto descriptivo y ambientación que se mostrará en el tooltip del juego…"></textarea>
             </label>
 
@@ -180,22 +208,22 @@
               <label>
                 Rareza
                 <select id="field-rarity">
-                  <option value="common">Común (Gris)</option>
-                  <option value="uncommon">Poco común (Verde)</option>
-                  <option value="rare">Raro (Azul)</option>
-                  <option value="epic">Épico (Morado)</option>
-                  <option value="legendary">Legendario (Dorado)</option>
-                  <option value="artifact">Artefacto (Naranja)</option>
+                  <option value="common">Común (Gris ceniza)</option>
+                  <option value="uncommon">Poco común (Verde musgo)</option>
+                  <option value="rare">Raro (Azul añil)</option>
+                  <option value="epic">Épico (Púrpura bruma)</option>
+                  <option value="legendary">Legendario (Oro real)</option>
+                  <option value="artifact">Artefacto (Carmesí arcano)</option>
                 </select>
               </label>
             </div>
 
             <div class="fields-2">
               <label>
-                Etiquetas de organización (separadas por coma)
+                Etiquetas organizativas (separadas por coma)
                 <input type="text" id="field-tags" placeholder="ej: arma, pesada, hierro, artesania">
               </label>
-              <label class="check" style="margin-top: 22px;">
+              <label class="check inline-check">
                 <input type="checkbox" id="field-active" checked>
                 Objeto activo en el mundo (disponible en inventarios y tiendas)
               </label>
@@ -231,7 +259,7 @@
             </div>
 
             <div class="section-box">
-              <h3>Restricciones y permisos del objeto</h3>
+              <h3>Permisos y restricciones de posesión</h3>
               <div class="fields-2">
                 <label class="check">
                   <input type="checkbox" id="field-storable" checked>
@@ -251,7 +279,7 @@
                 </label>
                 <label class="check">
                   <input type="checkbox" id="field-bound">
-                  Ligado al personaje (no transferible)
+                  Ligado al personaje (Soulbound no transferible)
                 </label>
               </div>
             </div>
@@ -259,9 +287,9 @@
 
           <!-- TAB 3: EQUIPAMIENTO -->
           <div id="tab-equipment" class="tab-content" hidden>
-            <label class="check" style="font-weight: 600; font-size: 14px; margin-bottom: 14px;">
+            <label class="check" style="font-weight: 700; font-size: 14px; margin-bottom: 16px; border-color: #3b5042;">
               <input type="checkbox" id="field-equippable">
-              Este objeto es equipable en una ranura de personaje
+              ⚔️ Este objeto puede equiparse en una ranura del personaje
             </label>
 
             <div id="equip-properties-box">
@@ -318,9 +346,9 @@
 
           <!-- TAB 4: CONSUMIBLES Y EFECTOS -->
           <div id="tab-consumable" class="tab-content" hidden>
-            <label class="check" style="font-weight: 600; font-size: 14px; margin-bottom: 14px;">
+            <label class="check" style="font-weight: 700; font-size: 14px; margin-bottom: 16px; border-color: #3b5042;">
               <input type="checkbox" id="field-usable">
-              Este objeto se puede consumir o activar desde la mochila
+              🧪 Este objeto se puede consumir o activar desde la mochila
             </label>
 
             <div id="usable-properties-box">
@@ -338,21 +366,21 @@
           <!-- TAB 5: RECURSOS VISUALES Y 3D -->
           <div id="tab-visuals" class="tab-content" hidden>
             <div class="section-box">
-              <h3>Icono 2D del objeto</h3>
+              <h3>Icono vectorial 2D</h3>
               <label>
                 Código SVG interior (viewBox 0 0 24 24)
                 <textarea id="field-svg" placeholder="<path d=... fill=... />"></textarea>
               </label>
 
-              <label style="margin-top: 10px;">
-                Elegir de la galería de iconos predefinidos
+              <label style="margin-top: 12px;">
+                Elegir de la biblioteca de iconos predefinidos
                 <input type="search" id="icon-search-input" placeholder="Filtrar iconos (espada, pocion, madera, pan...)">
               </label>
               <div id="icon-picker-grid" class="icon-picker-grid"></div>
             </div>
 
             <div class="section-box">
-              <h3>Modelo 3D (GLB / GLTF)</h3>
+              <h3>Modelo tridimensional (GLB / GLTF)</h3>
               <div class="fields-2">
                 <label>
                   Ruta del archivo GLB en el proyecto
@@ -365,58 +393,60 @@
                   </select>
                 </label>
               </div>
-              <small class="muted">El modelo 3D se previsualiza interactivamente a la derecha con iluminación real.</small>
+              <small class="muted">El modelo 3D se previsualiza interactivamente a la derecha con iluminación y rotación 360°.</small>
             </div>
           </div>
 
           <!-- PIE DE ACCIONES -->
           <footer class="editor-footer">
             <div class="actions">
-              <button type="submit" id="save-btn" class="primary">Guardar objeto (Ctrl+S)</button>
-              <button type="button" id="duplicate-bottom-btn">Duplicar</button>
+              <button type="submit" id="save-btn" class="primary">💾 Guardar objeto (Ctrl+S)</button>
+              <button type="button" id="duplicate-bottom-btn">Hacer copia</button>
             </div>
 
-            <details class="delete-options" style="margin: 0; padding: 0; border: none;">
-              <summary style="margin: 0; font-size: 12px; color: #f4b8a6;">Eliminar este objeto</summary>
-              <p id="delete-warning" class="muted" style="margin: 6px 0; font-size: 11px;"></p>
-              <button type="button" id="delete-btn" class="danger">Eliminar definitivamente</button>
+            <details class="delete-options" style="margin: 0; padding: 0; border: none; background: transparent;">
+              <summary style="margin: 0; font-size: 12px; color: #f4b8a6;">⚠️ Eliminar este objeto</summary>
+              <div style="margin-top: 8px; padding: 10px; background: #2f1715; border: 1px solid #6b2e27; border-radius: 6px;">
+                <p id="delete-warning" class="muted" style="margin: 0 0 8px; font-size: 11.5px; color: #ffbebe;"></p>
+                <button type="button" id="delete-btn" class="danger" style="width: 100%;">Confirmar eliminación</button>
+              </div>
             </details>
           </footer>
         </form>
       </main>
 
       <!-- PANEL DERECHO: CONTEXTO, TOOLTIP Y VISOR 3D -->
-      <aside class="panel context">
+      <aside class="panel context" aria-label="Previsualización y contexto">
         <span class="eyebrow">Previsualización fiel al juego</span>
         <h2>Ficha en vivo</h2>
         
         <div id="tooltip-preview"></div>
 
-        <section style="margin-top: 18px;">
+        <section style="margin-top: 20px;">
           <span class="eyebrow">Modelo 3D</span>
           <h3>Vista interactiva</h3>
           <div id="model-viewer-container">
             <div id="model-placeholder" class="viewer-placeholder">
-              <span>💎</span>
+              <span style="font-size: 24px;">💎</span>
               <span>Sin modelo 3D asignado</span>
             </div>
           </div>
-          <small class="muted" style="display: block; margin-top: 6px; font-size: 11px;">
-            Haz clic y arrastra para rotar • Rueda del ratón para zoom.
+          <small class="muted" style="display: block; margin-top: 8px; font-size: 11.5px; text-align: center;">
+            🖱️ Clic y arrastra para rotar • Rueda para zoom
           </small>
         </section>
 
-        <section class="dependencies-box" style="margin-top: 18px;">
+        <section class="dependencies-box" style="margin-top: 20px;">
           <span class="eyebrow">Auditoría de dependencias</span>
           <h3>Integración en el MMORPG</h3>
           <div id="dependencies-alert" hidden>
-            <p style="color: #f7c992; font-size: 11px; margin-bottom: 4px;">
+            <p style="color: #f7ca94; font-size: 11.5px; margin-bottom: 6px; font-weight: 600;">
               ⚠️ Objeto en uso activo. No puede borrarse mientras tenga vínculos:
             </p>
             <ul id="dependencies-list" class="dependencies-list"></ul>
           </div>
-          <p id="no-deps-notice" class="muted" style="font-size: 11px; margin: 0;">
-            No está referenciado en ninguna misión, tienda o receta activa. Puede modificarse o eliminarse sin riesgo.
+          <p id="no-deps-notice" class="muted" style="font-size: 11.5px; margin: 0; color: #9bc5aa;">
+            ✓ No está referenciado en ninguna misión, tienda o receta activa. Puede modificarse o eliminarse sin riesgo.
           </p>
         </section>
       </aside>

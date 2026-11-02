@@ -138,6 +138,11 @@ function renderLibrary() {
   const pagination = paginateItems(filtered, currentPage, PAGE_SIZE);
   currentPage = pagination.currentPage;
 
+  const countBadge = document.getElementById('items-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${catalog.items.length} total`;
+  }
+
   $('pagination-info').textContent = `Página ${pagination.currentPage} de ${pagination.totalPages} (${pagination.totalItems} objetos)`;
   ($('prev-page-btn') as HTMLButtonElement).disabled = currentPage <= 1;
   ($('next-page-btn') as HTMLButtonElement).disabled = currentPage >= pagination.totalPages;
