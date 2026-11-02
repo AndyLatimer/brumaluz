@@ -5,7 +5,18 @@ import { ARMOR } from './outfits';
 import { ACCESSORIES } from './accessories';
 import { vitalsOf } from './stats';
 
+import itemsCatalog from './itemsCatalog.json';
+
 export const EQUIPPABLE: Record<string, { slot: EquipmentSlot; cls?: ClassId }> = { ...WEAPONS, ...ARMOR, ...ACCESSORIES };
+
+for (const custom of ((itemsCatalog as any).items || [])) {
+  if (custom && custom.active !== false && custom.equippable && custom.slot) {
+    EQUIPPABLE[custom.id] = {
+      slot: custom.slot,
+      cls: custom.requiredClass && custom.requiredClass !== 'any' ? custom.requiredClass : undefined,
+    };
+  }
+}
 
 export function hasCombatWeapon(data: Pick<CharData, 'cls' | 'equipment'>) {
   const id = data.equipment.weapon?.id;

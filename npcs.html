@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Creador de NPCs · Brumaluz</title>
+    <link rel="icon" type="image/svg+xml" href="./src/assets/brand/brumaluz-favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico" sizes="any">
   </head>
   <body>
     <main>
       <header>
         <h1>Creador de NPCs</h1>
         <p>Taller de desarrollo. Guarda fichas reutilizables en el proyecto; no coloca NPCs en el mundo ni modifica cuentas.</p>
-        <nav><a href="./quests.html">Creador de misiones</a> · <a href="./maps.html">Mapas</a> · <a href="./assets.html">Biblioteca de recursos</a> · <a href="./wardrobe.html">Vestuario</a> · <a href="./combat.html">Combate</a></nav>
+        <nav><a href="./quests.html">Creador de misiones</a> · <a href="./items.html">Editor de objetos</a> · <a href="./maps.html">Mapas</a> · <a href="./assets.html">Biblioteca de recursos</a> · <a href="./wardrobe.html">Vestuario</a> · <a href="./combat.html">Combate</a></nav>
       </header>
       <fieldset id="library-controls" disabled>
         <legend>Biblioteca del proyecto</legend>
@@ -27,7 +29,7 @@
           <label class="file-button">Importar JSON <input id="import" type="file" accept=".json,application/json"></label>
         </div>
         <p>Guardado en <code>src/data/npcs.json</code>. El ID de una ficha guardada es estable; usa Duplicar para crear otra.</p>
-        <p>Testículos, Gnomi e Isberto usan estas mismas fichas en el juego. Se pueden editar, pero no eliminar desde el taller. Recarga el juego local después de guardar; la web publicada cambia al compilar y desplegar.</p>
+        <p>Los personajes de la bienvenida, los maestros y los habitantes de Brumaluz usan estas mismas fichas en el juego. Se pueden editar, pero no eliminar desde el taller. Recarga el juego local después de guardar; la web publicada cambia al compilar y desplegar.</p>
       </fieldset>
       <form id="editor">
         <fieldset id="editor-controls" disabled>

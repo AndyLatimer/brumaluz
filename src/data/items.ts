@@ -9,11 +9,12 @@ import { weaponPortrait, weaponIconFrame } from '../art/weaponIcons';
 import { ARMOR, outfitItemStats } from './outfits';
 import { ACCESSORIES } from './accessories';
 import { describeWeapon, describeArmor, describeAccessory, weaponCollection, EQUIPMENT_COLLECTIONS } from './itemDescriptions';
+import itemsCatalog from './itemsCatalog.json';
 import rpgCatalog from './generated/rpg-catalog.json';
 import { resourceFamily } from './resourceAppearance';
 import { resourceInventoryDrawing } from './resourceInventoryArt';
 import { craftingComponentDrawing } from './craftingArt';
-import {gatheringToolPainting,equipmentSlotPainting} from '../art/inventoryPaintings';
+import {gatheringToolPainting,equipmentSlotPainting,potionPainting,scrollPainting,furniturePainting,foodPainting} from '../art/inventoryPaintings';
 
 export interface ItemDef {
   id: string;
@@ -226,12 +227,72 @@ for(const extra of Object.values(rpgCatalog.items)){
  else if('tool' in extra && extra.tool){const kind=({minero:'pickaxe',lenador:'axe',recolector:'sickle'} as const)[extra.tool as 'minero'|'lenador'|'recolector'];const drawing=kind&&gatheringToolPainting(kind);if(drawing)ITEMS[extra.id]={...ITEMS[extra.id],icon:drawing};}
  else{const drawing=craftingComponentDrawing(extra.id);if(drawing)ITEMS[extra.id]={...ITEMS[extra.id],icon:drawing};}
 }
+function potionKindAndTier(id:string):{kind:'health'|'mana'|'stamina';tier:number}|null{
+ if(id==='pocion_vida_minuscula')return{kind:'health',tier:0};
+ if(id==='pocion_mana_minuscula')return{kind:'mana',tier:0};
+ if(id==='pocion_estamina_minuscula')return{kind:'stamina',tier:0};
+ const m=id.match(/^pocion_(health|mana|stamina)_(\d+)$/);
+ return m?{kind:m[1] as 'health'|'mana'|'stamina',tier:parseInt(m[2],10)}:null;
+}
+function scrollEnchantAndTier(id:string):{enchant:string;tier:number}|null{
+ const m=id.match(/^pergamino_([a-z]+)_(\d+)$/);
+ return m?{enchant:m[1],tier:parseInt(m[2],10)}:null;
+}
+function furnitureKindAndTier(id:string):{kind:string;tier:number}|null{
+ const m=id.match(/^mueble_([a-z]+)_(\d+)$/);
+ return m?{kind:m[1],tier:parseInt(m[2],10)}:null;
+}
+function foodKindAndTier(id:string):{kind:string;tier:number}|null{
+ if(id==='pan_duro')return{kind:'pan_duro',tier:0};
+ const m=id.match(/^(?:comida_|(?:plato|merienda)_[a-z]+_)(\d+)$/);
+ return m?{kind:'comida',tier:parseInt(m[1],10)}:null;
+}
+for(const[id,item]of Object.entries(ITEMS)){
+ const pot=potionKindAndTier(id);
+ if(pot){const drawing=potionPainting(pot.kind,pot.tier);if(drawing)item.icon=drawing;}
+ const scroll=scrollEnchantAndTier(id);
+ if(scroll){const drawing=scrollPainting(scroll.enchant,scroll.tier);if(drawing)item.icon=drawing;}
+ const furn=furnitureKindAndTier(id);
+ if(furn){const drawing=furniturePainting(furn.kind,furn.tier);if(drawing)item.icon=drawing;}
+ const food=foodKindAndTier(id);
+ if(food){const drawing=foodPainting(food.kind,food.tier);if(drawing)item.icon=drawing;}
+}
+for (const custom of ((itemsCatalog as any).items || [])) {
+  if (custom && custom.active !== false) {
+    const healEff = custom.effects?.find((e: any) => e.type === 'restore_health');
+    const manaEff = custom.effects?.find((e: any) => e.type === 'restore_mana');
+    const stamEff = custom.effects?.find((e: any) => e.type === 'restore_stamina');
+    const restore = healEff ? { kind: 'health' as const, percent: healEff.percent ?? 10 }
+      : manaEff ? { kind: 'mana' as const, percent: manaEff.percent ?? 10 }
+      : stamEff ? { kind: 'stamina' as const, percent: stamEff.percent ?? 10 }
+      : undefined;
+
+    ITEMS[custom.id] = {
+      id: custom.id,
+      label: custom.label,
+      category: custom.category,
+      description: custom.description,
+      rarity: custom.rarity || 'common',
+      value: custom.value ?? 0,
+      stack: custom.stack ?? (custom.equippable ? 1 : DEFAULT_STACK),
+      bound: custom.bound,
+      sellable: custom.sellable !== false,
+      usable: custom.usable,
+      icon: custom.icon || '',
+      stats: custom.stats,
+      effects: custom.effectText ?? (Array.isArray(custom.effects) ? custom.effects.map((e: any) => e.description || e.type) : undefined),
+      restore,
+      food: custom.food ? (custom.id as any) : undefined,
+    };
+  }
+}
+
 export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];
 export const itemLabel = (id: string) => ITEMS[id]?.label ?? id;
 export const itemRarity = (id: string) => ITEMS[id]?.rarity ?? 'common';
 let itemArtSequence=0;
-export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || ARMOR[id] || ACCESSORIES[id] || resourceFamily(id) ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon.replaceAll('resource-art-',`resource-art-${++itemArtSequence}-`)}</svg>` : '');
+export const itemIcon = (id: string) => (ITEMS[id] ? `<svg class="item-art" data-rarity="${itemRarity(id)}" style="--item-rarity:${ITEM_RARITIES[itemRarity(id)].color}" viewBox="0 0 24 24" aria-hidden="true">${WEAPONS[id] || ARMOR[id] || ACCESSORIES[id] || resourceFamily(id) || id.startsWith('componente_') || id.startsWith('cuero_') || id.startsWith('pocion_') || id.startsWith('pergamino_') || id.startsWith('mueble_') || id === 'pan_duro' || id.startsWith('comida_') ? weaponIconFrame(ITEM_RARITIES[itemRarity(id)].color) : `<rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${ITEM_RARITIES[itemRarity(id)].color}" fill-opacity=".09" stroke="${ITEM_RARITIES[itemRarity(id)].color}" stroke-width="1.2"/>`}${ITEMS[id].icon.replaceAll('resource-art-',`resource-art-${++itemArtSequence}-`)}</svg>` : '');
 
 /** Lo que paga un vendedor por un objeto. */
 export const sellPrice = (id: string) => Math.max(1, Math.floor((ITEMS[id]?.value ?? 0) / 2));
