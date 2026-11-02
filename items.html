@@ -20,6 +20,8 @@
         <a href="./maps.html">Mapas</a>
         <a href="./quests.html">Misiones</a>
         <a href="./items.html" class="active">Objetos</a>
+        <a href="./recipes.html">Recetas</a>
+        <a href="./shops.html">Tiendas</a>
         <a href="./assets.html">Recursos</a>
       </nav>
     </header>
@@ -31,16 +33,34 @@
     <div class="workspace">
       <!-- PANEL IZQUIERDO: BIBLIOTECA Y CATÁLOGO GENERAL -->
       <aside class="library panel" aria-label="Catálogo general">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
           <span class="eyebrow" style="margin: 0;">Biblioteca</span>
           <span id="items-count-badge" class="pill">Cargando…</span>
         </div>
-        <h2 style="margin-bottom: 14px;">Catálogo de objetos</h2>
+        <h2 style="margin-bottom: 12px;">Catálogo de objetos</h2>
+
+        <!-- PÍLDORAS DE FILTRADO RÁPIDO POR FAMILIAS -->
+        <div class="quick-filter-pills" id="quick-filter-pills" role="toolbar" aria-label="Filtro rápido por categoría">
+          <button type="button" class="filter-chip-btn active" data-cat="all">Todos</button>
+          <button type="button" class="filter-chip-btn" data-cat="weapon">⚔️ Armas</button>
+          <button type="button" class="filter-chip-btn" data-cat="armor">🛡️ Armaduras</button>
+          <button type="button" class="filter-chip-btn" data-cat="clothing">💎 Joyas/Ropa</button>
+          <button type="button" class="filter-chip-btn" data-cat="tool">⛏️ Herramientas</button>
+          <button type="button" class="filter-chip-btn" data-cat="food">🍲 Comida</button>
+          <button type="button" class="filter-chip-btn" data-cat="resource">🪵 Recursos</button>
+          <button type="button" class="filter-chip-btn" data-cat="consumable">🧪 Pociones</button>
+          <button type="button" class="filter-chip-btn" data-cat="furniture">🪑 Muebles</button>
+          <button type="button" class="filter-chip-btn" data-cat="crafting">⚙️ Artesanía</button>
+          <button type="button" class="filter-chip-btn" data-cat="special">📜 Especiales</button>
+        </div>
         
-        <label>
-          Buscar en catálogo
-          <input id="search-input" type="search" placeholder="Buscar por nombre, ID o etiqueta…">
-        </label>
+        <div class="search-box-wrapper">
+          <label style="margin-bottom: 0;">
+            Buscar en catálogo
+            <input id="search-input" type="search" placeholder="Escribe nombre, ID o etiqueta…">
+          </label>
+          <button type="button" id="clear-search-btn" class="clear-search-btn" title="Limpiar búsqueda" hidden>✕</button>
+        </div>
 
         <div class="library-filter-grid">
           <label>
@@ -96,11 +116,11 @@
 
         <div style="border-top: 1px solid #2d3e33; padding-top: 14px; margin-top: 10px;">
           <button type="button" id="new-item-btn" class="primary" style="width: 100%; margin-bottom: 10px;">
-            + Crear objeto en blanco
+            + Crear nuevo objeto
           </button>
 
           <label>
-            Plantilla de inicio rápido
+            Crear mediante plantilla
             <select id="template-select"></select>
           </label>
           <button type="button" id="apply-template-btn" style="width: 100%; margin-bottom: 14px;">
@@ -144,27 +164,66 @@
           </span>
         </div>
 
+        <!-- TARJETA RESUMEN VISUAL DEL OBJETO ACTIVO (HERO CARD) -->
+        <div id="item-hero-card" class="item-hero-card">
+          <div class="hero-main-group">
+            <div id="hero-icon-slot" class="hero-icon-slot" title="Icono visual del objeto">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#586c55"/></svg>
+            </div>
+            <div class="hero-details">
+              <div class="hero-title-row">
+                <h3 id="hero-title" class="hero-title">Objeto seleccionado</h3>
+                <span id="hero-id-pill" class="hero-id-pill">id: ...</span>
+              </div>
+              <div class="hero-badges-row">
+                <span id="hero-category-badge" class="hero-badge">📦 Categoría</span>
+                <span id="hero-rarity-badge" class="hero-badge rarity">Común</span>
+                <span id="hero-equip-badge" class="hero-badge" style="display: none;">⚔️ Ranura</span>
+                <span id="hero-price-badge" class="hero-badge price">🪙 10 P</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-presets-group">
+            <span class="hero-preset-label">⚡ Ajuste rápido con 1 clic:</span>
+            <div class="hero-preset-chips">
+              <button type="button" class="preset-chip-btn" data-preset="weapon" title="Configurar como arma de combate (ranura de arma, apilable 1)">⚔️ Es un Arma</button>
+              <button type="button" class="preset-chip-btn" data-preset="armor" title="Configurar como armadura protectora (pecho, apilable 1)">🛡️ Es Armadura</button>
+              <button type="button" class="preset-chip-btn" data-preset="consumable" title="Configurar como poción bebible con efecto">🧪 Es Poción</button>
+              <button type="button" class="preset-chip-btn" data-preset="food" title="Configurar como comida con beneficio temporal">🍲 Es Comida</button>
+              <button type="button" class="preset-chip-btn" data-preset="resource" title="Configurar como material apilable (hasta 99)">🪵 Es Recurso</button>
+            </div>
+          </div>
+        </div>
+
         <nav class="tabs-nav" aria-label="Secciones del editor">
           <button type="button" class="tab-btn active" data-tab="tab-general">
             📜 1. General
           </button>
           <button type="button" class="tab-btn" data-tab="tab-properties">
             ⚖️ 2. Propiedades
+            <span id="tab-badge-properties" class="tab-mini-badge">50 stack</span>
           </button>
           <button type="button" class="tab-btn" data-tab="tab-equipment">
             ⚔️ 3. Equipamiento
+            <span id="tab-badge-equipment" class="tab-mini-badge">No</span>
           </button>
           <button type="button" class="tab-btn" data-tab="tab-consumable">
-            🧪 4. Efectos y consumibles
+            🧪 4. Efectos y uso
+            <span id="tab-badge-consumable" class="tab-mini-badge">No</span>
           </button>
           <button type="button" class="tab-btn" data-tab="tab-visuals">
-            🎨 5. Recursos e icono
+            🎨 5. Icono y 3D
           </button>
         </nav>
 
         <form id="item-form" novalidate>
           <!-- TAB 1: INFORMACIÓN GENERAL -->
           <div id="tab-general" class="tab-content">
+            <div class="callout-tip">
+              💡 <strong>Paso 1:</strong> Dale nombre a tu objeto, redacta su historia o descripción de ambientación, y elige su categoría y rareza.
+            </div>
+
             <div class="fields-2">
               <label>
                 Identificador único (ID técnico)
@@ -232,6 +291,10 @@
 
           <!-- TAB 2: PROPIEDADES ECONÓMICAS E INVENTARIO -->
           <div id="tab-properties" class="tab-content" hidden>
+            <div class="callout-tip">
+              💡 <strong>Paso 2:</strong> Define los precios en Pelines y las restricciones de almacenamiento, venta e intercambio.
+            </div>
+
             <div class="fields-3">
               <label>
                 Precio base de compra (Pelines)
@@ -287,6 +350,10 @@
 
           <!-- TAB 3: EQUIPAMIENTO -->
           <div id="tab-equipment" class="tab-content" hidden>
+            <div class="callout-tip">
+              💡 <strong>Paso 3:</strong> Si activas esta opción, el personaje podrá vestir el objeto en una ranura corporal y sumar estadísticas en combate.
+            </div>
+
             <label class="check" style="font-weight: 700; font-size: 14px; margin-bottom: 16px; border-color: #3b5042;">
               <input type="checkbox" id="field-equippable">
               ⚔️ Este objeto puede equiparse en una ranura del personaje
@@ -346,6 +413,10 @@
 
           <!-- TAB 4: CONSUMIBLES Y EFECTOS -->
           <div id="tab-consumable" class="tab-content" hidden>
+            <div class="callout-tip">
+              💡 <strong>Paso 4:</strong> Si el objeto puede consumirse, define qué beneficio produce al hacer clic derecho en la mochila.
+            </div>
+
             <label class="check" style="font-weight: 700; font-size: 14px; margin-bottom: 16px; border-color: #3b5042;">
               <input type="checkbox" id="field-usable">
               🧪 Este objeto se puede consumir o activar desde la mochila
@@ -365,6 +436,10 @@
 
           <!-- TAB 5: RECURSOS VISUALES Y 3D -->
           <div id="tab-visuals" class="tab-content" hidden>
+            <div class="callout-tip">
+              💡 <strong>Paso 5:</strong> Selecciona un icono de la galería vectorial o asocia un modelo 3D GLB para visualizarlo en el visor derecho.
+            </div>
+
             <div class="section-box">
               <h3>Icono vectorial 2D</h3>
               <label>

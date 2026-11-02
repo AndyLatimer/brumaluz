@@ -397,6 +397,72 @@ small.muted, p.muted, span.muted {
 /* ─────────────────────────────────────────────────────────────
    PANEL IZQUIERDO: BIBLIOTECA Y CATÁLOGO
 ───────────────────────────────────────────────────────────── */
+.quick-filter-pills {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  margin-bottom: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #384c40 #141d1a;
+}
+
+.filter-chip-btn {
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid #33443a;
+  background: #141d1a;
+  color: #adbcaa;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+}
+
+.filter-chip-btn:hover {
+  background: #202e27;
+  color: #f0eedc;
+  border-color: #4a6352;
+}
+
+.filter-chip-btn.active {
+  background: #2a3e34;
+  color: #fff4cb;
+  border-color: var(--gold);
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(214, 181, 101, 0.25);
+}
+
+.search-box-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: #22322a;
+  border: 1px solid #3d5043;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 11px;
+  color: #9cb0a2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.clear-search-btn:hover {
+  background: #394d40;
+  color: #fff;
+}
+
 .library-filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -581,6 +647,196 @@ details[open] summary {
   background: #141d1a;
   border-radius: 8px;
   border: 1px solid #2d3c32;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TARJETA RESUMEN VISUAL DEL OBJETO ACTIVO (HERO CARD)
+───────────────────────────────────────────────────────────── */
+.item-hero-card {
+  background: linear-gradient(135deg, #192722 0%, #121c18 100%);
+  border: 1px solid #36493d;
+  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hero-main-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hero-icon-slot {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #0d1513;
+  border: 1.5px solid #435b4b;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.hero-icon-slot svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+}
+
+.hero-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  font-family: "Cinzel", "Palatino Linotype", Georgia, serif;
+  color: #fff6d6;
+  letter-spacing: .02em;
+}
+
+.hero-id-pill {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #a4b7a7;
+  background: #141f1a;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #2d3f33;
+}
+
+.hero-badges-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hero-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #1e2c26;
+  border: 1px solid #36493d;
+  color: #ced6cb;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hero-badge.rarity {
+  font-weight: 600;
+  border-color: currentColor;
+}
+
+.hero-badge.price {
+  color: var(--gold-bright);
+  font-weight: 600;
+  background: #252e1f;
+  border-color: #555b33;
+}
+
+.hero-presets-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #25362c;
+}
+
+.hero-preset-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #a3b5a6;
+}
+
+.hero-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-chip-btn {
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: #182520;
+  border: 1px solid #394d3f;
+  color: #dbe4d5;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s ease;
+}
+
+.preset-chip-btn:hover {
+  background: #283c32;
+  border-color: var(--gold);
+  color: #fff8e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.preset-chip-btn:active {
+  transform: translateY(1px);
+}
+
+/* Mini etiquetas indicadoras en las pestañas */
+.tab-mini-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #141e1a;
+  border: 1px solid #324337;
+  color: #92a496;
+  margin-left: 3px;
+  font-weight: 600;
+}
+
+.tab-mini-badge.badge-highlight {
+  background: #1f3a2b;
+  border-color: #3f684e;
+  color: #abf1c2;
+}
+
+/* Callout de ayuda paso a paso en pestañas */
+.callout-tip {
+  background: #16241f;
+  border: 1px solid #2b3d31;
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+  padding: 9px 14px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #d1dbcc;
+}
+
+.callout-tip strong {
+  color: var(--gold-bright);
 }
 
 .tabs-nav {

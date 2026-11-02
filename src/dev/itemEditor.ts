@@ -382,6 +382,9 @@ function fillForm(item: ItemCatalogItem) {
     deleteWarning.textContent = 'Este objeto no tiene referencias activas en otros sistemas y se puede eliminar de forma segura.';
     deleteBtn.disabled = isNewItem;
   }
+
+  updateHeroCard(item);
+  updateTabBadges(item);
 }
 
 // Leer datos del formulario hacia el activeItem
@@ -446,9 +449,159 @@ function onFormChange() {
     history.push(activeItem);
     setDirty(true);
     updatePreviews();
+    updateHeroCard(activeItem);
+    updateTabBadges(activeItem);
   } catch (err: any) {
     // Silencioso durante la escritura
   }
+}
+
+function updateHeroCard(item: ItemCatalogItem) {
+  const titleEl = document.getElementById('hero-title');
+  if (titleEl) titleEl.textContent = item.label || 'Objeto sin nombre';
+
+  const idPill = document.getElementById('hero-id-pill');
+  if (idPill) idPill.textContent = `id: ${item.id || '...'}`;
+
+  const iconSlot = document.getElementById('hero-icon-slot');
+  if (iconSlot) {
+    const rarity = ITEM_RARITIES[item.rarity] || ITEM_RARITIES.common;
+    iconSlot.style.borderColor = rarity.color;
+    iconSlot.innerHTML = `<svg viewBox="0 0 24 24"><rect x=".7" y=".7" width="22.6" height="22.6" rx="3" fill="${rarity.color}" fill-opacity=".12" stroke="${rarity.color}" stroke-width="1.2"/>${item.icon || '<circle cx="12" cy="12" r="8" fill="#586c55"/>'}</svg>`;
+  }
+
+  const catBadge = document.getElementById('hero-category-badge');
+  if (catBadge) {
+    const cat = ITEM_CATEGORIES.find(c => c.id === item.category);
+    catBadge.textContent = cat ? `${cat.icon} ${cat.label}` : `📦 ${item.category}`;
+  }
+
+  const rarityBadge = document.getElementById('hero-rarity-badge');
+  if (rarityBadge) {
+    const rarity = ITEM_RARITIES[item.rarity] || ITEM_RARITIES.common;
+    rarityBadge.textContent = rarity.label;
+    rarityBadge.style.color = rarity.color;
+    rarityBadge.style.borderColor = rarity.color;
+  }
+
+  const equipBadge = document.getElementById('hero-equip-badge');
+  if (equipBadge) {
+    if (item.equippable) {
+      equipBadge.style.display = 'inline-flex';
+      const slotLabels: Record<string, string> = {
+        head: 'Cabeza',
+        chest: 'Pecho',
+        hands: 'Manos',
+        legs: 'Piernas',
+        weapon: 'Arma',
+        offhand: 'Secundaria',
+        pendant: 'Colgante',
+        ring: 'Anillo',
+        trinket: 'Abalorio',
+      };
+      equipBadge.textContent = `⚔️ Ranura: ${slotLabels[item.slot || ''] || item.slot || 'Equipable'}`;
+    } else {
+      equipBadge.style.display = 'none';
+    }
+  }
+
+  const priceBadge = document.getElementById('hero-price-badge');
+  if (priceBadge) {
+    priceBadge.textContent = `🪙 ${item.value ?? 0} P`;
+  }
+}
+
+function updateTabBadges(item: ItemCatalogItem) {
+  const propBadge = document.getElementById('tab-badge-properties');
+  if (propBadge) {
+    propBadge.textContent = `${item.stack || 1} stack`;
+  }
+
+  const equipBadge = document.getElementById('tab-badge-equipment');
+  if (equipBadge) {
+    if (item.equippable) {
+      equipBadge.textContent = 'Sí';
+      equipBadge.classList.add('badge-highlight');
+    } else {
+      equipBadge.textContent = 'No';
+      equipBadge.classList.remove('badge-highlight');
+    }
+  }
+
+  const consumBadge = document.getElementById('tab-badge-consumable');
+  if (consumBadge) {
+    if (item.usable) {
+      const effCount = item.effects?.length || 0;
+      consumBadge.textContent = effCount > 0 ? `${effCount} ef.` : 'Sí';
+      consumBadge.classList.add('badge-highlight');
+    } else {
+      consumBadge.textContent = 'No';
+      consumBadge.classList.remove('badge-highlight');
+    }
+  }
+}
+
+function applyPreset(preset: 'weapon' | 'armor' | 'consumable' | 'food' | 'resource') {
+  if (!activeItem) return;
+
+  if (preset === 'weapon') {
+    activeItem.category = 'weapon';
+    activeItem.equippable = true;
+    activeItem.slot = 'weapon';
+    activeItem.stack = 1;
+    activeItem.usable = false;
+    activeItem.sellable = true;
+    activeItem.tradable = true;
+    activeItem.storable = true;
+    activeItem.droppable = true;
+    if (!activeItem.stats || activeItem.stats.length === 0) {
+      activeItem.stats = [{ label: 'Daño físico', value: '+12' }];
+    }
+  } else if (preset === 'armor') {
+    activeItem.category = 'armor';
+    activeItem.equippable = true;
+    activeItem.slot = 'chest';
+    activeItem.stack = 1;
+    activeItem.usable = false;
+    activeItem.sellable = true;
+    activeItem.tradable = true;
+    activeItem.storable = true;
+    activeItem.droppable = true;
+    if (!activeItem.stats || activeItem.stats.length === 0) {
+      activeItem.stats = [{ label: 'Armadura', value: '+8' }];
+    }
+  } else if (preset === 'consumable') {
+    activeItem.category = 'consumable';
+    activeItem.equippable = false;
+    activeItem.usable = true;
+    activeItem.stack = 20;
+    if (!activeItem.effects || activeItem.effects.length === 0) {
+      activeItem.effects = [{ type: 'restore_mana', value: 35, description: 'Restaura 35 de maná al instante.' }];
+    }
+  } else if (preset === 'food') {
+    activeItem.category = 'food';
+    activeItem.equippable = false;
+    activeItem.usable = true;
+    activeItem.stack = 50;
+    if (!activeItem.effects || activeItem.effects.length === 0) {
+      activeItem.effects = [{ type: 'restore_energy', value: 20, duration: 10, description: 'Restaura energía con el tiempo.' }];
+    }
+  } else if (preset === 'resource') {
+    activeItem.category = 'resource';
+    activeItem.equippable = false;
+    activeItem.usable = false;
+    activeItem.stack = 99;
+    activeItem.sellable = true;
+    activeItem.tradable = true;
+    activeItem.storable = true;
+    activeItem.droppable = true;
+  }
+
+  fillForm(activeItem);
+  history.push(activeItem);
+  setDirty(true);
+  updatePreviews();
+  setStatus(`Configuración rápida aplicada: "${preset}".`, 'normal');
 }
 
 function updatePreviews() {
@@ -708,17 +861,53 @@ async function deleteActiveItem() {
 // Bindeo de eventos y formularios
 function bindEvents() {
   const searchInput = $<HTMLInputElement>('search-input');
+  const clearSearchBtn = document.getElementById('clear-search-btn');
+
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value;
+    if (clearSearchBtn) clearSearchBtn.hidden = !searchInput.value.trim();
     currentPage = 1;
     renderLibrary();
+  });
+
+  clearSearchBtn?.addEventListener('click', () => {
+    searchInput.value = '';
+    searchQuery = '';
+    if (clearSearchBtn) clearSearchBtn.hidden = true;
+    currentPage = 1;
+    renderLibrary();
+    searchInput.focus();
+  });
+
+  const quickPills = document.querySelectorAll<HTMLButtonElement>('.filter-chip-btn');
+  quickPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      quickPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const cat = pill.dataset.cat || 'all';
+      selectedCategory = cat;
+      const catFilter = $<HTMLSelectElement>('category-filter');
+      catFilter.value = cat;
+      currentPage = 1;
+      renderLibrary();
+    });
   });
 
   const categoryFilter = $<HTMLSelectElement>('category-filter');
   categoryFilter.addEventListener('change', () => {
     selectedCategory = categoryFilter.value;
+    quickPills.forEach(p => {
+      p.classList.toggle('active', (p.dataset.cat || 'all') === selectedCategory);
+    });
     currentPage = 1;
     renderLibrary();
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.preset-chip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.preset;
+      if (preset) applyPreset(preset as any);
+    });
   });
 
   const rarityFilter = $<HTMLSelectElement>('rarity-filter');

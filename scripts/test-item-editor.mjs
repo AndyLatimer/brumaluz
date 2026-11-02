@@ -343,3 +343,47 @@ test('8. End-to-end browser: load editor, edit item, verify tooltip preview and 
     await page.close();
   }
 });
+
+test('9. Usability: quick category chips, search clear, hero card and 1-click presets', { timeout: 120000 }, async () => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.on('dialog', dialog => dialog.accept());
+  try {
+    await page.goto(`${base}/items.html`);
+    await page.locator('#items-list .item-row').first().waitFor({ timeout: 60000 });
+
+    // 1. Hero card updates with selection
+    const heroTitle = await page.textContent('#hero-title');
+    assert(heroTitle && heroTitle.length > 0);
+    const heroCategory = await page.textContent('#hero-category-badge');
+    assert(heroCategory && heroCategory.length > 0);
+
+    // 2. Quick filter chips filter catalog
+    await page.click('.filter-chip-btn[data-cat="weapon"]');
+    await page.waitForFunction(() => {
+      const activeChip = document.querySelector('.filter-chip-btn.active');
+      return activeChip?.getAttribute('data-cat') === 'weapon';
+    });
+    const catSelectVal = await page.$eval('#category-filter', el => el.value);
+    assert.equal(catSelectVal, 'weapon');
+
+    // 3. Search and quick clear button
+    await page.fill('#search-input', 'espada');
+    const searchVal = await page.$eval('#search-input', el => el.value);
+    assert.equal(searchVal, 'espada');
+    await page.click('#clear-search-btn');
+    const clearedVal = await page.$eval('#search-input', el => el.value);
+    assert.equal(clearedVal, '');
+
+    // 4. One-click preset chip button
+    await page.click('#new-item-btn');
+    await page.click('.preset-chip-btn[data-preset="weapon"]');
+    const categoryAfterPreset = await page.$eval('#field-category', el => el.value);
+    assert.equal(categoryAfterPreset, 'weapon');
+    const equippableAfterPreset = await page.$eval('#field-equippable', el => el.checked);
+    assert.equal(equippableAfterPreset, true);
+    const equipBadgeText = await page.textContent('#tab-badge-equipment');
+    assert.equal(equipBadgeText, 'Sí');
+  } finally {
+    await page.close();
+  }
+});
