@@ -79,6 +79,7 @@
     "test:population": "node --test scripts/test-population.mjs",
     "test:items": "node --test scripts/test-item-editor.mjs",
     "items:sync": "node tools/sync-items-server.mjs",
+    "items:import": "node tools/import-existing-game-items.mjs",
     "test:quests": "node --test scripts/test-quest-editor.mjs",
     "test:maps": "node --test scripts/test-maps.mjs",
     "world:pompelin": "node tools/refine-pompelin.mjs",
