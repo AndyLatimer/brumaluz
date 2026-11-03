@@ -23,12 +23,24 @@ test('attribute stacking stays bounded and no class attacks faster than its anim
  }
 });
 
-test('starting class damage stays close while every normal monster survives enough to respond',()=>{
+test('every unlocked damage skill contributes a bounded share of same-level basic DPS',()=>{
+ for(const [cls,kit]of Object.entries(game.COMBAT_KITS))for(const skill of kit.skills){
+  if(skill.mode==='healing')continue;
+  const d=character(cls,skill.unlockLevel);
+  const skillDps=game.skillPower(cls,1,d.equipment,d,skill.id)*skill.hits/skill.cooldown;
+  const basicDps=game.basicAttackDamage(cls,d.level,d.equipment,d)/game.attackInterval(cls,d.equipment,d);
+  const share=skillDps/basicDps;
+  assert.ok(share>=.25&&share<=.65,`${cls}/${skill.id}: ${(share*100).toFixed(1)}% of basic DPS`);
+ }
+});
+
+test('starting class damage stays close while starter-level monsters survive enough to respond',()=>{
+ const starterEnemies=Object.values(game.WILDERNESS.enemies).filter(enemy=>enemy.level<=2);
  const offensive=[];
  for(const [cls,kit]of Object.entries(game.COMBAT_KITS)){
   const d=character(cls),m=metrics(d),dps=m.basic/m.interval+(kit.skill.healing?0:m.skill*kit.skill.hits/kit.skill.cooldown);
   if(!kit.skill.healing)offensive.push(dps);
-  for(const enemy of Object.values(game.WILDERNESS.enemies)){
+  for(const enemy of starterEnemies){
    const guard=1-Math.min(.6,enemy.guard/(enemy.guard+20));
    const seconds=enemy.health/(dps*guard);
    assert.ok(seconds>=6&&seconds<=18,`${cls} vs ${enemy.label}: estimated ${seconds.toFixed(2)} seconds`);

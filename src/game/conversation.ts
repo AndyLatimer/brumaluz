@@ -4,7 +4,7 @@ import { talk, story, session, play } from './state';
 import { type Conversation, closeDialog, openConversation, isDialogOpen } from '../ui/dialog';
 import { cinematic } from '../story/scenes';
 import { holder, camera, playerVel, env, camTarget } from './stage';
-import { npcActors } from './cities';
+import { npcActors, cityPopulation } from './cities';
 import { remotePlayers } from './worldClient';
 
 export const conversationFacings = new Map<THREE.Object3D, number>();
@@ -15,6 +15,8 @@ export const conversationRay = new THREE.Raycaster();
 conversationRay.camera = camera;
 export function beginConversation(actor: THREE.Object3D, conversation: Conversation) {
   closeDialog();
+  const resident = npcActors.find(npc => npc.character.root === actor);
+  const release = resident ? cityPopulation?.hold(resident.id) : undefined;
   talk.conversationActor = actor;
   talk.conversationShot = '';
   talk.conversationOrbitYaw = 0; talk.conversationOrbitPitch = 0;
@@ -30,6 +32,7 @@ export function beginConversation(actor: THREE.Object3D, conversation: Conversat
   openConversation(conversation, () => {
     for (const [participant, facing] of conversationFacings) participant.rotation.y = facing;
     conversationFacings.clear();
+    release?.();
     talk.conversationActor = null;
     talk.returningFromConversation = true;
   });
@@ -86,7 +89,7 @@ export function updateConversationCamera(dt: number) {
           ? object.children.flatMap(chunk => chunk.userData.mapChunk ? [...chunk.children, ...(chunk.userData.originals ?? [])] : [chunk]).filter(piece => !String(piece.userData.mapAsset ?? '').startsWith('city/hex_'))
           : [object])
         .filter(object => !object.name.startsWith('hex_') && object.name !== 'grass_tufts' && !object.name.startsWith('wildflower_') && object.name !== 'map-environment'),
-      ...npcActors.filter(npc => npc.character.root !== actor).map(npc => npc.character.root),
+      ...npcActors.filter(npc => npc.character.root !== actor && npc.character.root.visible && npc.character.root.parent).map(npc => npc.character.root),
       ...remotePlayers.list().map(player => player.root),
     ];
     for (const obstacle of talk.conversationObstacles) obstacle.updateWorldMatrix(true, true);

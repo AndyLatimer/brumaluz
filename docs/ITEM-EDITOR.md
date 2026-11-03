@@ -180,3 +180,4 @@ Comprueba:
 - Filtrado y ordenación multidimensional.
 - Servidor Vite y compilación limpia de TypeScript.
 - Prueba integral de navegador Playwright (creación, edición por pestañas, tooltip reactivo y persistencia en disco).
+

@@ -1,0 +1,29 @@
+{
+  "label": "expanded-normal",
+  "samples": [
+    {
+      "name": "jardin",
+      "graphics": "normal",
+      "total": 54,
+      "visible": 9,
+      "frames": 12,
+      "elapsedMs": 18182.89999999851,
+      "animationUpdatesPerFrame": 8.666666666666666,
+      "animationMsPerFrame": 0.583333333954215,
+      "simulationMsPerFrame": 0.11666666685293119,
+      "presentationOverheadMsPerFrame": 0.12499999968955915,
+      "drawCalls": 555.9166666666666,
+      "triangles": 1081915.3333333333,
+      "presentation": {
+        "total": 54,
+        "visible": 9,
+        "animated": 9,
+        "near": 5,
+        "medium": 0,
+        "far": 4
+      }
+    }
+  ],
+  "errors": [],
+  "readyMs": 33196.3358
+}

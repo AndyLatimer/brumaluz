@@ -6,10 +6,21 @@ let combat=fn(read('07-combat.sql'),'combat_action');
 const cadence=JSON.parse(fs.readFileSync('src/data/combatCadence.json','utf8'));
 const duration=JSON.parse(fs.readFileSync('src/data/combatDuration.json','utf8'));
 combat=replace(combat,"  cadence:=case cls when 'guerrero' then 1.5 when 'mago' then 1.8 when 'picaro' then 0.9\n    when 'clerigo' then 1.8 when 'explorador' then 1.7 else 0 end;",`  cadence:=case cls ${Object.entries(cadence).map(([cls,value])=>`when '${cls}' then ${value}`).join(' ')} else 0 end;`);
-combat=replace(combat,"'skillCooldown',greatest", "'attackCooldown',greatest(0,coalesce((c.data->>'combatNextAttack')::numeric,0)-stamp),'skillCooldown',greatest");
-combat=replace(combat,'  skill_rank int;','  skill_rank int;\n  e jsonb; es jsonb; grade int; extra numeric:=0; raw_basic numeric; actual_basic numeric; shield numeric; barrier numeric; recovered numeric:=0; counters int; bonus jsonb; events jsonb:=\'[]\'; packed jsonb; secondary jsonb; nearest numeric; secondary_index int; points numeric; target_index int; enemy_guard numeric;');
+combat=replace(combat,"'skillCooldown',greatest(0,coalesce((c.data->>'combatNextSkill')::numeric,0)-stamp)", "'attackCooldown',greatest(0,coalesce((c.data->>'combatNextAttack')::numeric,0)-stamp),'skillReadyAt',case when skill then coalesce((c.data->'combatSkillReadyAt'->>skill_id)::numeric,0) else null end,'skillCooldowns',coalesce(c.data->'combatSkillReadyAt','{}'),'skillCooldown',case when skill then greatest(0,coalesce((c.data->'combatSkillReadyAt'->>skill_id)::numeric,0)-stamp) else 0 end");
+combat=replace(combat,'  skill_rank int;','  skill_rank int; skill_data jsonb; skill_deadline numeric; skill_ready jsonb;\n  e jsonb; es jsonb; grade int; extra numeric:=0; raw_basic numeric; actual_basic numeric; shield numeric; barrier numeric; recovered numeric:=0; counters int; bonus jsonb; events jsonb:=\'[]\'; packed jsonb; secondary jsonb; nearest numeric; secondary_index int; points numeric; target_index int; enemy_guard numeric;');
 for(const name of ['damage','cost','resource','enemy_hp','each_hit','total_damage','healed'])combat=combat.replace(new RegExp(`  ${name} int`),`  ${name} numeric`);
 combat=replace(combat,"  cls:=c.data->>'cls';","  cls:=c.data->>'cls';\n  bonus:=public.game_set_bonuses(c.data);\n  enemy_guard:=coalesce((encounter->>'guard')::numeric,0);\n  e:=c.data->'equipment'->'weapon'->'enchantment';\n  es:=coalesce(c.data->'enchantState','{}');\n  if es->>'weapon' is distinct from coalesce(c.data->'equipment'->'weapon'->>'instanceId',c.data->'equipment'->'weapon'->>'id') or stamp-coalesce((es->>'at')::numeric,0)>6 then es:='{}';end if;\n  es:=es||jsonb_build_object('weapon',coalesce(c.data->'equipment'->'weapon'->>'instanceId',c.data->'equipment'->'weapon'->>'id'));\n  grade:=least(5,greatest(1,coalesce((e->>'grade')::int,1)));" );
+combat=replace(combat,"  skill_id:=public.game_skill_id(cls);\n  skill_rank:=public.game_skill_rank(c.data);\n  skill:=p_action='skill' or p_action=skill_id;\n  healing:=cls='clerigo' and skill;\n  if p_action is null or (p_action not in ('attack','skill') and p_action is distinct from skill_id) then raise exception 'COMBAT_INVALID_ACTION'; end if;",`  skill_id:=case when p_action='skill' then public.game_skill_id(cls) else p_action end;
+  skill_data:=public.game_skill_data(skill_id);
+  skill:=skill_data is not null and skill_data->>'class'=cls;
+  if p_action is null or (p_action not in ('attack','skill') and not skill) then raise exception 'COMBAT_INVALID_ACTION'; end if;
+  if skill and public.game_level(c.data)<(skill_data->>'unlockLevel')::int then raise exception 'COMBAT_SKILL_LOCKED'; end if;
+  skill_rank:=case when skill then public.game_skill_rank(c.data,skill_id) else 1 end;
+  healing:=skill and skill_data->>'mode'='healing';`);
+combat=replace(combat,"    cost:=12;cooldown:=6;","    cost:=(skill_data->>'cost')::numeric;cooldown:=(skill_data->>'cooldown')::numeric;");
+combat=replace(combat,"      cost:=case cls when 'mago' then 20 else 15 end;\n      cooldown:=case cls when 'guerrero' then 6 when 'mago' then 7 when 'picaro' then 4.5\n        when 'explorador' then 6 else 0 end;","      cost:=(skill_data->>'cost')::numeric;\n      cooldown:=(skill_data->>'cooldown')::numeric;");
+combat=replace(combat,"  if skill then\n    if stamp<coalesce((c.data->>'combatNextSkill')::numeric,0) then raise exception 'COMBAT_COOLDOWN'; end if;\n  elsif stamp<coalesce((c.data->>'combatNextAttack')::numeric,0) then","  if skill then\n    skill_deadline:=coalesce((c.data->'combatSkillReadyAt'->>skill_id)::numeric,case when skill_id=public.game_skill_id(cls) then coalesce((c.data->>'combatNextSkill')::numeric,0) else 0 end);\n    if stamp<skill_deadline then raise exception 'COMBAT_COOLDOWN'; end if;\n  elsif stamp<coalesce((c.data->>'combatNextAttack')::numeric,0) then");
+combat=replace(combat,"  if skill then c.data:=c.data||jsonb_build_object('combatNextSkill',stamp+cooldown);\n  else c.data:=c.data||jsonb_build_object('combatNextAttack',stamp+cadence);","  if skill then\n    skill_ready:=coalesce(c.data->'combatSkillReadyAt','{}')||jsonb_build_object(skill_id,stamp+cooldown);\n    c.data:=c.data||jsonb_build_object('combatSkillReadyAt',skill_ready);\n    if skill_id=public.game_skill_id(cls) then c.data:=c.data||jsonb_build_object('combatNextSkill',stamp+cooldown);end if;\n  else c.data:=c.data||jsonb_build_object('combatNextAttack',stamp+cadence);");
 combat=replace(combat,'  damage:=round(damage*(1+0.05*(public.game_level(c.data)-1)))::int;',`  cadence:=greatest(case cls ${Object.entries(duration).map(([cls,v])=>`when '${cls}' then ${v.basic+.04}`).join(' ')} else .72 end,cadence*public.game_weapon_tempo(c.data)*public.game_agility_tempo(c.data));
   damage:=damage*public.game_power_multiplier(c.data)*public.game_strength_power(c.data)*(1+(bonus->>'power')::numeric)*public.game_weapon_tempo(c.data);
   raw_basic:=damage;`);
@@ -18,10 +29,23 @@ combat=replace(combat,"  c.data:=public.game_store(c.id,c.data);","  c.data:=c.d
 combat=replace(combat,'  resource:=(public.game_public_vitals(c.data)->>\'resource\')::int;',"  cost:=cost*(1-(bonus->>'skillCost')::numeric)*public.game_intellect_efficiency(c.data);\n  resource:=(public.game_public_vitals(c.data)->>'resource')::numeric;");
 combat=replace(combat,"    if distance>attack_range then raise exception 'COMBAT_OUT_OF_RANGE'; end if;","    if distance>attack_range then raise exception 'COMBAT_OUT_OF_RANGE'; end if;\n    if not public.game_rpg_sight(c.data->>'location',(w.position->>'x')::numeric,(w.position->>'z')::numeric,(encounter->>'x')::numeric,(encounter->>'z')::numeric) then raise exception 'El objetivo no está en tu línea de visión.';end if;");
 combat=replace(combat,'  resource:=resource-cost;',"  cost:=cost+coalesce((c.data->>'resourceCostFraction')::numeric,0);\n  resource:=resource-floor(cost);\n  c.data:=c.data||jsonb_build_object('resourceCostFraction',cost-floor(cost));");
-combat=replace(combat,"    healed:=least(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1),public.game_max_health(c.data)-hp);",`    recovered:=(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1))*public.game_power_multiplier(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
+combat=replace(combat,"    healed:=least(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1),public.game_max_health(c.data)-hp);",`    recovered:=(coalesce((skill_data->>'baseHealing')::numeric,0)+public.game_equipment_stat(c.data,'healing')+(skill_rank-1)*(skill_data->>'rankBonus')::numeric)*coalesce((skill_data->>'power')::numeric,1)*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
     healed:=least(floor(recovered),public.game_max_health(c.data)-hp);
     c.data:=c.data||jsonb_build_object('health_regen',case when hp+healed>=public.game_max_health(c.data) then 0 else recovered-floor(recovered) end);`);
-combat=replace(combat,'/case when cls=\'picaro\' then 8 else 10 end)::int;',"/case when cls='picaro' then 8 else 10 end)*public.game_power_multiplier(c.data)*(1+(bonus->>'power')::numeric)*(1+(bonus->>'skillPower')::numeric);");
+combat=replace(combat,"    hits:=case when skill and cls='picaro' then 2 else 1 end;","    hits:=case when skill then (skill_data->>'hits')::int else 1 end;");
+combat=replace(combat,`    each_hit:=case when not skill then damage
+      when cls='guerrero' then 18 when cls='mago' then 18
+      when cls='picaro' then 8 when cls='explorador' then 19 else damage end;
+    if skill then
+      each_hit:=round((each_hit+(skill_rank-1)*case when cls='picaro' then 1 else 2 end)
+        *public.game_equipment_stat(c.data,'power')::numeric
+        /case when cls='picaro' then 8 else 10 end)::int;
+    end if;`,`    each_hit:=case when not skill then damage else
+      ((skill_data->>'baseDamage')::numeric+(skill_rank-1)*(skill_data->>'rankBonus')::numeric)
+        *public.game_equipment_stat(c.data,'power')::numeric
+        /case cls when 'picaro' then 8 when 'clerigo' then 11 else 10 end
+        *public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)
+        *(1+(bonus->>'power')::numeric)*(1+(bonus->>'skillPower')::numeric) end;`);
 combat=replace(combat,'    for i in 1..hits loop',`    if not skill and e is not null then
       counters:=coalesce((es->>'count')::int,0)+1;
       if e->>'id'='dark' then
@@ -78,12 +102,16 @@ tick=replace(tick,"  incoming := greatest(1,(cfg->'damage'->>attack_kind)::int-p
   if d ? 'enchantState' then d:=jsonb_set(d,'{enchantState,barrier}',to_jsonb(greatest(0,barrier-blocked)));end if;
   fraction:=incoming+coalesce((d->>'incomingFraction')::numeric,0);incoming:=floor(fraction);d:=d||jsonb_build_object('incomingFraction',fraction-incoming);`);
 tick=replace(tick,"\n  return jsonb_set(d,'{combatEncounter}',encounter);","\n  if hp=0 then d:=d-'enchantState';end if;\n  return jsonb_set(d,'{combatEncounter}',encounter);");
-let store=fn(read('03-formulas.sql'),'game_store');store=replace(store,'  d := public.game_food_data(p_id,d);','  d := public.game_rpg_settle(d,extract(epoch from clock_timestamp()));\n  d := public.game_food_data(p_id,d);');
+let store=fn(read('03-formulas.sql'),'game_store');store=replace(store,'  d := public.game_food_data(p_id,d);',"  d:=jsonb_set(d,'{rpg}',coalesce(d->'rpg','{}')||jsonb_build_object('owner',p_id));\n  d := public.game_rpg_settle(d,extract(epoch from clock_timestamp()));\n  d := public.game_food_data(p_id,d);");
 store=replace(store,'  update public.characters set data =',"  d:=d||jsonb_build_object('serverRevision',coalesce((select (data->>'serverRevision')::bigint from public.characters where id=p_id),0)+1);\n  update public.characters set data =");
 let regen=fn(read('06-world-presence.sql'),'game_regen_data');
 const resourceStart=regen.indexOf('  max_resource :='),resourceEnd=regen.indexOf('  health_rate :=');
 if(resourceStart<0||resourceEnd<=resourceStart)throw new Error('Resource regeneration formula not found');
 regen=replace(regen,regen.slice(resourceStart,resourceEnd),'  max_resource := public.game_rpg_resource_max(d);\n\n');
+// Regeneration already has both maxima; asking for a full vitals snapshot here
+// recalculates health, resources, set bonuses and overheal on every heartbeat.
+regen=replace(regen,'  health_value numeric := public.game_health(d);',"  health_value numeric := case when coalesce((d->>'health')::int,-1)<0 then max_health else least((d->>'health')::int,max_health) end;");
+regen=regen.replaceAll("resource_value := (public.game_public_vitals(d)->>'resource')::numeric;","resource_value := case when coalesce((d->>'resource')::numeric,-1)<0 then max_resource else least(greatest((d->>'resource')::numeric,0),max_resource) end;");
 let publicCharacter=fn(read('06-world-presence.sql'),'game_public_character');publicCharacter=replace(publicCharacter,"    'name', 'title', 'level'","    'combatVisual', 'name', 'title', 'level'");
 let change=fn(read('12-trade-inventory.sql'),'change_equipment');change=replace(change,'    target:=coalesce(equipment->p_slot,\'null\'::jsonb);',"    target:=coalesce(equipment->p_slot,'null'::jsonb);\n    source:=source||jsonb_build_object('bound',true,'instanceId',coalesce(source->>'instanceId',gen_random_uuid()::text));");
 change=replace(change,"  changed:=c.data||jsonb_build_object('inventory',inv,'equipment',equipment);","  changed:=c.data||jsonb_build_object('inventory',inv,'equipment',equipment);\n  if p_slot='weapon' then changed:=changed-'enchantState';end if;");
@@ -97,7 +125,7 @@ const shadowRules=fs.readFileSync('src/data/shadowCombat.json','utf8').trim().re
 const shadowConfig=`create or replace function public.game_shadow_combat_config() returns jsonb language sql immutable set search_path='' as $$ select '${shadowRules}'::jsonb $$;\nrevoke all on function public.game_shadow_combat_config() from public,anon,authenticated;`;
 fs.writeFileSync('supabase/server/21-rpg-combat.sql',`-- Generated from authoritative existing entry points by tools/build-rpg-server.mjs.\n${[shadowConfig,combat,tick,regen,store,change,offer,tradeAdd,place,move,publicCharacter].join('\n\n')}\n`);
 console.log('Generated combat and object-preservation RPC overrides.');
-let food=fn(read('03-formulas.sql'),'game_food_data');food=replace(food,"if d -> 'foodBuff' ->> 'itemId' = 'pan_duro' then","if public.game_item(d->'foodBuff'->>'itemId')->>'food_seconds' is not null then");food=replace(food,"jsonb_build_object('itemId','pan_duro','remaining',remaining)","jsonb_build_object('itemId',d->'foodBuff'->>'itemId','remaining',remaining)");
+let food=fn(read('03-formulas.sql'),'game_food_data');food=replace(food,"if d -> 'foodBuff' ->> 'itemId' = 'pan_duro' then","if d->'foodBuff'->>'itemId'='pan_duro' or public.game_rpg_food_effects() ? (d->'foodBuff'->>'itemId') then");food=replace(food,"jsonb_build_object('itemId','pan_duro','remaining',remaining)","jsonb_build_object('itemId',d->'foodBuff'->>'itemId','remaining',remaining)");
 let use=fn(read('05-items-vendors.sql'),'use_item');use=replace(use,"  if item -> 'resource_pct' is not null then",`  if item ? 'resource_pct' or item ? 'heal_pct' then
     if coalesce((d->>'potionReadyAt')::numeric,0)>extract(epoch from clock_timestamp()) then raise exception 'Las pociones todavía se están recuperando.';end if;
     d:=d||jsonb_build_object('potionReadyAt',extract(epoch from clock_timestamp())+15);

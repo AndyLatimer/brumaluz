@@ -4,6 +4,8 @@ import type { Vitals } from '../data/stats';
 import { parseFoodBuff, type FoodBuff } from '../data/food';
 import { asStack, type ItemStack } from '../data/inventory';
 import { parseWorldClock, syncWorldClock } from '../data/worldClock';
+import type { SkillId } from '../data/combat';
+import { parseSkillCooldowns } from '../data/skills';
 
 export type PublicVitals = Pick<Vitals, 'health' | 'maxHealth' | 'overheal' | 'resource' | 'maxResource' | 'resourceKind'> & {barrier?:number;serverRevision?:number};
 
@@ -56,7 +58,7 @@ export interface WildernessMob extends Omit<CombatEncounter,'status'> {
   target?:string;targetX?:number;targetZ?:number;respawnAt?:number;
   activity?:string;ambientSeq?:number;lookX?:number;lookZ?:number;attackStyle?:'normal'|'heavy';
 }
-export interface WildernessSnapshot {shared:true;serverTime:number;mobs:WildernessMob[];corpses:CombatEncounter[];inCombat:boolean;skillReadyAt?:number;attackReadyAt?:number}
+export interface WildernessSnapshot {shared:true;serverTime:number;mobs:WildernessMob[];corpses:CombatEncounter[];inCombat:boolean;skillReadyAt?:number;skillCooldowns?:Partial<Record<SkillId,number>>;attackReadyAt?:number}
 export function parseWilderness(value:unknown):WildernessSnapshot|undefined{
   if(!value||typeof value!=='object'||(value as {shared?:unknown}).shared!==true)return;
   const data=record(value);
@@ -69,7 +71,7 @@ export function parseWilderness(value:unknown):WildernessSnapshot|undefined{
       activity:typeof m.activity==='string'?m.activity:undefined,ambientSeq:typeof m.ambientSeq==='number'?number(m.ambientSeq):undefined,lookX:typeof m.lookX==='number'?number(m.lookX):undefined,lookZ:typeof m.lookZ==='number'?number(m.lookZ):undefined,attackStyle:m.attackStyle==='heavy'?'heavy':'normal'} as WildernessMob;
   });
   const corpses=data.corpses.map(value=>{const e=parseCombatEncounter(value);if(!e||e.status!=='defeated')throw new Error('Cuerpo no válido.');return e;});
-  return {shared:true,serverTime:number(data.serverTime),mobs,corpses,inCombat:data.inCombat===true,skillReadyAt:typeof data.skillReadyAt==='number'?number(data.skillReadyAt):undefined,attackReadyAt:typeof data.attackReadyAt==='number'?number(data.attackReadyAt):undefined};
+  return {shared:true,serverTime:number(data.serverTime),mobs,corpses,inCombat:data.inCombat===true,skillReadyAt:typeof data.skillReadyAt==='number'?number(data.skillReadyAt):undefined,skillCooldowns:parseSkillCooldowns(data.skillCooldowns),attackReadyAt:typeof data.attackReadyAt==='number'?number(data.attackReadyAt):undefined};
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -177,6 +179,13 @@ export class WorldConnection {
   private paused = false;
   private lastSuccess = performance.now();
   private inFlight:AbortController|null=null;
+  private failures = 0;
+  private staleReported = false;
+  private samples: number[] = [];
+  private requests = 0;
+  private failedRequests = 0;
+  private lastError: string | null = null;
+  private acknowledgedMotion: WorldMotion | null = null;
 
   constructor(private characterId: string, private hooks: WorldHooks) {}
 
@@ -185,12 +194,22 @@ export class WorldConnection {
     this.joined = true;
     const value = snapshot(response);
     if (this.closed) { await this.leave(); return null; }
+    this.lastSuccess = performance.now();
     return value;
+  }
+
+  diagnostics() {
+    const sorted = [...this.samples].sort((a,b) => a-b);
+    const percentile = (p: number) => sorted.length ? Math.round(sorted[Math.ceil(sorted.length*p)-1]) : null;
+    return { requests: this.requests, failedRequests: this.failedRequests, consecutiveFailures: this.failures,
+      lastSuccessAgoMs: Math.round(performance.now()-this.lastSuccess), rttP50Ms: percentile(.5), rttP95Ms: percentile(.95),
+      retrying: this.retrying, lastError: this.lastError };
   }
 
   start() {
     if (this.closed || !this.joined || this.started) return;
     this.started = true;
+    this.lastSuccess = performance.now();
     this.hooks.connection('connected');
     this.tick();
   }
@@ -199,30 +218,47 @@ export class WorldConnection {
     if (this.closed) return;
     const started=performance.now(),controller=new AbortController();this.inFlight=controller;
     const deadline=setTimeout(()=>controller.abort(),4000);
+    this.requests++;
     this.pending = (async () => {
       try {
-        const value = snapshot(await syncWorld(this.characterId, this.session, this.hooks.motion(),controller.signal));
+        const motion = this.hooks.motion();
+        const value = snapshot(await syncWorld(this.characterId, this.session, motion,controller.signal));
+        this.acknowledgedMotion = { ...motion };
         if (this.closed) return;
         this.lastSuccess = performance.now();
+        this.samples.push(this.lastSuccess-started);
+        if (this.samples.length > 120) this.samples.shift();
+        this.failures = 0;
+        this.staleReported = false;
+        this.lastError = null;
         this.hooks.receive(value);
         if (this.retrying) { this.retrying = false; this.hooks.connection('connected'); }
       } catch (error) {
         if (this.closed) return;
-        console.error('[Brumaluz multiplayer]', error);
-        if (error instanceof Error && /WORLD_SESSION_REPLACED|CHARACTER_NOT_FOUND/.test(error.message)) {
+        const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
+        this.failures++;
+        this.failedRequests++;
+        this.lastError = message;
+        if (this.failures === 1) console.error('[Brumaluz multiplayer]', error);
+        if (/WORLD_SESSION_REPLACED|CHARACTER_NOT_FOUND/.test(message)) {
           this.closed = true;
           this.hooks.replaced();
           return;
         }
-        if (!this.retrying) { this.retrying = true; this.hooks.connection('retrying'); }
-        if (performance.now() - this.lastSuccess > 15000) {
+        // A single lost response does not mean the 15-second presence lease is
+        // gone. Retry promptly, and report an interruption only if it persists.
+        if (!this.retrying && performance.now() - this.lastSuccess >= 5000) {
+          this.retrying = true; this.hooks.connection('retrying');
+        }
+        if (!this.staleReported && performance.now() - this.lastSuccess > 15000) {
+          this.staleReported = true;
           this.hooks.stale();
         }
       } finally {
         clearTimeout(deadline);if(this.inFlight===controller)this.inFlight=null;
         // Keep one request in flight and a 250 ms start-to-start budget. RTT
         // is part of that budget, rather than an extra pause after every reply.
-        if (!this.closed && !this.paused) this.timer = setTimeout(() => this.tick(), this.retrying ? 1000 : Math.max(20,250-(performance.now()-started)));
+        if (!this.closed && !this.paused) this.timer = setTimeout(() => this.tick(), this.failures ? Math.min(4000,500*2**Math.min(this.failures-1,3)) : Math.max(20,250-(performance.now()-started)));
       }
     })();
   }
@@ -231,9 +267,18 @@ export class WorldConnection {
     const finalMotion = this.started && !this.closed && !this.paused ? this.hooks.motion() : null;
     this.closed = true;
     clearTimeout(this.timer);
-    this.inFlight?.abort();
-    await this.pending;
-    if (finalMotion && this.joined) {
+    // Let a healthy request finish before sending the final position. Aborting
+    // fetch does not guarantee that the server has stopped processing it.
+    let drained = true;
+    if (this.inFlight) {
+      let deadline: ReturnType<typeof setTimeout> | undefined;
+      drained = await Promise.race([this.pending.then(() => true), new Promise<false>(resolve => {
+        deadline = setTimeout(() => { this.inFlight?.abort(); resolve(false); },1000);
+      })]);
+      clearTimeout(deadline);
+    } else await this.pending;
+    const needsFinalPosition = finalMotion && Object.entries(finalMotion).some(([key,value]) => this.acknowledgedMotion?.[key as keyof WorldMotion] !== value);
+    if (finalMotion && needsFinalPosition && this.joined && drained) {
       try { await syncWorld(this.characterId, this.session, finalMotion,AbortSignal.timeout(1500)); }
       catch (error) { console.error('[Brumaluz multiplayer] No se pudo enviar la última posición.', error); }
     }

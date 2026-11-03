@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Owned starter room, fixed shell, menu and furnishing count"
+  ],
+  "errors": [
+    "RPC: El mueble toca una pared u otro objeto de la habitación."
+  ],
+  "error": "{\"code\":\"P0001\",\"message\":\"El mueble toca una pared u otro objeto de la habitación.\"}\n\n400 !== 200\n"
+}

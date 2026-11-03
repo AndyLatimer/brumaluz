@@ -38,7 +38,7 @@ Los bandidos reutilizan el rig y armas del juego; jabalí y brote tienen modelos
 
 - La restricción inicial de un enemigo activo por personaje está retirada. Hay población compartida, varios agresores simultáneos, amenaza y recompensas por participación. Rayo puede saltar a otras criaturas válidas.
 - La persecución comprueba obstáculos, pero no rodea edificios mediante navegación completa. Faltan rutas, retorno animado al origen y prevención de atasco más avanzada.
-- Sigue habiendo una habilidad inicial por clase. Faltan ampliar y revisar las rotaciones aprobadas, enemigos de mayor nivel y encuentros de roles. Los conjuntos siguen siendo bonos numéricos y los encantamientos solo activan con básicos.
+- El kit principal ya tiene cuatro habilidades por clase, desbloqueadas en los niveles 1, 5, 12 y 20. Se asignan desde el libro y cada habilidad tiene recarga propia; los rangos se mejoran con puntos desde el nivel 2, hasta rango 5. Falta validar las rotaciones, cifras y utilidad de curación en sesiones reales, además de ampliar enemigos y encuentros de roles. Los conjuntos siguen siendo bonos numéricos y los encantamientos solo activan con básicos.
 - Las preparaciones de zona se aplican al circuito exterior; la sombra de introducción conserva su resolución de historia.
 - Faltan sesiones reales con latencia y distintos equipos: tiempo para derrotar, daño recibido, gasto de recursos y valor de curación. El informe aritmético no sustituye estas sesiones.
 

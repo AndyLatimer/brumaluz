@@ -187,7 +187,12 @@ export function chatReceive(m: ChatMessage) {
 export function chatCombat(text: string, tone?: 'heal' | 'dealt') { push({ kind: 'combat', time: new Date(), text, tone }); }
 export function chatSystem(text: string, error = false) { push({ kind: 'system', time: new Date(), text, error }); }
 /** Comentario espontáneo de un NPC cercano, fuera del diálogo de interacción. */
-export function chatNpc(speaker: string, text: string) { push({ kind: 'npc', time: new Date(), name: speaker, text }); }
+let npcSpeechListener: ((name: string, text: string) => void) | null = null;
+export function setNpcSpeechListener(listener: (name: string, text: string) => void) { npcSpeechListener = listener; }
+export function chatNpc(speaker: string, text: string) {
+  push({ kind: 'npc', time: new Date(), name: speaker, text });
+  npcSpeechListener?.(speaker, text);
+}
 /** Lo que respondes tú en una conversación con un NPC. */
 export function chatSelfSay(name: string, text: string) { push({ kind: 'npc', time: new Date(), name, text, own: true }); }
 

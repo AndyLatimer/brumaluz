@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="260" viewBox="0 0 360 260">
+  <ellipse cx="180" cy="235" rx="82" ry="9" fill="#24191b"/>
+  <g stroke="#654532" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M165 65V44a15 15 0 0 1 30 0v21" fill="none" stroke="#c5a873" stroke-width="5"/>
+    <path d="M169 44a11 11 0 0 1 11-11" fill="none" stroke="#edcd89" stroke-width="1.5"/>
+    <path d="M166 65V55h28v10" fill="#80947c"/>
+    <path d="m132 92 34-28h28l34 28-8 12h-80Z" fill="#78917b"/>
+    <path d="m194 64 34 28-8 12h-22l-5-17Z" fill="#597766" stroke="none"/>
+    <path d="m147 90 23-19h16m-40 27h66" fill="none" stroke="#afbb92" stroke-width="2"/>
+    <path d="M161 82h5m8-5h7m8 5h5" stroke="#4e6556" stroke-width="3"/>
+    <path d="M145 105h70l-9 107h-52Z" fill="#f2d394"/>
+    <path d="M151 111h24v93h-17Z" fill="#ffebba" stroke="none"/>
+    <path d="m185 111 23 0-7 93h-16Z" fill="#e7bc74" stroke="none"/>
+    <path d="m156 117 2 28m4 10 1 13m37-48-2 23" fill="none" stroke="#fff3d4" stroke-width="3"/>
+    <path d="M166 191h28v12h-28Z" fill="#c4a268" stroke-width="2"/>
+    <path d="M170 166h20v25h-20Z" fill="#f5e8bc" stroke-width="2"/>
+    <ellipse cx="180" cy="166" rx="10" ry="3" fill="#fff3cf" stroke-width="1.5"/>
+    <path d="M180 161v6" stroke="#795d3a" stroke-width="2"/>
+    <path d="M180 137c-1 9-10 13-9 20 1 10 18 10 18 0 0-7-7-13-9-20Z" fill="#fff6d8" stroke="#dfa646" stroke-width="1.5"/>
+    <path d="m146 105 9 106m60-106-9 106" fill="none" stroke="#9f8150" stroke-width="4"/>
+    <path d="m204 117-6 87" fill="none" stroke="#ac8d57" stroke-width="2"/>
+    <path d="M149 132h7m-5 52h8m43-24h8v9h-8" fill="none" stroke="#7d704d" stroke-width="2"/>
+    <path d="M145 102h70v8h-70Z" fill="#91a184"/>
+    <path d="M153 211h54l9 13h-72Z" fill="#78917b"/>
+    <path d="M144 224h72v7h-72Z" fill="#597766"/>
+    <path d="M155 220h43" stroke="#b3bd92" stroke-width="2"/>
+    <circle cx="151" cy="106" r="2" fill="#d9ba78" stroke="none"/>
+    <circle cx="209" cy="106" r="2" fill="#d9ba78" stroke="none"/>
+  </g>
+</svg>

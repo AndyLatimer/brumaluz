@@ -8,7 +8,19 @@ La conversación de cada maestro de fabricación incluye **Comprar recetas**. Se
 
 El libro de profesiones permite consultar todas las recetas, cantidades y fuentes de materiales y fabricar las ya aprendidas. No tiene botones para comprar ni aprender. Los bancos y estaciones domésticas sirven para fabricar, no para comprar recetas.
 
-Precios iniciales para concretar el incremento pedido, sujetos a ajuste de ritmo:
+Precios reconfirmados por el usuario en la revisión guiada del 31 de octubre:
+
+La revisión también confirma una excepción de actividad: en las
+[meriendas compartidas](SHARED-MEALS.md) el maestro dirige la preparación y no
+se exige conocer previamente la receta. **Esto no la enseña permanentemente**:
+para la fabricación ordinaria se mantiene el aprendizaje mediante pergamino,
+incluida la obtención excepcional de los pergaminos de Gran maestro.
+
+Se aprueba ampliar tanto los platos del catálogo normal de Cocina como los
+exclusivos de meriendas. Los nuevos platos normales conservarán las reglas de
+aprendizaje del catálogo; la selección de platos y cantidades por rango sigue
+pendiente. Los platos exclusivos no se incorporan automáticamente a la
+fabricación normal ni conceden un aprendizaje permanente por participar.
 
 | Rango | Calidad | Precio por receta |
 | --- | --- | --- |

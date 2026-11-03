@@ -1,6 +1,6 @@
 create or replace function public.game_rpg_near(d jsonb,job text,pos jsonb) returns boolean language sql immutable set search_path='' as $$
  select exists(select 1 from jsonb_each(public.game_rpg_catalog()->'stations') s where (s.value->>'job'=job or job in('minero','lenador','recolector') and s.value->>'job'='herreria') and s.value->>'location'=coalesce(d->>'location','brumaluz') and sqrt(power((pos->>'x')::numeric-(s.value->>'x')::numeric,2)+power((pos->>'z')::numeric-(s.value->>'z')::numeric,2))<=coalesce((s.value->>'radius')::numeric,4))
- or exists(select 1 from jsonb_array_elements(coalesce(d->'rpg'->'furniture','[]')) f where f->>'job'=job and f->>'location'=d->>'location' and sqrt(power((pos->>'x')::numeric-(f->>'x')::numeric,2)+power((pos->>'z')::numeric-(f->>'z')::numeric,2))<=4)
+ or (nullif(d->'rpg'->'homes'->>'visit','') is null and exists(select 1 from jsonb_array_elements(coalesce(d->'rpg'->'furniture','[]')) f where f->>'job'=job and f->>'location'=d->>'location' and sqrt(power((pos->>'x')::numeric-(f->>'x')::numeric,2)+power((pos->>'z')::numeric-(f->>'z')::numeric,2))<=4))
 $$;
 
 create or replace function public.rpg_action(p_character_id uuid,p_action text,p_args jsonb default '{}',p_request uuid default null,p_revision bigint default 0)
@@ -14,7 +14,9 @@ declare
 begin
  if auth.uid() is null then raise exception 'NOT_AUTHENTICATED';end if;
  perform pg_catalog.pg_advisory_xact_lock(731029,3);
- c:=public.game_lock_character(p_character_id);d:=public.game_rpg_settle(c.data,stamp);s:=d->'rpg';
+ c:=public.game_lock_character(p_character_id);d:=public.game_rpg_settle(jsonb_set(c.data,'{rpg}',coalesce(c.data->'rpg','{}')||jsonb_build_object('owner',c.id)),stamp);s:=d->'rpg';
+ s:=s||jsonb_build_object('bankAvailable',public.game_craft_bank(c.id));d:=d||jsonb_build_object('rpg',s);
+ d:=public.game_meal_mail(c.id,d);s:=d->'rpg';
  if p_action='state' then return public.game_store(c.id,d);end if;
  if p_request is null then raise exception 'REQUEST_REQUIRED';end if;
  if coalesce(s->'requests','[]') ? p_request::text then return public.game_store(c.id,d);end if;
@@ -29,34 +31,14 @@ begin
  rank:=public.game_rpg_rank(s,job);
 
  if p_action='learn' then raise exception 'Habla con el maestro del oficio para aprender recetas.';
+ elsif p_action like 'home\_%' escape '\' or p_action like 'neighbor\_%' escape '\' or p_action like 'meal\_%' escape '\' or p_action='tutorial_supply' then
+  d:=public.game_cozy_action(c.id,d,p_action,p_args,w.position,stamp);s:=d->'rpg';
  elsif p_action in('tutorial_accept','tutorial_visit','tutorial_complete') then
   d:=public.game_profession_tutorial_action(d,p_action,p_args,w.position,stamp);s:=d->'rpg';
- elsif p_action='daily_order' then
-  recipe:=catalog->'dailyOrders'->'orders'->id;job:=recipe->>'job';
-  if recipe is null then raise exception 'Encargo diario no válido.';end if;
-  meta:=catalog->'teachers'->job;
-  if meta is null or meta->>'id' is distinct from p_args->>'master' or meta->>'location' is distinct from d->>'location'
-   or sqrt(power((w.position->>'x')::numeric-(meta->>'x')::numeric,2)+power((w.position->>'z')::numeric-(meta->>'z')::numeric,2))>coalesce((meta->>'radius')::numeric,3) then raise exception 'Habla con el maestro de este encargo.';end if;
-  cost:=(recipe->>'reward')::int;
-  if (p_args->>'reward')::int is distinct from cost then raise exception 'La recompensa ha cambiado. Consulta de nuevo al maestro.';end if;
-  mat:=to_char(to_timestamp(stamp) at time zone 'UTC','YYYY-MM-DD');task:=coalesce(s->'dailyOrders','{}');
-  if task->>'day' is distinct from mat then task:=jsonb_build_object('day',mat,'completed',0);end if;
-  count_jobs:=coalesce((task->>'completed')::int,0);
-  if count_jobs>=(catalog->'dailyOrders'->>'limit')::int then raise exception 'Ya has completado tus tres encargos diarios.';end if;
-  inv:=public.game_inventory(d);
-  for entry in select * from jsonb_each_text(recipe->'ingredients') loop
-   if (select coalesce(sum((value->>'count')::int),0) from jsonb_array_elements(inv) where value->>'id'=entry.key and not coalesce((value->>'bound')::boolean,false))<entry.value::int then raise exception 'Faltan los materiales o componentes sin vincular del encargo.';end if;
-  end loop;
-  for entry in select * from jsonb_each_text(recipe->'ingredients') loop
-   amount:=entry.value::int;
-   for idx in 0..24 loop
-    item:=inv->idx;if item->>'id' is distinct from entry.key or coalesce((item->>'bound')::boolean,false) then continue;end if;
-    n:=least(amount,(item->>'count')::int);amount:=amount-n;
-    inv:=jsonb_set(inv,array[idx::text],case when n=(item->>'count')::int then 'null'::jsonb else item||jsonb_build_object('count',(item->>'count')::int-n) end);exit when amount=0;
-   end loop;
-  end loop;
-  d:=public.game_set_pelines(d||jsonb_build_object('inventory',inv),public.game_pelines(d)+cost::int);
-  s:=jsonb_set(s,'{dailyOrders}',task||jsonb_build_object('completed',count_jobs+1));
+ elsif p_action in('workshop_mission_accept','workshop_mission_complete') then
+  d:=public.game_workshop_mission_action(d,p_action,p_args,w.position,stamp);s:=d->'rpg';
+ elsif p_action like 'order\_%' escape '\' or p_action='daily_order' then
+  d:=public.game_order_action(c.id,d,p_action,p_args,w.position,stamp);s:=d->'rpg';
  elsif p_action='buy_recipe' then
   recipe:=catalog->'recipes'->id;
   if recipe is null or public.game_rpg_rank(s,recipe->>'job')<(recipe->>'tier')::int then raise exception 'No tienes el dominio necesario.';end if;
@@ -88,16 +70,18 @@ begin
   duration:=(recipe->>'seconds')::numeric*case when d->>'race'='humano' then .85 else 1 end;
   select count(*) into count_jobs from jsonb_array_elements(s->'jobs') j where j->>'job'=job and not (j->>'done')::boolean;
   if duration>0 and count_jobs+amount>5 then raise exception 'Máximo cinco trabajos por oficio.';end if;
-  for entry in select * from jsonb_each_text(recipe->'ingredients') loop d:=public.game_rpg_consume(d,entry.key,entry.value::int*amount);end loop;
   for n in 1..amount loop
-   xp:=public.game_rpg_recipe_xp(s,recipe);outitem:=public.game_rpg_new_item(recipe->>'output',(recipe->>'count')::int);
+   d:=public.game_craft_consume(c.id,d,recipe->'ingredients');
+   task:=jsonb_build_object('reservedItems',d->'craftConsumed');d:=d-'craftConsumed';
+   s:=s||jsonb_build_object('bankAvailable',public.game_craft_bank(c.id));
+   xp:=public.game_rpg_recipe_xp(s,recipe);outitem:=public.game_rpg_new_item(recipe->>'output',(recipe->>'count')::int)||jsonb_build_object('craftedBy',c.id);
    if duration=0 then
     if d->>'race'='elfo' and job='alquimia' and recipe->>'output' like 'pocion_%' and random()<.25 then outitem:=outitem||jsonb_build_object('count',(outitem->>'count')::int+1);end if;
     d:=public.game_rpg_give(d,outitem,false);
     s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+xp));s:=jsonb_set(s,array['crafts',job],to_jsonb(coalesce((s->'crafts'->>job)::int,0)+1));
    else
     select greatest(stamp,coalesce(max((j->>'end')::numeric),stamp)) into start_at from jsonb_array_elements(s->'jobs') j where j->>'job'=job and not (j->>'done')::boolean;
-    task:=jsonb_build_object('id',gen_random_uuid()::text,'recipe',id,'job',job,'start',start_at,'end',start_at+duration,'done',false,'ingredients',recipe->'ingredients','output',outitem,'xp',xp);
+    task:=task||jsonb_build_object('id',gen_random_uuid()::text,'recipe',id,'job',job,'start',start_at,'end',start_at+duration,'done',false,'ingredients',recipe->'ingredients','output',outitem,'xp',xp);
     s:=jsonb_set(s,'{jobs}',s->'jobs'||jsonb_build_array(task));
    end if;
   end loop;
@@ -110,7 +94,8 @@ begin
    if not (task->>'done')::boolean then raise exception 'El trabajo no ha terminado.';end if;d:=public.game_rpg_give(d,task->'output',false);
   elsif p_action='cancel' then
    if (task->>'done')::boolean then raise exception 'El trabajo ya ha terminado.';end if;
-   for entry in select * from jsonb_each_text(task->'ingredients') loop s:=jsonb_set(s,'{deliveries}',s->'deliveries'||jsonb_build_array(public.game_rpg_new_item(entry.key,entry.value::int)));end loop;
+   if task ? 'reservedItems' then s:=jsonb_set(s,'{deliveries}',(s->'deliveries')||(task->'reservedItems'));
+   else for entry in select * from jsonb_each_text(task->'ingredients') loop s:=jsonb_set(s,'{deliveries}',s->'deliveries'||jsonb_build_array(public.game_rpg_new_item(entry.key,entry.value::int)));end loop;end if;
   else
    if (task->>'done')::boolean or (task->>'start')::numeric<=stamp then raise exception 'Solo puedes mover trabajos pendientes.';end if;
   end if;
@@ -162,7 +147,7 @@ begin
     d:=public.game_rpg_give(d,public.game_rpg_new_item(meta->>'item',1),false);
     s:=jsonb_set(s,'{energy}',to_jsonb((s->>'energy')::numeric-cost));
     loss:=.25*(1+greatest(0,tier-rank)*.5)*(1-rank*.03)*(1-(catalog->'items'->(tool->>'id')->>'tier')::int*.04);
-    tool:=tool||jsonb_build_object('durability',greatest(0,(tool->>'durability')::numeric-loss));s:=jsonb_set(s,array['tools',job],tool);
+    tool:=tool||jsonb_build_object('used',true,'durability',greatest(0,(tool->>'durability')::numeric-loss));s:=jsonb_set(s,array['tools',job],tool);
     s:=jsonb_set(s,array['nodes',id],to_jsonb(stamp+(meta->>'respawn')::numeric));
     s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+public.game_rpg_xp(s,job,tier)));
     s:=jsonb_set(s,array['crafts',job],to_jsonb(coalesce((s->'crafts'->>job)::int,0)+1));s:=jsonb_set(s,'{gathering}','null');
@@ -231,6 +216,7 @@ begin
  -- Inventory changes invalidate accepted offers; both participants must review again.
  update public.player_trades set revision=revision+1,accepted_a=false,accepted_b=false,offer_a=case when a=c.id then '{"items":[],"pelines":0}'::jsonb else offer_a end,offer_b=case when b=c.id then '{"items":[],"pelines":0}'::jsonb else offer_b end where status in('open','invited') and c.id in(a,b);
  d:=public.game_profession_tutorial_event(d,p_action,p_args,c.data);
+ d:=public.game_workshop_mission_event(d,p_action,p_args,c.data);
  return public.game_store(c.id,d);
 end $$;
 revoke all on function public.rpg_action(uuid,text,jsonb,uuid,bigint) from public,anon;

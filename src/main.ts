@@ -25,6 +25,7 @@ import { installCombatControls } from './game/combat';
 import { questTracking, installGameInterface } from './ui/gameInterface';
 import { setWindow, installMenus } from './ui/menus';
 import { installOptions } from './ui/options';
+import { installBugReporter } from './dev/bugReporter';
 import { refreshUI, installCreator } from './ui/creator';
 import { initializeAccountAccess, installAccountScreens } from './ui/accountScreens';
 import { syncBackdropTime, installCharacterSelect } from './ui/characterSelect';
@@ -38,6 +39,7 @@ import { installNpcBarks } from './game/targets';
 import { installDebugHook } from './game/debugHook';
 import { startGameLoop } from './game/loop';
 import { installProfessions } from './game/professions';
+import {installHomes} from './game/homes';
 import './styles/game/15-rpg.css';
 import './styles/game/16-professions.css';
 import './styles/game/17-wilderness.css';
@@ -52,7 +54,7 @@ installArrivalOverlay();
 installInput();
 initUiMotion();
 animateVisibility(...['window-backdrop', 'options-backdrop', 'delete-dialog-backdrop', 'game-menu-panel', 'player-menu-panel', 'world-menu-panel',
-  'dialog', 'interact-prompt', 'death-screen', 'player-interactions'].map(id => document.getElementById(id)));
+  'dialog', 'interact-prompt', 'death-screen', 'player-interactions', 'bug-report-backdrop', 'bug-review-backdrop'].map(id => document.getElementById(id)));
 installInteraction();
 installRestFade();
 installActionBar();
@@ -61,14 +63,16 @@ installCombatControls();
 installGameInterface();
 installMenus();
 installProfessions();
+installHomes();
 installOptions();
+installBugReporter();
 
 installCreator();
 installCharacterSelect();
 installWorldClient();
 installAccountScreens();
 try {
-  await loadKits();
+  await loadKits(false);
   session.registeredNpcs = loadWorldNpcs();
   session.worldCharacters = {
     testiculos: await createNpc(session.registeredNpcs.testiculos),

@@ -2,6 +2,49 @@
 
 Actualizado: 24 de octubre de 2026. Este documento describe el código implementado; los documentos de diseño conservan también propuestas e historial. Las fórmulas numéricas nuevas son valores iniciales de equilibrio, no resultados de una sesión de juego.
 
+## Revisión de fabricación del 31 de octubre, aplicada localmente el 2 de noviembre
+
+El usuario aprueba muebles básicos en minutos y avanzados en horas, sustituyendo
+las esperas de varios días para el mobiliario avanzado. Se confirma duplicar la
+tabla propuesta, con los siguientes tiempos conectados por pieza antes de las
+bonificaciones vigentes:
+
+| Rango | Mueble conectado | Mueble completamente sin conexión |
+| --- | --- | --- |
+| Aprendiz | 2–6 min | 6–18 min |
+| Iniciado | 6–16 min | 18–48 min |
+| Oficial | 20–40 min | 1–2 h |
+| Experto | 1–2 h | 3–6 h |
+| Maestro | 2–4 h | 6–12 h |
+| Gran maestro | 4–8 h | 12–24 h |
+
+El tamaño y la complejidad sitúan cada modelo dentro de su intervalo; no se aplica
+un multiplicador adicional que lo supere. El catálogo asigna cada modelo según
+su tamaño y complejidad. El 2 de noviembre se aprueba también equipo y herramientas
+a la mitad del intervalo de muebles, pergaminos al doble del equipo y componentes
+entre 30 segundos y cinco minutos. Comida y pociones siguen siendo instantáneas.
+
+La fabricación normal seguirá avanzando sin conexión **a un tercio de la velocidad
+conectado**: una hora de trabajo conectado tarda tres horas desconectado. La
+precisión del usuario sustituye el 50 % propuesto en la opción A; la etiqueta A
+no aprueba ese porcentaje. El progreso ya realizado se conserva. Se mantiene una estación del oficio,
+pública o doméstica, para iniciar trabajos, sin obligar a permanecer a su lado.
+La pausa del temporizador de meriendas no se extiende a las colas de fabricación.
+
+Se confirman cinco trabajos por oficio, **uno activo y cuatro esperando**; cada
+unidad es un trabajo y al terminar uno empieza el siguiente. No es un límite
+diario ni producción paralela dentro de un oficio. Se podrá revisar una posible
+ampliación en el futuro, sin aprobar ahora su mecanismo ni aumentar a diez.
+
+Se aprueba usar automáticamente los materiales de mochila y banco personal al
+fabricar en una estación, sin trasladarlos antes. Esto no habilita otras
+operaciones del banco desde cualquier lugar ni amplía la regla a encargos o
+meriendas. Se confirma la cancelación de cualquier trabajo normal sin terminar,
+activo o esperando, con devolución íntegra de materiales; las meriendas mantienen
+su regla distinta de cancelación automática. Este bloque está implementado y
+probado localmente; la publicación del servidor y del cliente es independiente.
+Alcance, conservación y comprobaciones: [Aplicación de la revisión cozy](COZY-IMPLEMENTATION-2026-11-02.md).
+
 ## Acceso en el juego
 
 El acabado de recursos, herramientas, iconos, recolección y trabajos se revisó el 26 de octubre de 2026. Modelos, integración del editor y comprobaciones: [Recursos y fabricación](RESOURCES-ART.md).
@@ -19,6 +62,7 @@ La siguiente etapa del 26 de octubre incorpora los [doce talleres interiores y s
 - Los talleres públicos se encuentran en doce interiores de Brumaluz. Cada uno incluye maestro, banco, acceso de entrada y salida, colisiones y una guía del oficio. Sus puertas se identifican con el icono de taller en mapa y minimapa.
 - Comprar las herramientas básicas en el apartado Herramientas, cerca de Herrería; equiparlas y acercarse a un recurso para recolectar con **E**. Moverse, cancelar, morir o recibir daño interrumpe la extracción.
 - La **ficha de personaje** muestra daño básico, intervalo, habilidad, coste real, mitigación y progreso de conjuntos.
+- El libro de habilidades presenta las cuatro habilidades de clase, sus desbloqueos, rangos y recargas; las aprendidas se pueden asignar a la barra y las futuras se muestran bloqueadas hasta su nivel.
 - **Expediciones retiradas provisionalmente**: sin tablón, colisión, iconos de mapa/minimapa, interacción ni acceso para iniciarlas. Los encuentros antiguos recibidos del servidor se abandonan y se retiran de la escena. Su implementación definitiva queda pendiente.
 - En combate: los enemigos exteriores detectan al jugador y este responde con básicos; **F** permite iniciar y aproximarse manualmente. Se conserva la barra de habilidades y el marco de objetivo; este muestra la preparación enemiga. Solo el clérigo en grupo tiene selector de aliado para curar.
 
@@ -43,6 +87,10 @@ Los conjuntos tienen dos familias mecánicas por clase. Las colecciones visuales
 Vigía es el nombre provisional de la segunda orientación del explorador. Cada celda expresa **2 piezas / 4 piezas**. Las escalas aprobadas se aplican en cliente y servidor.
 
 ## Fórmulas de combate
+
+### Habilidades de clase
+
+Cada clase dispone de cuatro habilidades activas desbloqueadas automáticamente en los niveles 1, 5, 12 y 20. Cada habilidad empieza en rango 1; los rangos siguientes requieren un nivel adicional y un punto de habilidad, hasta rango 5. Se obtiene un punto por nivel desde el 2. El cliente muestra y asigna habilidades, pero el servidor valida clase, desbloqueo, rango, coste, efecto y recarga individual. El catálogo central y sus valores iniciales están en [skills.ts](../src/data/skills.ts); la tabla completa y las limitaciones de balance, en [COMBAT-BALANCE.md](./COMBAT-BALANCE.md).
 
 - Atributo principal: Fuerza para guerrero, Agilidad para pícaro/explorador e Intelecto para mago/clérigo. Multiplicador: `1 + atributo × 0,01`, también para curación.
 - Nivel: `1 + (nivel − 1) × 0,02`, compartido por básicos, habilidades y curación.
@@ -86,18 +134,23 @@ Implementados Herrería, Peletería, Sastrería, Carpintería, Ebanistería, Joy
 - Materiales reservados al encolar; cancelación con devolución íntegra. Resultados terminados no ocupan capacidad de cola y no caducan. Experiencia al completar, una sola vez. Sin espacio, devoluciones y recompensas diferidas quedan en entregas; recoger un trabajo sin espacio lo mantiene pendiente.
 - Humanos: 15 % menos tiempo. Elfos: 25 % de probabilidad de **una** poción adicional por ejecución, sin experiencia adicional ni activaciones recursivas.
 
-### Tiempos
+### Tiempos vigentes desde el 2 de noviembre
 
-| Calidad | Equipo por pieza |
-| --- | --- |
-| Gris | 30 s |
-| Verde | 2 min |
-| Azul | 30 min |
-| Morado | 2 h |
-| Dorado | 24 h |
-| Naranja especial | 48 h |
+| Rango | Intervalo de equipo y herramientas | Tiempo asignado por pieza |
+| --- | --- | --- |
+| Aprendiz | 1–3 min | 2 min |
+| Iniciado | 3–8 min | 5 min 30 s |
+| Oficial | 10–20 min | 15 min |
+| Experto | 30–60 min | 45 min |
+| Maestro | 1–2 h | 1 h 30 min |
+| Gran maestro | 2–4 h | 3 h |
 
-Pergaminos: tiempo de equipo × 2. Muebles: tiempo de equipo × `2 + 0,5 × (tamaño − 1) + 0,5 × (complejidad − 1)`. Son valores iniciales de implementación para concretar la directiva de tardar más; una biblioteca compleja tarda más que un taburete de igual calidad. Aplicación del pergamino inmediata. Talleres sin mejoras.
+Los puntos medios de equipo son una asignación inicial dentro de los intervalos
+aprobados. Pergaminos: tiempo de equipo × 2. Muebles: intervalos de la tabla
+superior, con tamaño y complejidad dentro de sus límites. Componentes por rango:
+30/60/120/180/240/300 segundos. Comida, pociones y aplicación del pergamino son
+instantáneas. Tiempos conectados antes de bonificaciones; desconectado se avanza
+a un tercio. Talleres sin mejoras.
 
 ### Energía, herramientas y maestría
 

@@ -1,6 +1,7 @@
 // NPC de la ciudad: sus fichas y conversaciones.
 import type { NpcType, TargetDetails } from '../ui/targetFrame';
 import type { Conversation, DialogChoice } from '../ui/dialog';
+import {addMasterNeighborhood} from './neighborhood';
 import { session, story, play, fight } from '../game/state';
 import { ISBERTO_HOUSE, SHADOW_TITLE } from '../data/quests';
 import { t } from '../ui/i18n';
@@ -17,6 +18,7 @@ import { setWindow } from '../ui/menus';
 import { closeDialog } from '../ui/dialog';
 import { performProfession } from '../game/professions';
 import { RPG_CATALOG } from '../data/professions';
+import { CITY_POPULATIONS } from '../data/cityPopulation';
 
 // ---------------- NPCs ----------------
 export interface NpcDef {
@@ -119,17 +121,29 @@ export function createNpcDefinitions(): Record<string, NpcDef> {
     const npc=session.registeredNpcs[id];
     definitions[id]={name:npc.name,title:npc.subtitle,type:'trainer',level:npc.stats.level,
       vitals:{health:npc.stats.health,maxHealth:npc.stats.maxHealth,overheal:0,resource:0,maxResource:0,resourceKind:'stamina'},
-      conversation:professionMasterConversation({job,name:npc.name,subtitle:npc.subtitle,tutorial:{getState:()=>session.state,act:performProfession,master:id,openBook:()=>{closeDialog();selectProfessionTab('recipes',job);setWindow('professions');},openInventory:()=>{closeDialog();setWindow('inventory');}},dailyOrders:{getState:()=>session.state,deliver:order=>performProfession('daily_order',{id:order,master:id,reward:RPG_CATALOG.dailyOrders.orders[order].reward})},training:{openInventory:()=>{closeDialog();setWindow('inventory');},getState:()=>session.state,buy:recipe=>performProfession('buy_recipe',{id:recipe,master:id,price:RPG_CATALOG.recipes[recipe].price})},onOpen(section){
+      conversation:professionMasterConversation({job,name:npc.name,subtitle:npc.subtitle,tutorial:{getState:()=>session.state,act:performProfession,master:id,openBook:()=>{closeDialog();selectProfessionTab('recipes',job);setWindow('professions');},openInventory:()=>{closeDialog();setWindow('inventory');}},workshopMission:{getState:()=>session.state,act:performProfession,master:id},dailyOrders:{getState:()=>session.state,act:(action,args)=>performProfession(action,{...args,master:id})},training:{openInventory:()=>{closeDialog();setWindow('inventory');},getState:()=>session.state,buy:recipe=>performProfession('buy_recipe',{id:recipe,master:id,price:RPG_CATALOG.recipes[recipe].price})},onOpen(section){
         closeDialog();selectProfessionTab(section,job);setWindow('professions');void performProfession('state');
       }}),
     };
+  }
+  for (const population of Object.values(CITY_POPULATIONS)) for (const district of population.districts) {
+    district.residents.forEach((id, index) => {
+      const npc = session.registeredNpcs[id];
+      definitions[id] = { name: npc.name, title: npc.subtitle, type: 'resident', level: npc.stats.level,
+        vitals: { health: npc.stats.health, maxHealth: npc.stats.maxHealth, overheal: 0, resource: 0, maxResource: 0, resourceKind: 'stamina' },
+        conversation: { speaker: npc.name, subtitle: npc.subtitle, start: 'intro', nodes: {
+          intro: { text: district.greetings[index % district.greetings.length][0] },
+        } },
+      };
+    });
   }
   return definitions;
 }
 
 function workshopConversation(job:string,id:keyof typeof session.registeredNpcs):Conversation {
   const npc=session.registeredNpcs[id];
-  return professionMasterConversation({job,name:npc.name,subtitle:npc.subtitle,tutorial:{getState:()=>session.state,act:performProfession,master:id,openBook:()=>{closeDialog();selectProfessionTab('recipes',job);setWindow('professions');},openInventory:()=>{closeDialog();setWindow('inventory');}},dailyOrders:{getState:()=>session.state,deliver:order=>performProfession('daily_order',{id:order,master:id,reward:RPG_CATALOG.dailyOrders.orders[order].reward})},training:{openInventory:()=>{closeDialog();setWindow('inventory');},getState:()=>session.state,buy:recipe=>performProfession('buy_recipe',{id:recipe,master:id,price:RPG_CATALOG.recipes[recipe].price})},onOpen(section){
+  const conversation=professionMasterConversation({job,name:npc.name,subtitle:npc.subtitle,tutorial:{getState:()=>session.state,act:performProfession,master:id,openBook:()=>{closeDialog();selectProfessionTab('recipes',job);setWindow('professions');},openInventory:()=>{closeDialog();setWindow('inventory');}},workshopMission:{getState:()=>session.state,act:performProfession,master:id},dailyOrders:{getState:()=>session.state,act:(action,args)=>performProfession(action,{...args,master:id})},training:{openInventory:()=>{closeDialog();setWindow('inventory');},getState:()=>session.state,buy:recipe=>performProfession('buy_recipe',{id:recipe,master:id,price:RPG_CATALOG.recipes[recipe].price})},onOpen(section){
     closeDialog();selectProfessionTab(section,job);setWindow('professions');void performProfession('state');
   }});
+  return addMasterNeighborhood(conversation,job,()=>session.state,performProfession);
 }

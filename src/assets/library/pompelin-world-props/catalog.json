@@ -1,0 +1,574 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "pompelin-world-props",
+      "label": "Pompelín · Caminos y campamentos",
+      "author": "Brumaluz",
+      "description": "Atrezo original de Blender para el mapa mundo de Pompelín: hitos, señales, humilladeros, ruinas, puentes de arroyo, obeliscos, hogueras, tiendas, refugios, suministros, pozos, atalayas, carromatos, almiares, embarcaderos, colmenares y norias. Escala métrica, +Y arriba y +Z frente en GLB.",
+      "count": 18,
+      "source": "art/world-props/pompelin-world-props.blend",
+      "license": null
+    }
+  ],
+  "assets": [
+    {
+      "id": "pompelin-world-props/objects/milestone_carved",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "milestone_carved",
+      "label": "Mojón de camino tallado",
+      "category": "Caminos y orientación",
+      "description": "Hito de sillería con capitel moldurado, placa de bronce con rosa de los vientos, argolla de amarre y farolillo.",
+      "path": "pompelin-world-props/objects/milestone_carved.glb",
+      "source": "art/world-props/pompelin-world-props.blend#milestone_carved",
+      "bytes": 117640,
+      "sha256": "11f4f1718acf69a49f60fb75c1f61544c0830e03c516a54e08b49f9fb238c595",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5099999904632568,
+          0,
+          -0.46000000834465027
+        ],
+        "max": [
+          0.6480000019073486,
+          1.8350000381469727,
+          0.5899999737739563
+        ]
+      },
+      "triangles": 1608,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/signpost_wayfarer",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "signpost_wayfarer",
+      "label": "Poste indicador de encrucijada",
+      "category": "Caminos y orientación",
+      "description": "Poste de roble sobre cairn de sillería con tres flechas de ruta, placas colgantes, avisos y farol.",
+      "path": "pompelin-world-props/objects/signpost_wayfarer.glb",
+      "source": "art/world-props/pompelin-world-props.blend#signpost_wayfarer",
+      "bytes": 136364,
+      "sha256": "6f961f6df4d47a107d59fb6266599d1113ba829fb80532fff0f328b82ed2be30",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8892794847488403,
+          0,
+          -0.6003996729850769
+        ],
+        "max": [
+          0.9299999475479126,
+          3.0180001258850098,
+          0.7900000214576721
+        ]
+      },
+      "triangles": 1732,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/wayside_shrine",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "wayside_shrine",
+      "label": "Humilladero de caminantes",
+      "category": "Caminos y orientación",
+      "description": "Altar techado de piedra y roble con hornacina enrejada, estela solar, cuenco de ofrenda, velas y farol.",
+      "path": "pompelin-world-props/objects/wayside_shrine.glb",
+      "source": "art/world-props/pompelin-world-props.blend#wayside_shrine",
+      "bytes": 185144,
+      "sha256": "00aa4b6a11cac82a6b021b029cb2e458247b8ef6183c5b5371d0e17ba3a4131f",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7099999785423279,
+          0,
+          -0.5799999833106995
+        ],
+        "max": [
+          0.7099999785423279,
+          2.5299999713897705,
+          0.6800000071525574
+        ]
+      },
+      "triangles": 2620,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/ancient_ruin_arch",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "ancient_ruin_arch",
+      "label": "Arco antiguo en ruinas",
+      "category": "Caminos y orientación",
+      "description": "Vestigio de portal de sillería antigua con pilar entero, arco truncado con medallón, columna caída y brasero.",
+      "path": "pompelin-world-props/objects/ancient_ruin_arch.glb",
+      "source": "art/world-props/pompelin-world-props.blend#ancient_ruin_arch",
+      "bytes": 126768,
+      "sha256": "8b1eb7eadb37469229cd3b630ccdc73774a8ced4e97f330e4a7e80a2da4bae56",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.1100000143051147,
+          0,
+          -0.6100000143051147
+        ],
+        "max": [
+          1.315945029258728,
+          3.2301430702209473,
+          0.6700000166893005
+        ]
+      },
+      "triangles": 1668,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/stone_footbridge",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "stone_footbridge",
+      "label": "Puente rústico de arroyo",
+      "category": "Caminos y orientación",
+      "description": "Pasarela arqueada de sillería y tablones de roble con pretiles bajos, estribos de piedra y farol de paso.",
+      "path": "pompelin-world-props/objects/stone_footbridge.glb",
+      "source": "art/world-props/pompelin-world-props.blend#stone_footbridge",
+      "bytes": 209804,
+      "sha256": "6af1cb8f6c01c365e50d08d36954ea199e0727257ed0032c085818c146897d80",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.8356778621673584,
+          0,
+          -0.7999999523162842
+        ],
+        "max": [
+          1.8356778621673584,
+          1.790000081062317,
+          0.7999999523162842
+        ]
+      },
+      "triangles": 2772,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/boundary_obelisk",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "boundary_obelisk",
+      "label": "Obelisco fronterizo de comarca",
+      "category": "Caminos y orientación",
+      "description": "Aguja monolítica tallada con anillos de bronce, escudos comarcales, bolardos con cadenas y farol.",
+      "path": "pompelin-world-props/objects/boundary_obelisk.glb",
+      "source": "art/world-props/pompelin-world-props.blend#boundary_obelisk",
+      "bytes": 111652,
+      "sha256": "699b4dfb69b8d96998f3e330745299d3e598bfcca466fb5642fa0898bc110189",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7799999713897705,
+          0,
+          -0.7799999713897705
+        ],
+        "max": [
+          0.7799999713897705,
+          3.325000047683716,
+          0.7799999713897705
+        ]
+      },
+      "triangles": 1624,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/campfire_cooking_tripod",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "campfire_cooking_tripod",
+      "label": "Hoguera de viajero con trípode",
+      "category": "Campamentos y descanso",
+      "description": "Hoguera cercada de piedra con trípode de forja, caldero colgante, dos troncos de asiento, pan y leña.",
+      "path": "pompelin-world-props/objects/campfire_cooking_tripod.glb",
+      "source": "art/world-props/pompelin-world-props.blend#campfire_cooking_tripod",
+      "bytes": 184860,
+      "sha256": "a5b1731f5eda587e2a3d77d2b3b74fa31d3834f36801d6cbcfaa8976d28bad78",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.178356409072876,
+          0,
+          -1.1200000047683716
+        ],
+        "max": [
+          1.1200000047683716,
+          1.5990525484085083,
+          1.1887919902801514
+        ]
+      },
+      "triangles": 2732,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/traveler_tent",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "traveler_tent",
+      "label": "Tienda de campaña de viajero",
+      "category": "Campamentos y descanso",
+      "description": "Tienda de lona y roble con vientos tensores, petate, mesa de campaña con mapa, escudo y farol.",
+      "path": "pompelin-world-props/objects/traveler_tent.glb",
+      "source": "art/world-props/pompelin-world-props.blend#traveler_tent",
+      "bytes": 158652,
+      "sha256": "8e940cc169d6337718b49cf27880a1c3c0b458307a42feb9a435e9e9ec417e86",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.23677659034729,
+          3.725290298461914e-9,
+          -1.2599999904632568
+        ],
+        "max": [
+          1.23677659034729,
+          1.8010001182556152,
+          1.5799999237060547
+        ]
+      },
+      "triangles": 2249,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/roadside_bench_shelter",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "roadside_bench_shelter",
+      "label": "Refugio y banco de camino",
+      "category": "Campamentos y descanso",
+      "description": "Apeadero techado de piedra y roble con celosías laterales, banco corrido, farol colgante, barril de agua y bastón.",
+      "path": "pompelin-world-props/objects/roadside_bench_shelter.glb",
+      "source": "art/world-props/pompelin-world-props.blend#roadside_bench_shelter",
+      "bytes": 206064,
+      "sha256": "81e6d8deec8e069b57046ed9ebfd1aea10e88fbeb8542a260f06ca922aab9af6",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.159999966621399,
+          0,
+          -0.6477627754211426
+        ],
+        "max": [
+          1.159999966621399,
+          2.0799999237060547,
+          0.6477627754211426
+        ]
+      },
+      "triangles": 2916,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/expedition_supply_cache",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "expedition_supply_cache",
+      "label": "Alijo de suministros de caravana",
+      "category": "Campamentos y descanso",
+      "description": "Puesto de avituallamiento sobre tarima con cajas herradas, toneles, ánfora, sacos, lona y farol.",
+      "path": "pompelin-world-props/objects/expedition_supply_cache.glb",
+      "source": "art/world-props/pompelin-world-props.blend#expedition_supply_cache",
+      "bytes": 204284,
+      "sha256": "587550bd628417d77e07daa8cfc2ac18e73e0d71cfcca80e5c36c650bbde6c31",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9399999976158142,
+          0,
+          -0.6299999952316284
+        ],
+        "max": [
+          0.9399999976158142,
+          1.5918244123458862,
+          0.6299999952316284
+        ]
+      },
+      "triangles": 3024,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/wayside_water_well",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "wayside_water_well",
+      "label": "Pozo y abrevadero de camino",
+      "category": "Campamentos y descanso",
+      "description": "Pozo de sillería con torno de madera, tejadillo a dos aguas, cubo colgante y abrevadero adosado.",
+      "path": "pompelin-world-props/objects/wayside_water_well.glb",
+      "source": "art/world-props/pompelin-world-props.blend#wayside_water_well",
+      "bytes": 142212,
+      "sha256": "a60ed785b8a47d323b94ddc31ba2b367880e7e6e81c7e045f5b7c6867b1eb2e1",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.2000000476837158,
+          0,
+          -1.0800000429153442
+        ],
+        "max": [
+          1.1999999284744263,
+          2.5850000381469727,
+          1.0800000429153442
+        ]
+      },
+      "triangles": 2172,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/scout_watchtower",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "scout_watchtower",
+      "label": "Atalaya de madera de vigía",
+      "category": "Campamentos y descanso",
+      "description": "Torre de observación de caminos sobre cuatro pilotes arriostrados con escalera, plataforma, toldo y brasero.",
+      "path": "pompelin-world-props/objects/scout_watchtower.glb",
+      "source": "art/world-props/pompelin-world-props.blend#scout_watchtower",
+      "bytes": 169432,
+      "sha256": "6ff7362b20d506273841b42b298ef594b0c891c84a9a36efb1740bc71838b098",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9700000286102295,
+          0,
+          -0.9716250896453857
+        ],
+        "max": [
+          1.2899999618530273,
+          3.4917995929718018,
+          1.3882417678833008
+        ]
+      },
+      "triangles": 2208,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/merchant_wagon",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "merchant_wagon",
+      "label": "Carromato cubierto de mercader",
+      "category": "Oficio rural y riberas",
+      "description": "Carromato de cuatro ruedas radiadas con toldo abovedado, pescante, freno de palanca, rueda de repuesto y carga.",
+      "path": "pompelin-world-props/objects/merchant_wagon.glb",
+      "source": "art/world-props/pompelin-world-props.blend#merchant_wagon",
+      "bytes": 436352,
+      "sha256": "861463732cbafbff05f31b8858e2c5541bec9212eb655556749e1e78a15f78cc",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0100001096725464,
+          -3.418332283899872e-9,
+          -1.2000000476837158
+        ],
+        "max": [
+          0.9106000065803528,
+          1.902000069618225,
+          2.0232033729553223
+        ]
+      },
+      "triangles": 6840,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/wooden_handcart",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "wooden_handcart",
+      "label": "Carretilla de carga de camino",
+      "category": "Oficio rural y riberas",
+      "description": "Carro de mano de dos ruedas de radios con varales de tiro, caballete, barril, sacos, ánfora y farol.",
+      "path": "pompelin-world-props/objects/wooden_handcart.glb",
+      "source": "art/world-props/pompelin-world-props.blend#wooden_handcart",
+      "bytes": 268044,
+      "sha256": "2575c08e97344fea11e54243337981f8a9e0cdb1d4d5b41b71ff60bdc85d098d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7515000104904175,
+          -9.528058342311851e-10,
+          -0.9208576679229736
+        ],
+        "max": [
+          0.7514999508857727,
+          1.0320000648498535,
+          1.2208577394485474
+        ]
+      },
+      "triangles": 3888,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/hay_drying_rack",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "hay_drying_rack",
+      "label": "Almiar y secadero de heno",
+      "category": "Oficio rural y riberas",
+      "description": "Secadero rural de madera con tejadillo a dos aguas, heno apilado, escalera de mano, fardos y horca.",
+      "path": "pompelin-world-props/objects/hay_drying_rack.glb",
+      "source": "art/world-props/pompelin-world-props.blend#hay_drying_rack",
+      "bytes": 154164,
+      "sha256": "cb9ea2f1950d64ab6248db0c36a0c2f5bd60734aab358be40211fdee7e5826ab",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.144592046737671,
+          0,
+          -0.6759524941444397
+        ],
+        "max": [
+          1.0715630054473877,
+          2.4850001335144043,
+          0.8993723392486572
+        ]
+      },
+      "triangles": 1840,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/river_jetty_dock",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "river_jetty_dock",
+      "label": "Embarcadero de madera de ribera",
+      "category": "Oficio rural y riberas",
+      "description": "Muelle rústico de pilotes y tablones con barandilla de soga, rampa, bolardo, nasa, cubo y farol.",
+      "path": "pompelin-world-props/objects/river_jetty_dock.glb",
+      "source": "art/world-props/pompelin-world-props.blend#river_jetty_dock",
+      "bytes": 298196,
+      "sha256": "27f9e2c3c92a9d2f2fb20e06547968d064803cf4917739e7e482ea11b5a3d50a",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.949999988079071,
+          0,
+          -1.9600000381469727
+        ],
+        "max": [
+          0.9019999504089355,
+          2.240000009536743,
+          1.0959999561309814
+        ]
+      },
+      "triangles": 4448,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/beehive_apiary_stand",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "beehive_apiary_stand",
+      "label": "Colmenar rústico de pradera",
+      "category": "Oficio rural y riberas",
+      "description": "Bancada techada con tres colmenas trenzadas de paja, tarros de miel, ahumador de latón y flores.",
+      "path": "pompelin-world-props/objects/beehive_apiary_stand.glb",
+      "source": "art/world-props/pompelin-world-props.blend#beehive_apiary_stand",
+      "bytes": 284460,
+      "sha256": "72eca0a05c9a06e5c3ee9d49d489a9de7db8e35af130d0a12cdd1111de6ef597",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.127331018447876,
+          0,
+          -0.6152042746543884
+        ],
+        "max": [
+          1.100000023841858,
+          2.2699999809265137,
+          0.7192431688308716
+        ]
+      },
+      "triangles": 4248,
+      "materials": 1
+    },
+    {
+      "id": "pompelin-world-props/objects/field_irrigation_wheel",
+      "pack": "pompelin-world-props",
+      "kind": "objects",
+      "name": "field_irrigation_wheel",
+      "label": "Noria y canal de labranza",
+      "category": "Oficio rural y riberas",
+      "description": "Rueda hidráulica rural sobre canal de sillería con cangilones, acueducto de madera y artesa de riego.",
+      "path": "pompelin-world-props/objects/field_irrigation_wheel.glb",
+      "source": "art/world-props/pompelin-world-props.blend#field_irrigation_wheel",
+      "bytes": 139520,
+      "sha256": "6682fb2526a7ecf973e8ba1aa0e7cf9848f285e89526abe739581b3f14c37e1e",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9299999475479126,
+          0,
+          -1.1299999952316284
+        ],
+        "max": [
+          1.0399999618530273,
+          1.8909999132156372,
+          1.2699999809265137
+        ]
+      },
+      "triangles": 2044,
+      "materials": 1
+    }
+  ]
+}

@@ -11,14 +11,14 @@ import { setCreatorLighting, CREATOR_LIGHTS } from '../world/creatorStage';
 import { createCharacterPortrait } from '../character/portrait';
 import { t, raceText, classText } from './i18n';
 import { $ } from './dom';
+import { styleCreatorSelect } from './creatorSelect';
 import { noteCreatorInteraction, queueCreatorThumbnails, cancelCreatorThumbnails, inCreatorViewport } from './creatorThumbnails';
 
 const history = new CreatorHistory();
-const locks = new Set<string>();
 let update = () => {};
 let coalesceKey = '';
 let coalesceAt = 0;
-export function resetCreatorStudio() { history.reset(session.state); locks.clear(); coalesceKey = ''; }
+export function resetCreatorStudio() { history.reset(session.state); coalesceKey = ''; }
 export function noteCreatorGesture(key: string) {
   noteCreatorInteraction();
   const now = performance.now(), merge = key === coalesceKey && now - coalesceAt < 700;
@@ -52,7 +52,7 @@ export function installCreatorStudio(change: (next: CharData) => void) {
     }
     row.append(options); layers.append(row);
   }
-  document.querySelector('.stepper[data-key="detail"]')!.parentElement!.append(layers);
+  details('Personalizar marcas', $('[data-page="rostro"]')).append(layers);
   const accessoryLayers = document.createElement('div'); accessoryLayers.className = 'studio-layers'; accessoryLayers.id = 'creator-accessory-layers';
   const accessoryHeading = document.createElement('h3'); accessoryHeading.textContent = t('Complementos por capas');
   const accessoryNote = document.createElement('p'); accessoryNote.className = 'studio-note'; accessoryNote.textContent = t('Combina gafas, pendientes y un detalle al cuello. El pañuelo oculta la boca y la barba sin borrarlas.');
@@ -68,37 +68,24 @@ export function installCreatorStudio(change: (next: CharData) => void) {
     }
     row.append(options); accessoryLayers.append(row);
   }
-  $('[data-page="ropa"]').append(accessoryLayers);
-  for (const [tab, links] of Object.entries({
-    rostro: [['Piel', '#skin'], ['Mirada', '.stepper[data-key="eyeShape"]'], ['Facciones', '.stepper[data-key="nose"]'], ['Maquillaje', '.stepper[data-key="makeup"]'], ['Capas', '#creator-detail-layers']],
-    cabello: [['Peinado', '.stepper[data-key="hair"]'], ['Color', '#hairColor'], ['Adornos', '.stepper[data-key="hairAcc"]']],
-    ropa: [['Paletas', '.studio-palettes'], ['Tejidos', '#clothA'], ['Complementos', '.stepper[data-key="acc"]'], ['Capas', '#creator-accessory-layers']],
-  })) {
-    const nav = document.createElement('nav'); nav.className = 'studio-subnav'; nav.setAttribute('aria-label', t('Apartados de personalización'));
-    for (const [label, selector] of links) nav.append(button(label, () => {
-      const target = document.querySelector<HTMLElement>(selector);
-      if (!target || target.closest('[hidden]')) return;
-      const pages = $('#pages');
-      pages.scrollTop += target.getBoundingClientRect().top - pages.getBoundingClientRect().top - nav.offsetHeight - 24;
-    }));
-    $(`[data-page="${tab}"]`).prepend(nav);
-  }
-  const workshop = details('Inspiración', $('#pages'));
-  const intro = document.createElement('p'); intro.className = 'studio-note'; intro.textContent = t('Los estilos cambian rasgos y colores. Conservan tu linaje, cuerpo, nombre, clase y atributos. Los bloqueos protegen tus elecciones.'); workshop.append(intro);
-  const presets = document.createElement('div'); presets.className = 'studio-presets'; workshop.append(presets);
+  details('Personalizar complementos', $('[data-page="ropa"]')).append(accessoryLayers);
+  const workshop = details('Inspiración', $('#tools')); workshop.id = 'creator-inspiration'; workshop.classList.add('studio-inspiration');
+  const inspirationContent = document.createElement('div'); inspirationContent.className = 'studio-inspiration-content'; workshop.append(inspirationContent);
+  const intro = document.createElement('p'); intro.className = 'studio-note'; intro.textContent = t('Los estilos cambian rasgos y colores. Conservan tu linaje, cuerpo, nombre, clase y atributos.'); inspirationContent.append(intro);
+  const presets = document.createElement('div'); presets.className = 'studio-presets'; inspirationContent.append(presets);
   const presetOwner = {};
   const presetCards = STYLE_PRESETS.map(preset => {
-    const b = button(preset.label, () => commit(applyLook(session.state, preset.look, locks)), 'studio-preset');
+    const b = button(preset.label, () => commit(applyLook(session.state, preset.look)), 'studio-preset');
     b.setAttribute('aria-label', t(preset.label));
     b.title = t(preset.desc); presets.append(b); return { preset, button: b, signature: '' };
   });
   const refreshPresets = () => {
     cancelCreatorThumbnails(presetOwner);
     if (!workshop.open || play.mode !== 'create' || document.body.matches('.auth-visible, .characters-visible, .playing')) return;
-    const pending = presetCards.map(card => ({ card, data: applyLook(session.state, card.preset.look, locks) }))
+    const pending = presetCards.map(card => ({ card, data: applyLook(session.state, card.preset.look) }))
       .filter(({ card, data }) => card.signature !== JSON.stringify(captureLook(data)));
     queueCreatorThumbnails(presetOwner, pending.map(({ card, data }) => ({
-      visible: () => workshop.open && play.mode === 'create' && !document.body.matches('.auth-visible, .characters-visible, .playing') && inCreatorViewport(card.button),
+      visible: () => workshop.open && play.mode === 'create' && !document.body.matches('.auth-visible, .characters-visible, .playing') && inCreatorViewport(card.button, inspirationContent),
       render: () => {
         const canvas = createCharacterPortrait(data, renderer, { scale: .5, aspect: 1 });
         canvas.setAttribute('aria-hidden', 'true'); card.button.querySelector('canvas')?.remove(); card.button.prepend(canvas);
@@ -107,31 +94,26 @@ export function installCreatorStudio(change: (next: CharData) => void) {
     })));
   };
   let presetScrollTimer = 0;
-  $('#pages').addEventListener('scroll', () => {
+  inspirationContent.addEventListener('scroll', () => {
     if (!workshop.open) return;
     clearTimeout(presetScrollTimer); presetScrollTimer = window.setTimeout(refreshPresets, 80);
   }, { passive: true });
-  workshop.addEventListener('toggle', refreshPresets);
-  // Locks apply to generators and presets; explicit edits always remain possible.
-  const lockedControls: { key: string; control: HTMLButtonElement }[] = [];
-  const addLock = (target: HTMLElement, key: string) => {
-    const labels: Record<string, string> = { race: 'Linaje', sex: 'Sexo', height: 'Altura', build: 'Complexión', cls: 'Vocación' };
-    const label = t(labels[key] ?? target.previousElementSibling?.textContent ?? key);
-    const b = button('Fijar', () => { locks.has(key) ? locks.delete(key) : locks.add(key); update(); }, 'studio-lock');
-    b.setAttribute('aria-label', `${t('Fijar')} · ${label}`); target.after(b); lockedControls.push({ key, control: b });
+  const fitInspiration = () => {
+    if (workshop.open) {
+      const top = workshop.querySelector('summary')!.getBoundingClientRect().bottom;
+      workshop.style.setProperty('--inspiration-height', `${Math.max(0, Math.min(420, innerHeight - top - 28))}px`);
+    }
+    refreshPresets();
   };
-  document.querySelectorAll<HTMLElement>('#pages .stepper, #pages .swatches').forEach(target => addLock(target, target.dataset.key ?? target.id));
-  for (const key of ['race', 'sex', 'height', 'build', 'cls']) {
-    const target = $({ race: '#races', sex: '#sex', height: '#height', build: '#build', cls: '#classes' }[key]!);
-    addLock(key === 'height' || key === 'build' ? target.parentElement! : target, key);
-  }
+  workshop.addEventListener('toggle', fitInspiration);
+  window.addEventListener('resize', fitInspiration);
   const palette = document.createElement('div'); palette.className = 'studio-palettes';
-  const paletteHeading = document.createElement('h3'); paletteHeading.textContent = t('Armonías de color');
-  $('[data-page="ropa"] .studio-subnav').after(paletteHeading, palette);
+  const palettes = details('Armonías de color', $('[data-page="ropa"]'));
+  palettes.append(palette); palettes.parentElement!.prepend(palettes);
   for (const story of COLOR_STORIES) {
     const b = button(story.label, () => {
       const [a, secondary, accent] = story.colors;
-      commit(applyLook(session.state, { clothA: a, clothB: secondary, accColor: accent, hairAccColor: accent }, locks));
+      commit(applyLook(session.state, { clothA: a, clothB: secondary, accColor: accent, hairAccColor: accent }));
     }, 'studio-palette');
     const dots = document.createElement('span'); dots.className = 'studio-palette-colors'; dots.setAttribute('aria-hidden', 'true');
     for (const color of [CLOTH[story.colors[0]], CLOTH[story.colors[1]], ACC_COLORS[story.colors[2]]]) {
@@ -164,12 +146,14 @@ export function installCreatorStudio(change: (next: CharData) => void) {
     b.setAttribute('aria-pressed', String(index === 0)); lighting.append(b); lightButtons.push(b);
   }
   camera.append(lighting);
+  camera.after(workshop);
   const lightLabel = document.createElement('label'); lightLabel.className = 'studio-mobile-light'; lightLabel.textContent = t('Iluminación');
   const lightSelect = document.createElement('select'); lightSelect.id = 'creator-lighting'; lightSelect.setAttribute('aria-label', t('Iluminación'));
   CREATOR_LIGHTS.forEach((light, index) => lightSelect.add(new Option(t(light.label), String(index))));
   lightSelect.onchange = () => lightButtons[Number(lightSelect.value)].click();
-  lightButtons.forEach((b, index) => b.addEventListener('click', () => { lightSelect.value = String(index); }));
+  lightButtons.forEach((b, index) => b.addEventListener('click', () => { lightSelect.value = String(index); refreshLighting(); }));
   lightLabel.append(lightSelect); $('#pages').append(lightLabel);
+  const refreshLighting = styleCreatorSelect(lightSelect); refreshLighting();
   const expandPreview = button('Vista amplia', () => {
     document.body.classList.toggle('creator-preview-expanded');
     expandPreview.textContent = t(document.body.classList.contains('creator-preview-expanded') ? 'Seguir editando' : 'Vista amplia');
@@ -177,7 +161,7 @@ export function installCreatorStudio(change: (next: CharData) => void) {
     layout();
   }, 'studio-button studio-preview-toggle');
   expandPreview.setAttribute('aria-pressed', 'false'); $('#tools').append(expandPreview);
-  $('#random').onclick = () => commit(varyLook(session.state, 'all', locks));
+  $('#random').onclick = () => commit(varyLook(session.state, 'all', new Set()));
   document.addEventListener('keydown', e => {
     if (play.mode !== 'create' || document.body.matches('.auth-visible, .characters-visible') || !(e.ctrlKey || e.metaKey)
       || (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]'))) return;
@@ -194,7 +178,6 @@ export function installCreatorStudio(change: (next: CharData) => void) {
     for (const { key, value, control } of layerControls) control.setAttribute('aria-pressed', String(selectedLayers[key] === value));
     const selectedAccessories = accessorySelection(session.state.acc);
     for (const { key, value, control } of accessoryControls) control.setAttribute('aria-pressed', String(selectedAccessories[key] === value));
-    for (const { key, control } of lockedControls) { control.setAttribute('aria-pressed', String(locks.has(key))); control.textContent = t(locks.has(key) ? 'Fijado' : 'Fijar'); }
     summary.textContent = `${raceText(session.state)} · ${classText(session.state)} · ${t('Nivel {level}', { level: 1 })}`;
     const data = { ...session.state, equipment: starterEquipment(session.state.cls) }, skill = COMBAT_KITS[data.cls].skill;
     kit.replaceChildren();

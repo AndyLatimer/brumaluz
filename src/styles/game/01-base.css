@@ -26,20 +26,10 @@ html, body {
 #scene.drag { cursor: grabbing; }
 .nameplate.player strong { color: #c9e9ff; }
 
-#loading {
-  position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; text-align: center;
-  background: radial-gradient(ellipse at center, #4a2c2a, #1a1012);
-  color: var(--gold-hi); font-family: 'Cinzel', serif; letter-spacing: .05em;
-  transition: opacity .8s ease;
-}
-#loading .crest { font-size: 56px; animation: spin 3s linear infinite; color: var(--gold); text-shadow: 0 0 24px #ffb35a; }
-#loading.hide { opacity: 0; pointer-events: none; }
-#access-settings { position: fixed; right: 16px; bottom: 16px; z-index: 51; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; max-width: calc(100vw - 32px); }
+#access-settings { position: fixed; right: 20px; bottom: 20px; z-index: 51; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; max-width: calc(100vw - 40px); }
 #access-settings .btn { font-size: 12px; }
 #menu-music-message { max-width: 260px; color: var(--gold-hi); font-size: 13px; }
 body.playing #access-settings { display: none; }
-body:not(.auth-visible):not(.characters-visible) #menu-music,
-body:not(.auth-visible):not(.characters-visible) #menu-music-message { display: none; }
 #graphics-error:not([hidden]) { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(26,16,18,.9); }
 #graphics-error .frame { width: min(600px, 100%); max-height: 90vh; overflow: auto; padding: 24px; background: var(--parch); }
 #graphics-error h2 { font-family: 'Cinzel', serif; }

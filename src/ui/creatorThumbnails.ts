@@ -29,8 +29,7 @@ function pump() {
   }
   schedule();
 }
-export function inCreatorViewport(element: HTMLElement) {
-  const pages = document.getElementById('pages')!;
-  const viewport = pages.getBoundingClientRect(), rect = element.getBoundingClientRect();
+export function inCreatorViewport(element: HTMLElement, container = document.getElementById('pages')!) {
+  const viewport = container.getBoundingClientRect(), rect = element.getBoundingClientRect();
   return rect.bottom > viewport.top && rect.top < viewport.bottom && rect.width > 0 && rect.height > 0;
 }

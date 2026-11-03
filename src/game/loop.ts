@@ -13,7 +13,10 @@ import { publishedMaps } from '../world/mapCity';
 import { world } from '../world/paint';
 import { settings,updateWorldAudio } from './audio';
 import { updateCamera, occlusionTargets, applyCameraShake } from './camera';
-import { npcActors, updatePortals } from './cities';
+import { npcActors, updatePortals, cityPopulation } from './cities';
+import { chatNpc } from '../ui/chatWindow';
+import { t as translate } from '../ui/i18n';
+import { isAmbientResident } from '../data/cityPopulation';
 import { tickWorldCombat, positionLootWindow } from './combat';
 import { projectWildernessPlates } from './wilderness';
 import { projectCombatFeedback } from './combatFeedback';
@@ -22,9 +25,9 @@ import { updateNameplate } from './hud';
 import { updateInteractPrompt } from './interaction';
 import { nearBank } from './inventory';
 import { updatePlay } from './movement';
-import { renderer, graphics, clock, holder, waterFx, dayNight, env, stage, camera, TEST, scene } from './stage';
+import { renderer, graphics, clock, holder, waterFx, dayNight, env, stage, camera, TEST, scene, lowEnd } from './stage';
 import { play, view, story, talk, ui, session } from './state';
-import { updateTargetFrame } from './targets';
+import { updateTargetFrame, canHearNpcChatter } from './targets';
 import { tickOverheal, tickFood } from './vitals';
 import { remotePlayers } from './worldClient';
 import { creatorStage, camTarget } from './stage';
@@ -32,12 +35,16 @@ import { CREATOR_STAGE_Y } from '../world/creatorStage';
 
 /** Arranca el bucle de render (una vez, al terminar de cargar). */
 export function startGameLoop() {
-  renderer.setAnimationLoop(() => {
+  const updateFrame = () => {
     if (graphics.failed) return;
     try {
     const t = clock.getElapsedTime();
     creatorStage.visible = play.mode === 'create';
     if (creatorStage.visible) {
+      if (!session.enteringWorld) {
+        play.char.setGait(ui.tab === 'raza' && play.creatorWalkPreview ? 'walk' : 'idle');
+        play.char.setLocomotionSpeed(0);
+      }
       if (holder.position.y !== CREATOR_STAGE_Y) camTarget.set(0, CREATOR_STAGE_Y + 1, 0);
       holder.position.set(0, CREATOR_STAGE_Y, 0);
     }
@@ -67,10 +74,19 @@ export function startGameLoop() {
     }
     updateIsbertoArrival(dt);
     updateStory(dt, t);
+    if (play.mode === 'play' && !play.mapTravelling) cityPopulation?.update(dt, {
+      player: holder.position, playerSeated: play.char.isSeated,
+      blockers: [
+        ...npcActors.filter(npc => !isAmbientResident(npc.id) && npc.character.root.visible).map(npc => npc.character.root.position),
+        ...(story.welcomeWorld.root.visible ? [story.welcomeWorld.root.position] : []),
+      ],
+      quiet: !canHearNpcChatter(),
+      say: (id, text) => chatNpc(story.NPCS[id].name, translate(text)),
+    });
     updateConversationFacing(dt);
     for (const npc of npcActors) {
       if (npc.id === 'isberto') npc.character.root.visible = isbertoVisible();
-      npc.character.update(t);
+      if (!isAmbientResident(npc.id)) npc.character.update(t);
     }
     // En las cinemáticas se dibuja lo que mira la cámara, aunque quede lejos del personaje.
     play.city.update(t, play.mode === 'play' ? cinematic.scriptedCamera ? cinematic.focus : holder.position : undefined);
@@ -107,6 +123,7 @@ export function startGameLoop() {
     updatePortals();
     applyCameraShake();
     camera.updateMatrixWorld();
+    cityPopulation?.updatePresentation(t, camera, cinematic.scriptedCamera ? cinematic.focus : holder.position, play.mode === 'play', lowEnd);
     projectWildernessPlates();projectCombatFeedback();
     updateNameplate();
     if (play.mode === 'play') remotePlayers.update(t, dt, camera, settings.nameplates);
@@ -125,5 +142,25 @@ export function startGameLoop() {
       // scheduling silently, leaving a frozen image and no recovery controls.
       graphics.fail('No se pudo actualizar el mundo. Recarga el juego.', error);
     }
+  };
+
+  // Ocultar el lienzo con CSS no detiene WebGL ni la simulación del mundo.
+  // Las pantallas de cuenta solo necesitan su interfaz y la música del menú.
+  let running: boolean | undefined;
+  const syncVisibility = () => {
+    const visible = !document.hidden && !document.body.matches('.auth-visible, .characters-visible');
+    if (visible === running) return;
+    running = visible;
+    if (visible) play.last = clock.getElapsedTime();
+    renderer.setAnimationLoop(visible ? updateFrame : null);
+  };
+  const observer = new MutationObserver(syncVisibility);
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('visibilitychange', syncVisibility);
+  syncVisibility();
+  if (import.meta.hot) import.meta.hot.dispose(() => {
+    observer.disconnect();
+    document.removeEventListener('visibilitychange', syncVisibility);
+    renderer.setAnimationLoop(null);
   });
 }

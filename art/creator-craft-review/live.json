@@ -1,0 +1,29 @@
+{
+  "checks": [
+    {
+      "creatorHair": 28,
+      "preservedBeard": 2
+    },
+    {
+      "creatorHair": 29,
+      "preservedBeard": 2
+    },
+    {
+      "creatorHair": 30,
+      "preservedBeard": 2
+    },
+    {
+      "creatorHair": 31,
+      "preservedBeard": 2
+    }
+  ],
+  "world": {
+    "hair": 31,
+    "beard": 2,
+    "detail": 6,
+    "city": "brumaluz",
+    "publishedMap": true,
+    "studioVisible": false
+  },
+  "errors": []
+}

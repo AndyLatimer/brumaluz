@@ -1,0 +1,1477 @@
+-- Restores previous implementations; compact private helpers may remain unused.
+begin;
+CREATE OR REPLACE FUNCTION public.game_equipment_item(p_item text)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select case p_item
+    when 'espada_inicial' then '{"cls":"guerrero","slot":"weapon","tier":0,"kind":"sword","power":10}'::jsonb
+    when 'escudo_inicial' then '{"cls":"guerrero","slot":"offhand","tier":0,"kind":"shield","guard":1}'::jsonb
+    when 'baston_inicial' then '{"cls":"mago","slot":"weapon","tier":0,"kind":"staff","power":10}'::jsonb
+    when 'daga_inicial' then '{"cls":"picaro","slot":"weapon","tier":0,"kind":"dagger","power":8}'::jsonb
+    when 'daga_secundaria_inicial' then '{"cls":"picaro","slot":"offhand","tier":0,"kind":"dagger","guard":1}'::jsonb
+    when 'varita_inicial' then '{"cls":"clerigo","slot":"weapon","tier":0,"kind":"wand","power":11,"healing":30}'::jsonb
+    when 'libro_inicial' then '{"cls":"clerigo","slot":"offhand","tier":0,"kind":"book","healing":2}'::jsonb
+    when 'ballesta_inicial' then '{"cls":"explorador","slot":"weapon","tier":0,"kind":"crossbow","power":10}'::jsonb
+    when 'espada_cobre_t1' then '{"cls":"guerrero","slot":"weapon","tier":1,"kind":"sword","power":11}'::jsonb
+    when 'escudo_roble_t1' then '{"cls":"guerrero","slot":"offhand","tier":1,"kind":"shield","guard":2}'::jsonb
+    when 'baston_ambar_t1' then '{"cls":"mago","slot":"weapon","tier":1,"kind":"staff","power":11}'::jsonb
+    when 'daga_cazador_t1' then '{"cls":"picaro","slot":"weapon","tier":1,"kind":"dagger","power":9}'::jsonb
+    when 'daga_secundaria_cazador_t1' then '{"cls":"picaro","slot":"offhand","tier":1,"kind":"dagger","guard":2}'::jsonb
+    when 'varita_ambar_t1' then '{"cls":"clerigo","slot":"weapon","tier":1,"kind":"wand","power":12,"healing":33}'::jsonb
+    when 'grimorio_verde_t1' then '{"cls":"clerigo","slot":"offhand","tier":1,"kind":"book","healing":3}'::jsonb
+    when 'ballesta_roble_t1' then '{"cls":"explorador","slot":"weapon","tier":1,"kind":"crossbow","power":11}'::jsonb
+    when 'espada_cobre_t2' then '{"cls":"guerrero","slot":"weapon","tier":2,"kind":"sword","power":12}'::jsonb
+    when 'escudo_roble_t2' then '{"cls":"guerrero","slot":"offhand","tier":2,"kind":"shield","guard":3}'::jsonb
+    when 'baston_ambar_t2' then '{"cls":"mago","slot":"weapon","tier":2,"kind":"staff","power":12}'::jsonb
+    when 'daga_cazador_t2' then '{"cls":"picaro","slot":"weapon","tier":2,"kind":"dagger","power":10}'::jsonb
+    when 'daga_secundaria_cazador_t2' then '{"cls":"picaro","slot":"offhand","tier":2,"kind":"dagger","guard":3}'::jsonb
+    when 'varita_ambar_t2' then '{"cls":"clerigo","slot":"weapon","tier":2,"kind":"wand","power":13,"healing":36}'::jsonb
+    when 'grimorio_verde_t2' then '{"cls":"clerigo","slot":"offhand","tier":2,"kind":"book","healing":4}'::jsonb
+    when 'ballesta_roble_t2' then '{"cls":"explorador","slot":"weapon","tier":2,"kind":"crossbow","power":12}'::jsonb
+    when 'espada_runica_t3' then '{"cls":"guerrero","slot":"weapon","tier":3,"kind":"sword","power":14}'::jsonb
+    when 'escudo_runico_t3' then '{"cls":"guerrero","slot":"offhand","tier":3,"kind":"shield","guard":4}'::jsonb
+    when 'baston_runico_t3' then '{"cls":"mago","slot":"weapon","tier":3,"kind":"staff","power":14}'::jsonb
+    when 'daga_runica_t3' then '{"cls":"picaro","slot":"weapon","tier":3,"kind":"dagger","power":12}'::jsonb
+    when 'daga_secundaria_runica_t3' then '{"cls":"picaro","slot":"offhand","tier":3,"kind":"dagger","guard":4}'::jsonb
+    when 'varita_runica_t3' then '{"cls":"clerigo","slot":"weapon","tier":3,"kind":"wand","power":15,"healing":41}'::jsonb
+    when 'grimorio_runico_t3' then '{"cls":"clerigo","slot":"offhand","tier":3,"kind":"book","healing":5}'::jsonb
+    when 'ballesta_runica_t3' then '{"cls":"explorador","slot":"weapon","tier":3,"kind":"crossbow","power":14}'::jsonb
+    when 'espada_runica_t4' then '{"cls":"guerrero","slot":"weapon","tier":4,"kind":"sword","power":17}'::jsonb
+    when 'escudo_runico_t4' then '{"cls":"guerrero","slot":"offhand","tier":4,"kind":"shield","guard":5}'::jsonb
+    when 'baston_runico_t4' then '{"cls":"mago","slot":"weapon","tier":4,"kind":"staff","power":17}'::jsonb
+    when 'daga_runica_t4' then '{"cls":"picaro","slot":"weapon","tier":4,"kind":"dagger","power":15}'::jsonb
+    when 'daga_secundaria_runica_t4' then '{"cls":"picaro","slot":"offhand","tier":4,"kind":"dagger","guard":5}'::jsonb
+    when 'varita_runica_t4' then '{"cls":"clerigo","slot":"weapon","tier":4,"kind":"wand","power":18,"healing":48}'::jsonb
+    when 'grimorio_runico_t4' then '{"cls":"clerigo","slot":"offhand","tier":4,"kind":"book","healing":6}'::jsonb
+    when 'ballesta_runica_t4' then '{"cls":"explorador","slot":"weapon","tier":4,"kind":"crossbow","power":17}'::jsonb
+    when 'espada_runica_t5' then '{"cls":"guerrero","slot":"weapon","tier":5,"kind":"sword","power":21}'::jsonb
+    when 'escudo_runico_t5' then '{"cls":"guerrero","slot":"offhand","tier":5,"kind":"shield","guard":6}'::jsonb
+    when 'baston_runico_t5' then '{"cls":"mago","slot":"weapon","tier":5,"kind":"staff","power":21}'::jsonb
+    when 'daga_runica_t5' then '{"cls":"picaro","slot":"weapon","tier":5,"kind":"dagger","power":19}'::jsonb
+    when 'daga_secundaria_runica_t5' then '{"cls":"picaro","slot":"offhand","tier":5,"kind":"dagger","guard":6}'::jsonb
+    when 'varita_runica_t5' then '{"cls":"clerigo","slot":"weapon","tier":5,"kind":"wand","power":22,"healing":57}'::jsonb
+    when 'grimorio_runico_t5' then '{"cls":"clerigo","slot":"offhand","tier":5,"kind":"book","healing":7}'::jsonb
+    when 'ballesta_runica_t5' then '{"cls":"explorador","slot":"weapon","tier":5,"kind":"crossbow","power":21}'::jsonb
+    when 'sable_guardia_alba' then '{"cls":"guerrero","slot":"weapon","tier":2,"kind":"sword","power":12}'::jsonb
+    when 'escudo_bastion_alba' then '{"cls":"guerrero","slot":"offhand","tier":2,"kind":"shield","guard":3}'::jsonb
+    when 'baston_raiz_celeste' then '{"cls":"mago","slot":"weapon","tier":2,"kind":"staff","power":12}'::jsonb
+    when 'daga_pluma_azul' then '{"cls":"picaro","slot":"weapon","tier":2,"kind":"dagger","power":10}'::jsonb
+    when 'daga_garra_alba' then '{"cls":"picaro","slot":"offhand","tier":2,"kind":"dagger","guard":3}'::jsonb
+    when 'varita_lirio_celeste' then '{"cls":"clerigo","slot":"weapon","tier":2,"kind":"wand","power":13,"healing":36}'::jsonb
+    when 'codice_guardian_alba' then '{"cls":"clerigo","slot":"offhand","tier":2,"kind":"book","healing":4}'::jsonb
+    when 'ballesta_martin_pescador' then '{"cls":"explorador","slot":"weapon","tier":2,"kind":"crossbow","power":12}'::jsonb
+    when 'espada_filo_eclipse' then '{"cls":"guerrero","slot":"weapon","tier":3,"kind":"sword","power":14}'::jsonb
+    when 'escudo_luna_hendida' then '{"cls":"guerrero","slot":"offhand","tier":3,"kind":"shield","guard":4}'::jsonb
+    when 'baston_media_noche' then '{"cls":"mago","slot":"weapon","tier":3,"kind":"staff","power":14}'::jsonb
+    when 'daga_onda_violeta' then '{"cls":"picaro","slot":"weapon","tier":3,"kind":"dagger","power":12}'::jsonb
+    when 'daga_luna_menguante' then '{"cls":"picaro","slot":"offhand","tier":3,"kind":"dagger","guard":4}'::jsonb
+    when 'varita_estrella_cautiva' then '{"cls":"clerigo","slot":"weapon","tier":3,"kind":"wand","power":15,"healing":41}'::jsonb
+    when 'grimorio_ojo_nocturno' then '{"cls":"clerigo","slot":"offhand","tier":3,"kind":"book","healing":5}'::jsonb
+    when 'ballesta_alas_eclipse' then '{"cls":"explorador","slot":"weapon","tier":3,"kind":"crossbow","power":14}'::jsonb
+    when 'espada_hoja_roble' then '{"cls":"guerrero","slot":"weapon","tier":1,"kind":"sword","power":11}'::jsonb
+    when 'escudo_tronco_errante' then '{"cls":"guerrero","slot":"offhand","tier":1,"kind":"shield","guard":2}'::jsonb
+    when 'baston_brote_viejo' then '{"cls":"mago","slot":"weapon","tier":1,"kind":"staff","power":11}'::jsonb
+    when 'daga_helecho' then '{"cls":"picaro","slot":"weapon","tier":1,"kind":"dagger","power":9}'::jsonb
+    when 'daga_espina_roble' then '{"cls":"picaro","slot":"offhand","tier":1,"kind":"dagger","guard":2}'::jsonb
+    when 'varita_semilla_viva' then '{"cls":"clerigo","slot":"weapon","tier":1,"kind":"wand","power":12,"healing":33}'::jsonb
+    when 'herbario_corteza' then '{"cls":"clerigo","slot":"offhand","tier":1,"kind":"book","healing":3}'::jsonb
+    when 'ballesta_tejo_errante' then '{"cls":"explorador","slot":"weapon","tier":1,"kind":"crossbow","power":11}'::jsonb
+    when 'khopesh_marea_real' then '{"cls":"guerrero","slot":"weapon","tier":4,"kind":"sword","power":17}'::jsonb
+    when 'escudo_concha_regia' then '{"cls":"guerrero","slot":"offhand","tier":4,"kind":"shield","guard":5}'::jsonb
+    when 'baston_tridente_regio' then '{"cls":"mago","slot":"weapon","tier":4,"kind":"staff","power":17}'::jsonb
+    when 'daga_aleta_coral' then '{"cls":"picaro","slot":"weapon","tier":4,"kind":"dagger","power":15}'::jsonb
+    when 'daga_tridente_perla' then '{"cls":"picaro","slot":"offhand","tier":4,"kind":"dagger","guard":5}'::jsonb
+    when 'varita_caracola_real' then '{"cls":"clerigo","slot":"weapon","tier":4,"kind":"wand","power":18,"healing":48}'::jsonb
+    when 'codice_atlas_mareas' then '{"cls":"clerigo","slot":"offhand","tier":4,"kind":"book","healing":6}'::jsonb
+    when 'ballesta_abanico_regio' then '{"cls":"explorador","slot":"weapon","tier":4,"kind":"crossbow","power":17}'::jsonb
+    when 'espada_segmento_estelar' then '{"cls":"guerrero","slot":"weapon","tier":5,"kind":"sword","power":21}'::jsonb
+    when 'escudo_nucleo_forja' then '{"cls":"guerrero","slot":"offhand","tier":5,"kind":"shield","guard":6}'::jsonb
+    when 'baston_orrery_solar' then '{"cls":"mago","slot":"weapon","tier":5,"kind":"staff","power":21}'::jsonb
+    when 'daga_pinza_astral' then '{"cls":"picaro","slot":"weapon","tier":5,"kind":"dagger","power":19}'::jsonb
+    when 'daga_puno_meteoro' then '{"cls":"picaro","slot":"offhand","tier":5,"kind":"dagger","guard":6}'::jsonb
+    when 'varita_estrella_forjada' then '{"cls":"clerigo","slot":"weapon","tier":5,"kind":"wand","power":22,"healing":57}'::jsonb
+    when 'grimorio_relicario_estelar' then '{"cls":"clerigo","slot":"offhand","tier":5,"kind":"book","healing":7}'::jsonb
+    when 'ballesta_riel_cenital' then '{"cls":"explorador","slot":"weapon","tier":5,"kind":"crossbow","power":21}'::jsonb
+    when 'traje_guerrero_novicio_head' then '{"cls":"guerrero","slot":"head","tier":0,"guard":0,"maxHealth":2,"maxResource":0}'::jsonb
+    when 'traje_guerrero_novicio' then '{"cls":"guerrero","slot":"chest","tier":0,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_novicio_hands' then '{"cls":"guerrero","slot":"hands","tier":0,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_novicio_legs' then '{"cls":"guerrero","slot":"legs","tier":0,"guard":0,"maxHealth":0,"maxResource":2}'::jsonb
+    when 'traje_mago_novicio_head' then '{"cls":"mago","slot":"head","tier":0,"guard":0,"maxHealth":2,"maxResource":0}'::jsonb
+    when 'traje_mago_novicio' then '{"cls":"mago","slot":"chest","tier":0,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_novicio_hands' then '{"cls":"mago","slot":"hands","tier":0,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_novicio_legs' then '{"cls":"mago","slot":"legs","tier":0,"guard":0,"maxHealth":0,"maxResource":2}'::jsonb
+    when 'traje_picaro_novicio_head' then '{"cls":"picaro","slot":"head","tier":0,"guard":0,"maxHealth":2,"maxResource":0}'::jsonb
+    when 'traje_picaro_novicio' then '{"cls":"picaro","slot":"chest","tier":0,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_novicio_hands' then '{"cls":"picaro","slot":"hands","tier":0,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_novicio_legs' then '{"cls":"picaro","slot":"legs","tier":0,"guard":0,"maxHealth":0,"maxResource":2}'::jsonb
+    when 'traje_clerigo_novicio_head' then '{"cls":"clerigo","slot":"head","tier":0,"guard":0,"maxHealth":2,"maxResource":0}'::jsonb
+    when 'traje_clerigo_novicio' then '{"cls":"clerigo","slot":"chest","tier":0,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_novicio_hands' then '{"cls":"clerigo","slot":"hands","tier":0,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_novicio_legs' then '{"cls":"clerigo","slot":"legs","tier":0,"guard":0,"maxHealth":0,"maxResource":2}'::jsonb
+    when 'traje_explorador_novicio_head' then '{"cls":"explorador","slot":"head","tier":0,"guard":0,"maxHealth":2,"maxResource":0}'::jsonb
+    when 'traje_explorador_novicio' then '{"cls":"explorador","slot":"chest","tier":0,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_novicio_hands' then '{"cls":"explorador","slot":"hands","tier":0,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_novicio_legs' then '{"cls":"explorador","slot":"legs","tier":0,"guard":0,"maxHealth":0,"maxResource":2}'::jsonb
+    when 'traje_guerrero_artesano_head' then '{"cls":"guerrero","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_guerrero_artesano' then '{"cls":"guerrero","slot":"chest","tier":1,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_artesano_hands' then '{"cls":"guerrero","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_artesano_legs' then '{"cls":"guerrero","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_mago_artesano_head' then '{"cls":"mago","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_mago_artesano' then '{"cls":"mago","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_artesano_hands' then '{"cls":"mago","slot":"hands","tier":1,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_artesano_legs' then '{"cls":"mago","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_picaro_artesano_head' then '{"cls":"picaro","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_picaro_artesano' then '{"cls":"picaro","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_artesano_hands' then '{"cls":"picaro","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_artesano_legs' then '{"cls":"picaro","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_clerigo_artesano_head' then '{"cls":"clerigo","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_clerigo_artesano' then '{"cls":"clerigo","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_artesano_hands' then '{"cls":"clerigo","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_artesano_legs' then '{"cls":"clerigo","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_explorador_artesano_head' then '{"cls":"explorador","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_explorador_artesano' then '{"cls":"explorador","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_artesano_hands' then '{"cls":"explorador","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_artesano_legs' then '{"cls":"explorador","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_guerrero_ambar_head' then '{"cls":"guerrero","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_guerrero_ambar' then '{"cls":"guerrero","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_ambar_hands' then '{"cls":"guerrero","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_ambar_legs' then '{"cls":"guerrero","slot":"legs","tier":2,"guard":1,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_mago_ambar_head' then '{"cls":"mago","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_mago_ambar' then '{"cls":"mago","slot":"chest","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_ambar_hands' then '{"cls":"mago","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_ambar_legs' then '{"cls":"mago","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_picaro_ambar_head' then '{"cls":"picaro","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_picaro_ambar' then '{"cls":"picaro","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_ambar_hands' then '{"cls":"picaro","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_ambar_legs' then '{"cls":"picaro","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_clerigo_ambar_head' then '{"cls":"clerigo","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_clerigo_ambar' then '{"cls":"clerigo","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_ambar_hands' then '{"cls":"clerigo","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_ambar_legs' then '{"cls":"clerigo","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_explorador_ambar_head' then '{"cls":"explorador","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_explorador_ambar' then '{"cls":"explorador","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_ambar_hands' then '{"cls":"explorador","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_ambar_legs' then '{"cls":"explorador","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_guerrero_violeta_head' then '{"cls":"guerrero","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_guerrero_violeta' then '{"cls":"guerrero","slot":"chest","tier":3,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_violeta_hands' then '{"cls":"guerrero","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_violeta_legs' then '{"cls":"guerrero","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_mago_violeta_head' then '{"cls":"mago","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_mago_violeta' then '{"cls":"mago","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_violeta_hands' then '{"cls":"mago","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_violeta_legs' then '{"cls":"mago","slot":"legs","tier":3,"guard":0,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_picaro_violeta_head' then '{"cls":"picaro","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_picaro_violeta' then '{"cls":"picaro","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_violeta_hands' then '{"cls":"picaro","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_violeta_legs' then '{"cls":"picaro","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_clerigo_violeta_head' then '{"cls":"clerigo","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_clerigo_violeta' then '{"cls":"clerigo","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_violeta_hands' then '{"cls":"clerigo","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_violeta_legs' then '{"cls":"clerigo","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_explorador_violeta_head' then '{"cls":"explorador","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_explorador_violeta' then '{"cls":"explorador","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_violeta_hands' then '{"cls":"explorador","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_violeta_legs' then '{"cls":"explorador","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_guerrero_aurora_head' then '{"cls":"guerrero","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_guerrero_aurora' then '{"cls":"guerrero","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_aurora_hands' then '{"cls":"guerrero","slot":"hands","tier":4,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_aurora_legs' then '{"cls":"guerrero","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_mago_aurora_head' then '{"cls":"mago","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_mago_aurora' then '{"cls":"mago","slot":"chest","tier":4,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_aurora_hands' then '{"cls":"mago","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_aurora_legs' then '{"cls":"mago","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_picaro_aurora_head' then '{"cls":"picaro","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_picaro_aurora' then '{"cls":"picaro","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_aurora_hands' then '{"cls":"picaro","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_aurora_legs' then '{"cls":"picaro","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_clerigo_aurora_head' then '{"cls":"clerigo","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_clerigo_aurora' then '{"cls":"clerigo","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_aurora_hands' then '{"cls":"clerigo","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_aurora_legs' then '{"cls":"clerigo","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_explorador_aurora_head' then '{"cls":"explorador","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_explorador_aurora' then '{"cls":"explorador","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_aurora_hands' then '{"cls":"explorador","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_aurora_legs' then '{"cls":"explorador","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_guerrero_fuego_head' then '{"cls":"guerrero","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_guerrero_fuego' then '{"cls":"guerrero","slot":"chest","tier":5,"guard":4,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_fuego_hands' then '{"cls":"guerrero","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_fuego_legs' then '{"cls":"guerrero","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_mago_fuego_head' then '{"cls":"mago","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_mago_fuego' then '{"cls":"mago","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_fuego_hands' then '{"cls":"mago","slot":"hands","tier":5,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_fuego_legs' then '{"cls":"mago","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_picaro_fuego_head' then '{"cls":"picaro","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_picaro_fuego' then '{"cls":"picaro","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_fuego_hands' then '{"cls":"picaro","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_fuego_legs' then '{"cls":"picaro","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_clerigo_fuego_head' then '{"cls":"clerigo","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_clerigo_fuego' then '{"cls":"clerigo","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_fuego_hands' then '{"cls":"clerigo","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_fuego_legs' then '{"cls":"clerigo","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_explorador_fuego_head' then '{"cls":"explorador","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_explorador_fuego' then '{"cls":"explorador","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_fuego_hands' then '{"cls":"explorador","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_fuego_legs' then '{"cls":"explorador","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_guerrero_alba_head' then '{"cls":"guerrero","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_guerrero_alba' then '{"cls":"guerrero","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_alba_hands' then '{"cls":"guerrero","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_alba_legs' then '{"cls":"guerrero","slot":"legs","tier":2,"guard":1,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_mago_alba_head' then '{"cls":"mago","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_mago_alba' then '{"cls":"mago","slot":"chest","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_alba_hands' then '{"cls":"mago","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_alba_legs' then '{"cls":"mago","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_picaro_alba_head' then '{"cls":"picaro","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_picaro_alba' then '{"cls":"picaro","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_alba_hands' then '{"cls":"picaro","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_alba_legs' then '{"cls":"picaro","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_clerigo_alba_head' then '{"cls":"clerigo","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_clerigo_alba' then '{"cls":"clerigo","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_alba_hands' then '{"cls":"clerigo","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_alba_legs' then '{"cls":"clerigo","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_explorador_alba_head' then '{"cls":"explorador","slot":"head","tier":2,"guard":0,"maxHealth":6,"maxResource":0}'::jsonb
+    when 'traje_explorador_alba' then '{"cls":"explorador","slot":"chest","tier":2,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_alba_hands' then '{"cls":"explorador","slot":"hands","tier":2,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_alba_legs' then '{"cls":"explorador","slot":"legs","tier":2,"guard":0,"maxHealth":0,"maxResource":6}'::jsonb
+    when 'traje_guerrero_eclipse_head' then '{"cls":"guerrero","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_guerrero_eclipse' then '{"cls":"guerrero","slot":"chest","tier":3,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_eclipse_hands' then '{"cls":"guerrero","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_eclipse_legs' then '{"cls":"guerrero","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_mago_eclipse_head' then '{"cls":"mago","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_mago_eclipse' then '{"cls":"mago","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_eclipse_hands' then '{"cls":"mago","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_eclipse_legs' then '{"cls":"mago","slot":"legs","tier":3,"guard":0,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_picaro_eclipse_head' then '{"cls":"picaro","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_picaro_eclipse' then '{"cls":"picaro","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_eclipse_hands' then '{"cls":"picaro","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_eclipse_legs' then '{"cls":"picaro","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_clerigo_eclipse_head' then '{"cls":"clerigo","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_clerigo_eclipse' then '{"cls":"clerigo","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_eclipse_hands' then '{"cls":"clerigo","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_eclipse_legs' then '{"cls":"clerigo","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_explorador_eclipse_head' then '{"cls":"explorador","slot":"head","tier":3,"guard":0,"maxHealth":8,"maxResource":0}'::jsonb
+    when 'traje_explorador_eclipse' then '{"cls":"explorador","slot":"chest","tier":3,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_eclipse_hands' then '{"cls":"explorador","slot":"hands","tier":3,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_eclipse_legs' then '{"cls":"explorador","slot":"legs","tier":3,"guard":1,"maxHealth":0,"maxResource":8}'::jsonb
+    when 'traje_guerrero_roble_head' then '{"cls":"guerrero","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_guerrero_roble' then '{"cls":"guerrero","slot":"chest","tier":1,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_roble_hands' then '{"cls":"guerrero","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_roble_legs' then '{"cls":"guerrero","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_mago_roble_head' then '{"cls":"mago","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_mago_roble' then '{"cls":"mago","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_roble_hands' then '{"cls":"mago","slot":"hands","tier":1,"guard":0,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_roble_legs' then '{"cls":"mago","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_picaro_roble_head' then '{"cls":"picaro","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_picaro_roble' then '{"cls":"picaro","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_roble_hands' then '{"cls":"picaro","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_roble_legs' then '{"cls":"picaro","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_clerigo_roble_head' then '{"cls":"clerigo","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_clerigo_roble' then '{"cls":"clerigo","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_roble_hands' then '{"cls":"clerigo","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_roble_legs' then '{"cls":"clerigo","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_explorador_roble_head' then '{"cls":"explorador","slot":"head","tier":1,"guard":0,"maxHealth":4,"maxResource":0}'::jsonb
+    when 'traje_explorador_roble' then '{"cls":"explorador","slot":"chest","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_roble_hands' then '{"cls":"explorador","slot":"hands","tier":1,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_roble_legs' then '{"cls":"explorador","slot":"legs","tier":1,"guard":0,"maxHealth":0,"maxResource":4}'::jsonb
+    when 'traje_guerrero_marea_head' then '{"cls":"guerrero","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_guerrero_marea' then '{"cls":"guerrero","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_marea_hands' then '{"cls":"guerrero","slot":"hands","tier":4,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_marea_legs' then '{"cls":"guerrero","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_mago_marea_head' then '{"cls":"mago","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_mago_marea' then '{"cls":"mago","slot":"chest","tier":4,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_marea_hands' then '{"cls":"mago","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_marea_legs' then '{"cls":"mago","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_picaro_marea_head' then '{"cls":"picaro","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_picaro_marea' then '{"cls":"picaro","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_marea_hands' then '{"cls":"picaro","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_marea_legs' then '{"cls":"picaro","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_clerigo_marea_head' then '{"cls":"clerigo","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_clerigo_marea' then '{"cls":"clerigo","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_marea_hands' then '{"cls":"clerigo","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_marea_legs' then '{"cls":"clerigo","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_explorador_marea_head' then '{"cls":"explorador","slot":"head","tier":4,"guard":0,"maxHealth":10,"maxResource":0}'::jsonb
+    when 'traje_explorador_marea' then '{"cls":"explorador","slot":"chest","tier":4,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_marea_hands' then '{"cls":"explorador","slot":"hands","tier":4,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_marea_legs' then '{"cls":"explorador","slot":"legs","tier":4,"guard":1,"maxHealth":0,"maxResource":10}'::jsonb
+    when 'traje_guerrero_forja_head' then '{"cls":"guerrero","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_guerrero_forja' then '{"cls":"guerrero","slot":"chest","tier":5,"guard":4,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_forja_hands' then '{"cls":"guerrero","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_guerrero_forja_legs' then '{"cls":"guerrero","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_mago_forja_head' then '{"cls":"mago","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_mago_forja' then '{"cls":"mago","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_forja_hands' then '{"cls":"mago","slot":"hands","tier":5,"guard":1,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_mago_forja_legs' then '{"cls":"mago","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_picaro_forja_head' then '{"cls":"picaro","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_picaro_forja' then '{"cls":"picaro","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_forja_hands' then '{"cls":"picaro","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_picaro_forja_legs' then '{"cls":"picaro","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_clerigo_forja_head' then '{"cls":"clerigo","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_clerigo_forja' then '{"cls":"clerigo","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_forja_hands' then '{"cls":"clerigo","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_clerigo_forja_legs' then '{"cls":"clerigo","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'traje_explorador_forja_head' then '{"cls":"explorador","slot":"head","tier":5,"guard":0,"maxHealth":12,"maxResource":0}'::jsonb
+    when 'traje_explorador_forja' then '{"cls":"explorador","slot":"chest","tier":5,"guard":3,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_forja_hands' then '{"cls":"explorador","slot":"hands","tier":5,"guard":2,"maxHealth":0,"maxResource":0}'::jsonb
+    when 'traje_explorador_forja_legs' then '{"cls":"explorador","slot":"legs","tier":5,"guard":1,"maxHealth":0,"maxResource":12}'::jsonb
+    when 'colgante_artesano' then '{"slot":"pendant","tier":1,"kind":"pendant","maxHealth":6,"maxResource":0}'::jsonb
+    when 'anillo_artesano' then '{"slot":"ring","tier":1,"kind":"ring","maxHealth":0,"maxResource":5}'::jsonb
+    when 'abalorio_artesano' then '{"slot":"trinket","tier":1,"kind":"trinket","maxHealth":2,"maxResource":2}'::jsonb
+    when 'colgante_ambar' then '{"slot":"pendant","tier":2,"kind":"pendant","maxHealth":8,"maxResource":0}'::jsonb
+    when 'anillo_ambar' then '{"slot":"ring","tier":2,"kind":"ring","maxHealth":0,"maxResource":7}'::jsonb
+    when 'abalorio_ambar' then '{"slot":"trinket","tier":2,"kind":"trinket","maxHealth":4,"maxResource":4}'::jsonb
+    when 'colgante_violeta' then '{"slot":"pendant","tier":3,"kind":"pendant","maxHealth":10,"maxResource":0}'::jsonb
+    when 'anillo_violeta' then '{"slot":"ring","tier":3,"kind":"ring","maxHealth":0,"maxResource":9}'::jsonb
+    when 'abalorio_violeta' then '{"slot":"trinket","tier":3,"kind":"trinket","maxHealth":6,"maxResource":6}'::jsonb
+    when 'colgante_aurora' then '{"slot":"pendant","tier":4,"kind":"pendant","maxHealth":12,"maxResource":0}'::jsonb
+    when 'anillo_aurora' then '{"slot":"ring","tier":4,"kind":"ring","maxHealth":0,"maxResource":11}'::jsonb
+    when 'abalorio_aurora' then '{"slot":"trinket","tier":4,"kind":"trinket","maxHealth":8,"maxResource":8}'::jsonb
+    when 'colgante_fuego' then '{"slot":"pendant","tier":5,"kind":"pendant","maxHealth":14,"maxResource":0}'::jsonb
+    when 'anillo_fuego' then '{"slot":"ring","tier":5,"kind":"ring","maxHealth":0,"maxResource":13}'::jsonb
+    when 'abalorio_fuego' then '{"slot":"trinket","tier":5,"kind":"trinket","maxHealth":10,"maxResource":10}'::jsonb
+    when 'colgante_alba' then '{"slot":"pendant","tier":2,"kind":"pendant","maxHealth":8,"maxResource":0}'::jsonb
+    when 'anillo_alba' then '{"slot":"ring","tier":2,"kind":"ring","maxHealth":0,"maxResource":7}'::jsonb
+    when 'abalorio_alba' then '{"slot":"trinket","tier":2,"kind":"trinket","maxHealth":4,"maxResource":4}'::jsonb
+    when 'colgante_eclipse' then '{"slot":"pendant","tier":3,"kind":"pendant","maxHealth":10,"maxResource":0}'::jsonb
+    when 'anillo_eclipse' then '{"slot":"ring","tier":3,"kind":"ring","maxHealth":0,"maxResource":9}'::jsonb
+    when 'abalorio_eclipse' then '{"slot":"trinket","tier":3,"kind":"trinket","maxHealth":6,"maxResource":6}'::jsonb
+    when 'colgante_roble' then '{"slot":"pendant","tier":1,"kind":"pendant","maxHealth":6,"maxResource":0}'::jsonb
+    when 'anillo_roble' then '{"slot":"ring","tier":1,"kind":"ring","maxHealth":0,"maxResource":5}'::jsonb
+    when 'abalorio_roble' then '{"slot":"trinket","tier":1,"kind":"trinket","maxHealth":2,"maxResource":2}'::jsonb
+    when 'colgante_marea' then '{"slot":"pendant","tier":4,"kind":"pendant","maxHealth":12,"maxResource":0}'::jsonb
+    when 'anillo_marea' then '{"slot":"ring","tier":4,"kind":"ring","maxHealth":0,"maxResource":11}'::jsonb
+    when 'abalorio_marea' then '{"slot":"trinket","tier":4,"kind":"trinket","maxHealth":8,"maxResource":8}'::jsonb
+    when 'colgante_forja' then '{"slot":"pendant","tier":5,"kind":"pendant","maxHealth":14,"maxResource":0}'::jsonb
+    when 'anillo_forja' then '{"slot":"ring","tier":5,"kind":"ring","maxHealth":0,"maxResource":13}'::jsonb
+    when 'abalorio_forja' then '{"slot":"trinket","tier":5,"kind":"trinket","maxHealth":10,"maxResource":10}'::jsonb
+    when 'colgante_novicio' then '{"slot":"pendant","tier":0,"kind":"pendant","maxHealth":2,"maxResource":0}'::jsonb
+    when 'anillo_novicio' then '{"slot":"ring","tier":0,"kind":"ring","maxHealth":0,"maxResource":2}'::jsonb
+    when 'abalorio_novicio' then '{"slot":"trinket","tier":0,"kind":"trinket","maxHealth":2,"maxResource":2}'::jsonb
+    else null
+  end
+$function$
+
+CREATE OR REPLACE FUNCTION public.game_item(p_item text)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select case p_item
+    when 'esencia_sombria' then '{"value":0,"stack":50,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'polvo_de_hada' then '{"value":0,"stack":50,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'espada_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'escudo_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'baston_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'daga_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'daga_secundaria_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'varita_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'libro_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'ballesta_inicial' then '{"value":0,"stack":1,"bound":true,"sellable":false,"rarity":"common"}'::jsonb
+    when 'espada_cobre_t1' then '{"value":100,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'escudo_roble_t1' then '{"value":70,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'baston_ambar_t1' then '{"value":110,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'daga_cazador_t1' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'daga_secundaria_cazador_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'varita_ambar_t1' then '{"value":100,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'grimorio_verde_t1' then '{"value":70,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'ballesta_roble_t1' then '{"value":110,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'espada_cobre_t2' then '{"value":200,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'escudo_roble_t2' then '{"value":140,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'baston_ambar_t2' then '{"value":220,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'daga_cazador_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'daga_secundaria_cazador_t2' then '{"value":120,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'varita_ambar_t2' then '{"value":200,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'grimorio_verde_t2' then '{"value":140,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'ballesta_roble_t2' then '{"value":220,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'pan_duro' then '{"value":4,"stack":50,"bound":false,"sellable":true,"rarity":"common","food_seconds":900}'::jsonb
+    when 'pocion_vida_minuscula' then '{"value":10,"stack":50,"bound":false,"sellable":true,"rarity":"common","heal_pct":5}'::jsonb
+    when 'pocion_mana_minuscula' then '{"value":10,"stack":50,"bound":false,"sellable":true,"rarity":"common","resource_pct":5,"resource_kind":"mana"}'::jsonb
+    when 'pocion_estamina_minuscula' then '{"value":10,"stack":50,"bound":false,"sellable":true,"rarity":"common","resource_pct":5,"resource_kind":"stamina"}'::jsonb
+    when 'espada_runica_t3' then '{"value":400,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'escudo_runico_t3' then '{"value":280,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'baston_runico_t3' then '{"value":440,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'daga_runica_t3' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'daga_secundaria_runica_t3' then '{"value":240,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'varita_runica_t3' then '{"value":400,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'grimorio_runico_t3' then '{"value":280,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'ballesta_runica_t3' then '{"value":440,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'espada_runica_t4' then '{"value":1200,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'escudo_runico_t4' then '{"value":840,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'baston_runico_t4' then '{"value":1320,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'daga_runica_t4' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'daga_secundaria_runica_t4' then '{"value":720,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'varita_runica_t4' then '{"value":1200,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'grimorio_runico_t4' then '{"value":840,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'ballesta_runica_t4' then '{"value":1320,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'espada_runica_t5' then '{"value":3600,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'escudo_runico_t5' then '{"value":2520,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'baston_runico_t5' then '{"value":3960,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'daga_runica_t5' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'daga_secundaria_runica_t5' then '{"value":2160,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'varita_runica_t5' then '{"value":3600,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'grimorio_runico_t5' then '{"value":2520,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'ballesta_runica_t5' then '{"value":3960,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'sable_guardia_alba' then '{"value":200,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'escudo_bastion_alba' then '{"value":140,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'baston_raiz_celeste' then '{"value":220,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'daga_pluma_azul' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'daga_garra_alba' then '{"value":120,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'varita_lirio_celeste' then '{"value":200,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'codice_guardian_alba' then '{"value":140,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'ballesta_martin_pescador' then '{"value":220,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'espada_filo_eclipse' then '{"value":400,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'escudo_luna_hendida' then '{"value":280,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'baston_media_noche' then '{"value":440,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'daga_onda_violeta' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'daga_luna_menguante' then '{"value":240,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'varita_estrella_cautiva' then '{"value":400,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'grimorio_ojo_nocturno' then '{"value":280,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'ballesta_alas_eclipse' then '{"value":440,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'espada_hoja_roble' then '{"value":100,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'escudo_tronco_errante' then '{"value":70,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'baston_brote_viejo' then '{"value":110,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'daga_helecho' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'daga_espina_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'varita_semilla_viva' then '{"value":100,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'herbario_corteza' then '{"value":70,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'ballesta_tejo_errante' then '{"value":110,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'khopesh_marea_real' then '{"value":1200,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'escudo_concha_regia' then '{"value":840,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'baston_tridente_regio' then '{"value":1320,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'daga_aleta_coral' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'daga_tridente_perla' then '{"value":720,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'varita_caracola_real' then '{"value":1200,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'codice_atlas_mareas' then '{"value":840,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'ballesta_abanico_regio' then '{"value":1320,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'espada_segmento_estelar' then '{"value":3600,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'escudo_nucleo_forja' then '{"value":2520,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'baston_orrery_solar' then '{"value":3960,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'daga_pinza_astral' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'daga_puno_meteoro' then '{"value":2160,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'varita_estrella_forjada' then '{"value":3600,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'grimorio_relicario_estelar' then '{"value":2520,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'ballesta_riel_cenital' then '{"value":3960,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_novicio_head' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_guerrero_novicio' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_guerrero_novicio_hands' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_guerrero_novicio_legs' then '{"value":32,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_mago_novicio_head' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_mago_novicio' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_mago_novicio_hands' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_mago_novicio_legs' then '{"value":32,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_picaro_novicio_head' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_picaro_novicio' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_picaro_novicio_hands' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_picaro_novicio_legs' then '{"value":32,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_clerigo_novicio_head' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_clerigo_novicio' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_clerigo_novicio_hands' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_clerigo_novicio_legs' then '{"value":32,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_explorador_novicio_head' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_explorador_novicio' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_explorador_novicio_hands' then '{"value":14,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_explorador_novicio_legs' then '{"value":32,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'traje_guerrero_artesano_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_artesano' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_artesano_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_artesano_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_artesano_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_artesano' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_artesano_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_artesano_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_artesano_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_artesano' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_artesano_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_artesano_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_artesano_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_artesano' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_artesano_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_artesano_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_artesano_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_artesano' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_artesano_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_artesano_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_ambar_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_ambar_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_ambar_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_ambar_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_ambar_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_ambar_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_ambar_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_ambar_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_ambar_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_ambar_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_ambar_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_ambar_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_ambar_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_ambar_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_ambar_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_violeta_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_violeta' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_violeta_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_violeta_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_violeta_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_violeta' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_violeta_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_violeta_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_violeta_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_violeta' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_violeta_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_violeta_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_violeta_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_violeta' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_violeta_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_violeta_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_violeta_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_violeta' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_violeta_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_violeta_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_aurora_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_aurora' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_aurora_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_aurora_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_aurora_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_aurora' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_aurora_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_aurora_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_aurora_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_aurora' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_aurora_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_aurora_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_aurora_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_aurora' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_aurora_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_aurora_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_aurora_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_aurora' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_aurora_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_aurora_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_fuego_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_fuego' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_fuego_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_fuego_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_fuego_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_fuego' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_fuego_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_fuego_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_fuego_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_fuego' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_fuego_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_fuego_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_fuego_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_fuego' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_fuego_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_fuego_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_fuego_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_fuego' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_fuego_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_fuego_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_alba_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_alba_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_alba_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_alba_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_alba_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_mago_alba_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_alba_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_alba_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_picaro_alba_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_alba_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_alba_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_clerigo_alba_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_alba_head' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_alba_hands' then '{"value":54,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_explorador_alba_legs' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'traje_guerrero_eclipse_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_eclipse' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_eclipse_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_eclipse_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_eclipse_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_eclipse' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_eclipse_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_mago_eclipse_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_eclipse_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_eclipse' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_eclipse_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_picaro_eclipse_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_eclipse_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_eclipse' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_eclipse_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_clerigo_eclipse_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_eclipse_head' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_eclipse' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_eclipse_hands' then '{"value":108,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_explorador_eclipse_legs' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'traje_guerrero_roble_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_roble' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_roble_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_roble_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_roble_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_roble' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_roble_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_mago_roble_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_roble_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_roble' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_roble_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_picaro_roble_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_roble_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_roble' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_roble_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_clerigo_roble_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_roble_head' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_roble' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_roble_hands' then '{"value":27,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_explorador_roble_legs' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'traje_guerrero_marea_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_marea' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_marea_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_marea_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_marea_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_marea' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_marea_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_mago_marea_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_marea_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_marea' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_marea_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_picaro_marea_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_marea_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_marea' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_marea_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_clerigo_marea_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_marea_head' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_marea' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_marea_hands' then '{"value":324,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_explorador_marea_legs' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'traje_guerrero_forja_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_forja' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_forja_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_guerrero_forja_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_forja_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_forja' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_forja_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_mago_forja_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_forja_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_forja' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_forja_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_picaro_forja_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_forja_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_forja' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_forja_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_clerigo_forja_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_forja_head' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_forja' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_forja_hands' then '{"value":972,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'traje_explorador_forja_legs' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'colgante_artesano' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'anillo_artesano' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'abalorio_artesano' then '{"value":72,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'colgante_ambar' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'anillo_ambar' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'abalorio_ambar' then '{"value":144,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'colgante_violeta' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'anillo_violeta' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'abalorio_violeta' then '{"value":288,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'colgante_aurora' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'anillo_aurora' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'abalorio_aurora' then '{"value":864,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'colgante_fuego' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'anillo_fuego' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'abalorio_fuego' then '{"value":2592,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'colgante_alba' then '{"value":126,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'anillo_alba' then '{"value":90,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'abalorio_alba' then '{"value":144,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'colgante_eclipse' then '{"value":252,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'anillo_eclipse' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'abalorio_eclipse' then '{"value":288,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'colgante_roble' then '{"value":63,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'anillo_roble' then '{"value":45,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'abalorio_roble' then '{"value":72,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'colgante_marea' then '{"value":756,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'anillo_marea' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'abalorio_marea' then '{"value":864,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'colgante_forja' then '{"value":2268,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'anillo_forja' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'abalorio_forja' then '{"value":2592,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'colgante_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'anillo_novicio' then '{"value":15,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'abalorio_novicio' then '{"value":25,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'material_minero_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'material_minero_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'material_minero_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'material_minero_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'material_minero_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'material_minero_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'material_lenador_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'material_lenador_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'material_lenador_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'material_lenador_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'material_lenador_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'material_lenador_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'material_recolector_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'material_recolector_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'material_recolector_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'material_recolector_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'material_recolector_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'material_recolector_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'fibra_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'fibra_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'fibra_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'fibra_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'fibra_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'fibra_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'fruta_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'fruta_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'fruta_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'fruta_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'fruta_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'fruta_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'hongo_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'hongo_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'hongo_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'hongo_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'hongo_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'hongo_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'grano_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'grano_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'grano_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'grano_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'grano_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'grano_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'cuero_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'cuero_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'cuero_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'cuero_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'cuero_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'cuero_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'gema_0' then '{"value":2,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'gema_1' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'gema_2' then '{"value":18,"stack":99,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'gema_3' then '{"value":54,"stack":99,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'gema_4' then '{"value":162,"stack":99,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'gema_5' then '{"value":486,"stack":99,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'herramienta_minero_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'herramienta_minero_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'herramienta_minero_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'herramienta_minero_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'herramienta_minero_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'herramienta_minero_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'herramienta_lenador_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'herramienta_lenador_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'herramienta_lenador_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'herramienta_lenador_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'herramienta_lenador_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'herramienta_lenador_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'herramienta_recolector_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'herramienta_recolector_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'herramienta_recolector_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'herramienta_recolector_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'herramienta_recolector_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'herramienta_recolector_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'pergamino_fire_1' then '{"value":150,"stack":20,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'pergamino_fire_2' then '{"value":450,"stack":20,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'pergamino_fire_3' then '{"value":1350,"stack":20,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'pergamino_fire_4' then '{"value":4050,"stack":20,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'pergamino_fire_5' then '{"value":12150,"stack":20,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'pergamino_vampirism_1' then '{"value":150,"stack":20,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'pergamino_vampirism_2' then '{"value":450,"stack":20,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'pergamino_vampirism_3' then '{"value":1350,"stack":20,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'pergamino_vampirism_4' then '{"value":4050,"stack":20,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'pergamino_vampirism_5' then '{"value":12150,"stack":20,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'pergamino_frost_1' then '{"value":150,"stack":20,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'pergamino_frost_2' then '{"value":450,"stack":20,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'pergamino_frost_3' then '{"value":1350,"stack":20,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'pergamino_frost_4' then '{"value":4050,"stack":20,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'pergamino_frost_5' then '{"value":12150,"stack":20,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'pergamino_lightning_1' then '{"value":150,"stack":20,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'pergamino_lightning_2' then '{"value":450,"stack":20,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'pergamino_lightning_3' then '{"value":1350,"stack":20,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'pergamino_lightning_4' then '{"value":4050,"stack":20,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'pergamino_lightning_5' then '{"value":12150,"stack":20,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'pergamino_dark_1' then '{"value":150,"stack":20,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'pergamino_dark_2' then '{"value":450,"stack":20,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'pergamino_dark_3' then '{"value":1350,"stack":20,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'pergamino_dark_4' then '{"value":4050,"stack":20,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'pergamino_dark_5' then '{"value":12150,"stack":20,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'nucleo_restauracion' then '{"value":5000,"stack":10,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'pocion_health_1' then '{"value":30,"stack":50,"bound":false,"sellable":true,"rarity":"uncommon","heal_pct":10}'::jsonb
+    when 'pocion_mana_1' then '{"value":30,"stack":50,"bound":false,"sellable":true,"rarity":"uncommon","resource_pct":10,"resource_kind":"mana"}'::jsonb
+    when 'pocion_stamina_1' then '{"value":30,"stack":50,"bound":false,"sellable":true,"rarity":"uncommon","resource_pct":10,"resource_kind":"stamina"}'::jsonb
+    when 'comida_1' then '{"value":24,"stack":50,"bound":false,"sellable":true,"rarity":"uncommon","food_seconds":900}'::jsonb
+    when 'pocion_health_2' then '{"value":90,"stack":50,"bound":false,"sellable":true,"rarity":"rare","heal_pct":15}'::jsonb
+    when 'pocion_mana_2' then '{"value":90,"stack":50,"bound":false,"sellable":true,"rarity":"rare","resource_pct":15,"resource_kind":"mana"}'::jsonb
+    when 'pocion_stamina_2' then '{"value":90,"stack":50,"bound":false,"sellable":true,"rarity":"rare","resource_pct":15,"resource_kind":"stamina"}'::jsonb
+    when 'comida_2' then '{"value":72,"stack":50,"bound":false,"sellable":true,"rarity":"rare","food_seconds":900}'::jsonb
+    when 'pocion_health_3' then '{"value":270,"stack":50,"bound":false,"sellable":true,"rarity":"epic","heal_pct":20}'::jsonb
+    when 'pocion_mana_3' then '{"value":270,"stack":50,"bound":false,"sellable":true,"rarity":"epic","resource_pct":20,"resource_kind":"mana"}'::jsonb
+    when 'pocion_stamina_3' then '{"value":270,"stack":50,"bound":false,"sellable":true,"rarity":"epic","resource_pct":20,"resource_kind":"stamina"}'::jsonb
+    when 'comida_3' then '{"value":216,"stack":50,"bound":false,"sellable":true,"rarity":"epic","food_seconds":900}'::jsonb
+    when 'pocion_health_4' then '{"value":810,"stack":50,"bound":false,"sellable":true,"rarity":"legendary","heal_pct":25}'::jsonb
+    when 'pocion_mana_4' then '{"value":810,"stack":50,"bound":false,"sellable":true,"rarity":"legendary","resource_pct":25,"resource_kind":"mana"}'::jsonb
+    when 'pocion_stamina_4' then '{"value":810,"stack":50,"bound":false,"sellable":true,"rarity":"legendary","resource_pct":25,"resource_kind":"stamina"}'::jsonb
+    when 'comida_4' then '{"value":648,"stack":50,"bound":false,"sellable":true,"rarity":"legendary","food_seconds":900}'::jsonb
+    when 'pocion_health_5' then '{"value":2430,"stack":50,"bound":false,"sellable":true,"rarity":"artifact","heal_pct":30}'::jsonb
+    when 'pocion_mana_5' then '{"value":2430,"stack":50,"bound":false,"sellable":true,"rarity":"artifact","resource_pct":30,"resource_kind":"mana"}'::jsonb
+    when 'pocion_stamina_5' then '{"value":2430,"stack":50,"bound":false,"sellable":true,"rarity":"artifact","resource_pct":30,"resource_kind":"stamina"}'::jsonb
+    when 'comida_5' then '{"value":1944,"stack":50,"bound":false,"sellable":true,"rarity":"artifact","food_seconds":900}'::jsonb
+    when 'mueble_taburete_0' then '{"value":40,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'mueble_taburete_1' then '{"value":120,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'mueble_taburete_2' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'mueble_taburete_3' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'mueble_taburete_4' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'mueble_taburete_5' then '{"value":9720,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'mueble_mesa_0' then '{"value":40,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'mueble_mesa_1' then '{"value":120,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'mueble_mesa_2' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'mueble_mesa_3' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'mueble_mesa_4' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'mueble_mesa_5' then '{"value":9720,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'mueble_biblioteca_0' then '{"value":40,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'mueble_biblioteca_1' then '{"value":120,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'mueble_biblioteca_2' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'mueble_biblioteca_3' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'mueble_biblioteca_4' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'mueble_biblioteca_5' then '{"value":9720,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'mueble_estacion_0' then '{"value":40,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'mueble_estacion_1' then '{"value":120,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'mueble_estacion_2' then '{"value":360,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'mueble_estacion_3' then '{"value":1080,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'mueble_estacion_4' then '{"value":3240,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'mueble_estacion_5' then '{"value":9720,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'componente_herreria_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_peleteria_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_sastreria_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_carpinteria_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_ebanisteria_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_joyeria_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_alquimia_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_encantamiento_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'componente_cocina_0' then '{"value":6,"stack":99,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_escudo_inicial' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_daga_secundaria_inicial' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_libro_inicial' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_espada_cobre_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_escudo_roble_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_baston_ambar_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_daga_cazador_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_daga_secundaria_cazador_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_varita_ambar_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_grimorio_verde_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_ballesta_roble_t1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_espada_cobre_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_escudo_roble_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_baston_ambar_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_daga_cazador_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_daga_secundaria_cazador_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_varita_ambar_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_grimorio_verde_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_ballesta_roble_t2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_espada_runica_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_escudo_runico_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_baston_runico_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_daga_runica_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_daga_secundaria_runica_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_varita_runica_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_grimorio_runico_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_ballesta_runica_t3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_espada_runica_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_escudo_runico_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_baston_runico_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_daga_runica_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_daga_secundaria_runica_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_varita_runica_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_grimorio_runico_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_ballesta_runica_t4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_espada_runica_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_escudo_runico_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_baston_runico_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_daga_runica_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_daga_secundaria_runica_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_varita_runica_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_grimorio_runico_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_ballesta_runica_t5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_sable_guardia_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_escudo_bastion_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_baston_raiz_celeste' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_daga_pluma_azul' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_daga_garra_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_varita_lirio_celeste' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_codice_guardian_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_ballesta_martin_pescador' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_espada_filo_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_escudo_luna_hendida' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_baston_media_noche' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_daga_onda_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_daga_luna_menguante' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_varita_estrella_cautiva' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_grimorio_ojo_nocturno' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_ballesta_alas_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_espada_hoja_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_escudo_tronco_errante' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_baston_brote_viejo' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_daga_helecho' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_daga_espina_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_varita_semilla_viva' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_herbario_corteza' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_ballesta_tejo_errante' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_khopesh_marea_real' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_escudo_concha_regia' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_baston_tridente_regio' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_daga_aleta_coral' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_daga_tridente_perla' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_varita_caracola_real' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_codice_atlas_mareas' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_ballesta_abanico_regio' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_espada_segmento_estelar' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_escudo_nucleo_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_baston_orrery_solar' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_daga_pinza_astral' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_daga_puno_meteoro' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_varita_estrella_forjada' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_grimorio_relicario_estelar' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_ballesta_riel_cenital' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_mago_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_picaro_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_clerigo_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio_head' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio_hands' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_explorador_novicio_legs' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_traje_guerrero_artesano_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_artesano_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_artesano_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_artesano_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_artesano_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_artesano_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_artesano_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_artesano_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_artesano_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_artesano_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_artesano_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_artesano_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_artesano_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_artesano_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_artesano_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_ambar_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_ambar_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_ambar_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_ambar_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_ambar_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_ambar_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_ambar_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_ambar_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_ambar_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_ambar_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_ambar_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_ambar_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_ambar_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_ambar_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_ambar_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_violeta_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_violeta_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_violeta_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_violeta_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_violeta_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_violeta_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_violeta_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_violeta_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_violeta_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_violeta_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_violeta_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_violeta_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_violeta_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_violeta_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_violeta_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_aurora_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_aurora_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_aurora_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_aurora_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_aurora_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_aurora_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_aurora_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_aurora_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_aurora_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_aurora_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_aurora_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_aurora_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_aurora_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_aurora_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_aurora_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_fuego_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_fuego_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_fuego_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_fuego_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_fuego_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_fuego_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_fuego_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_fuego_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_fuego_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_fuego_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_fuego_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_fuego_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_fuego_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_fuego_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_fuego_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_alba_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_alba_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_alba_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_alba_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_alba_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_mago_alba_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_alba_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_alba_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_picaro_alba_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_alba_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_alba_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_clerigo_alba_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_alba_head' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_alba_hands' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_explorador_alba_legs' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_traje_guerrero_eclipse_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_eclipse_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_eclipse_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_eclipse_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_eclipse_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_mago_eclipse_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_eclipse_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_eclipse_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_picaro_eclipse_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_eclipse_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_eclipse_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_clerigo_eclipse_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_eclipse_head' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_eclipse_hands' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_explorador_eclipse_legs' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_traje_guerrero_roble_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_roble_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_roble_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_roble_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_roble_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_mago_roble_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_roble_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_roble_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_picaro_roble_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_roble_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_roble_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_clerigo_roble_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_roble_head' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_roble_hands' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_explorador_roble_legs' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_traje_guerrero_marea_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_marea_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_marea_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_marea_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_marea_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_mago_marea_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_marea_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_marea_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_picaro_marea_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_marea_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_marea_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_clerigo_marea_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_marea_head' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_marea_hands' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_explorador_marea_legs' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_traje_guerrero_forja_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_forja_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_guerrero_forja_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_forja_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_forja_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_mago_forja_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_forja_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_forja_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_picaro_forja_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_forja_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_forja_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_clerigo_forja_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_forja_head' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_forja_hands' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_traje_explorador_forja_legs' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_colgante_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_anillo_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_abalorio_artesano' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_colgante_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_anillo_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_abalorio_ambar' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_colgante_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_anillo_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_abalorio_violeta' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_colgante_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_anillo_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_abalorio_aurora' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_colgante_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_anillo_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_abalorio_fuego' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_colgante_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_anillo_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_abalorio_alba' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_colgante_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_anillo_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_abalorio_eclipse' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_colgante_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_anillo_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_abalorio_roble' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_colgante_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_anillo_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_abalorio_marea' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_colgante_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_anillo_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_abalorio_forja' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_colgante_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_anillo_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_abalorio_novicio' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_herramienta_minero_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_herramienta_minero_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_herramienta_minero_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_herramienta_minero_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_herramienta_minero_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_herramienta_minero_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_herramienta_lenador_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_herramienta_lenador_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_herramienta_lenador_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_herramienta_lenador_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_herramienta_lenador_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_herramienta_lenador_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_herramienta_recolector_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_herramienta_recolector_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_herramienta_recolector_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_herramienta_recolector_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_herramienta_recolector_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_herramienta_recolector_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pergamino_fire_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pergamino_fire_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pergamino_fire_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pergamino_fire_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pergamino_fire_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pergamino_vampirism_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pergamino_vampirism_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pergamino_vampirism_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pergamino_vampirism_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pergamino_vampirism_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pergamino_frost_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pergamino_frost_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pergamino_frost_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pergamino_frost_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pergamino_frost_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pergamino_lightning_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pergamino_lightning_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pergamino_lightning_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pergamino_lightning_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pergamino_lightning_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pergamino_dark_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pergamino_dark_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pergamino_dark_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pergamino_dark_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pergamino_dark_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pocion_vida_minuscula' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pocion_mana_minuscula' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pocion_estamina_minuscula' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pan_duro' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_pocion_health_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pocion_mana_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pocion_stamina_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_comida_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_pocion_health_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pocion_mana_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pocion_stamina_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_comida_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_pocion_health_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pocion_mana_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pocion_stamina_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_comida_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_pocion_health_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pocion_mana_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pocion_stamina_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_comida_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_pocion_health_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pocion_mana_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_pocion_stamina_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_comida_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_taburete_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_mueble_taburete_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_mueble_taburete_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_mueble_taburete_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_mueble_taburete_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_mueble_taburete_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_mesa_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_mueble_mesa_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_mueble_mesa_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_mueble_mesa_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_mueble_mesa_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_mueble_mesa_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_biblioteca_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_mueble_biblioteca_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_mueble_biblioteca_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_mueble_biblioteca_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_mueble_biblioteca_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_mueble_biblioteca_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_mueble_estacion_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_mueble_estacion_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_mueble_estacion_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_mueble_estacion_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_mueble_estacion_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_mueble_estacion_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    when 'receta_componente_herreria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_peleteria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_sastreria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_carpinteria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_ebanisteria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_joyeria_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_alquimia_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_encantamiento_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_componente_cocina_0' then '{"value":20,"stack":1,"bound":false,"sellable":true,"rarity":"common"}'::jsonb
+    when 'receta_curtir_cuero_1' then '{"value":60,"stack":1,"bound":false,"sellable":true,"rarity":"uncommon"}'::jsonb
+    when 'receta_curtir_cuero_2' then '{"value":180,"stack":1,"bound":false,"sellable":true,"rarity":"rare"}'::jsonb
+    when 'receta_curtir_cuero_3' then '{"value":540,"stack":1,"bound":false,"sellable":true,"rarity":"epic"}'::jsonb
+    when 'receta_curtir_cuero_4' then '{"value":1620,"stack":1,"bound":false,"sellable":true,"rarity":"legendary"}'::jsonb
+    when 'receta_curtir_cuero_5' then '{"value":4860,"stack":1,"bound":false,"sellable":true,"rarity":"artifact"}'::jsonb
+    else null
+  end
+$function$
+
+CREATE OR REPLACE FUNCTION public.game_set_bonuses(d jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+declare result jsonb:='{"power":0,"healing":0,"guard":0,"maxHealth":0,"maxResource":0,"skillPower":0,"skillCost":0}'; fam int; tiers int[]; item jsonb; meta jsonb; two int; four int; stat text; v numeric; slot text;
+begin
+ for fam in 0..1 loop
+  tiers:='{}';
+  foreach slot in array array['head','chest','hands','legs'] loop
+   item:=d->'equipment'->slot; meta:=public.game_rpg_catalog()->'sets'->(item->>'id');
+   if item->>'count'='1' and meta->>'cls'=d->>'cls' and meta->>'slot'=slot and (meta->>'family')::int=fam then tiers:=array_append(tiers,(meta->>'tier')::int);end if;
+  end loop;
+  select array_agg(t order by t desc) into tiers from unnest(tiers) t;
+  two:=case when cardinality(tiers)>=2 then tiers[2] else 0 end;
+  four:=case when cardinality(tiers)=4 then tiers[4] else 0 end;
+  if two>=1 then
+   stat:=case when fam=1 then case when d->>'cls'='guerrero' then 'power' when d->>'cls'='picaro' then 'guard' else 'maxResource' end when d->>'cls'='guerrero' then 'guard' when d->>'cls'='clerigo' then 'healing' else 'power' end;
+   v:=(two+1)::numeric/100*case when stat='maxResource' then 2 else 1 end;
+   result:=jsonb_set(result,array[stat],to_jsonb((result->>stat)::numeric+v));
+  end if;
+  if four>=2 then
+   stat:=case when d->>'cls'='guerrero' and fam=0 then 'maxHealth' when fam=1 and d->>'cls'<>'guerrero' then 'skillCost' else 'skillPower' end;
+   v:=case when stat='skillPower' then .09+(four-2)*.05 else .05+(four-2)*.02 end;
+   result:=jsonb_set(result,array[stat],to_jsonb((result->>stat)::numeric+v));
+  end if;
+ end loop;
+ return result;
+end $function$
+
+CREATE OR REPLACE FUNCTION public.game_rpg_food_bonus(d jsonb, stat text)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+ select case when coalesce((d->'foodBuff'->>'remaining')::numeric,0)<=0 then 0 when d->'foodBuff'->>'itemId'='pan_duro' then case when stat='maxHealth' then 5 else 3 end else coalesce((public.game_rpg_catalog()->'items'->(d->'foodBuff'->>'itemId')->'foodEffect'->>stat)::int,0) end
+$function$
+
+CREATE OR REPLACE FUNCTION public.game_public_vitals(d jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+ select jsonb_build_object('serverRevision',coalesce((d->>'serverRevision')::bigint,0),'health',case when coalesce((d->>'health')::numeric,-1)<0 then public.game_max_health(d) else least((d->>'health')::numeric,public.game_max_health(d)) end,'maxHealth',public.game_max_health(d),'resourceKind',case when d->>'cls' in('mago','clerigo') then 'mana' else 'stamina' end,'resource',case when coalesce((d->>'resource')::numeric,-1)<0 then public.game_rpg_resource_max(d) else least(greatest((d->>'resource')::numeric,0),public.game_rpg_resource_max(d)) end,'maxResource',public.game_rpg_resource_max(d),'overheal',public.game_overheal_now(d),'barrier',case when (d->'enchantState'->>'barrierUntil')::numeric>extract(epoch from now()) then coalesce((d->'enchantState'->>'barrier')::numeric,0) else 0 end)
+$function$
+
+CREATE OR REPLACE FUNCTION public.game_rpg_settle(d jsonb, stamp numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare s jsonb:=coalesce(d->'rpg','{}'); jobs jsonb:='[]';task jsonb;job text; slot text;item jsonb;inv jsonb;eq jsonb;extras jsonb:='[]';copy jsonb;
+begin
+ s:='{"version":1,"energy":100,"xp":{},"mastery":{},"learned":[],"tools":{},"jobs":[],"deliveries":[],"nodes":{},"gathering":null,"crafts":{},"projects":{},"furniture":[]}'::jsonb||s;
+ s:=s||jsonb_build_object('energy',least(100,coalesce((s->>'energy')::numeric,100)+greatest(0,stamp-coalesce((s->>'at')::numeric,stamp))*100/16560),'at',stamp);
+ for task in select value from jsonb_array_elements(s->'jobs') order by (value->>'end')::numeric loop
+  if not coalesce((task->>'done')::boolean,false) and (task->>'end')::numeric<=stamp then
+   job:=task->>'job';task:=task||'{"done":true}'::jsonb;
+   s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+public.game_rpg_recipe_xp(s,public.game_rpg_catalog()->'recipes'->(task->>'recipe'))));
+   s:=jsonb_set(s,array['crafts',job],to_jsonb(coalesce((s->'crafts'->>job)::int,0)+1));
+  end if;jobs:=jobs||jsonb_build_array(task);
+ end loop;
+ s:=s||jsonb_build_object('jobs',jobs);d:=d||jsonb_build_object('rpg',s);
+ inv:=public.game_inventory(d);eq:=coalesce(d->'equipment','{}');
+ for i in 0..24 loop
+  item:=inv->i;
+  if jsonb_typeof(item)='object' and (public.game_equipment_item(item->>'id') is not null or public.game_rpg_catalog()->'items'->(item->>'id')->>'stack'='1') then
+   for j in 2..greatest(1,coalesce((item->>'count')::int,1)) loop
+    extras:=extras||jsonb_build_array(public.game_rpg_new_item(item->>'id',1)||(item-'instanceId')||jsonb_build_object('count',1));
+   end loop;
+   if not(item ? 'instanceId') then item:=public.game_rpg_new_item(item->>'id',1)||item;end if;
+   inv:=jsonb_set(inv,array[i::text],item||jsonb_build_object('count',1));
+  end if;
+ end loop;
+ foreach slot in array array['head','chest','hands','legs','weapon','offhand','ring','pendant','trinket'] loop
+  item:=eq->slot;if jsonb_typeof(item)='object' and not(item ? 'instanceId') then eq:=jsonb_set(eq,array[slot],public.game_rpg_new_item(item->>'id',1)||item);end if;
+ end loop;
+ d:=d||jsonb_build_object('inventory',inv,'equipment',eq);
+ for copy in select value from jsonb_array_elements(extras) loop d:=public.game_rpg_give(d,copy,true);end loop;
+ return d;
+end $function$
+
+CREATE OR REPLACE FUNCTION public.game_regen_data(p_id uuid, d jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  seen timestamptz;
+  stamp numeric := extract(epoch from clock_timestamp());
+  previous numeric := coalesce((d ->> 'vitals_at')::numeric, extract(epoch from clock_timestamp()));
+  active_until numeric;
+  elapsed numeric := 0;
+  max_health numeric := public.game_max_health(d);
+  max_resource numeric;
+  health_value numeric := public.game_health(d);
+  resource_value numeric;
+  health_remainder numeric := coalesce((d ->> 'health_regen')::numeric,0);
+  resource_remainder numeric := coalesce((d ->> 'resource_regen')::numeric,0);
+  health_rate numeric;
+  resource_rate numeric;
+  kind text := case when d ->> 'cls' in ('mago','clerigo') then 'mana' else 'stamina' end;
+  total numeric;
+begin
+  select seen_at into seen from public.world_players where character_id=p_id;
+  if seen is not null then
+    active_until := extract(epoch from least(clock_timestamp(),seen+interval '15 seconds'));
+    elapsed := greatest(0,active_until-previous);
+  end if;
+
+  max_resource := public.game_rpg_resource_max(d);
+
+  health_rate := case when coalesce((d->>'combat_at')::numeric,0)>=stamp-5 then 0.0025 else 0.01 end;
+  resource_rate := case when kind='mana' then 0.02 else 0.04 end;
+
+  if health_value=0 then
+    health_remainder := 0;
+    resource_remainder := 0;
+    resource_value := (public.game_public_vitals(d)->>'resource')::numeric;
+  else
+    total := least(max_health,health_value+health_remainder+max_health*health_rate*elapsed);
+    health_value := floor(total);
+    health_remainder := case when total>=max_health then 0 else total-health_value end;
+
+    resource_value := (public.game_public_vitals(d)->>'resource')::numeric;
+    total := least(max_resource,resource_value+resource_remainder+max_resource*resource_rate*elapsed);
+    resource_value := floor(total);
+    resource_remainder := case when total>=max_resource then 0 else total-resource_value end;
+  end if;
+
+  return d || jsonb_build_object(
+    'health',case when health_value>=max_health then -1 else health_value end,
+    'resource',case when resource_value>=max_resource then -1 else coalesce(resource_value,0) end,
+    'health_regen',health_remainder,'resource_regen',resource_remainder,'vitals_at',stamp
+  );
+end;
+$function$
+
+CREATE OR REPLACE FUNCTION public.game_food_data(p_id uuid, d jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  seen timestamptz;
+  stamp numeric := extract(epoch from now());
+  remaining numeric;
+begin
+  if public.game_item(d->'foodBuff'->>'itemId')->>'food_seconds' is not null then
+    if to_regclass('public.world_players') is not null then
+      select seen_at into seen from public.world_players where character_id=p_id;
+    end if;
+    remaining := least(900, greatest(0, coalesce((d -> 'foodBuff' ->> 'remaining')::numeric,0)));
+    if seen is not null then
+      remaining := greatest(0, remaining - greatest(0,
+        extract(epoch from case when seen > now()-interval '15 seconds' then now() else seen end)
+        - coalesce((d ->> 'food_at')::numeric, stamp)));
+    end if;
+    d := jsonb_set(d, '{foodBuff}', case when remaining > 0
+      then jsonb_build_object('itemId',d->'foodBuff'->>'itemId','remaining',remaining) else 'null'::jsonb end);
+  else
+    d := jsonb_set(d, '{foodBuff}', 'null'::jsonb);
+  end if;
+  return d || jsonb_build_object('food_at',stamp,'foodRevision',coalesce((d->>'foodRevision')::bigint,0));
+end $function$
+
+notify pgrst, 'reload schema';
+commit;

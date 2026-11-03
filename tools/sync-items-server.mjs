@@ -66,6 +66,7 @@ async function main() {
   lines.push('returns jsonb language sql immutable set search_path = \'\' as $$');
   lines.push('  select coalesce(public.game_custom_item(p_item), public.game_item(p_item));');
   lines.push('$$;');
+  lines.push('revoke all on function public.game_custom_item(text),public.game_item_extended(text) from public,anon,authenticated;');
   lines.push('');
 
   await writeFile(sqlPath, lines.join('\n'), 'utf8');
@@ -76,3 +77,4 @@ main().catch(err => {
   console.error(err);
   process.exit(1);
 });
+

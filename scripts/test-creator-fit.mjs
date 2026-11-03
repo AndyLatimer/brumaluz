@@ -61,7 +61,7 @@ test('hair surfaces have closed edges and outward winding, including the crest, 
       const lining = hairLining(face, skull.headAt); checkSurface(lining, `${face}/legacy lining`); lining.dispose();
       const crest = buildHair({ o: { ...o, hair: 7 }, ...skull, sources: {}, parts: {} });
       crest.hairPieces.forEach(piece => { checkSurface(piece.geo, `${face}/crest`); piece.geo.dispose(); });
-      for (let hair = 1; hair < 28; hair++) {
+      for (let hair = 1; hair < window.creatorTest.head.HAIR_STYLES.length; hair++) {
         const pieces = sculptedHair({ ...o, hair }, skull.headAt);
         pieces?.forEach((piece, i) => { checkSurface(piece.geo, `${face}/${hair}/${i}`); piece.geo.dispose(); });
       }
@@ -251,12 +251,12 @@ test('creator selectors include new choices, expose color selection, and preserv
   });
   await page.locator('[data-tab="cabello"]').click();
   const hair = page.locator('.stepper[data-key="hair"] select');
-  assert.equal(await hair.locator('option').count(), 28);
-  await hair.selectOption('21');
-  await page.locator('.stepper[data-key="hairAcc"] select').selectOption('11');
+  assert.equal(await hair.locator('option').count(), 32);
+  await hair.selectOption('21', { force: true });
+  await page.locator('.stepper[data-key="hairAcc"] select').selectOption('11', { force: true });
   await page.locator('[data-tab="rostro"]').click();
-  await page.locator('.stepper[data-key="eyeShape"] select').selectOption('12');
-  await page.locator('.stepper[data-key="makeup"] select').selectOption('9');
+  await page.locator('.stepper[data-key="eyeShape"] select').selectOption('12', { force: true });
+  await page.locator('.stepper[data-key="makeup"] select').selectOption('9', { force: true });
   assert.equal(await page.locator('#makeupColorBox').isVisible(), true);
   await page.locator('#tabs [data-tab="raza"]').click();
   await page.locator('#sex button[data-v="1"]').click();

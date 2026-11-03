@@ -2,6 +2,12 @@ import { DETAILS } from '../character/head/detailLayers';
 import { ACCESSORIES } from '../character/head/accessoryLayers';
 
 export const CREATOR_TRANSLATIONS: Record<string, string> = {
+  'Forma de andar': 'Walking style', 'Andar A': 'Walk A', 'Andar B': 'Walk B', 'Andar C': 'Walk C',
+  'Ver andando': 'Preview walk', 'Detener vista previa': 'Stop preview',
+  'Forma del rostro': 'Face shape', 'Forma de los ojos': 'Eye shape', 'Color de ojos': 'Eye colour',
+  'Conjunto de marcas': 'Marking set', 'Conjunto de complementos': 'Accessory set',
+  'Personalizar marcas': 'Customize markings', 'Personalizar complementos': 'Customize accessories',
+  'Los estilos cambian rasgos y colores. Conservan tu linaje, cuerpo, nombre, clase y atributos.': 'Styles change features and colours. They keep your lineage, body, name, class and attributes.',
   'El pañuelo tapa este rasgo. Las miniaturas lo muestran sin pañuelo para que puedas elegir; tu personaje lo conserva.': 'Your scarf hides this feature. Thumbnails show it without the scarf so you can choose; your character keeps it.',
   'Vista del catálogo': 'Catalogue view',
   'Ver rostro': 'View face', 'Ver cuerpo': 'View body', 'Ángulo de comparación': 'Comparison angle',
@@ -13,6 +19,8 @@ export const CREATOR_TRANSLATIONS: Record<string, string> = {
   'Gafas cuadradas': 'Square glasses', 'Medallón': 'Medallion', 'Pendientes de perla': 'Pearl earrings',
   'Trenza alta': 'High braid', 'Moño trenzado': 'Braided bun', 'Melena a un lado': 'Side-swept bob',
   'Rizos cortos': 'Short curls', 'Trenzas recogidas': 'Tucked braids', 'Dos moños trenzados': 'Twin braided buns',
+  'Corto de lado': 'Side-swept crop', 'Rizos con volumen': 'Full natural curls',
+  'Ondas largas': 'Long waves', 'Laterales rapados': 'Shaved sides',
   'Buscar una opción': 'Search options', 'Todos': 'All', 'Cortos': 'Short', 'Melenas': 'Long and medium',
   'Recogidos': 'Tied up', 'Trenzados': 'Braided', 'Rizados': 'Curly',
   'Apartados de personalización': 'Customisation sections', 'Piel': 'Skin', 'Mirada': 'Eyes', 'Facciones': 'Features',

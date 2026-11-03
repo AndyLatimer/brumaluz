@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="260" viewBox="0 0 360 260">
+  <ellipse cx="180" cy="231" rx="122" ry="10" fill="#24191b"/>
+  <g stroke="#654532" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M134 93V65c0-43 87-43 87 0v28h-13V65c0-25-61-25-61 0v28Z" fill="#bc9568"/>
+    <path d="M140 80V65c0-33 74-33 74 0v15" fill="none" stroke="#e0bd88" stroke-width="2"/>
+    <path d="M109 87h137l17 20v102c0 12-8 18-20 18H113c-14 0-22-8-22-20V107Z" fill="#a77c55"/>
+    <path d="M246 87c10 7 17 14 17 27v95c0 12-8 18-20 18h-10c9-8 13-16 13-30Z" fill="#896245" stroke="none"/>
+    <path d="M105 103h132v105c0 7-5 11-12 11H117c-7 0-12-4-12-11Z" fill="#bd9165" stroke-width="2"/>
+    <path d="M105 176v30c0 5 5 8 11 8h109c5 0 8-3 8-8v-30" fill="none" stroke="#e2bb87" stroke-width="1.5" stroke-dasharray="3 5"/>
+    <path d="m246 118 9 7v69l-10 18" fill="none" stroke="#bc9368" stroke-width="2"/>
+    <path d="M96 99h151v40c-14 24-130 28-151 0Z" fill="#cba174"/>
+    <path d="M104 113v22c17 23 118 20 135 0v-22" fill="none" stroke="#eed0a0" stroke-width="1.5" stroke-dasharray="3 5"/>
+    <path d="M163 142h24v53h-24Z" fill="#926c4a" stroke-width="2"/>
+    <rect x="160" y="158" width="30" height="23" rx="4" fill="#dbb56d" stroke-width="2.5"/>
+    <rect x="167" y="164" width="16" height="11" rx="1" fill="#926c4a" stroke-width="1.5"/>
+    <path d="M175 158v15" stroke="#eacb87" stroke-width="2"/>
+    <circle cx="175" cy="189" r="2" fill="#e2be86" stroke="none"/>
+    <path d="M125 88V76h25v12m54 0V76h25v12" fill="#9b714d" stroke-width="2"/>
+    <circle cx="138" cy="82" r="2" fill="#ddb97d" stroke="none"/>
+    <circle cx="216" cy="82" r="2" fill="#ddb97d" stroke="none"/>
+    <path d="m89 228-22 1" stroke="#a9b9af" stroke-width="3"/>
+    <path d="m89 224 27 0c8 0 8 12 0 12H89Z" fill="#c49a68" stroke-width="2"/>
+    <path d="M92 226v7" stroke="#e0ba85" stroke-width="1.5"/>
+    <path d="M276 205v23" stroke="#ba9061" stroke-width="12"/>
+    <path d="M264 205h24m-24 23h24" stroke="#d7b27c" stroke-width="5"/>
+    <path d="M265 210h22v13h-22Z" fill="#c7c599" stroke-width="2"/>
+    <path d="m268 214 16 0m-16 4h16" stroke="#a2a27e" stroke-width="1"/>
+    <path d="M281 223c18 9 23 2 23-2s-10-5-11 0" fill="none" stroke="#c7c599" stroke-width="2"/>
+  </g>
+</svg>

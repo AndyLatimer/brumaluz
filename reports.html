@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visor de reportes, bugs y mejoras · Brumaluz</title>
+    <link rel="icon" type="image/svg+xml" href="./src/assets/brand/brumaluz-favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="./src/dev/reportViewer.css" />
+  </head>
+  <body>
+    <!-- CABECERA DEL TALLER -->
+    <header class="workshop-header">
+      <div>
+        <span class="eyebrow">Taller de Brumaluz</span>
+        <h1>Visor y gestión de reportes de bugs</h1>
+        <p>Revisa capturas de pantalla, coordenadas, registros de consola y resuelve incidencias del juego.</p>
+      </div>
+      <nav aria-label="Navegación del taller">
+        <a href="./npcs.html">NPCs</a>
+        <a href="./maps.html">Mapas</a>
+        <a href="./quests.html">Misiones</a>
+        <a href="./items.html">Objetos</a>
+        <a href="./recipes.html">Recetas</a>
+        <a href="./shops.html">Tiendas</a>
+        <a href="./assets.html">Recursos</a>
+        <a href="./reports.html" class="active">Reportes</a>
+      </nav>
+    </header>
+
+    <!-- BARRA DE ESTADO GLOBAL -->
+    <div id="status" role="status" aria-live="polite">Cargando reportes guardados…</div>
+
+    <!-- WORKSPACE DE 3 PANELES -->
+    <div class="workspace">
+      <!-- PANEL IZQUIERDO: LISTA Y FILTROS -->
+      <aside class="panel library-panel" aria-label="Lista de reportes">
+        <div class="panel-header">
+          <span class="eyebrow">Incidencias</span>
+          <span id="reports-total-badge" class="pill">0</span>
+        </div>
+
+        <div class="quick-filter-pills" id="status-filter-pills" role="toolbar" aria-label="Filtro por estado">
+          <button type="button" class="filter-chip-btn active" data-status="all">Todos (<span id="count-all">0</span>)</button>
+          <button type="button" class="filter-chip-btn" data-status="pending">Pendientes (<span id="count-pending">0</span>)</button>
+          <button type="button" class="filter-chip-btn" data-status="in_progress">En curso (<span id="count-progress">0</span>)</button>
+          <button type="button" class="filter-chip-btn" data-status="resolved">Resueltos (<span id="count-resolved">0</span>)</button>
+        </div>
+
+        <div class="search-box-wrapper">
+          <input id="search-input" type="search" placeholder="Buscar por título, texto, zona o autor…" />
+        </div>
+
+        <div class="category-filter-row">
+          <select id="category-filter-select">
+            <option value="all">Todas las categorías</option>
+            <option value="bug">🐛 Bugs / Errores</option>
+            <option value="visual">🎨 Visual / Gráficos</option>
+            <option value="suggestion">💡 Sugerencias</option>
+            <option value="combat">⚔️ Combate</option>
+            <option value="quest">📜 Misiones</option>
+            <option value="performance">⚡ Rendimiento</option>
+          </select>
+        </div>
+
+        <div id="reports-list" class="reports-cards-list" role="list">
+          <!-- Tarjetas generadas dinámicamente -->
+        </div>
+      </aside>
+
+      <!-- PANEL CENTRAL: DETALLE Y CAPTURA -->
+      <main class="panel detail-panel" aria-label="Detalle del reporte seleccionado">
+        <div id="report-detail-view" class="report-detail-container">
+          <div class="placeholder-msg">
+            <p>Selecciona un reporte de la columna izquierda para inspeccionarlo.</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- PANEL DERECHO: DIAGNÓSTICO Y ASISTENTE IA -->
+      <aside class="panel assistant-panel" aria-label="Diagnóstico y Asistente IA">
+        <div class="panel-header">
+          <span class="eyebrow">Diagnóstico y Resolución</span>
+        </div>
+
+        <div id="assistant-tools-view" class="assistant-tools-container">
+          <div class="placeholder-msg">
+            <p>Elige un reporte para generar el prompt del asistente o copiar comandos.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <input type="file" id="import-json-input" accept=".json" hidden />
+
+    <div id="report-lightbox" class="lightbox" hidden aria-hidden="true">
+      <img id="lightbox-img" alt="Captura ampliada" />
+    </div>
+
+    <script type="module" src="/src/dev/reportViewer.ts"></script>
+  </body>
+</html>

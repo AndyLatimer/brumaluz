@@ -1,9 +1,65 @@
 import raw from './dailyOrders.json';
 import type {CharData} from './data';
 import type {RpgState,ProfessionSite} from './professions';
+import catalog from './generated/rpg-catalog.json';
+import rules from './cozyRules.json';
+import type {ItemStack} from './inventory';
 
 export interface DailyOrder {id:string;job:string;label:string;ingredients:Record<string,number>;reward:number}
 export interface DailyOrderCatalog {limit:number;reset:string;orders:Record<string,DailyOrder>}
+export interface Commission extends DailyOrder {recipe:string;tier:number;xp:number;day:string;acceptedId?:string}
+export interface CommissionState {day:string;completed:number;accepted?:Commission[]}
+export interface CommissionView {day:string;rank:number;offers:Commission[]}
+export function stableHash(value:string){let hash=0;for(const c of value)hash=(hash*31+c.charCodeAt(0))%2147483647;return hash;}
+export const crafterId=(data:CharData)=>data.rpg?.owner??`local:${data.name}`;
+export function commissionOffers(data:CharData,job:string,now=Date.now()/1000):Commission[]{
+ const s=data.rpg,rank=Math.min([0,100,500,1500,4000,10000].filter(n=>(s?.xp[job]??0)>=n).length-1,2+(s?.mastery[job]??0));
+ const day=dailyOrderDay(now),tier=rank===5?4:rank,rare=rank===5&&stableHash(`rare|${day}|${job}`)%1000<5;
+ const view=s?.orderViews?.[job];if(view?.day===day&&view.rank===rank)return view.offers;
+ const tool=({minero:'minero',lenador:'lenador',recolector:'recolector'} as Record<string,string>)[job];
+ const pool=(t:number)=>Object.values(catalog.recipes).filter(r=>r.tier===t&&(tool?(catalog.items as Record<string,{tool?:string}>)[r.output]?.tool===tool:r.job===job)&&!('processing' in r&&r.processing)).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+ return Array.from({length:3},(_,slot)=>{
+  const candidates=pool(rare&&slot===2?5:tier);if(!candidates.length)return null;
+  const recipe=candidates[stableHash(`${day}|${job}|${rank}|${slot}`)%candidates.length];
+  const component=recipe.output.startsWith('componente_'),factor=component?rules.componentFactor:1;
+  const count=component?2:recipe.job==='cocina'||recipe.job==='alquimia'?3:1;
+  return{id:`${day}:${job}:${rank}:${slot}`,job,label:recipe.label,recipe:recipe.id,tier:recipe.tier,day,ingredients:{[recipe.output]:count},reward:Math.floor(rules.orderRewards[recipe.tier]*factor),xp:Math.floor(rules.orderExperience[recipe.tier]*factor)};
+ }).filter((r):r is Commission=>r!==null);
+}
+export const acceptedCommissions=(data:CharData,now=Date.now()/1000)=>data.rpg?.dailyOrders?.day===dailyOrderDay(now)?data.rpg.dailyOrders.accepted??[]:[];
+export const eligibleCommissionItem=(data:CharData,item:ItemStack|null,id:string)=>!!item&&item.id===id&&!item.bound&&item.craftedBy===crafterId(data)&&!item.used&&(!('durability' in item)||item.durability===item.originalDurability&&item.maxDurability===item.originalDurability);
+export const commissionCount=(data:CharData,id:string)=>data.inventory.reduce((n,item)=>n+(eligibleCommissionItem(data,item,id)?item!.count:0),0);
+export const canDeliverCommission=(data:CharData,order:Commission)=>Object.entries(order.ingredients).every(([id,count])=>commissionCount(data,id)>=count);
+export function commissionAction(data:CharData,action:string,args:Record<string,unknown>,now:number){
+ const day=dailyOrderDay(now),s=data.rpg!,status=dailyOrderStatus(s,now);
+ const state:CommissionState={day,completed:status.completed,accepted:[...acceptedCommissions(data,now)]};
+ if(action==='order_view'){
+  const job=String(args.job);checkTeacher(data,(catalog.teachers as Record<string,ProfessionSite>)[job],args.master);
+  const rank=Math.min([0,100,500,1500,4000,10000].filter(n=>(s.xp[job]??0)>=n).length-1,2+(s.mastery[job]??0));
+  (s.orderViews??={})[job]={day,rank,offers:commissionOffers(data,job,now)};
+ }else if(action==='order_accept'){
+  if(state.accepted!.length>=3)throw new Error('Ya tienes tres encargos pendientes.');
+  const offer=commissionOffers(data,String(args.job),now).find(o=>o.id===args.id);if(!offer)throw new Error('La oferta ha cambiado.');
+  const teacher=(catalog.teachers as Record<string,ProfessionSite>)[offer.job];checkTeacher(data,teacher,args.master);
+  state.accepted!.push({...offer,acceptedId:crypto.randomUUID()});
+ }else if(action==='order_cancel'){
+  if(!state.accepted!.some(o=>o.acceptedId===args.id))throw new Error('Encargo no disponible.');state.accepted=state.accepted!.filter(o=>o.acceptedId!==args.id);
+ }else if(action==='order_claim'||action==='order_claim_all'){
+  const orders=state.accepted!.filter(o=>action==='order_claim'?o.acceptedId===args.id:o.job===args.job&&canDeliverCommission(data,o)).slice(0,action==='order_claim_all'?Math.max(0,3-state.completed):1);
+  if(!orders.length)throw new Error('No tienes encargos completos de este maestro.');
+  for(const order of orders){
+   if(state.completed>=3)throw new Error('Ya has completado tus tres encargos diarios.');
+   checkTeacher(data,(catalog.teachers as Record<string,ProfessionSite>)[order.job],args.master);
+   if(!canDeliverCommission(data,order)){if(action==='order_claim_all')continue;throw new Error('Faltan productos propios nuevos y sin usar.');}
+   for(const [id,count]of Object.entries(order.ingredients)){let left=count;for(let slot=0;slot<data.inventory.length&&left;slot++){const item=data.inventory[slot];if(!eligibleCommissionItem(data,item,id))continue;const n=Math.min(left,item!.count);left-=n;item!.count-=n;if(!item!.count)data.inventory[slot]=null;}}
+   data.wallet.pelines+=order.reward;s.xp[order.job]=(s.xp[order.job]??0)+order.xp;state.completed++;state.accepted=state.accepted!.filter(o=>o.acceptedId!==order.acceptedId);
+  }
+ }else throw new Error('El suministro antiguo ya no es un encargo diario.');
+ s.dailyOrders=state;
+}
+function checkTeacher(data:CharData,teacher:ProfessionSite|undefined,master:unknown){if(!teacher||master!==teacher.id||data.location!==teacher.location||!data.position||Math.hypot(data.position.x-teacher.x,data.position.z-teacher.z)>(teacher.radius??3))throw new Error('Habla con el maestro de este encargo.');}
+// These fixed supplies are retained only for the one-time profession lesson.
+// Ordinary commissions use commissionOffers and the server's frozen daily view.
 export const DAILY_ORDERS:DailyOrderCatalog=raw;
 export const dailyOrderDay=(now=Date.now()/1000)=>new Date(now*1000).toISOString().slice(0,10);
 export function dailyOrderStatus(state:Pick<RpgState,'dailyOrders'>|undefined,now=Date.now()/1000){

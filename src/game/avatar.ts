@@ -3,6 +3,8 @@ import { session, play, ui } from './state';
 import { Character } from '../character/character';
 import { castShadows } from '../world/render';
 import { holder, clock } from './stage';
+import {characterModelsReady,loadCharacterModels} from '../character/equipmentModels';
+import {toast} from '../ui/toast';
 
 export function characterContext() {
   const character = session.state;
@@ -12,8 +14,16 @@ export function characterContext() {
   const accountGeneration = session.accountSyncId;
   return () => session.state === character && session.activeCharacterId === characterId && session.currentUser?.id === userId && play.playGeneration === generation && session.accountSyncId === accountGeneration;
 }
+let buildRequest=0;
 export function rebuildNow() {
+  const request=++buildRequest;
   play.rebuildQueued = false;
+  if(!characterModelsReady(session.state)){
+    const current=characterContext();play.rebuildQueued=true;
+    void loadCharacterModels(session.state).then(()=>{if(request===buildRequest){play.rebuildQueued=false;if(current())rebuildNow();}})
+      .catch(error=>{if(request===buildRequest){play.rebuildQueued=false;if(current())toast('No se pudo cargar el equipo',error instanceof Error?error.message:String(error),true);}});
+    return;
+  }
   play.char?.dispose();
   play.char = new Character({ ...session.state }, { outfit: play.mode === 'create' && ui.tab === 'clase' });
   holder.add(play.char.root);

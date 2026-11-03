@@ -1,0 +1,95 @@
+{
+  "label": "expanded-fixes",
+  "samples": [
+    {
+      "name": "levante",
+      "graphics": "compatible",
+      "total": 54,
+      "visible": 4,
+      "frames": 12,
+      "elapsedMs": 5560.80000000447,
+      "animationUpdatesPerFrame": 4,
+      "animationMsPerFrame": 0.3500000008692344,
+      "simulationMsPerFrame": 0.1083333312223355,
+      "presentationOverheadMsPerFrame": 0.08333333271245162,
+      "drawCalls": 323,
+      "triangles": 793346,
+      "presentation": {
+        "total": 54,
+        "visible": 4,
+        "animated": 4,
+        "near": 3,
+        "medium": 1,
+        "far": 0
+      }
+    },
+    {
+      "name": "centro",
+      "graphics": "compatible",
+      "total": 54,
+      "visible": 5,
+      "frames": 12,
+      "elapsedMs": 4885.39999999851,
+      "animationUpdatesPerFrame": 5,
+      "animationMsPerFrame": 0.41666666604578495,
+      "simulationMsPerFrame": 0.10833333308498065,
+      "presentationOverheadMsPerFrame": 0.050000000124176346,
+      "drawCalls": 461.9166666666667,
+      "triangles": 987035,
+      "presentation": {
+        "total": 54,
+        "visible": 5,
+        "animated": 5,
+        "near": 2,
+        "medium": 2,
+        "far": 1
+      }
+    },
+    {
+      "name": "jardin",
+      "graphics": "compatible",
+      "total": 54,
+      "visible": 8,
+      "frames": 12,
+      "elapsedMs": 4926.60000000149,
+      "animationUpdatesPerFrame": 7.75,
+      "animationMsPerFrame": 0.5666666670391957,
+      "simulationMsPerFrame": 0.6166666665424904,
+      "presentationOverheadMsPerFrame": 0.04166666604578495,
+      "drawCalls": 549.5833333333334,
+      "triangles": 1078614.1666666667,
+      "presentation": {
+        "total": 54,
+        "visible": 8,
+        "animated": 8,
+        "near": 5,
+        "medium": 0,
+        "far": 3
+      }
+    },
+    {
+      "name": "ronda",
+      "graphics": "compatible",
+      "total": 54,
+      "visible": 4,
+      "frames": 12,
+      "elapsedMs": 4312.60000000149,
+      "animationUpdatesPerFrame": 4,
+      "animationMsPerFrame": 0.25833333159486455,
+      "simulationMsPerFrame": 0.44166666517655057,
+      "presentationOverheadMsPerFrame": 0.07500000049670537,
+      "drawCalls": 339,
+      "triangles": 812006,
+      "presentation": {
+        "total": 54,
+        "visible": 4,
+        "animated": 4,
+        "near": 2,
+        "medium": 2,
+        "far": 0
+      }
+    }
+  ],
+  "errors": [],
+  "readyMs": 40100.2402
+}

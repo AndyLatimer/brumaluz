@@ -76,3 +76,26 @@ El script combina las cinco recetas, descripciones de cuero y perfiles nuevos co
 `art/obtainability-review/deployment.json` registra el resultado y las rutas de copia y reversión. `node scripts/apply-obtainability-patch.mjs --verify` confirma en modo de solo lectura que están las cinco criaturas nuevas, los catálogos y funciones esperados y sus permisos. La comparación de los catálogos usa su contenido, no el orden de las claves JSON.
 
 **Estado de publicación:** servidor actualizado y verificado; cliente preparado en `dist/`, todavía sin publicar en un alojamiento web. No se ha encontrado una vinculación local de Vercel ni credenciales de despliegue de ese proveedor. El README describe una futura conexión con GitHub/Vercel; no se ha hecho un commit o push de los cambios existentes para desencadenarla. Las pruebas aisladas y la verificación del servidor no acreditan balance ni rendimiento de una partida en producción.
+
+## Reparación local posterior del catálogo de equipo
+
+El catálogo editable de objetos estaba sustituyendo los metadatos de las piezas
+de equipo existentes, dejando fuera sus rangos, tipos de arma y estadísticas.
+Ahora conserva esos datos y aplica encima los campos editables. Se han regenerado
+localmente el catálogo RPG, sus reglas compactas, las estadísticas SQL de equipo
+y el manifiesto de equipo, respetando las colocaciones y los modelos existentes.
+El catálogo resultante contiene 543 recetas y 220 entradas de conjuntos; se han
+recuperado 336 recetas de equipo que faltaban sin eliminar las ya existentes.
+
+- `node tools/build-rpg-catalog.mjs --preserve-placements` regenera el catálogo y
+  sus reglas sin redistribuir recursos o talleres.
+- `node tools/build-weapon-catalog.mjs` sincroniza las estadísticas SQL y los
+  manifiestos de equipo con las definiciones actuales del cliente.
+- `npm run test:cozy` pasa 57 pruebas; la regresión del catálogo revisa todas las
+  piezas canónicas. `node --test scripts/test-runtime-performance.mjs` comprueba
+  las estadísticas y conjuntos en SQL aislado, y la prueba de combate compara
+  todos los metadatos de equipo generados entre cliente y servidor.
+
+Esta reparación posterior está **solo en los archivos locales**: no se ha
+aplicado a ninguna base remota ni modifica personajes. La publicación del 27 de
+octubre descrita arriba es un registro histórico, no el despliegue de este arreglo.

@@ -1,0 +1,777 @@
+{
+  "checks": [
+    "All 18 self-contained GLBs loaded in the real asset editor",
+    "108 qualities × 15 camera/zoom positions: one draw, constant topology, identical repeat frames",
+    "Real game house: 18 pieces, stable movement/refresh, non-overlapping preview, cancellation and lantern on/off",
+    "Real game normal graphics: compatible=false, shadows=true, no graphics error",
+    "All 18 thumbnails displayed in the real map editor; no map saved"
+  ],
+  "errors": [],
+  "stability": [
+    {
+      "kind": "taburete",
+      "tier": 0,
+      "triangles": 2848,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "taburete",
+      "tier": 1,
+      "triangles": 2848,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "taburete",
+      "tier": 2,
+      "triangles": 2848,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "taburete",
+      "tier": 3,
+      "triangles": 2848,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "taburete",
+      "tier": 4,
+      "triangles": 2848,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "taburete",
+      "tier": 5,
+      "triangles": 2848,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesa",
+      "tier": 0,
+      "triangles": 4120,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesa",
+      "tier": 1,
+      "triangles": 4120,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesa",
+      "tier": 2,
+      "triangles": 4120,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesa",
+      "tier": 3,
+      "triangles": 4120,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesa",
+      "tier": 4,
+      "triangles": 4120,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesa",
+      "tier": 5,
+      "triangles": 4120,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biblioteca",
+      "tier": 0,
+      "triangles": 13884,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biblioteca",
+      "tier": 1,
+      "triangles": 13884,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biblioteca",
+      "tier": 2,
+      "triangles": 13884,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biblioteca",
+      "tier": 3,
+      "triangles": 13884,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biblioteca",
+      "tier": 4,
+      "triangles": 13884,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biblioteca",
+      "tier": 5,
+      "triangles": 13884,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "estacion",
+      "tier": 0,
+      "triangles": 5880,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "estacion",
+      "tier": 1,
+      "triangles": 5880,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "estacion",
+      "tier": 2,
+      "triangles": 5880,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "estacion",
+      "tier": 3,
+      "triangles": 5880,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "estacion",
+      "tier": 4,
+      "triangles": 5880,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "estacion",
+      "tier": 5,
+      "triangles": 5880,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "silla",
+      "tier": 0,
+      "triangles": 1920,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "silla",
+      "tier": 1,
+      "triangles": 1920,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "silla",
+      "tier": 2,
+      "triangles": 1920,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "silla",
+      "tier": 3,
+      "triangles": 1920,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "silla",
+      "tier": 4,
+      "triangles": 1920,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "silla",
+      "tier": 5,
+      "triangles": 1920,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "banco",
+      "tier": 0,
+      "triangles": 2272,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "banco",
+      "tier": 1,
+      "triangles": 2272,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "banco",
+      "tier": 2,
+      "triangles": 2272,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "banco",
+      "tier": 3,
+      "triangles": 2272,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "banco",
+      "tier": 4,
+      "triangles": 2272,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "banco",
+      "tier": 5,
+      "triangles": 2272,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesita",
+      "tier": 0,
+      "triangles": 1240,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesita",
+      "tier": 1,
+      "triangles": 1240,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesita",
+      "tier": 2,
+      "triangles": 1240,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesita",
+      "tier": 3,
+      "triangles": 1240,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesita",
+      "tier": 4,
+      "triangles": 1240,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "mesita",
+      "tier": 5,
+      "triangles": 1240,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "arcon",
+      "tier": 0,
+      "triangles": 5516,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "arcon",
+      "tier": 1,
+      "triangles": 5516,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "arcon",
+      "tier": 2,
+      "triangles": 5516,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "arcon",
+      "tier": 3,
+      "triangles": 5516,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "arcon",
+      "tier": 4,
+      "triangles": 5516,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "arcon",
+      "tier": 5,
+      "triangles": 5516,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "alfombra",
+      "tier": 0,
+      "triangles": 876,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "alfombra",
+      "tier": 1,
+      "triangles": 876,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "alfombra",
+      "tier": 2,
+      "triangles": 876,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "alfombra",
+      "tier": 3,
+      "triangles": 876,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "alfombra",
+      "tier": 4,
+      "triangles": 876,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "alfombra",
+      "tier": 5,
+      "triangles": 876,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "farol",
+      "tier": 0,
+      "triangles": 2164,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "farol",
+      "tier": 1,
+      "triangles": 2164,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "farol",
+      "tier": 2,
+      "triangles": 2164,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "farol",
+      "tier": 3,
+      "triangles": 2164,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "farol",
+      "tier": 4,
+      "triangles": 2164,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "farol",
+      "tier": 5,
+      "triangles": 2164,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "macetero",
+      "tier": 0,
+      "triangles": 2888,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "macetero",
+      "tier": 1,
+      "triangles": 2888,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "macetero",
+      "tier": 2,
+      "triangles": 2888,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "macetero",
+      "tier": 3,
+      "triangles": 2888,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "macetero",
+      "tier": 4,
+      "triangles": 2888,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "macetero",
+      "tier": 5,
+      "triangles": 2888,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biombo",
+      "tier": 0,
+      "triangles": 3204,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biombo",
+      "tier": 1,
+      "triangles": 3204,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biombo",
+      "tier": 2,
+      "triangles": 3204,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biombo",
+      "tier": 3,
+      "triangles": 3204,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biombo",
+      "tier": 4,
+      "triangles": 3204,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "biombo",
+      "tier": 5,
+      "triangles": 3204,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "butaca",
+      "tier": 0,
+      "triangles": 4000,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "butaca",
+      "tier": 1,
+      "triangles": 4000,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "butaca",
+      "tier": 2,
+      "triangles": 4000,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "butaca",
+      "tier": 3,
+      "triangles": 4000,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "butaca",
+      "tier": 4,
+      "triangles": 4000,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "butaca",
+      "tier": 5,
+      "triangles": 4000,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "aparador",
+      "tier": 0,
+      "triangles": 7016,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "aparador",
+      "tier": 1,
+      "triangles": 7016,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "aparador",
+      "tier": 2,
+      "triangles": 7016,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "aparador",
+      "tier": 3,
+      "triangles": 7016,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "aparador",
+      "tier": 4,
+      "triangles": 7016,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "aparador",
+      "tier": 5,
+      "triangles": 7016,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "escritorio",
+      "tier": 0,
+      "triangles": 4368,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "escritorio",
+      "tier": 1,
+      "triangles": 4368,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "escritorio",
+      "tier": 2,
+      "triangles": 4368,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "escritorio",
+      "tier": 3,
+      "triangles": 4368,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "escritorio",
+      "tier": 4,
+      "triangles": 4368,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "escritorio",
+      "tier": 5,
+      "triangles": 4368,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "perchero",
+      "tier": 0,
+      "triangles": 5960,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "perchero",
+      "tier": 1,
+      "triangles": 5960,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "perchero",
+      "tier": 2,
+      "triangles": 5960,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "perchero",
+      "tier": 3,
+      "triangles": 5960,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "perchero",
+      "tier": 4,
+      "triangles": 5960,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "perchero",
+      "tier": 5,
+      "triangles": 5960,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "costurero",
+      "tier": 0,
+      "triangles": 5870,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "costurero",
+      "tier": 1,
+      "triangles": 5870,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "costurero",
+      "tier": 2,
+      "triangles": 5870,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "costurero",
+      "tier": 3,
+      "triangles": 5870,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "costurero",
+      "tier": 4,
+      "triangles": 5870,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "costurero",
+      "tier": 5,
+      "triangles": 5870,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "jardinera",
+      "tier": 0,
+      "triangles": 14408,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "jardinera",
+      "tier": 1,
+      "triangles": 14408,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "jardinera",
+      "tier": 2,
+      "triangles": 14408,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "jardinera",
+      "tier": 3,
+      "triangles": 14408,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "jardinera",
+      "tier": 4,
+      "triangles": 14408,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    },
+    {
+      "kind": "jardinera",
+      "tier": 5,
+      "triangles": 14408,
+      "drawCalls": 1,
+      "repeatFrameStable": true
+    }
+  ],
+  "behavior": {
+    "modelReused": true,
+    "previewReused": true,
+    "movingOriginalHidden": true,
+    "cancelRestored": true,
+    "lanternSwitch": true,
+    "count": 18
+  },
+  "scope": "Local visual fixtures in real editors/game. No live account or database changes. Static repeat-frame checks do not prove every possible camera/device is artifact-free."
+}

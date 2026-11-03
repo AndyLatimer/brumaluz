@@ -52,11 +52,13 @@ export function itemEditorPlugin({ catalogPath } = {}) {
               questText,
               npcText,
               rpgText,
+              shopsText,
             ] = await Promise.all([
               server.ssrLoadModule('/src/data/items.ts'),
               readFile(resolve(server.config.root, 'src/data/questCatalog.json'), 'utf8').catch(() => '{"version":1,"quests":[]}'),
               readFile(resolve(server.config.root, 'src/data/npcs.json'), 'utf8').catch(() => '{"version":1,"npcs":[]}'),
               readFile(resolve(server.config.root, 'src/data/generated/rpg-catalog.json'), 'utf8').catch(() => '{"items":{},"recipes":{}}'),
+              readFile(resolve(server.config.root, 'src/data/shopsCatalog.json'), 'utf8').catch(() => '{"version":1,"shops":[]}'),
             ]);
 
             const quests = JSON.parse(questText).quests.map(q => ({
@@ -75,6 +77,25 @@ export function itemEditorPlugin({ catalogPath } = {}) {
                 items: Array.isArray(items) ? items : [],
               };
             });
+
+            // Tiendas del catálogo
+            try {
+              const shopsParsed = JSON.parse(shopsText);
+              if (Array.isArray(shopsParsed.shops)) {
+                for (const s of shopsParsed.shops) {
+                  if (s.active !== false) {
+                    const npc = s.npcId ? npcs.find(n => n.id === s.npcId) : null;
+                    const vendorLabel = npc ? `${s.name} (${npc.name})` : s.name;
+                    const itemIds = (s.items || []).map(i => i.itemId);
+                    vendors.push({
+                      id: s.id,
+                      name: vendorLabel,
+                      items: itemIds,
+                    });
+                  }
+                }
+              }
+            } catch {}
 
             const parsedRpg = JSON.parse(rpgText);
             const recipes = Object.entries(parsedRpg.recipes ?? {}).map(([id, r]) => ({
@@ -274,6 +295,7 @@ async function generateServerSql(projectRoot, catalog) {
   lines.push('returns jsonb language sql immutable set search_path = \'\' as $$');
   lines.push('  select coalesce(public.game_custom_item(p_item), public.game_item(p_item));');
   lines.push('$$;');
+  lines.push('revoke all on function public.game_custom_item(text),public.game_item_extended(text) from public,anon,authenticated;');
   lines.push('');
 
   await writeFile(sqlPath, lines.join('\n'), 'utf8').catch(err => {

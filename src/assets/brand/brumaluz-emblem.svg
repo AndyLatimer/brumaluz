@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 100" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="16" y1="12" x2="68" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f6dfa2"/><stop offset=".35" stop-color="#c29345"/><stop offset=".65" stop-color="#f0cc7a"/><stop offset="1" stop-color="#94652e"/>
+    </linearGradient>
+    <linearGradient id="enamel" x1="24" y1="22" x2="62" y2="81" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#384c45"/><stop offset="1" stop-color="#192b29"/>
+    </linearGradient>
+    <radialGradient id="light" cx=".5" cy=".43" r=".58">
+      <stop stop-color="#fff8d8"/><stop offset=".48" stop-color="#ffe1a0"/><stop offset="1" stop-color="#d1943c"/>
+    </radialGradient>
+  </defs>
+  <!-- Un pequeño farol de bienvenida, enmarcado como una puerta de la ciudad. -->
+  <path d="M42 5C35 15 16 18 16 42v26c0 14 11 21 26 27 15-6 26-13 26-27V42C68 18 49 15 42 5Z" fill="url(#gold)" stroke="#694822" stroke-width="1.5"/>
+  <path d="M42 12C34 21 21 23 21 43v24c0 11 8 17 21 23 13-6 21-12 21-23V43c0-20-13-22-21-31Z" fill="url(#enamel)" stroke="#f6d993" stroke-width=".8"/>
+  <path d="M42 19v7m-5 6v-2a5 5 0 0 1 10 0v2" stroke="url(#gold)" stroke-width="2" stroke-linecap="round"/>
+  <path d="m29 41 13-10 13 10-3 3H32l-3-3Z" fill="url(#gold)" stroke="#edcb80" stroke-width=".7"/>
+  <path d="m32 44 3 24h14l3-24H32Z" fill="url(#light)" stroke="#be914b" stroke-width="1.3"/>
+  <path d="m37 45 1 22m9-22-1 22" stroke="#815c2c" stroke-width="1.1"/>
+  <path d="M42 48c-1 6-5 8-4 12 1 5 8 4 8 0 0-4-3-6-4-12Z" fill="#fff9de"/>
+  <path d="M34 69h16l2 4H32l2-4Z" fill="url(#gold)"/>
+  <path d="M42 38v-3m-15 9-4-2m34 2 4-2M29 29l-3-3m29 3 3-3" stroke="#f0cd80" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Un libro abierto: las crónicas escritas por quienes llegan a Brumaluz. -->
+  <path d="M42 81c-7-5-14-5-22-4l2 9c7-1 14 1 20 5 6-4 13-6 20-5l2-9c-8-1-15-1-22 4Z" fill="#674724" stroke="#674724" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M42 79c-6-5-12-6-20-5l2 9c6-1 12 1 18 5 6-4 12-6 18-5l2-9c-8-1-14 0-20 5Z" fill="#f7e7bd" stroke="#b38a45" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M42 79v9m-15-10c4 0 7 1 11 3m-10 0c4 0 7 1 10 3m19-6c-4 0-7 1-11 3m10 0c-4 0-7 1-10 3" stroke="#b69458" stroke-width=".8" stroke-linecap="round"/>
+  <!-- Ramas discretas de los jardines de la ciudad. -->
+  <g stroke="#98713d" stroke-width="1" stroke-linecap="round">
+    <path d="M17 79C7 69 6 55 11 43m56 36c10-10 11-24 6-36"/>
+    <path d="M10 64C4 62 3 57 4 54c5 1 7 5 6 10Zm0-11c-5-3-5-7-3-10 4 2 5 6 3 10Zm3 21c-6 0-10-3-11-7 5-1 9 2 11 7Zm61-10c6-2 7-7 6-10-5 1-7 5-6 10Zm0-11c5-3 5-7 3-10-4 2-5 6-3 10Zm-3 21c6 0 10-3 11-7-5-1-9 2-11 7Z" fill="url(#gold)"/>
+  </g>
+  <path d="m42 0 2 4-2 4-2-4 2-4Z" fill="#b78a43"/>
+</svg>

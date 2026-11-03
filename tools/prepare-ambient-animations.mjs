@@ -10,6 +10,8 @@ const targets = new Map(reference.listNodes().map(node => [node.getName(), node]
 const SOURCES = [
   ['library/adventurers/animations/Rig_Medium_General.glb', ['Idle_B', 'Hit_B']],
   ['library/character-animations/animations/Rig_Medium_MovementAdvanced.glb', ['Crawling']],
+  ['library/character-animations/animations/Rig_Medium_MovementBasic.glb', ['Walking_C']],
+  ['library/character-animations/animations/Rig_Medium_Simulation.glb', ['Cheering']],
 ];
 
 const document = await io.read(asset(SOURCES[0][0]));

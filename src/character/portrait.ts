@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Character } from './character';
 import type { CharData } from '../data/data';
+import {characterModelsReady,loadCharacterModels} from './equipmentModels';
 
 const WIDTH = 208;
 const HEIGHT = 344;
@@ -45,6 +46,16 @@ export function createCharacterPortrait(data: CharData, renderer: THREE.WebGLRen
   const aspect = options.aspect ?? WIDTH / HEIGHT;
   const W = Math.round(WIDTH * scale);
   const H = Math.round(W / aspect);
+  if(!characterModelsReady(data)){
+    const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;canvas.setAttribute('aria-busy','true');
+    // A slow portrait must not delay the account list or prevent another
+    // character from entering. Removed cards never render a late response.
+    void loadCharacterModels(data).then(()=>{
+      if(!canvas.isConnected)return;
+      canvas.getContext('2d')?.drawImage(createCharacterPortrait(data,renderer,options),0,0);
+    }).catch(()=>{canvas.dataset.loadError='true';}).finally(()=>canvas.setAttribute('aria-busy','false'));
+    return canvas;
+  }
   const target_ = scale === 1 && !options.aspect
     ? renderTarget
     : new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, type: THREE.UnsignedByteType, samples: previewSamples(renderer), depthBuffer: true });

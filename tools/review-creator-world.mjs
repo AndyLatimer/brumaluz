@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 // Review the actual published city, using local test access without account writes.
 const hair = Number(process.argv[2] ?? 22);
 const expressions = process.argv.includes('--expressions');
-if (!Number.isInteger(hair) || hair < 0 || hair > 27) throw new Error('Invalid hairstyle');
+if (!Number.isInteger(hair) || hair < 0 || hair > 31) throw new Error('Invalid hairstyle');
 const server = await createServer({ server: { host: '127.0.0.1', port: 4208, strictPort: true, hmr: false }, logLevel: 'error' });
 let browser;
 try {

@@ -9,6 +9,8 @@ export const BANK_SIZE = 50;
 export const BANK_INTERACT_RADIUS = 1.8;
 /** Debe coincidir con game_bank_spot en supabase/server/. */
 export const BANK_SPOTS: Record<string, { x: number; z: number; radius: number }> = {
+  habitacion_posada_lucero_del_alba:{x:-1.9,z:1.5,radius:2.2},
+  casa_del_olmo:{x:2.6,z:2.6,radius:2.2},
   casa_de_isberto_interior: { x: 2.25, z: 3.25, radius: 3 },
 };
 
@@ -47,7 +49,7 @@ export function stackInto(slots: (ItemStack | null)[], item: ItemStack): (ItemSt
   let left = item.count;
   for (const slot of out) {
     if (left <= 0) break;
-    if (slot && slot.id === item.id && !slot.instanceId && !item.instanceId && (slot.bound === true) === bound && slot.count < max) {
+    if (slot && slot.id === item.id && !slot.instanceId && !item.instanceId && (slot.bound === true) === bound && slot.craftedBy===item.craftedBy && slot.used===item.used && slot.count < max) {
       const room = Math.min(max - slot.count, left);
       slot.count += room; left -= room;
     }
@@ -68,7 +70,7 @@ export function stackInto(slots: (ItemStack | null)[], item: ItemStack): (ItemSt
 export function placeItem(slots: (ItemStack | null)[], index: number, item: ItemStack): ItemStack | null {
   const target = slots[index];
   if (!target) { slots[index] = { ...item }; return null; }
-  if (target.id === item.id && !target.instanceId && !item.instanceId && (target.bound === true) === (item.bound === true)) {
+  if (target.id === item.id && !target.instanceId && !item.instanceId && (target.bound === true) === (item.bound === true) && target.craftedBy===item.craftedBy && target.used===item.used) {
     const moved = Math.min(Math.max(0, Math.max(1, itemStack(item.id)) - target.count), item.count);
     slots[index] = { ...target, count: target.count + moved };
     return item.count > moved ? { ...item, count: item.count - moved } : null;

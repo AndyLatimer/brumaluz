@@ -4,7 +4,7 @@ type Art = { colors: [string, string, string]; drawing: (id: (name: string) => s
 
 // Cada icono cuenta lo que hace la habilidad con el arma de su clase; todas las formas llevan relleno explícito
 // porque la barra de acción hereda `fill:none`.
-const ART: Record<SkillId, Art> = {
+const ART: Partial<Record<SkillId, Art>> = {
   // Guerrero · Golpe contundente: el mandoble cae a plomo y agrieta el suelo.
   heavy_strike: {
     colors: ['#8a3f27', '#22161a', '#ffc771'],
@@ -114,10 +114,28 @@ const ART: Record<SkillId, Art> = {
       <circle cx="39" cy="26" r="1.4" fill="#fffbe6"/>`,
   },
 };
+const EXTRA_ART: Partial<Record<SkillId, Art>> = {
+  shield_rush: { colors:['#8a3f27','#22161a','#ffc771'],drawing:()=>'<path d="M12 25 32 12l20 13-5 20-15 9-15-9z" fill="#c69a55" stroke="#382519" stroke-width="3"/><path d="M8 32h17m-7-7 7 7-7 7M32 20v22m-7-11h14" fill="none" stroke="#fff0b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' },
+  sweeping_edge: { colors:['#8a3f27','#22161a','#ffc771'],drawing:()=>'<path d="M8 42Q28 4 57 16 34 14 8 42zm1 8Q28 16 57 28 34 22 9 50zm5 6q19-22 39-18-20 1-39 18z" fill="#f3c574" stroke="#4a2618" stroke-width="1.5"/>' },
+  mountain_breaker: { colors:['#8a3f27','#22161a','#ffc771'],drawing:()=>'<path d="m32 5 5 15 13-8-4 17 13 5-15 6 3 16-14-10-13 10 3-16-15-6 14-5-3-17 13 8z" fill="#9e6843" stroke="#392316" stroke-width="2"/><path d="M32 18v24M20 31h24" stroke="#fff0b8" stroke-width="3" stroke-linecap="round"/>' },
+  firefly_burst: { colors:['#5b4596','#141a3c','#c8abff'],drawing:()=>'<path d="M12 44Q25 23 48 13M13 18q18 5 39 30" fill="none" stroke="#c8abff" stroke-width="2" stroke-dasharray="3 4"/><circle cx="14" cy="43" r="6" fill="#fff1a8"/><circle cx="31" cy="29" r="7" fill="#c9f5ff"/><circle cx="50" cy="14" r="5" fill="#f4cfff"/><path d="m31 18 2 7 7 4-7 2-2 7-2-7-7-2 7-4z" fill="#fff"/>' },
+  frost_lance: { colors:['#5b4596','#141a3c','#c8abff'],drawing:()=>'<path d="M32 5 48 28 32 58 16 28z" fill="#c8efff" stroke="#527caa" stroke-width="2"/><path d="M32 9v43M20 29l12 5 12-6" fill="none" stroke="#fff" stroke-width="2"/><path d="m12 18 5 2m30 25 5 2M47 13l-2 4" stroke="#9ce7ff" stroke-width="3" stroke-linecap="round"/>' },
+  starfall: { colors:['#5b4596','#141a3c','#c8abff'],drawing:()=>'<path d="m15 50 31-31M10 39l7 4 4 7 4-7 7-4-7-4-4-7-4 7zm25-19 4 2 2 4 2-4 4-2-4-2-2-4-2 4z" fill="#e6d8ff" stroke="#8f6cf0" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="14" r="4" fill="#fff6c8"/>' },
+  swift_flurry: { colors:['#2f5e57','#13232a','#9de4c0'],drawing:()=>'<path d="M7 20q24 2 48-12L8 30zm2 14q24 2 47-11L9 44zm7 13q20-3 39-17L16 54z" fill="#bfffe0" stroke="#41675f" stroke-width="1.5"/><path d="m22 13 7 12m6 2 7 11m-8 7 6 8" stroke="#f4fff8" stroke-width="2"/>' },
+  opportunist_strike: { colors:['#2f5e57','#13232a','#9de4c0'],drawing:()=>'<path d="M7 31q25-24 50 0Q32 55 7 31z" fill="#6ba58c" stroke="#24483e" stroke-width="2"/><circle cx="32" cy="31" r="8" fill="#f7e9ae" stroke="#24483e" stroke-width="2"/><path d="m13 51 35-39" stroke="#fff" stroke-width="3" stroke-linecap="round"/>' },
+  shadow_combo: { colors:['#2f5e57','#13232a','#9de4c0'],drawing:()=>'<path d="M10 19q17-15 29-3Q21 16 10 19zm-3 14q21-20 39-5Q21 28 7 33zm5 15q20-22 42-11-25 2-42 11z" fill="#8ad9b6" stroke="#24483e" stroke-width="2"/><circle cx="49" cy="18" r="4" fill="#f4fff8"/>' },
+  radiant_bolt: { colors:['#6b7a3f','#1d3530','#f4de8a'],drawing:()=>'<circle cx="32" cy="31" r="12" fill="#fff2b0" stroke="#bb8c42" stroke-width="2"/><path d="m32 7 3 11m18-3-8 8m12 10-12 2m-13 22-2-11M9 49l8-8M6 28l12-1m1-14 8 8m7 4-5 11 8-2-7 15 2-12-8 1z" fill="#ffe89a" stroke="#c89d50" stroke-width="1.5" stroke-linejoin="round"/>' },
+  sanctified_bolt: { colors:['#6b7a3f','#1d3530','#f4de8a'],drawing:()=>'<path d="m32 6 6 18 18 8-18 7-6 19-6-19-18-7 18-8z" fill="#fff2b0" stroke="#bb8c42" stroke-width="2"/><path d="m35 18-10 15h8l-4 14 12-18h-8z" fill="#d78a42" stroke="#744d31" stroke-width="1.5"/>' },
+  dawn_strike: { colors:['#6b7a3f','#1d3530','#f4de8a'],drawing:()=>'<path d="M9 43a23 23 0 0 1 46 0" fill="#f4c971" stroke="#8d6238" stroke-width="2"/><path d="M5 46h54M32 9v8m-19 0 6 6m26-6-6 6" stroke="#fff2b0" stroke-width="3" stroke-linecap="round"/><path d="m31 29-5 10h7l-4 12 11-16h-7l4-6z" fill="#fff" stroke="#bb8c42" stroke-width="1"/>' },
+  quick_volley: { colors:['#4b6477','#172733','#c8e8f4'],drawing:()=>'<path d="M9 18h39l-8-7m8 7-8 7M12 32h43l-8-7m8 7-8 7M8 47h38l-8-7m8 7-8 7" fill="none" stroke="#e5f4fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' },
+  piercing_bolt: { colors:['#4b6477','#172733','#c8e8f4'],drawing:()=>'<path d="M8 32h41m-10-13 13 13-13 13M10 20l22 12-22 12" fill="#d9eaf1" stroke="#426273" stroke-width="2" stroke-linejoin="round"/><path d="M8 32h43" stroke="#fff" stroke-width="2"/>' },
+  horizon_shot: { colors:['#4b6477','#172733','#c8e8f4'],drawing:()=>'<path d="M7 45h50M12 40a20 20 0 0 1 40 0" fill="#edc97c" stroke="#7295a1" stroke-width="2"/><path d="m13 36 34-18M37 18h10v10" fill="none" stroke="#e7f5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="36" r="5" fill="#fff3b1"/>' },
+};
 let sequence = 0;
 
 export function skillIcon(id: SkillId) {
-  const { colors, drawing } = ART[id], uid = `skill-art-${++sequence}`;
+  const art = ART[id] ?? EXTRA_ART[id] ?? ART.heavy_strike!;
+  const { colors, drawing } = art, uid = `skill-art-${++sequence}`;
   return `<svg class="skill-icon" data-icon-skill="${id}" data-icon-family="painted" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id="${uid}" cx=".35" cy=".2" r=".95"><stop stop-color="${colors[0]}"/><stop offset="1" stop-color="${colors[1]}"/></radialGradient>

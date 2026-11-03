@@ -5850,5 +5850,37 @@
     "maxResource": 2,
     "value": 25,
     "model": "items/accessories/abalorio_novicio.glb"
+  },
+  {
+    "id": "espada_guardian_brumaluz",
+    "label": "Espada del Guardián de Brumaluz",
+    "slot": "weapon",
+    "cls": "guerrero",
+    "model": "items/accessories/espada_guardian_brumaluz.glb"
+  },
+  {
+    "id": "arco_bosque_arboleda",
+    "label": "Arco largo de la Arboleda",
+    "slot": "weapon",
+    "cls": "explorador",
+    "model": "items/accessories/arco_bosque_arboleda.glb"
+  },
+  {
+    "id": "tunica_tejida_niebla",
+    "label": "Túnica de tejedora de niebla",
+    "slot": "chest",
+    "model": "items/accessories/tunica_tejida_niebla.glb"
+  },
+  {
+    "id": "sombrero_viajero_sol",
+    "label": "Sombrero de viajero solar",
+    "slot": "head",
+    "model": "items/accessories/sombrero_viajero_sol.glb"
+  },
+  {
+    "id": "pico_minero_reforzado",
+    "label": "Pico de minero reforzado",
+    "slot": "offhand",
+    "model": "items/accessories/pico_minero_reforzado.glb"
   }
 ]

@@ -1,0 +1,266 @@
+{
+  "editor": [
+    {
+      "id": "vecino_levante_1",
+      "name": "Vecina del mercado",
+      "seated": true
+    },
+    {
+      "id": "vecino_levante_2",
+      "name": "Vecino de paseo",
+      "seated": true
+    },
+    {
+      "id": "vecino_levante_3",
+      "name": "Vecina con cesta",
+      "seated": true
+    },
+    {
+      "id": "vecino_pozo_1",
+      "name": "Vecino del pozo",
+      "seated": true
+    }
+  ],
+  "game": [
+    {
+      "district": "levante",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_levante_1",
+          "activity": "walking",
+          "position": [
+            124.01999999999917,
+            1.290599963664984,
+            0
+          ]
+        },
+        {
+          "id": "vecino_levante_2",
+          "activity": "walking",
+          "position": [
+            119.3100000000008,
+            1.1392999863624813,
+            0
+          ]
+        },
+        {
+          "id": "vecino_levante_3",
+          "activity": "walking",
+          "position": [
+            118.47199999999987,
+            1.1141600103378255,
+            0
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "pozo",
+      "speech": [
+        {
+          "id": "vecino_pozo_2",
+          "line": "Ese cubo es el mío."
+        },
+        {
+          "id": "vecino_pozo_1",
+          "line": "Lo sé. Te lo he llenado mientras acababas."
+        }
+      ],
+      "residents": [
+        {
+          "id": "vecino_pozo_1",
+          "activity": "talking",
+          "position": [
+            5.1379247244599995,
+            0.20275849689396527,
+            -2.1765988629140733
+          ],
+          "partner": "vecino_pozo_2"
+        },
+        {
+          "id": "vecino_pozo_2",
+          "activity": "talking",
+          "position": [
+            4.9238677393093875,
+            0.20216124430476712,
+            0.6729182801534708
+          ],
+          "partner": "vecino_pozo_1"
+        },
+        {
+          "id": "vecino_pozo_3",
+          "activity": "idle",
+          "position": [
+            -15.975082902463868,
+            0.2796285750000891,
+            0.012536224961313437
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "jardin",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_jardin_1",
+          "activity": "talking",
+          "position": [
+            33.66700548854969,
+            0.28288518538820645,
+            28.03336534119534
+          ],
+          "partner": "vecino_jardin_2"
+        },
+        {
+          "id": "vecino_jardin_2",
+          "activity": "talking",
+          "position": [
+            37.22380910689948,
+            0.15599796232703522,
+            34.200101746578774
+          ],
+          "partner": "vecino_jardin_1"
+        },
+        {
+          "id": "vecino_jardin_3",
+          "activity": "walking",
+          "position": [
+            30.11154645453302,
+            0.25032396935881235,
+            30.983801540748914
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "artesanos",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_artesanos_1",
+          "activity": "idle",
+          "position": [
+            -112,
+            0.10999999940395355,
+            0
+          ]
+        },
+        {
+          "id": "vecino_artesanos_2",
+          "activity": "walking",
+          "position": [
+            -129.07099999999943,
+            0.7628399919867288,
+            0
+          ]
+        },
+        {
+          "id": "vecino_artesanos_3",
+          "activity": "walking",
+          "position": [
+            -135.62200000000064,
+            1.0348799667358655,
+            0
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "huertas",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_huertas_1",
+          "activity": "seated",
+          "position": [
+            -7.603464726546686,
+            0.4506289315098024,
+            82.77418716775338
+          ],
+          "seat": "map-object-urbe_02nd-0"
+        },
+        {
+          "id": "vecino_huertas_2",
+          "activity": "idle",
+          "position": [
+            -24,
+            0.4399999976158142,
+            76.21
+          ]
+        },
+        {
+          "id": "vecino_huertas_3",
+          "activity": "walking",
+          "position": [
+            -16.78453904036678,
+            0.39620048944753644,
+            76.83550997271014
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "lonja",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_lonja_1",
+          "activity": "idle",
+          "position": [
+            87.13999999999947,
+            0.04419999927280758,
+            0
+          ]
+        },
+        {
+          "id": "vecino_lonja_2",
+          "activity": "walking",
+          "position": [
+            89.00677269553147,
+            0.10033860055942356,
+            -0.0005276706087307743
+          ]
+        },
+        {
+          "id": "vecino_lonja_3",
+          "activity": "seated",
+          "position": [
+            91.5742167987311,
+            0.1277057912890592,
+            -7.257102819066029
+          ],
+          "seat": "map-object-urbe_02sf-0"
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    }
+  ],
+  "errors": [],
+  "bench": {
+    "id": "vecino_jardin_2",
+    "seat": "map-object-oqj-0",
+    "seatHeight": 0.879,
+    "ground": 0.1506838303756963,
+    "modelSeatHeight": 0.7283161696243037
+  },
+  "transitions": {
+    "interior": 0,
+    "interiorResidents": 0,
+    "returned": 18,
+    "plates": 20,
+    "actors": 20
+  }
+}

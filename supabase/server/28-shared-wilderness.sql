@@ -90,7 +90,7 @@ declare m jsonb;count int;selected text:=d->'wilderness'->>'selected';secondary 
 end $$;
 
 create or replace function public.game_wilderness_view(p_id uuid) returns jsonb language sql volatile set search_path='' as $$
- select jsonb_build_object('shared',true,'serverTime',extract(epoch from clock_timestamp()),'skillReadyAt',coalesce((c.data->>'combatNextSkill')::numeric,0),'attackReadyAt',coalesce((c.data->>'combatNextAttack')::numeric,0),'mobs',case when c.data->>'location'='pompelin' then coalesce((select jsonb_agg((state-'members'-'trail'-'route'-'routeAt'-'routeX'-'routeZ')||jsonb_build_object('revision',revision,'attackingYou',state->>'status'='active' and state->'members' ? p_id::text) order by spawn) from public.wilderness_mobs),'[]'::jsonb) else '[]'::jsonb end,'corpses',coalesce((select jsonb_agg(encounter-'members'-'trail'-'route'-'routeAt'-'routeX'-'routeZ') from public.wilderness_claims where character_id=p_id and expires_at>extract(epoch from clock_timestamp())),'[]'::jsonb),'inCombat',public.game_wilderness_in_combat(p_id)) from public.characters c where c.id=p_id
+ select jsonb_build_object('shared',true,'serverTime',extract(epoch from clock_timestamp()),'skillReadyAt',coalesce((c.data->>'combatNextSkill')::numeric,0),'skillCooldowns',coalesce(c.data->'combatSkillReadyAt','{}'::jsonb),'attackReadyAt',coalesce((c.data->>'combatNextAttack')::numeric,0),'mobs',case when c.data->>'location'='pompelin' then coalesce((select jsonb_agg((state-'members'-'trail'-'route'-'routeAt'-'routeX'-'routeZ')||jsonb_build_object('revision',revision,'attackingYou',state->>'status'='active' and state->'members' ? p_id::text) order by spawn) from public.wilderness_mobs),'[]'::jsonb) else '[]'::jsonb end,'corpses',coalesce((select jsonb_agg(encounter-'members'-'trail'-'route'-'routeAt'-'routeX'-'routeZ') from public.wilderness_claims where character_id=p_id and expires_at>extract(epoch from clock_timestamp())),'[]'::jsonb),'inCombat',public.game_wilderness_in_combat(p_id)) from public.characters c where c.id=p_id
 $$;
 
 -- Preserve the original story resolver created by 27; only replace its outdoor route.
@@ -109,7 +109,7 @@ declare c public.characters;w public.world_players;m jsonb;before jsonb;secondar
  c:=public.game_lock_character(p_character_id);
  select * into w from public.world_players where user_id=(select auth.uid()) and character_id=c.id and seen_at>clock_timestamp()-interval '15 seconds' for update;
  if not found or c.data->>'location' is distinct from 'pompelin' then raise exception 'Debes estar en Pompelín.';end if;
- if p_action is null or p_action not in('state','start','attack','skill','loot','stop') then raise exception 'COMBAT_INVALID_ACTION';end if;
+ if p_action is null or (p_action not in('state','start','attack','skill','loot','stop') and public.game_skill_data(p_action) is null) then raise exception 'COMBAT_INVALID_ACTION';end if;
  if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false) then raise exception 'COMBAT_UNAVAILABLE';end if;
  -- Lock order: own character, own presence, shared population. Never another character.
  perform pg_catalog.pg_advisory_xact_lock(731029,4);
@@ -123,7 +123,7 @@ declare c public.characters;w public.world_players;m jsonb;before jsonb;secondar
   if not public.game_has_weapon(c.data) then raise exception 'COMBAT_WEAPON_REQUIRED';end if;
   m:=public.game_wilderness_join(m,c.id);update public.wilderness_mobs set state=m,revision=revision+1 where spawn=p_spawn;
   c.data:=jsonb_set(c.data,'{wilderness}',coalesce(c.data->'wilderness','{}')||jsonb_build_object('selected',p_spawn));
- elsif p_action in('attack','skill') then
+ elsif p_action in('attack','skill') or public.game_skill_data(p_action) is not null then
   c.data:=public.game_wilderness_context(c.id,c.data,(w.position->>'x')::numeric,(w.position->>'z')::numeric);
   select state into before from public.wilderness_mobs where spawn=c.data->'combatEncounter'->>'spawn' for update;
   if before is null or before->>'status' not in('active','idle') or p_spawn is not null and before->>'instanceId'<>p_spawn then

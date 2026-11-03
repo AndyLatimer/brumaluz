@@ -61,12 +61,15 @@ function show(target: HTMLElement) {
   const item = target.dataset.itemId;
   const cls = target.dataset.skillClass;
   const skillClass = cls && Object.prototype.hasOwnProperty.call(COMBAT_KITS, cls) ? cls as ClassId : null;
-  if ((!text && !item && !skillClass) || !target.isConnected || !target.getClientRects().length) { hide(); return; }
+  const skillId = skillClass && target.dataset.skillId
+    ? COMBAT_KITS[skillClass].skills.find(skill => skill.id === target.dataset.skillId)?.id
+    : undefined;
+  if ((!text && !item && !skillId) || !target.isConnected || !target.getClientRects().length) { hide(); return; }
   const box = ensureTip();
   box.replaceChildren();
-  box.classList.toggle('item-tooltip', !!item || !!skillClass);
-  box.classList.toggle('skill-tooltip', !!skillClass);
-  if (skillClass) renderSkillTooltip(box, skillClass, Number(target.dataset.skillRank), skillTooltipEquipment(target));
+  box.classList.toggle('item-tooltip', !!item || !!skillId);
+  box.classList.toggle('skill-tooltip', !!skillId);
+  if (skillClass && skillId) renderSkillTooltip(box, skillClass, skillId, Number(target.dataset.skillRank), skillTooltipEquipment(target));
   else if (item) renderItemTooltip(box, item, target.dataset.itemBound === 'true', itemTooltipInstance(target));
   else {
     const [head, body] = text!.includes('|') ? text!.split('|', 2) : [text!, ''];

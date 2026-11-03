@@ -1,5 +1,9 @@
 # Vestuario modular
 
+El [inventario de rigs y animaciones](ANIMATIONS.md) documenta los paquetes
+Medium y Large, todos los clips disponibles y su uso actual. Consultarlo al
+preparar una prenda o elegir gestos para personajes nuevos.
+
 ## Atuendo base de los personajes
 
 La ropa de diario de todas las clases es el conjunto `medieval`: túnica,
@@ -93,6 +97,20 @@ mechones por peinado. Las lunas se modelan como crecientes biselados y las hojas
 como superficies con nervadura y tallo común. La lámina adicional
 `art/creator-studio-review/refined-options.png` permite revisar sus tres vistas.
 
+El pulido del 3 de noviembre añade cuatro siluetas hasta **32 peinados**,
+rehace el volumen y el contorno de las barbas y afina las marcas faciales.
+Las mallas cerradas de `head/sculptedBeard.ts` siguen cada mandíbula; la tinta
+de `head/faceInk.ts` se proyecta sobre la piel y reúne piezas por color.
+El pelo rapado usa la celda 63 de la paleta de cabeza para mezclar piel y pelo,
+sin modificar las celdas originales ni las prendas. Contrato y comprobaciones
+en [Detalle y variedad](CHARACTER-CREATOR.md#detalle-y-variedad-de-personalización-3-de-noviembre).
+
+Referencias consultadas para variedad de siluetas y combinaciones:
+[Universal Base Characters de Quaternius](https://quaternius.com/packs/universalbasecharacters.html)
+y [la personalización de Palia](https://support.palia.com/hc/en-us/articles/7474242903444-Customization).
+Esta entrega conserva el rig y los recursos de Brumaluz y modela sus nuevas
+superficies en el código del proyecto; no importa modelos de esas referencias.
+
 ## Primera pieza de producción
 
 `src/assets/models/wardrobe/helpers.glb` contiene el uniforme base del Gremio
@@ -119,8 +137,8 @@ el inventario ni se desbloquea equipamiento para jugadores.
   se oculta el suelo para inspeccionar las suelas.
 - El probador incluye recoger, consumir y golpes. Los clips adicionales y su
   integración cosmética se describen en la [biblioteca de recursos](./ASSET-LIBRARY.md).
-  `npm run art:ambient` regenera los dos clips nuevos sin sustituir el rig,
-  el uniforme ni las animaciones originales.
+  `npm run art:ambient` regenera la selección actual de cinco clips sin sustituir
+  el rig, el uniforme ni las animaciones originales.
 - Para editar artísticamente, importar `helpers.glb` en Blender mediante
   **File > Import > glTF 2.0**. El archivo incluye la armadura en reposo,
   prendas separadas y materiales con nombre. Guardar un `.blend` como fuente

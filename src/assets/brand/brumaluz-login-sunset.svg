@@ -1,0 +1,824 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" fill="none">
+  <defs>
+    <!-- Sunset sky: the same peach and gold palette as the account backdrop. -->
+    <linearGradient id="celestial-sky" x1="0" y1="0" x2="0" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#edaa83"/>
+      <stop offset="22%" stop-color="#edb08b"/>
+      <stop offset="44%" stop-color="#e9bd91"/>
+      <stop offset="62%" stop-color="#d8b18c"/>
+      <stop offset="78%" stop-color="#b69a7b"/>
+      <stop offset="90%" stop-color="#9b8064"/>
+      <stop offset="100%" stop-color="#40503d"/>
+    </linearGradient>
+
+    <radialGradient id="sky-nebula" cx="480" cy="200" r="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffe0ab" stop-opacity="0.35"/>
+      <stop offset="45%" stop-color="#f4c697" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#edaa83" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Sunset Sun Gradients -->
+    <radialGradient id="lunar-disc" cx="0" cy="0" r="1" gradientTransform="matrix(48 48 -48 48 510 142)" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff3d0"/>
+      <stop offset="35%" stop-color="#ffe4ae"/>
+      <stop offset="70%" stop-color="#f7ce8d"/>
+      <stop offset="92%" stop-color="#efb778"/>
+      <stop offset="100%" stop-color="#e8ab6c"/>
+    </radialGradient>
+
+    <radialGradient id="lunar-halo" cx="510" cy="142" r="135" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffe8b8" stop-opacity="0.68"/>
+      <stop offset="30%" stop-color="#ffd49a" stop-opacity="0.35"/>
+      <stop offset="65%" stop-color="#f6bc85" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#edaa83" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Mountain Gradients -->
+    <linearGradient id="mtn-back-grad" x1="360" y1="160" x2="360" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#be9b93"/>
+      <stop offset="50%" stop-color="#a8897e"/>
+      <stop offset="100%" stop-color="#a38268"/>
+    </linearGradient>
+
+    <linearGradient id="snow-lit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff0db"/>
+      <stop offset="50%" stop-color="#f7dcc2"/>
+      <stop offset="100%" stop-color="#dfbba2"/>
+    </linearGradient>
+
+    <linearGradient id="snow-shade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b5948b"/>
+      <stop offset="100%" stop-color="#806b70"/>
+    </linearGradient>
+
+    <!-- Stone Wall Gradients -->
+    <linearGradient id="stone-wall-lit" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7c6e5e"/>
+      <stop offset="45%" stop-color="#aba08f"/>
+      <stop offset="85%" stop-color="#938676"/>
+      <stop offset="100%" stop-color="#6b5e50"/>
+    </linearGradient>
+
+    <linearGradient id="stone-wall-shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#54493e"/>
+      <stop offset="50%" stop-color="#6f6254"/>
+      <stop offset="100%" stop-color="#4d4237"/>
+    </linearGradient>
+
+    <linearGradient id="tower-cylinder" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4e4337"/>
+      <stop offset="22%" stop-color="#7e7161"/>
+      <stop offset="65%" stop-color="#b8ab9a"/>
+      <stop offset="90%" stop-color="#8a7c6c"/>
+      <stop offset="100%" stop-color="#584b3d"/>
+    </linearGradient>
+
+    <!-- Roof Gradients -->
+    <linearGradient id="roof-slate-blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#64839e"/>
+      <stop offset="45%" stop-color="#4a667f"/>
+      <stop offset="100%" stop-color="#2c4254"/>
+    </linearGradient>
+
+    <linearGradient id="roof-clay-red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#de7445"/>
+      <stop offset="50%" stop-color="#b6582d"/>
+      <stop offset="100%" stop-color="#783418"/>
+    </linearGradient>
+
+    <linearGradient id="timber-beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#63452e"/>
+      <stop offset="100%" stop-color="#3c2617"/>
+    </linearGradient>
+
+    <!-- Light Gradients -->
+    <radialGradient id="portal-inner-glow" cx="370" cy="540" r="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffeed0" stop-opacity="1"/>
+      <stop offset="25%" stop-color="#fed693" stop-opacity="0.88"/>
+      <stop offset="60%" stop-color="#df9a44" stop-opacity="0.45"/>
+      <stop offset="85%" stop-color="#8e5d26" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#52473c" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="lantern-spill" cx="0" cy="0" r="1" gradientTransform="matrix(0 80 -80 0 0 0)" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="ambient-gold-wash" cx="360" cy="670" r="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffeaad" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#e8b968" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#52473c" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Mist Ribbons -->
+    <linearGradient id="mist-alpha-1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d6e8fa" stop-opacity="0"/>
+      <stop offset="22%" stop-color="#d6e8fa" stop-opacity="0.22"/>
+      <stop offset="52%" stop-color="#fae7cb" stop-opacity="0.35"/>
+      <stop offset="82%" stop-color="#d6e8fa" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#d6e8fa" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="mist-alpha-2" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0%" stop-color="#cadff5" stop-opacity="0"/>
+      <stop offset="28%" stop-color="#cadff5" stop-opacity="0.22"/>
+      <stop offset="55%" stop-color="#f2d7b4" stop-opacity="0.3"/>
+      <stop offset="82%" stop-color="#cadff5" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#cadff5" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="soft-blur-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="wide-blur-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="15"/>
+    </filter>
+
+    <!-- Patterns -->
+    <pattern id="stonework-pattern" width="40" height="22" patternUnits="userSpaceOnUse">
+      <path d="M0 0h40v22H0z" fill="none"/>
+      <path d="M0 11h40M0 22h40M20 0v11M0 11v11M40 11v11" stroke="#3d3329" stroke-width="1.2" stroke-opacity="0.32"/>
+      <path d="M1 1h18M21 1h18M1 12h38" stroke="#ffffff" stroke-width="0.9" stroke-opacity="0.35"/>
+    </pattern>
+
+    <pattern id="roof-shingles" width="22" height="14" patternUnits="userSpaceOnUse">
+      <path d="M0 7h22M0 14h22M11 0v7M0 7v7M22 7v7" stroke="#1d2d3a" stroke-width="1.1" stroke-opacity="0.45"/>
+      <path d="M1 1h9M12 1h9M1 8h20" stroke="#a9d0f2" stroke-width="0.8" stroke-opacity="0.38"/>
+    </pattern>
+
+    <!-- Ornate Wrought-Iron Street Lantern Object -->
+    <g id="street-lantern">
+      <path d="M-26 -8 C-16 -18 -6 -20 8 -20 C16 -20 20 -15 20 -8 L20 8" fill="none" stroke="#2c221a" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M-22 8 C-10 8 0 2 8 -6" fill="none" stroke="#2c221a" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="-2" cy="-6" r="4" fill="none" stroke="#2c221a" stroke-width="1.8"/>
+      <path d="M-28 -14 H-22 V14 H-28 Z" fill="#3f3125" stroke="#1b140f" stroke-width="1.2"/>
+      <line x1="20" y1="8" x2="20" y2="18" stroke="#3a2e23" stroke-width="2.8"/>
+      <ellipse cx="20" cy="19" rx="4" ry="2.2" fill="none" stroke="#cfa55b" stroke-width="1.8"/>
+      <path d="M6 25 L20 18 L34 25 L30 30 L10 30 Z" fill="#4d3d2c" stroke="#c49847" stroke-width="1.4"/>
+      <path d="M9 30 L12 54 L28 54 L31 30 Z" fill="#d9ecfa" stroke="#48351b" stroke-width="1.8"/>
+      <line x1="16" y1="30" x2="18" y2="54" stroke="#4a371c" stroke-width="1.4"/>
+      <line x1="24" y1="30" x2="22" y2="54" stroke="#4a371c" stroke-width="1.4"/>
+      <polygon points="12,32 15,32 18,52 15,52" fill="#ffffff" opacity="0.6"/>
+      <path d="M10 54 L30 54 L28 58 L12 58 Z" fill="#3a2c1f" stroke="#af853c" stroke-width="1"/>
+      <path d="M20 58 L20 66" stroke="#2c221a" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+
+    <g id="twinkle-sparkle">
+      <path d="M0 -9 Q0 0 9 0 Q0 0 0 9 Q0 0 -9 0 Q0 0 0 -9 Z" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="1.8" fill="#ffe082"/>
+    </g>
+
+    <clipPath id="arch-portal-clip">
+      <path d="M275 600 V470 C275 390 314 345 365 345 C416 345 455 390 455 470 V600 Z"/>
+    </clipPath>
+  </defs>
+
+
+  <!-- ==================== 1. SKY & STARS ==================== -->
+  <rect width="720" height="960" fill="url(#celestial-sky)"/>
+  <rect width="720" height="960" fill="url(#sky-nebula)"/>
+
+  <g id="stars-layer" opacity="0">
+    <use href="#twinkle-sparkle" x="85" y="75" class="star-breathe-1"/>
+    <use href="#twinkle-sparkle" x="210" y="55" class="star-breathe-2"/>
+    <use href="#twinkle-sparkle" x="330" y="85" class="star-breathe-3"/>
+    <use href="#twinkle-sparkle" x="635" y="70" class="star-breathe-1"/>
+    <use href="#twinkle-sparkle" x="670" y="185" class="star-breathe-2"/>
+    <use href="#twinkle-sparkle" x="65" y="175" class="star-breathe-3"/>
+    <use href="#twinkle-sparkle" x="150" y="135" class="star-breathe-1"/>
+    <use href="#twinkle-sparkle" x="280" y="155" class="star-breathe-2"/>
+
+    <g fill="#ffffff" opacity="0.85">
+      <circle cx="32" cy="40" r="1.3"/>
+      <circle cx="70" cy="110" r="1.8" opacity="0.65"/>
+      <circle cx="125" cy="35" r="1.2"/>
+      <circle cx="178" cy="105" r="1.5"/>
+      <circle cx="250" cy="70" r="1.3"/>
+      <circle cx="300" cy="40" r="1.6"/>
+      <circle cx="385" cy="50" r="1.4"/>
+      <circle cx="420" cy="115" r="1.7"/>
+      <circle cx="580" cy="40" r="1.3"/>
+      <circle cx="600" cy="115" r="1.5"/>
+      <circle cx="650" cy="60" r="1.2"/>
+      <circle cx="675" cy="135" r="1.5"/>
+      <circle cx="28" cy="225" r="1.3"/>
+      <circle cx="110" cy="215" r="1.4"/>
+      <circle cx="205" cy="200" r="1.6"/>
+      <circle cx="630" cy="240" r="1.4"/>
+    </g>
+  </g>
+
+  <!-- ==================== 2. THE MOON ==================== -->
+  <!-- ==================== 2. THE SUN ==================== -->
+  <g id="sun-group" transform="translate(0 36)">
+    <circle cx="510" cy="142" r="140" fill="url(#lunar-halo)"/>
+    <circle cx="510" cy="142" r="76" fill="#fff5d6" opacity="0.45" filter="url(#wide-blur-glow)"/>
+    <circle cx="510" cy="142" r="54" fill="url(#lunar-disc)" stroke="#ffffff" stroke-width="2"/>
+    <circle cx="510" cy="142" r="42" fill="#ffffff" opacity="0.65" filter="url(#soft-blur-glow)"/>
+  </g>
+
+  <!-- ==================== 3. DISTANT MOUNTAIN RANGES ==================== -->
+  <g id="mountains-far">
+    <path d="M-20 440 L40 310 L110 365 L175 260 L245 335 L335 225 L425 325 L515 240 L600 340 L675 280 L740 320 L740 520 L-20 520 Z" fill="url(#mtn-back-grad)"/>
+
+    <polygon points="175,260 148,302 170,292 175,315 192,288" fill="url(#snow-lit)" opacity="0.8"/>
+    <polygon points="175,260 192,288 214,312 188,298 175,315" fill="url(#snow-shade)" opacity="0.8"/>
+
+    <polygon points="335,225 295,280 325,268 335,298 360,265" fill="url(#snow-lit)" opacity="0.92"/>
+    <polygon points="335,225 360,265 395,295 358,285 335,298" fill="url(#snow-shade)" opacity="0.92"/>
+    <path d="M335 225 L335 298 L325 268 L295 280" stroke="#a3bed8" stroke-width="1.6" stroke-linecap="round"/>
+
+    <polygon points="515,240 485,285 508,276 515,302 538,274" fill="url(#snow-lit)" opacity="0.85"/>
+    <polygon points="515,240 538,274 565,302 534,288 515,302" fill="url(#snow-shade)" opacity="0.85"/>
+  </g>
+
+  <g id="mountains-mid">
+    <path d="M-20 470 L50 350 L125 405 L210 300 L300 390 L385 290 L470 375 L560 295 L635 360 L740 310 L740 550 L-20 550 Z" fill="#5d7590"/>
+
+    <polygon points="210,300 168,355 198,342 210,370 238,335" fill="url(#snow-lit)"/>
+    <polygon points="210,300 238,335 265,370 230,355 210,370" fill="url(#snow-shade)"/>
+
+    <polygon points="385,290 340,345 375,332 385,365 420,328" fill="url(#snow-lit)"/>
+    <polygon points="385,290 420,328 450,365 412,348 385,365" fill="url(#snow-shade)"/>
+
+    <polygon points="560,295 518,348 550,335 560,370 595,330" fill="url(#snow-lit)"/>
+    <polygon points="560,295 595,330 622,368 585,350 560,370" fill="url(#snow-shade)"/>
+
+    <g fill="#2c473c" stroke="#1c3028" stroke-width="1.2">
+      <path d="M-10 450 L8 420 L14 430 L30 405 L36 415 L52 395 L65 418 L78 400 L92 425 L110 408 L126 435 L150 418 L170 445 L185 430 L215 465 L-10 480 Z"/>
+      <path d="M505 475 L525 440 L540 455 L560 425 L574 442 L600 410 L614 430 L638 405 L652 428 L678 400 L695 425 L728 405 L735 480 Z"/>
+    </g>
+  </g>
+
+  <path class="mist-pan-right" d="M-60 430 C60 410 160 445 280 425 C400 405 520 440 640 420 C720 405 800 430 860 425 L860 475 L-60 475 Z" fill="url(#mist-alpha-1)"/>
+
+  <!-- ==================== 4. ASYMMETRIC FAIRYTALE CITY SKYLINE ==================== -->
+  <g id="city-terraces">
+    <g id="great-spire" transform="translate(365, 0)">
+      <rect x="-18" y="260" width="36" height="155" fill="#7a6c5c" stroke="#120e0a" stroke-width="2.5"/>
+      <polygon points="0,155 -22,260 22,260" fill="url(#roof-slate-blue)" stroke="#141c24" stroke-width="3"/>
+      <polygon points="0,155 -22,260 22,260" fill="url(#roof-shingles)"/>
+      <line x1="0" y1="155" x2="0" y2="135" stroke="#d5aa55" stroke-width="2.5"/>
+      <circle cx="0" cy="133" r="3.5" fill="#f8cf6e"/>
+      <rect x="-11" y="272" width="9" height="22" rx="4.5" fill="#cfe6f8" stroke="#483315" stroke-width="1.3"/>
+      <rect x="2" y="272" width="9" height="22" rx="4.5" fill="#cfe6f8" stroke="#483315" stroke-width="1.3"/>
+      <circle cx="0" cy="283" r="18" fill="#f8cd6c" opacity="0"/>
+    </g>
+
+    <!-- LEFT HILLSIDE RESIDENCES -->
+    <g id="residence-l1">
+      <path d="M45 470 V405 L90 365 L135 405 V470 Z" fill="#f6eedc" stroke="#16110c" stroke-width="2"/>
+      <path d="M38 408 L90 360 L142 408 L135 414 L90 370 L45 414 Z" fill="url(#roof-clay-red)" stroke="#1a110a" stroke-width="2"/>
+      <path d="M58 405 H122 M90 370 V470 M45 440 H135 M58 440 L90 470 M122 440 L90 470" stroke="url(#timber-beam)" stroke-width="3"/>
+      <rect x="60" y="415" width="22" height="22" rx="2" fill="#cfe6f8" stroke="#5a3d16" stroke-width="1.4"/>
+      <path d="M71 415 V437 M60 426 H82" stroke="#5a3d16" stroke-width="1"/>
+      <rect x="98" y="415" width="22" height="22" rx="2" fill="#cfe6f8" stroke="#5a3d16" stroke-width="1.4"/>
+      <path d="M109 415 V437 M98 426 H120" stroke="#5a3d16" stroke-width="1"/>
+      
+      <rect x="115" y="370" width="12" height="24" fill="#483a2e" stroke="#1c1611" stroke-width="1.5"/>
+      <path d="M121 370 C128 350 118 338 130 318" stroke="#cbdcf0" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+    </g>
+
+    <g id="residence-l2">
+      <path d="M125 470 V425 L168 385 L210 425 V470 Z" fill="#efe4cc" stroke="#16110c" stroke-width="2"/>
+      <path d="M118 428 L168 380 L218 428 L210 434 L168 390 L125 434 Z" fill="url(#roof-slate-blue)" stroke="#152028" stroke-width="2"/>
+      <rect x="152" y="405" width="32" height="26" rx="2" fill="#cfe6f8" stroke="#523918" stroke-width="1.5"/>
+      <path d="M168 405 V431 M152 418 H184" stroke="#523918" stroke-width="1.2"/>
+      
+    </g>
+
+    <g id="turret-l3">
+      <rect x="204" y="350" width="26" height="120" fill="#7a6c5c" stroke="#140f0a" stroke-width="1.8"/>
+      <polygon points="217,275 198,350 236,350" fill="url(#roof-slate-blue)" stroke="#141c24" stroke-width="2"/>
+      <line x1="217" y1="275" x2="217" y2="260" stroke="#cfa558" stroke-width="1.8"/>
+      <circle cx="217" cy="258" r="2.2" fill="#f8cd6c"/>
+      <rect x="212" y="365" width="10" height="16" rx="5" fill="#cfe6f8" stroke="#4a3517" stroke-width="1"/>
+    </g>
+
+    <!-- RIGHT HILLSIDE RESIDENCES -->
+    <g id="tower-r1">
+      <rect x="485" y="330" width="28" height="140" fill="#7a6c5c" stroke="#140f0a" stroke-width="1.8"/>
+      <polygon points="499,245 478,330 520,330" fill="url(#roof-slate-blue)" stroke="#141c24" stroke-width="2"/>
+      <line x1="499" y1="245" x2="499" y2="230" stroke="#cfa558" stroke-width="1.8"/>
+      <circle cx="499" cy="228" r="2.2" fill="#f8cd6c"/>
+      <rect x="494" y="345" width="10" height="16" rx="5" fill="#cfe6f8" stroke="#4a3517" stroke-width="1"/>
+    </g>
+
+    <g id="residence-r2">
+      <path d="M510 470 V415 L552 375 L595 415 V470 Z" fill="#f4ebd6" stroke="#16110c" stroke-width="2"/>
+      <path d="M502 418 L552 370 L602 418 L595 424 L552 380 L510 424 Z" fill="url(#roof-slate-blue)" stroke="#152028" stroke-width="2"/>
+      <path d="M522 415 H582 M552 380 V470 M510 445 H595 M522 445 L552 470 M582 445 L552 470" stroke="url(#timber-beam)" stroke-width="3"/>
+      <rect x="538" y="398" width="28" height="24" rx="2" fill="#cfe6f8" stroke="#563b19" stroke-width="1.5"/>
+      <path d="M552 398 V422 M538 410 H566" stroke="#563b19" stroke-width="1.2"/>
+      
+    </g>
+
+    <g id="residence-r3">
+      <path d="M585 470 V405 L630 362 L675 405 V470 Z" fill="#f7eedd" stroke="#16110c" stroke-width="2"/>
+      <path d="M578 408 L630 358 L682 408 L675 414 L630 368 L585 414 Z" fill="url(#roof-clay-red)" stroke="#1a110a" stroke-width="2"/>
+      <rect x="605" y="412" width="20" height="22" rx="2" fill="#cfe6f8" stroke="#5a3d16" stroke-width="1.4"/>
+      <path d="M615 412 V434 M605 423 H625" stroke="#5a3d16" stroke-width="1"/>
+      <rect x="635" y="412" width="20" height="22" rx="2" fill="#cfe6f8" stroke="#5a3d16" stroke-width="1.4"/>
+      <path d="M645 412 V434 M635 423 H655" stroke="#5a3d16" stroke-width="1"/>
+      
+      <rect x="595" y="370" width="12" height="24" fill="#4a3c30" stroke="#1c1611" stroke-width="1.5"/>
+      <path d="M601 370 C592 350 605 338 595 318" stroke="#cbdcf0" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+    </g>
+  </g>
+
+  <!-- Mid-Town Mist Ribbon -->
+  <path class="mist-pan-left" d="M-40 475 C80 455 180 490 320 470 C460 450 580 485 680 465 C750 455 800 475 840 470 L840 525 L-40 525 Z" fill="url(#mist-alpha-2)"/>
+
+  <!-- ==================== 5. THE GREAT GATEHOUSE & BASTIONS ==================== -->
+  <g id="grand-gatehouse-structure">
+    <rect x="40" y="450" width="640" height="170" fill="url(#stone-wall-vert)" stroke="#140f0a" stroke-width="4"/>
+    <rect x="40" y="450" width="640" height="170" fill="url(#stonework-pattern)"/>
+
+    <path d="M30 450 H690 V464 H30 Z" fill="#827261" stroke="#16100a" stroke-width="2.5"/>
+    <g fill="#5c4d3e" stroke="#140f09" stroke-width="1.5">
+      <path d="M55 464 L60 480 L70 480 L75 464 Z"/>
+      <path d="M95 464 L100 480 L110 480 L115 464 Z"/>
+      <path d="M135 464 L140 480 L150 480 L155 464 Z"/>
+      <path d="M565 464 L570 480 L580 480 L585 464 Z"/>
+      <path d="M605 464 L610 480 L620 480 L625 464 Z"/>
+      <path d="M645 464 L650 480 L660 480 L665 464 Z"/>
+    </g>
+
+    <path d="
+      M30 450 V420 H58 V450 H76 V420 H104 V450 H122 V420 H150 V450 H180
+      M540 450 H570 V420 H598 V450 H616 V420 H644 V450 H662 V420 H690 V450
+    " fill="#8a7a68" stroke="#16100a" stroke-width="3"/>
+    <g fill="#826f58" stroke="#221810" stroke-width="1.2">
+      <rect x="28" y="418" width="32" height="5" rx="1"/>
+      <rect x="74" y="418" width="32" height="5" rx="1"/>
+      <rect x="120" y="418" width="32" height="5" rx="1"/>
+      <rect x="568" y="418" width="32" height="5" rx="1"/>
+      <rect x="614" y="418" width="32" height="5" rx="1"/>
+      <rect x="660" y="418" width="32" height="5" rx="1"/>
+    </g>
+
+    <!-- LEFT GREAT BASTION (x: 165 to 295) -->
+    <g id="left-great-bastion">
+      <rect x="165" y="365" width="130" height="255" fill="url(#tower-cylinder)" stroke="#120e09" stroke-width="4"/>
+      <rect x="165" y="365" width="130" height="255" fill="url(#stonework-pattern)"/>
+      <line x1="165" y1="435" x2="295" y2="435" stroke="#120e09" stroke-width="3.5"/>
+      <line x1="165" y1="437" x2="295" y2="437" stroke="#bda07b" stroke-width="1.5"/>
+      <line x1="165" y1="520" x2="295" y2="520" stroke="#120e09" stroke-width="3.5"/>
+      <line x1="165" y1="522" x2="295" y2="522" stroke="#bda07b" stroke-width="1.5"/>
+
+      <path d="M156 365 H304 V378 H156 Z" fill="#8a7a68" stroke="#120e09" stroke-width="2.5"/>
+      <path d="
+        M156 365 V338 H182 V365 H200 V338 H226 V365 H244 V338 H270 V365 H304
+      " fill="#7c6c5a" stroke="#120e09" stroke-width="3"/>
+
+      <polygon points="230,175 148,338 312,338" fill="url(#roof-slate-blue)" stroke="#141c24" stroke-width="4"/>
+      <polygon points="230,175 148,338 312,338" fill="url(#roof-shingles)"/>
+      <path d="M144 338 L316 338 L310 346 L150 346 Z" fill="#6c5744" stroke="#251a12" stroke-width="2"/>
+      <line x1="230" y1="175" x2="230" y2="142" stroke="#d5aa55" stroke-width="2.5"/>
+      <circle cx="230" cy="140" r="3.5" fill="#f8cf6e"/>
+      <g class="flag-wave" transform="translate(230, 148)">
+        <path d="M0 0 H26 L20 8 L26 16 H0 Z" fill="#9e3020" stroke="#eec56c" stroke-width="1.5"/>
+        <circle cx="10" cy="8" r="2" fill="#ffd54f"/>
+      </g>
+
+      <g>
+        <rect x="215" y="388" width="30" height="42" rx="15" fill="#140f09" stroke="#2a2015" stroke-width="3"/>
+        <path d="M217 404 V391 C217 383 243 383 243 391 V404 Z" fill="#cfe6f8" stroke="#583c16" stroke-width="1.5"/>
+        <line x1="230" y1="383" x2="230" y2="404" stroke="#583c16" stroke-width="1.4"/>
+        
+      </g>
+      <path d="M230 465 V495 M222 475 H238" stroke="#120e09" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M230 466 V494 M223 475 H237" stroke="#ffd976" stroke-width="1.5" stroke-linecap="round"/>
+
+      <g class="flag-wave" transform="translate(205, 500)">
+        <path d="M0 0 H28 V55 L14 44 L0 55 Z" fill="#88281b" stroke="#deb45d" stroke-width="1.8"/>
+        <polygon points="14,12 16,18 22,18 17,22 19,28 14,24 9,28 11,22 6,18 12,18" fill="#ffca28"/>
+      </g>
+    </g>
+
+    <!-- RIGHT GREAT BASTION (x: 435 to 565) -->
+    <g id="right-great-bastion">
+      <rect x="435" y="365" width="130" height="255" fill="url(#tower-cylinder)" stroke="#120e09" stroke-width="4"/>
+      <rect x="435" y="365" width="130" height="255" fill="url(#stonework-pattern)"/>
+      <line x1="435" y1="435" x2="565" y2="435" stroke="#120e09" stroke-width="3.5"/>
+      <line x1="435" y1="437" x2="565" y2="437" stroke="#bda07b" stroke-width="1.5"/>
+      <line x1="435" y1="520" x2="565" y2="520" stroke="#120e09" stroke-width="3.5"/>
+      <line x1="435" y1="522" x2="565" y2="522" stroke="#bda07b" stroke-width="1.5"/>
+
+      <path d="M426 365 H574 V378 H426 Z" fill="#544434" stroke="#120e09" stroke-width="2.5"/>
+      <path d="
+        M426 365 V338 H452 V365 H470 V338 H496 V365 H514 V338 H540 V365 H574
+      " fill="#4d3e30" stroke="#120e09" stroke-width="3"/>
+
+      <polygon points="500,175 418,338 582,338" fill="url(#roof-slate-blue)" stroke="#141c24" stroke-width="4"/>
+      <polygon points="500,175 418,338 582,338" fill="url(#roof-shingles)"/>
+      <path d="M414 338 L586 338 L580 346 L420 346 Z" fill="#6c5744" stroke="#251a12" stroke-width="2"/>
+      <line x1="500" y1="175" x2="500" y2="142" stroke="#d5aa55" stroke-width="2.5"/>
+      <circle cx="500" cy="140" r="3.5" fill="#f8cf6e"/>
+      <g class="flag-wave" transform="translate(500, 148)">
+        <path d="M0 0 H26 L20 8 L26 16 H0 Z" fill="#9e3020" stroke="#eec56c" stroke-width="1.5"/>
+        <circle cx="10" cy="8" r="2" fill="#ffd54f"/>
+      </g>
+
+      <g>
+        <rect x="485" y="388" width="30" height="42" rx="15" fill="#140f09" stroke="#2a2015" stroke-width="3"/>
+        <path d="M487 404 V391 C487 383 513 383 513 391 V404 Z" fill="#cfe6f8" stroke="#583c16" stroke-width="1.5"/>
+        <line x1="500" y1="383" x2="500" y2="404" stroke="#583c16" stroke-width="1.4"/>
+        
+      </g>
+      <path d="M500 465 V495 M492 475 H508" stroke="#120e09" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M500 466 V494 M493 475 H507" stroke="#ffd976" stroke-width="1.5" stroke-linecap="round"/>
+
+      <g class="flag-wave" transform="translate(497, 500)">
+        <path d="M0 0 H28 V55 L14 44 L0 55 Z" fill="#88281b" stroke="#deb45d" stroke-width="1.8"/>
+        <polygon points="14,12 16,18 22,18 17,22 19,28 14,24 9,28 11,22 6,18 12,18" fill="#ffca28"/>
+      </g>
+    </g>
+
+    <!-- ==================== CENTRAL PORTAL & GOTHIC ARCHWAY ==================== -->
+    <rect x="270" y="350" width="190" height="250" fill="url(#stone-wall-vert)" stroke="#140f09" stroke-width="4"/>
+    <rect x="270" y="350" width="190" height="250" fill="url(#stonework-pattern)"/>
+
+    <polygon points="365,305 260,355 470,355" fill="#4d3e2f" stroke="#16100a" stroke-width="3.5"/>
+    <path d="M255 355 L365 300 L475 355" stroke="#d5aa55" stroke-width="4" stroke-linecap="round"/>
+
+    <g transform="translate(365, 332)">
+      <path d="M-17 -15 H17 V6 C17 19 0 25 0 25 C0 25 -17 19 -17 6 Z" fill="#8d2b1f" stroke="#f6cf75" stroke-width="2.5"/>
+      <path d="M0 -9 L2.5 -2.5 L9 -2.5 L3.5 2 L5.5 8.5 L0 4.5 L-5.5 8.5 L-3.5 2 L-9 -2.5 L-2.5 -2.5 Z" fill="#ffd54f"/>
+    </g>
+
+    <path d="M265 600 V470 C265 380 310 335 365 335 C420 335 465 380 465 470 V600" fill="none" stroke="#221912" stroke-width="28" stroke-linecap="square"/>
+    <path d="M265 600 V470 C265 380 310 335 365 335 C420 335 465 380 465 470 V600" fill="none" stroke="#8e765f" stroke-width="20" stroke-linecap="square"/>
+
+    <g stroke="#261c14" stroke-width="2.2">
+      <line x1="279" y1="470" x2="251" y2="470"/>
+      <line x1="283" y1="440" x2="257" y2="434"/>
+      <line x1="296" y1="412" x2="273" y2="400"/>
+      <line x1="318" y1="386" x2="300" y2="368"/>
+      <line x1="344" y1="368" x2="333" y2="346"/>
+      <line x1="365" y1="362" x2="365" y2="340"/>
+      <line x1="386" y1="368" x2="397" y2="346"/>
+      <line x1="412" y1="386" x2="430" y2="368"/>
+      <line x1="434" y1="412" x2="457" y2="400"/>
+      <line x1="447" y1="440" x2="473" y2="434"/>
+      <line x1="451" y1="470" x2="479" y2="470"/>
+    </g>
+
+    <g clip-path="url(#arch-portal-clip)">
+      <rect x="260" y="335" width="210" height="275" fill="#160f09"/>
+      <circle cx="365" cy="535" r="155" fill="url(#portal-inner-glow)"/>
+      <ellipse cx="365" cy="550" rx="90" ry="105" fill="#ffefa8" opacity="0.7" filter="url(#wide-blur-glow)"/>
+
+      <g fill="#dfb36b" stroke="#684218" stroke-width="1.8">
+        <path d="M330 522 H400 V530 H330 Z"/>
+        <path d="M316 534 H414 V544 H316 Z"/>
+        <path d="M302 548 H428 V559 H302 Z"/>
+        <path d="M286 563 H444 V575 H286 Z"/>
+        <path d="M270 579 H460 V592 H270 Z"/>
+      </g>
+
+      <g stroke="#18120d" stroke-width="3.2" opacity="0.9">
+        <line x1="310" y1="355" x2="310" y2="445"/>
+        <line x1="332" y1="355" x2="332" y2="445"/>
+        <line x1="354" y1="355" x2="354" y2="445"/>
+        <line x1="376" y1="355" x2="376" y2="445"/>
+        <line x1="398" y1="355" x2="398" y2="445"/>
+        <line x1="420" y1="355" x2="420" y2="445"/>
+        <line x1="290" y1="385" x2="440" y2="385"/>
+        <line x1="290" y1="412" x2="440" y2="412"/>
+        <line x1="290" y1="440" x2="440" y2="440"/>
+        <polygon points="310,440 306,454 314,454" fill="#18120d"/>
+        <polygon points="332,440 328,454 336,454" fill="#18120d"/>
+        <polygon points="354,440 350,454 358,454" fill="#18120d"/>
+        <polygon points="376,440 372,454 380,454" fill="#18120d"/>
+        <polygon points="398,440 394,454 402,454" fill="#18120d"/>
+        <polygon points="420,440 416,454 424,454" fill="#18120d"/>
+      </g>
+
+      <path d="M280 470 L322 480 L322 600 L280 600 Z" fill="#493222" stroke="#160e07" stroke-width="2.8"/>
+      <path d="M280 493 L322 503 M280 550 L322 560" stroke="#160e07" stroke-width="3.5"/>
+      <circle cx="292" cy="496" r="2.5" fill="#110a05"/>
+      <circle cx="312" cy="500" r="2.5" fill="#110a05"/>
+      <circle cx="292" cy="553" r="2.5" fill="#110a05"/>
+      <circle cx="312" cy="557" r="2.5" fill="#110a05"/>
+
+      <path d="M450 470 L408 480 L408 600 L450 600 Z" fill="#3a2719" stroke="#160e07" stroke-width="2.8"/>
+      <path d="M450 493 L408 503 M450 550 L408 560" stroke="#160e07" stroke-width="3.5"/>
+      <circle cx="438" cy="496" r="2.5" fill="#110a05"/>
+      <circle cx="418" cy="500" r="2.5" fill="#110a05"/>
+      <circle cx="438" cy="553" r="2.5" fill="#110a05"/>
+      <circle cx="418" cy="557" r="2.5" fill="#110a05"/>
+    </g>
+
+    <path d="M275 600 V470 C275 390 314 345 365 345 C416 345 455 390 455 470 V600" fill="none" stroke="#f6cf75" stroke-width="2.8" opacity="0.8"/>
+  </g>
+
+  <!-- ==================== 6. CAUSEWAY, COBBLESTONES & PARAPET ==================== -->
+  <g id="bridge-causeway">
+    <path d="
+      M0 960 L0 720 C120 720 190 670 270 580 L460 580 C540 670 600 720 720 720 L720 960 Z
+    " fill="#2d2219"/>
+
+    <path d="
+      M0 720 C120 720 190 670 270 580 L292 580 C210 675 138 712 0 712 Z
+    " fill="#584838" stroke="#1e160f" stroke-width="3"/>
+    <g fill="#7c6853" stroke="#221810" stroke-width="2">
+      <polygon points="0,710 44,710 40,726 0,726"/>
+      <polygon points="54,707 96,701 91,717 49,723"/>
+      <polygon points="108,697 148,686 142,702 102,713"/>
+      <polygon points="160,679 196,662 190,678 153,695"/>
+      <polygon points="208,651 238,626 232,642 201,667"/>
+      <polygon points="248,612 272,580 266,592 242,624"/>
+    </g>
+
+    <path d="
+      M720 720 C600 720 540 670 460 580 L438 580 C518 675 582 712 720 712 Z
+    " fill="#4a3c2e" stroke="#1a120c" stroke-width="3"/>
+    <g fill="#6c5946" stroke="#1c130b" stroke-width="2">
+      <polygon points="720,710 676,710 680,726 720,726"/>
+      <polygon points="666,707 624,701 629,717 671,723"/>
+      <polygon points="612,697 572,686 578,702 618,713"/>
+      <polygon points="560,679 524,662 530,688 567,705"/>
+      <polygon points="512,651 482,626 488,642 519,667"/>
+      <polygon points="472,612 448,580 454,592 478,624"/>
+    </g>
+
+    <g id="cobblestones-pavement">
+      <ellipse cx="292" cy="616" rx="11" ry="4.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="319" cy="615" rx="11" ry="4.5" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="343" cy="613" rx="11" ry="4.5" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="362" cy="617" rx="11" ry="4.5" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M355.4 615.65 Q362 613.4 368.6 615.65 Q362 616.1 355.4 615.65 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="392" cy="614" rx="11" ry="4.5" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="408" cy="615" rx="11" ry="4.5" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="437" cy="617" rx="11" ry="4.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="279" cy="630" rx="13" ry="5.5" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="294" cy="629" rx="13" ry="5.5" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="321" cy="632" rx="13" ry="5.5" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="343" cy="629" rx="13" ry="5.5" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M335.2 627.35 Q343 624.6 350.8 627.35 Q343 627.9 335.2 627.35 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="362" cy="630" rx="13" ry="5.5" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M354.2 628.35 Q362 625.6 369.8 628.35 Q362 628.9 354.2 628.35 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="391" cy="632" rx="13" ry="5.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="406" cy="628" rx="13" ry="5.5" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="435" cy="631" rx="13" ry="5.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="454" cy="631" rx="13" ry="5.5" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="251" cy="648" rx="15" ry="6.5" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="274" cy="651" rx="15" ry="6.5" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="293" cy="651" rx="15" ry="6.5" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="323" cy="648" rx="15" ry="6.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="338" cy="652" rx="15" ry="6.5" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M329 650.05 Q338 646.8 347 650.05 Q338 650.7 329 650.05 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="367" cy="650" rx="15" ry="6.5" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M358 648.05 Q367 644.8 376 648.05 Q367 648.7 358 648.05 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="388" cy="649" rx="15" ry="6.5" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M379 647.05 Q388 643.8 397 647.05 Q388 647.7 379 647.05 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="409" cy="652" rx="15" ry="6.5" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="437" cy="649" rx="15" ry="6.5" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="453" cy="650" rx="15" ry="6.5" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="483" cy="652" rx="15" ry="6.5" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="224" cy="674" rx="18" ry="7.5" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="249" cy="671" rx="18" ry="7.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="279" cy="671" rx="18" ry="7.5" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="297" cy="674" rx="18" ry="7.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="331" cy="670" rx="18" ry="7.5" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M320.2 667.75 Q331 664 341.8 667.75 Q331 668.5 320.2 667.75 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="350" cy="672" rx="18" ry="7.5" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M339.2 669.75 Q350 666 360.8 669.75 Q350 670.5 339.2 669.75 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="378" cy="673" rx="18" ry="7.5" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M367.2 670.75 Q378 667 388.8 670.75 Q378 671.5 367.2 670.75 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="405" cy="670" rx="18" ry="7.5" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M394.2 667.75 Q405 664 415.8 667.75 Q405 668.5 394.2 667.75 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="425" cy="673" rx="18" ry="7.5" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="458" cy="672" rx="18" ry="7.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="476" cy="670" rx="18" ry="7.5" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="507" cy="674" rx="18" ry="7.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="200" cy="700" rx="21" ry="8.5" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="222" cy="696" rx="21" ry="8.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="257" cy="699" rx="21" ry="8.5" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="278" cy="699" rx="21" ry="8.5" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="311" cy="696" rx="21" ry="8.5" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="338" cy="700" rx="21" ry="8.5" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M325.4 697.45 Q338 693.2 350.6 697.45 Q338 698.3 325.4 697.45 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="362" cy="698" rx="21" ry="8.5" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M349.4 695.45 Q362 691.2 374.6 695.45 Q362 696.3 349.4 695.45 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="397" cy="697" rx="21" ry="8.5" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M384.4 694.45 Q397 690.2 409.6 694.45 Q397 695.3 384.4 694.45 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="417" cy="700" rx="21" ry="8.5" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M404.4 697.45 Q417 693.2 429.6 697.45 Q417 698.3 404.4 697.45 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="451" cy="697" rx="21" ry="8.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="476" cy="698" rx="21" ry="8.5" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="503" cy="699" rx="21" ry="8.5" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="536" cy="696" rx="21" ry="8.5" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="164" cy="729" rx="24" ry="10" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="199" cy="728" rx="24" ry="10" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="229" cy="726" rx="24" ry="10" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="256" cy="730" rx="24" ry="10" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="293" cy="727" rx="24" ry="10" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="316" cy="727" rx="24" ry="10" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M301.6 724 Q316 719 330.4 724 Q316 725 301.6 724 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="352" cy="730" rx="24" ry="10" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M337.6 727 Q352 722 366.4 727 Q352 728 337.6 727 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="380" cy="726" rx="24" ry="10" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M365.6 723 Q380 718 394.4 723 Q380 724 365.6 723 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="409" cy="729" rx="24" ry="10" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M394.6 726 Q409 721 423.4 726 Q409 727 394.6 726 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="444" cy="729" rx="24" ry="10" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="467" cy="726" rx="24" ry="10" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="505" cy="730" rx="24" ry="10" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="530" cy="728" rx="24" ry="10" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="562" cy="727" rx="24" ry="10" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="136" cy="762" rx="27" ry="11.5" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="163" cy="761" rx="27" ry="11.5" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="200" cy="764" rx="27" ry="11.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="233" cy="761" rx="27" ry="11.5" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="262" cy="762" rx="27" ry="11.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="303" cy="764" rx="27" ry="11.5" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M286.8 760.55 Q303 754.8 319.2 760.55 Q303 761.7 286.8 760.55 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="328" cy="760" rx="27" ry="11.5" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M311.8 756.55 Q328 750.8 344.2 756.55 Q328 757.7 311.8 756.55 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="367" cy="763" rx="27" ry="11.5" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M350.8 759.55 Q367 753.8 383.2 759.55 Q367 760.7 350.8 759.55 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="398" cy="763" rx="27" ry="11.5" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M381.8 759.55 Q398 753.8 414.2 759.55 Q398 760.7 381.8 759.55 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="430" cy="760" rx="27" ry="11.5" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M413.8 756.55 Q430 750.8 446.2 756.55 Q430 757.7 413.8 756.55 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="468" cy="764" rx="27" ry="11.5" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="494" cy="761" rx="27" ry="11.5" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="534" cy="761" rx="27" ry="11.5" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="563" cy="764" rx="27" ry="11.5" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="597" cy="760" rx="27" ry="11.5" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="92" cy="801" rx="31" ry="13" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="138" cy="804" rx="31" ry="13" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="169" cy="801" rx="31" ry="13" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="213" cy="802" rx="31" ry="13" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="249" cy="804" rx="31" ry="13" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="286" cy="800" rx="31" ry="13" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M267.4 796.1 Q286 789.6 304.6 796.1 Q286 797.4 267.4 796.1 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="330" cy="803" rx="31" ry="13" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M311.4 799.1 Q330 792.6 348.6 799.1 Q330 800.4 311.4 799.1 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="361" cy="803" rx="31" ry="13" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M342.4 799.1 Q361 792.6 379.6 799.1 Q361 800.4 342.4 799.1 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="407" cy="800" rx="31" ry="13" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M388.4 796.1 Q407 789.6 425.6 796.1 Q407 797.4 388.4 796.1 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="441" cy="804" rx="31" ry="13" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M422.4 800.1 Q441 793.6 459.6 800.1 Q441 801.4 422.4 800.1 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="480" cy="801" rx="31" ry="13" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="522" cy="801" rx="31" ry="13" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="554" cy="804" rx="31" ry="13" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="600" cy="800" rx="31" ry="13" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="632" cy="802" rx="31" ry="13" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="54" cy="850" rx="35" ry="15" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="95" cy="847" rx="35" ry="15" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="141" cy="847" rx="35" ry="15" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="175" cy="850" rx="35" ry="15" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="224" cy="846" rx="35" ry="15" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="259" cy="849" rx="35" ry="15" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M238 844.5 Q259 837 280 844.5 Q259 846 238 844.5 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="303" cy="849" rx="35" ry="15" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M282 844.5 Q303 837 324 844.5 Q303 846 282 844.5 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="346" cy="846" rx="35" ry="15" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M325 841.5 Q346 834 367 841.5 Q346 843 325 841.5 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="382" cy="850" rx="35" ry="15" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M361 845.5 Q382 838 403 845.5 Q382 847 361 845.5 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="431" cy="848" rx="35" ry="15" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M410 843.5 Q431 836 452 843.5 Q431 845 410 843.5 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="465" cy="847" rx="35" ry="15" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M444 842.5 Q465 835 486 842.5 Q465 844 444 842.5 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="511" cy="850" rx="35" ry="15" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="552" cy="847" rx="35" ry="15" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="590" cy="848" rx="35" ry="15" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="638" cy="850" rx="35" ry="15" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="671" cy="846" rx="35" ry="15" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="9" cy="900" rx="40" ry="17" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="61" cy="904" rx="40" ry="17" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="101" cy="902" rx="40" ry="17" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="156" cy="901" rx="40" ry="17" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="197" cy="904" rx="40" ry="17" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="247" cy="900" rx="40" ry="17" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M223 894.9 Q247 886.4 271 894.9 Q247 896.6 223 894.9 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="296" cy="902" rx="40" ry="17" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M272 896.9 Q296 888.4 320 896.9 Q296 898.6 272 896.9 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="338" cy="903" rx="40" ry="17" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M314 897.9 Q338 889.4 362 897.9 Q338 899.6 314 897.9 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="393" cy="900" rx="40" ry="17" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M369 894.9 Q393 886.4 417 894.9 Q393 896.6 369 894.9 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="433" cy="903" rx="40" ry="17" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M409 897.9 Q433 889.4 457 897.9 Q433 899.6 409 897.9 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="485" cy="902" rx="40" ry="17" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M461 896.9 Q485 888.4 509 896.9 Q485 898.6 461 896.9 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="532" cy="900" rx="40" ry="17" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="575" cy="904" rx="40" ry="17" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="629" cy="901" rx="40" ry="17" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="669" cy="901" rx="40" ry="17" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="723" cy="904" rx="40" ry="17" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="-39" cy="960" rx="45" ry="19" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="18" cy="961" rx="45" ry="19" fill="#5a4635" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="64" cy="958" rx="45" ry="19" fill="#6b5440" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="114" cy="962" rx="45" ry="19" fill="#7a6048" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="168" cy="960" rx="45" ry="19" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="211" cy="959" rx="45" ry="19" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M184 953.3 Q211 943.8 238 953.3 Q211 955.2 184 953.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="269" cy="962" rx="45" ry="19" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M242 956.3 Q269 946.8 296 956.3 Q269 958.2 242 956.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="313" cy="959" rx="45" ry="19" fill="#be9866" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M286 953.3 Q313 943.8 340 953.3 Q313 955.2 286 953.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="365" cy="960" rx="45" ry="19" fill="#d2ac77" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M338 954.3 Q365 944.8 392 954.3 Q365 956.2 338 954.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="417" cy="962" rx="45" ry="19" fill="#c59d68" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M390 956.3 Q417 946.8 444 956.3 Q417 958.2 390 956.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="461" cy="958" rx="45" ry="19" fill="#b58e5c" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M434 952.3 Q461 942.8 488 952.3 Q461 954.2 434 952.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="519" cy="961" rx="45" ry="19" fill="#a88458" stroke="#1c1611" stroke-width="1.8"/>
+      <path d="M492 955.3 Q519 945.8 546 955.3 Q519 957.2 492 955.3 Z" fill="#ffe7aa" opacity="0.38"/>
+      <ellipse cx="562" cy="961" rx="45" ry="19" fill="#886d52" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="616" cy="958" rx="45" ry="19" fill="#97795b" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="666" cy="962" rx="45" ry="19" fill="#624e3c" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="712" cy="960" rx="45" ry="19" fill="#534131" stroke="#1c1611" stroke-width="1.8"/>
+      <ellipse cx="769" cy="959" rx="45" ry="19" fill="#4a3a2c" stroke="#1c1611" stroke-width="1.8"/>
+    </g>
+
+    <ellipse cx="365" cy="660" rx="120" ry="55" fill="#f8cf74" opacity="0.38" filter="url(#wide-blur-glow)"/>
+    <ellipse cx="360" cy="760" rx="150" ry="70" fill="#e89e3a" opacity="0.25" filter="url(#wide-blur-glow)"/>
+  </g>
+
+  <!-- ==================== 7. ORNATE FRONT LANTERNS ==================== -->
+  <!-- Left Bastion Mounted Lantern (Facing the Bridge) -->
+  <g class="lantern-halo-pulse" transform="translate(235, 500)">
+    <use href="#street-lantern"/>
+  </g>
+
+  <!-- Right Bastion Mounted Lantern (Facing the Bridge) -->
+  <g class="lantern-halo-pulse" transform="translate(485, 500) scale(-1, 1)">
+    <use href="#street-lantern"/>
+  </g>
+
+  <!-- Left Forefront Bridge Lantern Post -->
+  <g class="lantern-halo-pulse" transform="translate(85, 660)">
+    <rect x="-16" y="0" width="32" height="70" fill="#584838" stroke="#1c140d" stroke-width="3"/>
+    <rect x="-20" y="-8" width="40" height="10" rx="2" fill="#7a6752" stroke="#1c140d" stroke-width="2"/>
+    <use href="#street-lantern" transform="translate(-18, -48) scale(1.18)"/>
+  </g>
+
+  <!-- ==================== 8. MIST ("BRUMA") & FAIRY DUST ==================== -->
+  <path class="mist-pan-right" d="
+    M-40 660 C80 620 180 690 320 650 C460 610 580 680 700 640 C780 620 820 660 860 650
+    L860 740 C760 750 640 710 480 740 C320 770 180 720 -40 740 Z
+  " fill="url(#mist-alpha-1)"/>
+
+  <path class="mist-pan-left" d="
+    M-40 800 C100 770 220 830 360 790 C500 750 620 820 760 780 L760 860 C620 870 480 830 320 860 C160 900 40 850 -40 870 Z
+  " fill="url(#mist-alpha-2)"/>
+
+  <!-- Fairy Dust Layer -->
+  <g id="fairy-dust-layer">
+    <g class="dust-mote-1" transform="translate(130, 610)">
+      <circle cx="0" cy="0" r="2.2" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="8" fill="#ffca28" opacity="0"/>
+    </g>
+    <g class="dust-mote-2" transform="translate(580, 580)">
+      <circle cx="0" cy="0" r="2.5" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="9" fill="#ffca28" opacity="0"/>
+    </g>
+    <g class="dust-mote-3" transform="translate(410, 700)">
+      <circle cx="0" cy="0" r="2" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="7" fill="#ffa000" opacity="0.4" filter="url(#soft-blur-glow)"/>
+    </g>
+    <g class="dust-mote-1" transform="translate(260, 750)">
+      <circle cx="0" cy="0" r="2.4" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="8" fill="#ffca28" opacity="0.42" filter="url(#soft-blur-glow)"/>
+    </g>
+    <g class="dust-mote-2" transform="translate(490, 780)">
+      <circle cx="0" cy="0" r="2.2" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="7.5" fill="#ffca28" opacity="0"/>
+    </g>
+  </g>
+
+  <!-- ==================== 9. GILDED MANUSCRIPT BORDER ==================== -->
+  <g id="gilded-border">
+    <rect x="7" y="7" width="706" height="946" rx="6" fill="none" stroke="#d5aa55" stroke-width="1.8" stroke-opacity="0.38"/>
+    <rect x="13" y="13" width="694" height="934" rx="4" fill="none" stroke="#d5aa55" stroke-width="0.9" stroke-opacity="0.22"/>
+
+    <path d="M13 42 V22 A9 9 0 0 1 22 13 H42" fill="none" stroke="#f6cf75" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="22" cy="22" r="3" fill="#f6cf75"/>
+    <circle cx="42" cy="13" r="2" fill="#e8bb58"/>
+    <circle cx="13" cy="42" r="2" fill="#e8bb58"/>
+
+    <path d="M707 42 V22 A9 9 0 0 0 698 13 H678" fill="none" stroke="#f6cf75" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="698" cy="22" r="3" fill="#f6cf75"/>
+    <circle cx="678" cy="13" r="2" fill="#e8bb58"/>
+    <circle cx="707" cy="42" r="2" fill="#e8bb58"/>
+
+    <path d="M13 918 V938 A9 9 0 0 0 22 947 H42" fill="none" stroke="#f6cf75" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="22" cy="938" r="3" fill="#f6cf75"/>
+    <circle cx="42" cy="947" r="2" fill="#e8bb58"/>
+    <circle cx="13" cy="918" r="2" fill="#e8bb58"/>
+
+    <path d="M707 918 V938 A9 9 0 0 1 698 947 H678" fill="none" stroke="#f6cf75" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="698" cy="938" r="3" fill="#f6cf75"/>
+    <circle cx="678" cy="947" r="2" fill="#e8bb58"/>
+    <circle cx="707" cy="918" r="2" fill="#e8bb58"/>
+  </g>
+</svg>

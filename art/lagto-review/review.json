@@ -1,0 +1,261 @@
+{
+  "checks": [
+    "Rendered all 50 GLBs with the game loader",
+    "Architecture, furnishings and mining props inspected in the real asset editor",
+    "All 50 models shown with the real game renderer; four shared atlas sources; compatible=false",
+    "All 50 map editor thumbnails loaded; no map or account was saved"
+  ],
+  "errors": [],
+  "assets": [
+    {
+      "name": "house_copper_bastion",
+      "triangles": 16824,
+      "textures": 5
+    },
+    {
+      "name": "forge_cobre_foundry",
+      "triangles": 12956,
+      "textures": 5
+    },
+    {
+      "name": "tower_drake_watch",
+      "triangles": 8142,
+      "textures": 5
+    },
+    {
+      "name": "cavern_terrace_shelter",
+      "triangles": 7112,
+      "textures": 5
+    },
+    {
+      "name": "shrine_scale_ancestor",
+      "triangles": 9526,
+      "textures": 5
+    },
+    {
+      "name": "hall_stone_council",
+      "triangles": 12548,
+      "textures": 5
+    },
+    {
+      "name": "gatehouse_copper_rampart",
+      "triangles": 4880,
+      "textures": 5
+    },
+    {
+      "name": "mine_shaft_headframe",
+      "triangles": 3688,
+      "textures": 5
+    },
+    {
+      "name": "bridge_copper_arch",
+      "triangles": 4632,
+      "textures": 5
+    },
+    {
+      "name": "granary_silo_stone",
+      "triangles": 5972,
+      "textures": 5
+    },
+    {
+      "name": "barracks_drake_guard",
+      "triangles": 5960,
+      "textures": 5
+    },
+    {
+      "name": "market_stall_ore_smith",
+      "triangles": 3524,
+      "textures": 5
+    },
+    {
+      "name": "throne_basalt_copper",
+      "triangles": 2276,
+      "textures": 5
+    },
+    {
+      "name": "table_stone_refectory",
+      "triangles": 2712,
+      "textures": 5
+    },
+    {
+      "name": "bench_quarry_slab",
+      "triangles": 708,
+      "textures": 5
+    },
+    {
+      "name": "chair_high_carved",
+      "triangles": 1608,
+      "textures": 5
+    },
+    {
+      "name": "bed_cavern_hearth",
+      "triangles": 6084,
+      "textures": 5
+    },
+    {
+      "name": "cabinet_vaulted_copper",
+      "triangles": 2124,
+      "textures": 5
+    },
+    {
+      "name": "chest_ore_strongbox",
+      "triangles": 4040,
+      "textures": 5
+    },
+    {
+      "name": "shelf_mason_tools",
+      "triangles": 2156,
+      "textures": 5
+    },
+    {
+      "name": "desk_cartographer_copper",
+      "triangles": 1788,
+      "textures": 5
+    },
+    {
+      "name": "anvil_master_forge",
+      "triangles": 1972,
+      "textures": 5
+    },
+    {
+      "name": "hearth_brazier_hewn",
+      "triangles": 2216,
+      "textures": 5
+    },
+    {
+      "name": "rug_lizard_weave",
+      "triangles": 764,
+      "textures": 5
+    },
+    {
+      "name": "weapon_rack_stone_copper",
+      "triangles": 1340,
+      "textures": 5
+    },
+    {
+      "name": "bunk_bed_miner",
+      "triangles": 2936,
+      "textures": 5
+    },
+    {
+      "name": "low_table_cushions",
+      "triangles": 3880,
+      "textures": 5
+    },
+    {
+      "name": "bookcase_tablet_vault",
+      "triangles": 2100,
+      "textures": 5
+    },
+    {
+      "name": "washing_basin_copper",
+      "triangles": 1646,
+      "textures": 5
+    },
+    {
+      "name": "cauldron_hearth_tripod",
+      "triangles": 2418,
+      "textures": 5
+    },
+    {
+      "name": "brazier_cobre_tripod",
+      "triangles": 1694,
+      "textures": 5
+    },
+    {
+      "name": "lamp_copper_pendant",
+      "triangles": 1092,
+      "textures": 5
+    },
+    {
+      "name": "cart_mine_ore",
+      "triangles": 2040,
+      "textures": 5
+    },
+    {
+      "name": "mine_track_segment",
+      "triangles": 892,
+      "textures": 5
+    },
+    {
+      "name": "ore_pile_copper",
+      "triangles": 280,
+      "textures": 5
+    },
+    {
+      "name": "bellows_forge_pedestal",
+      "triangles": 988,
+      "textures": 5
+    },
+    {
+      "name": "banner_lagto_clan",
+      "triangles": 2320,
+      "textures": 5
+    },
+    {
+      "name": "barrier_spiked_stone",
+      "triangles": 768,
+      "textures": 5
+    },
+    {
+      "name": "gate_quarry_post",
+      "triangles": 1056,
+      "textures": 5
+    },
+    {
+      "name": "crucible_molten_copper",
+      "triangles": 904,
+      "textures": 5
+    },
+    {
+      "name": "quarry_crane_derrick",
+      "triangles": 1304,
+      "textures": 5
+    },
+    {
+      "name": "water_cistern_copper",
+      "triangles": 912,
+      "textures": 5
+    },
+    {
+      "name": "mine_cart_turnout",
+      "triangles": 1188,
+      "textures": 5
+    },
+    {
+      "name": "crusher_ore_stamp",
+      "triangles": 1392,
+      "textures": 5
+    },
+    {
+      "name": "ingot_stack_copper",
+      "triangles": 1044,
+      "textures": 5
+    },
+    {
+      "name": "ventilation_windlass_shaft",
+      "triangles": 380,
+      "textures": 5
+    },
+    {
+      "name": "warning_beacon_totem",
+      "triangles": 1370,
+      "textures": 5
+    },
+    {
+      "name": "cavern_crystal_geode",
+      "triangles": 240,
+      "textures": 5
+    },
+    {
+      "name": "water_flume_sluice",
+      "triangles": 852,
+      "textures": 5
+    },
+    {
+      "name": "tent_miner_outpost",
+      "triangles": 1064,
+      "textures": 5
+    }
+  ]
+}

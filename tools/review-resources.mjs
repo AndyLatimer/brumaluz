@@ -18,14 +18,16 @@ try{
  const geometryAudit=await page.evaluate(async()=>{
   const THREE=await import('/node_modules/three/build/three.module.js');
   const {resourceGeometry,furnitureGeometry,gatheringToolGeometry,resourceMaterial}=await import('/src/world/resourceModels.ts');
+  const {furnitureMaterial,prepareFurnitureMaterials}=await import('/src/world/homeFurnitureMaterial.ts');
+  await prepareFurnitureMaterials();
   const {RESOURCE_FAMILIES,resourceDrawing}=await import('/src/data/resourceAppearance.ts');
   const {itemIcon}=await import('/src/data/items.ts');
   document.head.insertAdjacentHTML('beforeend',`<style>body{margin:0;padding:32px;background:#e7d9bb;color:#503d2b;font:15px Georgia}h1{font-size:26px;margin:0 0 8px}p{color:#8c7351}main{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}article{border:1px solid #b39b72;border-radius:8px 20px 8px 8px;background:#f2e6cb;padding:12px;text-align:center}article img{width:100%;height:172px;object-fit:contain}h3{margin:7px;font-size:16px}footer{display:flex;justify-content:center;gap:10px;margin-top:10px}footer svg{width:34px;height:34px}</style>`);
   document.body.innerHTML='<h1>Brumaluz · cuaderno de recursos</h1><p>Modelos de campo e iconos compartidos · ocho familias</p><main></main>';
   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setSize(400,320);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,400/320,.1,30);scene.add(new THREE.HemisphereLight('#fff0d4','#8d846d',3));const sun=new THREE.DirectionalLight('#fff3d7',3);sun.position.set(-3,6,5);scene.add(sun);
-  function preview(geometry,height=1){
-   const mesh=new THREE.Mesh(geometry,resourceMaterial());scene.add(mesh);camera.position.set(2.6,2,-3.1).multiplyScalar(height);camera.lookAt(0,height*.43,0);renderer.render(scene,camera);
+  function preview(geometry,height=1,material=resourceMaterial()){
+   const mesh=new THREE.Mesh(geometry,material);scene.add(mesh);camera.position.set(2.6,2,-3.1).multiplyScalar(height);camera.lookAt(0,height*.43,0);renderer.render(scene,camera);
    const image=renderer.domElement.toDataURL();mesh.removeFromParent();geometry.dispose();mesh.material.dispose();return image;
   }
   const audit=[];
@@ -37,13 +39,13 @@ try{
    }
    const card=document.createElement('article');card.innerHTML=`<img src="${preview(resourceGeometry(family,0),family==='wood'?1.1:.82)}"><h3>${identity.label}</h3><footer>${[0,1,2,3,4,5].map(tier=>`<svg viewBox="0 0 24 24">${resourceDrawing(family,tier)}</svg>`).join('')}</footer>`;document.querySelector('main').append(card);
   }
-  window.resourcePreview={preview,furnitureGeometry,gatheringToolGeometry,itemIcon,renderer};return audit;
+  window.resourcePreview={preview,furnitureGeometry,furnitureMaterial,gatheringToolGeometry,itemIcon,renderer};return audit;
  });
  await page.screenshot({path:`${directory}/resources-and-icons.png`,fullPage:true});checks.push('All eight resource families and all 96 available/depleted geometries have finite vertices.');
  await page.evaluate(()=>{
-  const {preview,furnitureGeometry,gatheringToolGeometry,itemIcon}=window.resourcePreview;
+  const {preview,furnitureGeometry,furnitureMaterial,gatheringToolGeometry,itemIcon}=window.resourcePreview;
   document.querySelector('h1').textContent='Brumaluz · herramientas y mobiliario';document.querySelector('p').textContent='Piezas que se usan y se fabrican en los oficios';document.querySelector('main').innerHTML='';
-  for(const kind of ['taburete','mesa','biblioteca','estacion']){const card=document.createElement('article');card.innerHTML=`<img src="${preview(furnitureGeometry(kind,0),kind==='biblioteca'?1.4:1)}"><h3>${kind}</h3><footer>${itemIcon(`mueble_${kind}_0`)}</footer>`;document.querySelector('main').append(card);}
+  for(const kind of ['taburete','mesa','biblioteca','estacion','silla','banco','mesita','arcon','alfombra','farol','macetero','biombo']){const h=kind==='biblioteca'?1.5:kind==='biombo'?1.3:kind==='alfombra'?0.7:1;const card=document.createElement('article');card.innerHTML=`<img src="${preview(furnitureGeometry(kind,0),h,furnitureMaterial())}"><h3>${kind}</h3><footer>${itemIcon(`mueble_${kind}_0`)}</footer>`;document.querySelector('main').append(card);}
   for(const job of ['minero','lenador','recolector']){const card=document.createElement('article');card.innerHTML=`<img src="${preview(gatheringToolGeometry(job),.75)}"><h3>${job}</h3><footer>${itemIcon(`herramienta_${job}_0`)}</footer>`;document.querySelector('main').append(card);}
  });
  await page.screenshot({path:`${directory}/tools-and-furniture.png`,fullPage:true});

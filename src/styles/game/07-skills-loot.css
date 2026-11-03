@@ -28,9 +28,11 @@ body.playing.skills-open .chat-peek:not([hidden]) { display:none; }
 .skills-catalog { min-width:0; display:grid; gap:12px; }
 .skills-catalog-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 2px; }
 .skills-catalog-heading h4 { font-size:12px; }
-.skills-catalog-heading > span { border:1px solid #ac8b5466; border-radius:50%; width:23px; text-align:center; font-size:12px; }
+.skills-catalog-heading > span { border:1px solid #ac8b5466; border-radius:12px; min-width:23px; padding:2px 6px; text-align:center; font-size:11px; }
 .skill-card { display:grid; grid-template-columns:52px minmax(0,1fr); gap:12px; align-items:center; width:100%; padding:14px; text-align:left; color:var(--wood-2); border:1px solid #b18a4d; border-radius:5px 12px; background:linear-gradient(135deg,#fff5d9,#e8d0a6); box-shadow:inset 3px 0 #8a9a63,inset 0 0 0 3px #fff2cd88,0 4px 12px #50351a18; cursor:grab; }
 .skill-card:hover { border-color:#7c633d; background:linear-gradient(135deg,#fff9e8,#ebd6b0); }
+.skill-card.locked { cursor:not-allowed; opacity:.62; filter:saturate(.6); }
+.skill-card.locked:hover { border-color:#b18a4d; background:linear-gradient(135deg,#fff5d9,#e8d0a6); }
 .skill-card:focus-visible,.skill-hero-art:focus-visible { outline:2px solid #9d712e; outline-offset:3px; }
 .skill-art { display:grid; place-items:center; width:52px; height:52px; }
 .skill-art svg { width:100%; height:100%; filter:drop-shadow(0 3px 3px #30201855); }

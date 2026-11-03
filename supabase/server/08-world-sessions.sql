@@ -244,10 +244,16 @@ begin
   if not found then raise exception 'PORTAL_NOT_FOUND'; end if;
   -- La casa de Isberto está cerrada hasta que él invita al jugador (los personajes anteriores a la historia, siempre abierta).
   if p.target_map = 'casa_de_isberto_interior' and not public.game_isberto_house_open(c.data) then raise exception 'PORTAL_LOCKED'; end if;
+  if p.target_map='casa_del_olmo' then
+    if not public.game_home_owned(c.data,'olmo') and public.game_home_owner(c.id,c.data||jsonb_build_object('location',p.target_map))=c.id then raise exception 'Esta casa todavía no te pertenece. Consulta Mis viviendas.';end if;
+  end if;
   distance := sqrt(power((w.position ->> 'x')::double precision - p.x, 2) + power((w.position ->> 'z')::double precision - p.z, 2));
   if distance is null or distance > p.radius + 0.5 then raise exception 'PORTAL_TOO_FAR'; end if;
   if not public.game_location_contains(p.target_map, (p.target ->> 'x')::double precision, (p.target ->> 'z')::double precision) then
     raise exception 'INVALID_WORLD_STATE';
+  end if;
+  if nullif(c.data->'rpg'->'homes'->>'visit','') is not null and (here in ('habitacion_posada_lucero_del_alba','casa_del_olmo') or coalesce(c.data->'rpg'->'homes'->>'visitHome','lucero') is distinct from case p.target_map when 'habitacion_posada_lucero_del_alba' then 'lucero' when 'casa_del_olmo' then 'olmo' end) then
+    c.data:=jsonb_set(c.data,'{rpg,homes}',(c.data->'rpg'->'homes')-'visit'-'visitHome');
   end if;
   c.data := public.game_store(c.id, c.data || jsonb_build_object(
     'location', p.target_map, 'position', p.target, 'position_at', extract(epoch from now())));

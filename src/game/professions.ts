@@ -9,13 +9,15 @@ import { updateProfessionEnergy } from '../ui/professionEnergy';
 import { isInCombat } from '../data/combat';
 import { gatheringFeedback } from './gatheringFeedback';
 import { refreshProfessionWorld } from '../world/professionWorld';
+import {testBank} from './inventory';
 
 export async function performProfession(action:string,args:Record<string,unknown>={}) {
   const success=await runOnServer(id=>rpgAction(id,action,args,session.state.rpg?.revision??0),()=>{
     session.state.position={x:holder.position.x,z:holder.position.z,yaw:holder.rotation.y};
-    professionAction(session.state,action,args);
+    professionAction(session.state,action,args,Date.now()/1000,testBank);
   });
-  if(success){updateHud();updateProfessionEnergy();document.dispatchEvent(new CustomEvent('brumaluz-professions-update'));const editing=document.activeElement instanceof HTMLElement&&!!document.activeElement.closest('.profession-window')&&document.activeElement.matches('input,select');if(ui.openWindow==='professions'&&!(action==='state'&&editing))setWindow('professions',false);}
+  if(success&&action==='home_leave_visit'&&session.state.location!==play.city.locationId){const {switchGameMap,placeAfterTravel}=await import('./cities');await switchGameMap(session.state.location);if(session.state.position)placeAfterTravel(session.state.position);}
+  if(success){if(ui.openWindow==='homes'&&action!=='state')setWindow('homes',false);updateHud();updateProfessionEnergy();document.dispatchEvent(new CustomEvent('brumaluz-professions-update'));const editing=document.activeElement instanceof HTMLElement&&!!document.activeElement.closest('.profession-window')&&document.activeElement.matches('input,select');if(ui.openWindow==='professions'&&!(action==='state'&&editing))setWindow('professions',false);}
   return success;
 }
 let activeGather:string|null=null;
@@ -59,7 +61,7 @@ export function installProfessions(){
  document.getElementById('gathering-energy-hud')!.onclick=open;
  document.addEventListener('keydown',event=>{if(event.code!=='KeyP'||event.repeat||event.ctrlKey||event.altKey||event.metaKey||play.mode!=='play'||(event.target instanceof HTMLElement&&(event.target.matches('input,textarea,select')||event.target.isContentEditable)))return;setWindow(ui.openWindow==='professions'?null:'professions');if(ui.openWindow)void performProfession('state');});
  // Refresh server-owned jobs only while the window is open, without client grants of XP/items.
- setInterval(()=>{if(ui.openWindow==='professions'&&!play.actionBusy)void performProfession('state');},5000);
+ setInterval(()=>{if(!play.actionBusy&&(ui.openWindow==='professions'||!session.activeCharacterId&&play.mode==='play'))void performProfession('state');},5000);
  setInterval(updateProfessionEnergy,1000);
  updateProfessionEnergy();
 }

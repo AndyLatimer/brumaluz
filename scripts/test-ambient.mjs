@@ -7,19 +7,25 @@ import { after, before, test } from 'node:test';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
+import { readBuildSource } from './build-output.mjs';
 
 const asset = name => fileURLToPath(new URL(`../src/assets/${name}`, import.meta.url));
 test('ambient bundle preserves compatible source tracks without character meshes or textures', async () => {
   const io = new NodeIO();
-  const source = (await io.read(asset('library/adventurers/animations/Rig_Medium_General.glb'))).getRoot();
+  const sources = await Promise.all([
+    'library/adventurers/animations/Rig_Medium_General.glb',
+    'library/character-animations/animations/Rig_Medium_MovementAdvanced.glb',
+    'library/character-animations/animations/Rig_Medium_MovementBasic.glb',
+    'library/character-animations/animations/Rig_Medium_Simulation.glb',
+  ].map(async file => (await io.read(asset(file))).getRoot()));
   const reference = (await io.read(asset('models/Mage.glb'))).getRoot();
   const ambient = (await io.read(asset('models/ambient-animations.glb'))).getRoot();
-  assert.deepEqual(ambient.listAnimations().map(clip => clip.getName()), ['Hit_B', 'Idle_B']);
+  assert.deepEqual(ambient.listAnimations().map(clip => clip.getName()), ['Hit_B', 'Idle_B', 'Crawling', 'Walking_C', 'Cheering']);
   assert.equal(ambient.listMeshes().length, 0);
   assert.equal(ambient.listTextures().length, 0);
-  assert.ok((await stat(asset('models/ambient-animations.glb'))).size < 320_000);
+  assert.ok((await stat(asset('models/ambient-animations.glb'))).size < 1_100_000, 'Keep the five selected clips below 1.1 MB');
   for (const clip of ambient.listAnimations()) {
-    const original = source.listAnimations().find(value => value.getName() === clip.getName());
+    const original = sources.flatMap(source => source.listAnimations()).find(value => value.getName() === clip.getName());
     assert.equal(clip.listChannels().length, original.listChannels().length);
     clip.listChannels().forEach((channel, index) => {
       const old = original.listChannels()[index];
@@ -36,9 +42,9 @@ test('ambient bundle preserves compatible source tracks without character meshes
 });
 
 test('production includes only selected art, not the full imported library', async () => {
-  const html = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
+  const html = readBuildSource();
   assert.ok(Buffer.byteLength(html) < 10_900_000, 'Keep selected ambience and creator art below 10.9 MB (baseline 9.26 MB)');
-  for (const marker of ['assetsPreview', 'Skeleton_Minion', 'Rig_Medium_MovementBasic', 'Biblioteca KayKit']) {
+  for (const marker of ['assetsPreview', 'Biblioteca KayKit']) {
     assert.ok(!html.includes(marker), `Full library leaked: ${marker}`);
   }
 });

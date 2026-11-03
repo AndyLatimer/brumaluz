@@ -1,0 +1,269 @@
+{
+  "version": 1,
+  "pack": "pompelin-world-props",
+  "title": "Pompelín · Caminos y campamentos",
+  "author": "Brumaluz",
+  "description": "Atrezo original de Blender para el mapa mundo de Pompelín: hitos, señales, humilladeros, ruinas, puentes de arroyo, obeliscos, hogueras, tiendas, refugios, suministros, pozos, atalayas, carromatos, almiares, embarcaderos, colmenares y norias. Escala métrica, +Y arriba y +Z frente en GLB.",
+  "units": "meters",
+  "up_axis_blender": "Z",
+  "up_axis_glb": "Y",
+  "front_axis_blender": "-Y",
+  "front_axis_glb": "+Z",
+  "count": 18,
+  "atlas": "textures/world-props-atlas.png",
+  "blend": "pompelin-world-props.blend",
+  "assets": [
+    {
+      "name": "milestone_carved",
+      "label": "Mojón de camino tallado",
+      "category": "Caminos y orientación",
+      "description": "Hito de sillería con capitel moldurado, placa de bronce con rosa de los vientos, argolla de amarre y farolillo.",
+      "triangles": 1608,
+      "parts": 50,
+      "dimensions_m": {
+        "width": 1.158,
+        "depth": 1.05,
+        "height": 1.835
+      },
+      "glb": "objects/milestone_carved.glb"
+    },
+    {
+      "name": "signpost_wayfarer",
+      "label": "Poste indicador de encrucijada",
+      "category": "Caminos y orientación",
+      "description": "Poste de roble sobre cairn de sillería con tres flechas de ruta, placas colgantes, avisos y farol.",
+      "triangles": 1732,
+      "parts": 60,
+      "dimensions_m": {
+        "width": 1.819,
+        "depth": 1.39,
+        "height": 3.018
+      },
+      "glb": "objects/signpost_wayfarer.glb"
+    },
+    {
+      "name": "wayside_shrine",
+      "label": "Humilladero de caminantes",
+      "category": "Caminos y orientación",
+      "description": "Altar techado de piedra y roble con hornacina enrejada, estela solar, cuenco de ofrenda, velas y farol.",
+      "triangles": 2620,
+      "parts": 81,
+      "dimensions_m": {
+        "width": 1.436,
+        "depth": 1.26,
+        "height": 2.53
+      },
+      "glb": "objects/wayside_shrine.glb"
+    },
+    {
+      "name": "ancient_ruin_arch",
+      "label": "Arco antiguo en ruinas",
+      "category": "Caminos y orientación",
+      "description": "Vestigio de portal de sillería antigua con pilar entero, arco truncado con medallón, columna caída y brasero.",
+      "triangles": 1668,
+      "parts": 42,
+      "dimensions_m": {
+        "width": 2.428,
+        "depth": 1.28,
+        "height": 3.23
+      },
+      "glb": "objects/ancient_ruin_arch.glb"
+    },
+    {
+      "name": "stone_footbridge",
+      "label": "Puente rústico de arroyo",
+      "category": "Caminos y orientación",
+      "description": "Pasarela arqueada de sillería y tablones de roble con pretiles bajos, estribos de piedra y farol de paso.",
+      "triangles": 2772,
+      "parts": 66,
+      "dimensions_m": {
+        "width": 3.682,
+        "depth": 1.6,
+        "height": 1.79
+      },
+      "glb": "objects/stone_footbridge.glb"
+    },
+    {
+      "name": "boundary_obelisk",
+      "label": "Obelisco fronterizo de comarca",
+      "category": "Caminos y orientación",
+      "description": "Aguja monolítica tallada con anillos de bronce, escudos comarcales, bolardos con cadenas y farol.",
+      "triangles": 1624,
+      "parts": 43,
+      "dimensions_m": {
+        "width": 1.56,
+        "depth": 1.56,
+        "height": 3.325
+      },
+      "glb": "objects/boundary_obelisk.glb"
+    },
+    {
+      "name": "campfire_cooking_tripod",
+      "label": "Hoguera de viajero con trípode",
+      "category": "Campamentos y descanso",
+      "description": "Hoguera cercada de piedra con trípode de forja, caldero colgante, dos troncos de asiento, pan y leña.",
+      "triangles": 2732,
+      "parts": 47,
+      "dimensions_m": {
+        "width": 2.298,
+        "depth": 2.309,
+        "height": 1.599
+      },
+      "glb": "objects/campfire_cooking_tripod.glb"
+    },
+    {
+      "name": "traveler_tent",
+      "label": "Tienda de campaña de viajero",
+      "category": "Campamentos y descanso",
+      "description": "Tienda de lona y roble con vientos tensores, petate, mesa de campaña con mapa, escudo y farol.",
+      "triangles": 2249,
+      "parts": 59,
+      "dimensions_m": {
+        "width": 2.478,
+        "depth": 2.84,
+        "height": 1.801
+      },
+      "glb": "objects/traveler_tent.glb"
+    },
+    {
+      "name": "roadside_bench_shelter",
+      "label": "Refugio y banco de camino",
+      "category": "Campamentos y descanso",
+      "description": "Apeadero techado de piedra y roble con celosías laterales, banco corrido, farol colgante, barril de agua y bastón.",
+      "triangles": 2916,
+      "parts": 90,
+      "dimensions_m": {
+        "width": 2.32,
+        "depth": 1.296,
+        "height": 2.08
+      },
+      "glb": "objects/roadside_bench_shelter.glb"
+    },
+    {
+      "name": "expedition_supply_cache",
+      "label": "Alijo de suministros de caravana",
+      "category": "Campamentos y descanso",
+      "description": "Puesto de avituallamiento sobre tarima con cajas herradas, toneles, ánfora, sacos, lona y farol.",
+      "triangles": 3024,
+      "parts": 61,
+      "dimensions_m": {
+        "width": 1.88,
+        "depth": 1.26,
+        "height": 1.592
+      },
+      "glb": "objects/expedition_supply_cache.glb"
+    },
+    {
+      "name": "wayside_water_well",
+      "label": "Pozo y abrevadero de camino",
+      "category": "Campamentos y descanso",
+      "description": "Pozo de sillería con torno de madera, tejadillo a dos aguas, cubo colgante y abrevadero adosado.",
+      "triangles": 2172,
+      "parts": 39,
+      "dimensions_m": {
+        "width": 2.4,
+        "depth": 2.16,
+        "height": 2.585
+      },
+      "glb": "objects/wayside_water_well.glb"
+    },
+    {
+      "name": "scout_watchtower",
+      "label": "Atalaya de madera de vigía",
+      "category": "Campamentos y descanso",
+      "description": "Torre de observación de caminos sobre cuatro pilotes arriostrados con escalera, plataforma, toldo y brasero.",
+      "triangles": 2208,
+      "parts": 62,
+      "dimensions_m": {
+        "width": 2.26,
+        "depth": 2.363,
+        "height": 3.492
+      },
+      "glb": "objects/scout_watchtower.glb"
+    },
+    {
+      "name": "merchant_wagon",
+      "label": "Carromato cubierto de mercader",
+      "category": "Oficio rural y riberas",
+      "description": "Carromato de cuatro ruedas radiadas con toldo abovedado, pescante, freno de palanca, rueda de repuesto y carga.",
+      "triangles": 6840,
+      "parts": 139,
+      "dimensions_m": {
+        "width": 1.921,
+        "depth": 3.224,
+        "height": 1.902
+      },
+      "glb": "objects/merchant_wagon.glb"
+    },
+    {
+      "name": "wooden_handcart",
+      "label": "Carretilla de carga de camino",
+      "category": "Oficio rural y riberas",
+      "description": "Carro de mano de dos ruedas de radios con varales de tiro, caballete, barril, sacos, ánfora y farol.",
+      "triangles": 3888,
+      "parts": 83,
+      "dimensions_m": {
+        "width": 1.503,
+        "depth": 2.142,
+        "height": 1.032
+      },
+      "glb": "objects/wooden_handcart.glb"
+    },
+    {
+      "name": "hay_drying_rack",
+      "label": "Almiar y secadero de heno",
+      "category": "Oficio rural y riberas",
+      "description": "Secadero rural de madera con tejadillo a dos aguas, heno apilado, escalera de mano, fardos y horca.",
+      "triangles": 1840,
+      "parts": 70,
+      "dimensions_m": {
+        "width": 2.216,
+        "depth": 1.589,
+        "height": 2.485
+      },
+      "glb": "objects/hay_drying_rack.glb"
+    },
+    {
+      "name": "river_jetty_dock",
+      "label": "Embarcadero de madera de ribera",
+      "category": "Oficio rural y riberas",
+      "description": "Muelle rústico de pilotes y tablones con barandilla de soga, rampa, bolardo, nasa, cubo y farol.",
+      "triangles": 4448,
+      "parts": 93,
+      "dimensions_m": {
+        "width": 1.852,
+        "depth": 3.056,
+        "height": 2.24
+      },
+      "glb": "objects/river_jetty_dock.glb"
+    },
+    {
+      "name": "beehive_apiary_stand",
+      "label": "Colmenar rústico de pradera",
+      "category": "Oficio rural y riberas",
+      "description": "Bancada techada con tres colmenas trenzadas de paja, tarros de miel, ahumador de latón y flores.",
+      "triangles": 4248,
+      "parts": 71,
+      "dimensions_m": {
+        "width": 2.227,
+        "depth": 1.342,
+        "height": 2.27
+      },
+      "glb": "objects/beehive_apiary_stand.glb"
+    },
+    {
+      "name": "field_irrigation_wheel",
+      "label": "Noria y canal de labranza",
+      "category": "Oficio rural y riberas",
+      "description": "Rueda hidráulica rural sobre canal de sillería con cangilones, acueducto de madera y artesa de riego.",
+      "triangles": 2044,
+      "parts": 60,
+      "dimensions_m": {
+        "width": 1.97,
+        "depth": 2.4,
+        "height": 1.891
+      },
+      "glb": "objects/field_irrigation_wheel.glb"
+    }
+  ]
+}

@@ -1,8 +1,13 @@
 import rawCatalog from './generated/rpg-catalog.json';
 import type { CharData } from './data';
 import type { ItemStack } from './inventory';
-import {DAILY_ORDERS,deliverDailyOrder,type DailyOrderCatalog} from './dailyOrders';
-import {tutorialAction,tutorialEvent,type ProfessionTutorial} from './professionTutorial';
+import {DAILY_ORDERS,deliverDailyOrder,commissionAction,crafterId,type CommissionState,type CommissionView,type DailyOrderCatalog} from './dailyOrders';
+import type {BankState} from './bank';
+import {localMealAction,settleLocalMeals} from './sharedMeals';
+import {tutorialAction,tutorialEvent,PROFESSION_TUTORIAL,type ProfessionTutorial} from './professionTutorial';
+import {workshopMissionAction,workshopMissionEvent,type WorkshopMissionProgress} from './workshopMissions';
+import {homeState,placementError,HOME_FURNISHINGS,STARTER_HOME,HOME_CATALOG,homeAt,type HomeState,type PlacedFurniture} from './homes';
+import {neighborhoodAction,type NeighborhoodState} from './neighborhood';
 
 export interface Recipe { id:string; label:string; job:string; tier:number; output:string; count:number; seconds:number; ingredients:Record<string,number>; source:string; price:number; processing?:boolean }
 export interface ProfessionSite { id:string; label:string; job:string; location:string; x:number; z:number; radius?:number; tier?:number; item?:string; seconds?:number; respawn?:number }
@@ -19,18 +24,23 @@ export function enchantmentDescription(id:keyof typeof ENCHANT_VALUES,grade:numb
   :`Cada 3 básicos al mismo enemigo infligen un ${percent} % de daño oscuro adicional, sujeto a Guardia. Sus marcas duran 6 s.`;
 }
 export const RANK_XP = [0,100,500,1500,4000,10000];
-export interface CraftJob {id:string;recipe:string;job:string;start:number;end:number;done:boolean;ingredients:Record<string,number>;output:ItemStack;xp:number}
+export interface CraftJob {id:string;recipe:string;job:string;start:number;end:number;done:boolean;ingredients:Record<string,number>;reservedItems?:ItemStack[];output:ItemStack;xp:number}
 export interface RpgState {
+  homes?:HomeState; neighborhood?:NeighborhoodState;
   tutorial?:ProfessionTutorial;
-  dailyOrders?:{day:string;completed:number};
+  workshopMissions?:Record<string,WorkshopMissionProgress>;
+  dailyOrders?:CommissionState;
+  orderViews?:Record<string,CommissionView>;
+  owner?:string;bankAvailable?:Record<string,number>;onlineUntil?:number;
+  mealQuota?:{day:string;completed:number};
   version:1; revision?:number; energy:number; at:number; xp:Record<string,number>; mastery:Record<string,number>;
   learned:string[]; tools:Record<string,ItemStack|null>; jobs:CraftJob[]; deliveries:ItemStack[];
   nodes:Record<string,number>; gathering:{node:string;start:number;x:number;z:number}|null;
-  crafts:Record<string,number>; projects:Record<string,number>; furniture:{id:string;item:ItemStack;location:string;x:number;z:number;yaw:number;job?:string}[];
+  crafts:Record<string,number>; projects:Record<string,number>; furniture:PlacedFurniture[];
 }
 export function professionState(value:unknown, now=Date.now()/1000):RpgState {
   const source=value&&typeof value==='object'?value as Partial<RpgState>:{};
-  return {version:1,revision:source.revision??0,energy:Math.min(100,Math.max(0,Number.isFinite(source.energy)?source.energy!:100)),at:Number.isFinite(source.at)?source.at!:now,xp:source.xp??{},mastery:source.mastery??{},learned:source.learned??[],tools:source.tools??{},jobs:source.jobs??[],deliveries:source.deliveries??[],nodes:source.nodes??{},gathering:source.gathering??null,crafts:source.crafts??{},projects:source.projects??{},dailyOrders:source.dailyOrders,tutorial:source.tutorial,furniture:source.furniture??[]};
+  return {...source,version:1,revision:source.revision??0,homes:homeState(source.homes),neighborhood:source.neighborhood,energy:Math.min(100,Math.max(0,Number.isFinite(source.energy)?source.energy!:100)),at:Number.isFinite(source.at)?source.at!:now,xp:source.xp??{},mastery:source.mastery??{},learned:source.learned??[],tools:source.tools??{},jobs:source.jobs??[],deliveries:source.deliveries??[],nodes:source.nodes??{},gathering:source.gathering??null,crafts:source.crafts??{},projects:source.projects??{},dailyOrders:source.dailyOrders,tutorial:source.tutorial,workshopMissions:source.workshopMissions,furniture:source.furniture??[]};
 }
 export function professionRank(state:RpgState, job:string) {
   const earned=RANK_XP.filter(x=>(state.xp[job]??0)>=x).length-1;
@@ -41,14 +51,16 @@ export const professionExperience = (rank:number,tier:number) => tier<rank-1?0:t
 export const craftingExperience = (rank:number,tier:number) => professionExperience(rank,tier)*3**tier;
 export const recipeExperience = (rank:number,recipe:Pick<Recipe,'tier'|'processing'>) => recipe.processing?professionExperience(rank,recipe.tier):craftingExperience(rank,recipe.tier);
 export function reconcileProfessions(state:RpgState,now=Date.now()/1000) {
+  const elapsed=Math.max(0,now-state.at),online=state.onlineUntil===undefined?elapsed:Math.max(0,Math.min(now,state.onlineUntil)-state.at),shift=(elapsed-online)*2/3;
+  for(const task of state.jobs)if(!task.done){task.start+=shift;task.end+=shift;}state.onlineUntil=now+15;
   state.energy=Math.min(100,state.energy+Math.max(0,now-state.at)*100/(276*60));state.at=now;
-  for(const task of [...state.jobs].sort((a,b)=>a.end-b.end))if(!task.done&&task.end<=now){task.done=true;const recipe=RPG_CATALOG.recipes[task.recipe];state.xp[task.job]=(state.xp[task.job]??0)+recipeExperience(professionRank(state,task.job),recipe??{tier:0});state.crafts[task.job]=(state.crafts[task.job]??0)+1;}
+  for(const task of [...state.jobs].sort((a,b)=>a.end-b.end))if(!task.done&&task.end<=now){task.done=true;if(state.owner)task.output.craftedBy??=state.owner;const recipe=RPG_CATALOG.recipes[task.recipe];state.xp[task.job]=(state.xp[task.job]??0)+recipeExperience(professionRank(state,task.job),recipe??{tier:0});state.crafts[task.job]=(state.crafts[task.job]??0)+1;}
   for(const [id,at]of Object.entries(state.nodes))if(at<=now)delete state.nodes[id];
 }
 function meta(id:string){return RPG_CATALOG.items[id]??{stack:RPG_CATALOG.equipment[id]?1:50};}
 export function giveStack(d:CharData,stack:ItemStack):boolean {
   const slots=d.inventory.map(x=>x?{...x}:null);let remaining=stack.count;
-  if(!stack.instanceId)for(const item of slots)if(item&&item.id===stack.id&&!item.instanceId&&!!item.bound===!!stack.bound){const n=Math.min(remaining,Math.max(0,meta(stack.id).stack-item.count));item.count+=n;remaining-=n;}
+  if(!stack.instanceId)for(const item of slots)if(item&&item.id===stack.id&&!item.instanceId&&!!item.bound===!!stack.bound&&item.craftedBy===stack.craftedBy&&item.used===stack.used){const n=Math.min(remaining,Math.max(0,meta(stack.id).stack-item.count));item.count+=n;remaining-=n;}
   for(let i=0;i<slots.length&&remaining>0;i++)if(!slots[i]){const n=Math.min(remaining,stack.instanceId?1:meta(stack.id).stack);slots[i]={...stack,count:n};remaining-=n;}
   if(remaining)return false;d.inventory=slots;return true;
 }
@@ -60,20 +72,69 @@ function consume(d:CharData,id:string,count:number){
   if(d.inventory.reduce((n,s)=>n+(s?.id===id?s.count:0),0)<count)throw new Error(`Faltan materiales: ${RPG_CATALOG.items[id]?.label??id}`);
   for(let i=0;i<d.inventory.length&&count>0;i++){const s=d.inventory[i];if(s?.id!==id)continue;const n=Math.min(count,s.count);s.count-=n;count-=n;if(!s.count)d.inventory[i]=null;}
 }
-function siteRequired(d:CharData,job:string){const s=Object.values(RPG_CATALOG.stations).find(s=>(s.job===job||['minero','lenador','recolector'].includes(job)&&s.job==='herreria')&&s.location===d.location&&d.position&&Math.hypot(s.x-d.position.x,s.z-d.position.z)<=s.radius!);if(!s&&!d.rpg?.furniture.some(f=>(f as unknown as {job?:string}).job===job&&f.location===d.location&&d.position&&Math.hypot(f.x-d.position.x,f.z-d.position.z)<=4))throw new Error('Acércate a una estación de este oficio.');}
+function siteRequired(d:CharData,job:string){const s=Object.values(RPG_CATALOG.stations).find(s=>(s.job===job||['minero','lenador','recolector'].includes(job)&&s.job==='herreria')&&s.location===d.location&&d.position&&Math.hypot(s.x-d.position.x,s.z-d.position.z)<=s.radius!);if(!s&&(!!d.rpg?.homes?.visit||!d.rpg?.furniture.some(f=>(f as unknown as {job?:string}).job===job&&f.location===d.location&&d.position&&Math.hypot(f.x-d.position.x,f.z-d.position.z)<=4)))throw new Error('Acércate a una estación de este oficio.');}
 function pay(d:CharData,currency:'pelines'|'lagrimas',amount:number){if(d.wallet[currency]<amount)throw new Error('No tienes suficiente moneda.');d.wallet[currency]-=amount;}
 
 /** Development resolver. Online actions are always validated and executed by the SQL RPC. */
-export function professionAction(data:CharData,action:string,args:Record<string,unknown>={},now=Date.now()/1000) {
- const d=structuredClone(data), s=professionState(d.rpg,now);d.rpg=s;reconcileProfessions(s,now);
+export function professionAction(data:CharData,action:string,args:Record<string,unknown>={},now=Date.now()/1000,bank?:BankState) {
+ const d=structuredClone(data), s=professionState(d.rpg,now);d.rpg=s;s.owner??=crafterId(d);reconcileProfessions(s,now);
+ settleLocalMeals(d,now);
+ const reserveBank=bank?structuredClone(bank):undefined;s.owner??=crafterId(d);
+ const updateBank=()=>{if(reserveBank)s.bankAvailable=Object.fromEntries([...new Set(reserveBank.items.filter(i=>i).map(i=>i!.id))].map(id=>[id,reserveBank.items.reduce((n,i)=>n+(i?.id===id?i.count:0),0)]));};updateBank();
+ const craftConsume=(needs:Record<string,number>)=>{const reserved:ItemStack[]=[];for(const[id,count]of Object.entries(needs)){let left=count;for(const slots of [d.inventory,reserveBank?.items??[]])for(let slot=0;slot<slots.length&&left;slot++){const item=slots[slot];if(item?.id!==id)continue;const n=Math.min(left,item.count);reserved.push({...item,count:n});item.count-=n;left-=n;if(!item.count)slots[slot]=null;}if(left)throw new Error(`Faltan materiales: ${id}`);}updateBank();return reserved;};
  const id=String(args.id??''), job=String(args.job??''), slot=Number(args.slot),rank=professionRank(s,job);
  if(action==='state'){Object.assign(data,d);return;}
  if(d.health===0)throw new Error('Debes estar vivo para realizar esta acción.');
  if(action==='learn')throw new Error('Habla con el maestro del oficio para aprender recetas.');
- if(['tutorial_accept','tutorial_visit','tutorial_complete'].includes(action)){
+ if(action.startsWith('meal_')||['neighbor_contribute','neighbor_claim'].includes(action)){
+  localMealAction(d,action,args,now);
+ }else if(action.startsWith('neighbor_')){
+  neighborhoodAction(d,action,args,now);
+ }else if(action==='tutorial_supply'){
+  const q=s.tutorial,cfg=q&&PROFESSION_TUTORIAL.jobs[q.job];
+  if(!q||q.status!=='active'||q.delivered||!cfg||!q.visited||q.gathered<1||cfg.recipe&&q.collected<2)throw new Error('Completa la práctica antes de entregar el suministro.');
+  const order=DAILY_ORDERS.orders[cfg.order];
+  const previous=s.dailyOrders; s.dailyOrders=undefined;
+  deliverDailyOrder(d,order,{...args,reward:order.reward},RPG_CATALOG.teachers[q.job],now);
+  s.dailyOrders=previous;q.delivered=true;
+ }else if(action.startsWith('home_')){
+  const h=s.homes=homeState(s.homes);
+  const home=homeAt(d.location);
+  if(action==='home_access'){if(args.access!=='private'&&args.access!=='party')throw new Error('Elige quién puede visitarte.');h.access=args.access;}
+  else if(action==='home_primary'){if(!h.owned.includes(id))throw new Error('Esta vivienda no te pertenece.');h.primary=id;}
+  else if(action==='home_leave_visit'){h.visit=null;delete h.visitHome;if(home&&!h.owned.includes(home.id)){d.location=home.entrance.location;d.position={x:home.exit.targetX,z:home.exit.targetZ,yaw:0};}}
+  else if(action==='home_buy'){
+   const target=HOME_CATALOG.homes[id],offer=target?.purchase;
+   if(!offer||h.owned.includes(id))throw new Error('Esta vivienda ya es tuya o no está en venta.');
+   if(args.price!==offer.price)throw new Error('El precio ha cambiado. Revisa la vivienda.');
+   if(d.location!==target.entrance.location||!d.position||Math.hypot(d.position.x-target.entrance.x,d.position.z-target.entrance.z)>target.entrance.radius)throw new Error('Acércate a la entrada de la casa para comprarla.');
+   pay(d,'pelines',offer.price);h.owned.push(id);h.primary=id;
+  }
+  else if(action==='home_rest'){if(!home||!h.owned.includes(home.id)||h.visit||!d.position||Math.hypot(d.position.x-home.bed.x,d.position.z-home.bed.z)>home.bed.radius)throw new Error('Acércate a tu cama.');d.health=-1;d.resource=-1;}
+  else {
+   if(!home||!h.owned.includes(home.id)||h.visit)throw new Error('Entra en tu propia habitación para decorar.');
+   const piece=s.furniture.find(f=>f.id===id),item=action==='home_place'?d.inventory[slot]:piece?.item;
+   if(!item||args.instanceId!==item.instanceId)throw new Error('Ese mueble ha cambiado. Vuelve a seleccionarlo.');
+   const kind=RPG_CATALOG.items[item.id]?.furniture;
+   if(!kind||!HOME_FURNISHINGS[kind])throw new Error('Elige un mueble válido.');
+   if(action==='home_pickup'){
+    if(!piece||piece.location!==d.location||!giveStack(d,piece.item))throw new Error('No hay espacio en la mochila o el mueble ya no está aquí.');s.furniture=s.furniture.filter(f=>f.id!==id);
+   }else if(action==='home_toggle'){
+    if(!piece||piece.location!==d.location||!HOME_FURNISHINGS[kind].light)throw new Error('Este mueble no tiene luz.');piece.lit=piece.lit===false;
+   }else if(action==='home_place'||action==='home_move'){
+    if(action==='home_place'&&s.furniture.filter(f=>f.location===d.location).length>=home.limit)throw new Error('Has alcanzado el límite de muebles de esta vivienda.');
+    const x=Number(args.x),z=Number(args.z),yaw=Number(args.yaw),error=placementError(kind,x,z,yaw,s.furniture,item=>RPG_CATALOG.items[item]?.furniture??'',action==='home_move'?id:'',home);
+    if(error)throw new Error(error);
+    if(action==='home_move'){if(!piece||piece.location!==d.location)throw new Error('Ese mueble ya no está aquí.');Object.assign(piece,{x,z,yaw});}
+    else {s.furniture.push({id:crypto.randomUUID(),item,location:d.location,x,z,yaw,...(kind==='estacion'?{job}:{})});d.inventory[slot]=null;if(home.id===STARTER_HOME.id)h.settled=true;}
+   }else throw new Error('Esta visita necesita una partida conectada.');
+  }
+ }else if(action==='workshop_mission_accept'||action==='workshop_mission_complete'){
+  workshopMissionAction(d,action,args,now,RPG_CATALOG);
+ }else if(['tutorial_accept','tutorial_visit','tutorial_complete'].includes(action)){
   tutorialAction(d,action,args,now);
- }else if(action==='daily_order'){
-  const order=DAILY_ORDERS.orders[id];deliverDailyOrder(d,order,args,RPG_CATALOG.teachers[order?.job],now);
+ }else if(action==='daily_order'||action.startsWith('order_')){
+  commissionAction(d,action,args,now);
  }else if(action==='buy_recipe'){
   const r=RPG_CATALOG.recipes[id];if(!r||professionRank(s,r.job)<r.tier)throw new Error('No tienes el dominio necesario.');
   const teacher=RPG_CATALOG.teachers[r.job];
@@ -92,16 +153,15 @@ export function professionAction(data:CharData,action:string,args:Record<string,
   const r=RPG_CATALOG.recipes[id];if(!r||!s.learned.includes(id)||professionRank(s,r.job)<r.tier)throw new Error('Debes aprender la receta y dominar su rango.');siteRequired(d,r.job);
   const count=Math.max(1,Math.min(99,Math.floor(Number(args.count)||1)));
   if(r.seconds>0&&s.jobs.filter(j=>!j.done&&j.job===r.job).length+count>5)throw new Error('Máximo cinco trabajos por oficio.');
-  for(const[item,n]of Object.entries(r.ingredients))consume(d,item,n*count);
   for(let n=0;n<count;n++){
-   const xp=recipeExperience(professionRank(s,r.job),r), output=newRpgItem(r.output,r.count);
+   const reservedItems=craftConsume(r.ingredients),xp=recipeExperience(professionRank(s,r.job),r), output={...newRpgItem(r.output,r.count),craftedBy:crafterId(d)};
    if(!r.seconds){if(d.race==='elfo'&&r.job==='alquimia'&&r.output.startsWith('pocion_')&&Math.random()<.25)output.count++;if(!giveStack(d,output))throw new Error('Tu mochila está llena.');s.xp[r.job]=(s.xp[r.job]??0)+xp;s.crafts[r.job]=(s.crafts[r.job]??0)+1;}
-   else {const start=Math.max(now,...s.jobs.filter(j=>j.job===r.job&&!j.done).map(j=>j.end));s.jobs.push({id:crypto.randomUUID(),recipe:id,job:r.job,start,end:start+r.seconds*(d.race==='humano'?.85:1),done:false,ingredients:{...r.ingredients},output,xp});}
+   else {const start=Math.max(now,...s.jobs.filter(j=>j.job===r.job&&!j.done).map(j=>j.end));s.jobs.push({id:crypto.randomUUID(),recipe:id,job:r.job,start,end:start+r.seconds*(d.race==='humano'?.85:1),done:false,ingredients:{...r.ingredients},reservedItems,output,xp});}
   }
  }else if(action==='cancel'||action==='collect'||action==='reorder'){
   const task=s.jobs.find(j=>j.id===id);if(!task)throw new Error('Ese trabajo ya no está disponible.');siteRequired(d,task.job);
   if(action==='collect'){if(!task.done)throw new Error('El trabajo no ha terminado.');if(!giveStack(d,task.output))throw new Error('Tu mochila está llena.');s.jobs=s.jobs.filter(j=>j.id!==id);}
-  else if(action==='cancel'){if(task.done)throw new Error('El trabajo ya ha terminado.');for(const[item,n]of Object.entries(task.ingredients))s.deliveries.push(newRpgItem(item,n));s.jobs=s.jobs.filter(j=>j.id!==id);let cursor=now;for(const j of s.jobs.filter(j=>j.job===task.job&&!j.done)){const duration=j.end-j.start;if(j.start>now){j.start=cursor;j.end=cursor+duration;}cursor=j.end;}}
+  else if(action==='cancel'){if(task.done)throw new Error('El trabajo ya ha terminado.');s.deliveries.push(...(task.reservedItems??Object.entries(task.ingredients).map(([item,n])=>newRpgItem(item,n))));s.jobs=s.jobs.filter(j=>j.id!==id);let cursor=now;for(const j of s.jobs.filter(j=>j.job===task.job&&!j.done)){const duration=j.end-j.start;if(j.start>now){j.start=cursor;j.end=cursor+duration;}cursor=j.end;}}
   else {if(task.done||task.start<=now)throw new Error('Solo puedes reordenar trabajos pendientes.');const active=s.jobs.find(j=>j.job===task.job&&!j.done&&j.start<=now);const pending=s.jobs.filter(j=>j.job===task.job&&!j.done&&j.start>now);pending.splice(pending.indexOf(task),1);pending.unshift(task);let cursor=active?.end??now;for(const j of pending){const duration=j.end-j.start;j.start=cursor;j.end=cursor+duration;}s.jobs=[...s.jobs.filter(j=>!pending.includes(j)),...pending];}
  }else if(action==='delivery'){
   const index=Number(args.slot),item=s.deliveries[index];if(!item||!giveStack(d,item))throw new Error('No hay espacio o el envío ya se ha recogido.');s.deliveries.splice(index,1);
@@ -117,7 +177,7 @@ export function professionAction(data:CharData,action:string,args:Record<string,
    if(!tool||!tool.durability)throw new Error('Equipa o repara la herramienta de este oficio.');if(s.energy<cost)throw new Error('No tienes suficiente energía.');if((s.nodes[id]??0)>now)throw new Error('Este recurso aún se está recuperando.');
    if(action==='gather_start')s.gathering={node:id,start:now,x:d.position.x,z:d.position.z};
    else {if(!s.gathering||s.gathering.node!==id||now-s.gathering.start<node.seconds!||Math.hypot(d.position.x-s.gathering.x,d.position.z-s.gathering.z)>.5)throw new Error('La extracción se ha interrumpido.');if(!giveStack(d,newRpgItem(node.item!)))throw new Error('Tu mochila está llena.');
-    s.energy-=cost;tool.durability=Math.max(0,tool.durability-.25*(1+Math.max(0,node.tier!-r)*.5)*(1-r*.03)*(1-tier*.04));s.nodes[id]=now+node.respawn!;s.xp[node.job]=(s.xp[node.job]??0)+professionExperience(r,node.tier!);s.crafts[node.job]=(s.crafts[node.job]??0)+1;s.gathering=null;
+    s.energy-=cost;tool.used=true;tool.durability=Math.max(0,tool.durability-.25*(1+Math.max(0,node.tier!-r)*.5)*(1-r*.03)*(1-tier*.04));s.nodes[id]=now+node.respawn!;s.xp[node.job]=(s.xp[node.job]??0)+professionExperience(r,node.tier!);s.crafts[node.job]=(s.crafts[node.job]??0)+1;s.gathering=null;
    }
   }
  }else if(action==='repair'||action==='restore'||action==='restore_item'){
@@ -139,5 +199,5 @@ export function professionAction(data:CharData,action:string,args:Record<string,
   siteRequired(d,job);const next=(s.mastery[job]??0)+1;if(next>3||(s.xp[job]??0)<RANK_XP[next+2]||(s.crafts[job]??0)<next*50)throw new Error('Completa experiencia y práctica para tu proyecto de maestría.');
   const mat=job==='minero'||job==='herreria'||job==='joyeria'?'minero':job==='lenador'||job==='carpinteria'||job==='ebanisteria'?'lenador':'recolector';consume(d,`material_${mat}_0`,next*20);consume(d,`material_${mat}_${next+1}`,next*10);s.mastery[job]=next;
  }else throw new Error('Acción de oficio no válida.');
- tutorialEvent(d,action,args,data);Object.assign(data,d);
+ tutorialEvent(d,action,args,data);workshopMissionEvent(d,action,args,data,RPG_CATALOG);Object.assign(data,d);if(bank&&reserveBank)Object.assign(bank,reserveBank);
 }

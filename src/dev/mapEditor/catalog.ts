@@ -26,6 +26,7 @@ const SYNONYMS: Record<string, string[]> = {
   piedra: ['stone', 'rock'], barril: ['barrel'], caja: ['crate', 'box', 'chest'], cofre: ['chest'], valla: ['fence'], muro: ['wall'], muralla: ['wall'],
   puente: ['bridge'], torre: ['tower'], puerta: ['door', 'gate'], ventana: ['window'], tejado: ['roof'], escalera: ['stair', 'ladder'],
   mesa: ['table'], silla: ['chair', 'stool'], banco: ['bench'], cama: ['bed'], estanteria: ['shelf', 'bookcase'], libro: ['book'],
+  taburete: ['stool', 'chair'], mesita: ['table', 'nightstand'], arcon: ['chest', 'trunk', 'baul'], baul: ['chest', 'trunk', 'arcon'], alfombra: ['rug', 'carpet'], macetero: ['pot', 'plant', 'planter', 'maceta'], maceta: ['pot', 'plant', 'planter', 'macetero'], biombo: ['screen', 'divider', 'partition'], estacion: ['workbench'], biblioteca: ['bookcase', 'shelf', 'library'],
   flor: ['flower'], flores: ['flower'], arbusto: ['bush', 'shrub'], hierba: ['grass'], seta: ['mushroom'], hongo: ['mushroom'],
   agua: ['water'], rio: ['river', 'water'], camino: ['road', 'path'], calle: ['road', 'street'], pozo: ['well'], molino: ['windmill', 'mill'],
   farol: ['lamp', 'lantern', 'lamppost'], lampara: ['lamp', 'lantern'], antorcha: ['torch'], vela: ['candle'], fuego: ['fire', 'campfire'], hoguera: ['campfire'],
@@ -35,7 +36,7 @@ const SYNONYMS: Record<string, string[]> = {
   esqueleto: ['skeleton'], calavera: ['skull'], hueso: ['bone'], tumba: ['grave', 'tomb'], lapida: ['grave', 'tombstone'],
   iglesia: ['church'], castillo: ['castle'], cuartel: ['barracks'], herreria: ['blacksmith', 'forge'], taberna: ['tavern'], granja: ['farm'],
   trigo: ['wheat'], campo: ['field', 'farm'], nube: ['cloud'], montana: ['mountain', 'hill'], colina: ['hill'], bandera: ['flag', 'banner'],
-  estandarte: ['banner'], cartel: ['sign'], letrero: ['sign'], columna: ['column', 'pillar'], suelo: ['floor', 'tile'], baldosa: ['tile'],
+  estandarte: ['banner'], cartel: ['sign'], letrero: ['sign', 'signpost'], columna: ['column', 'pillar'], suelo: ['floor', 'tile'], baldosa: ['tile'], mojon: ['milestone'], hito: ['milestone'], humilladero: ['shrine'], altar: ['shrine'], ruina: ['ruin'], ruinas: ['ruin'], carromato: ['wagon'], carretilla: ['handcart', 'cart'], almiar: ['hay'], heno: ['hay'], embarcadero: ['jetty', 'dock'], muelle: ['jetty', 'dock'], refugio: ['shelter'], alijo: ['cache', 'supply'], suministros: ['supply', 'cache'], campamento: ['campfire', 'tent'], pasarela: ['footbridge', 'bridge'], obelisco: ['obelisk'], frontera: ['boundary', 'obelisk'], abrevadero: ['well', 'trough'], atalaya: ['watchtower', 'tower'], vigia: ['watchtower', 'scout'], colmena: ['beehive', 'apiary'], colmenar: ['beehive', 'apiary'], miel: ['beehive', 'apiary'], noria: ['irrigation', 'wheel'], acequia: ['irrigation', 'wheel'], riego: ['irrigation'],
 };
 let searchIndex = new Map<string, string>();
 

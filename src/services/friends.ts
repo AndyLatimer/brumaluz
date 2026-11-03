@@ -8,8 +8,9 @@ export function observeFriends(listener: (entries: FriendEntry[]) => void) {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
-    generation++;
-    pending = null;
+    // Closing the Social panel must not discard the notifications subscription
+    // or let a second poll overlap the read that it still needs.
+    if (!listeners.size) { generation++; pending = null; }
   };
 }
 

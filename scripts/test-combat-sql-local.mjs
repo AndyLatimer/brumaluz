@@ -20,13 +20,15 @@ test('generated combat SQL matches client attribute formulas and resolves ranged
    create function auth.uid() returns uuid language sql as $$ select '${uid}'::uuid $$;
    create function public.game_equipment_stat(d jsonb,stat text) returns numeric language sql immutable as $$ select coalesce((d->'_stats'->>stat)::numeric,0) $$;
    create function public.game_rpg_catalog() returns jsonb language sql immutable as $$ select '{"sets":{}}'::jsonb $$;
+   create function public.game_rpg_sets() returns jsonb language sql immutable as $$ select '{}'::jsonb $$;
+   create function public.game_rpg_food_effects() returns jsonb language sql immutable as $$ select '{}'::jsonb $$;
    create function public.game_rpg_sight(loc text,x1 numeric,z1 numeric,x2 numeric,z2 numeric) returns boolean language sql as $$ select enabled from public.test_sight $$;
    create function public.game_has_weapon(d jsonb) returns boolean language sql immutable as $$ select (d->'_stats'->>'power')::numeric>0 $$;
    create function public.game_overheal_now(d jsonb) returns int language sql immutable as $$ select 0 $$;
    create function public.game_lock_character(cid uuid) returns public.characters language sql as $$ select * from public.characters where id=cid $$;
    create function public.game_store(cid uuid,d jsonb) returns jsonb language plpgsql as $$ begin update public.characters set data=d where id=cid;return d;end $$;
    insert into public.world_players(user_id,character_id,position,seen_at)values('${uid}','${id}','{"x":1,"z":0}',now());`);
-  for(const name of ['game_race_bonus','game_level','game_attr_total','game_skill_id','game_skill_rank'])await db.exec(fn('03-formulas.sql',name));
+  for(const name of ['game_race_bonus','game_level','game_attr_total','game_skill_id','game_skill_data','game_skill_rank'])await db.exec(fn('03-formulas.sql',name));
   for(const name of ['game_set_bonuses','game_power_multiplier','game_guard_multiplier','game_strength_power','game_expertise_power','game_intellect_efficiency','game_agility_tempo','game_weapon_tempo','game_rpg_food_bonus','game_max_health','game_rpg_resource_max'])await db.exec(fn('19-rpg-foundation.sql',name));
   await db.exec(fn('03-formulas.sql','game_health'));await db.exec(fn('19-rpg-foundation.sql','game_public_vitals'));
   for(const name of ['game_shadow_combat_config','game_combat_tick','combat_action'])await db.exec(fn('21-rpg-combat.sql',name));

@@ -1,0 +1,20 @@
+{
+  "label": "standalone",
+  "scope": "Fresh Chromium context on localhost, production build, compatible mode; software-rendered startup, not a hardware FPS benchmark",
+  "htmlBytes": 180126954,
+  "readyMs": 23119.2572,
+  "transferredBytes": 81983622,
+  "requests": 6,
+  "glbRequests": 0,
+  "heapBytes": 1175585008,
+  "geometries": 151,
+  "textures": 202,
+  "documents": [
+    {
+      "transferBytes": 81834169,
+      "decodedBytes": 180126954
+    }
+  ],
+  "resources": [],
+  "errors": []
+}

@@ -26,7 +26,7 @@ as $$
     jsonb_build_object('equipment', coalesce(d->'equipment','{}'::jsonb))
   from jsonb_each(d)
   where key = any(array[
-    'name', 'title', 'level', 'race', 'cls', 'sex', 'height', 'build', 'skin', 'face',
+    'name', 'title', 'level', 'race', 'cls', 'sex', 'height', 'build', 'walkStyle', 'skin', 'face',
     'hair', 'hairColor', 'beard', 'eyeShape', 'eyeColor', 'brows', 'nose', 'mouth', 'detail',
     'trait', 'primary', 'secondary', 'cape', 'clothA', 'clothB', 'hairAcc', 'hairAccColor',
     'acc', 'makeup', 'makeupColor', 'accColor'

@@ -1,0 +1,1616 @@
+{
+  "version": 2,
+  "packs": [
+    {
+      "id": "brumaluz-lagto",
+      "label": "Cumbres de Cobre · Pueblo Lagto'",
+      "author": "Brumaluz",
+      "description": "Cantería, cobre trabajado, cedro, cuero y lana de las Cumbres de Cobre del pueblo Lagto'. Cincuenta modelos con superficies PBR, texturas CC0 y geometría revisada. Powered by Poly Haven.",
+      "count": 50,
+      "source": "art/lagto/brumaluz-lagto.blend",
+      "license": null
+    }
+  ],
+  "assets": [
+    {
+      "id": "brumaluz-lagto/objects/house_copper_bastion",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "house_copper_bastion",
+      "label": "Bastión de Sillar y Cobre",
+      "category": "Edificios",
+      "description": "Vivienda fortificada de las Cumbres con muros de sillar escalonado, alero de cobre martillado y aspilleras enrejadas.",
+      "path": "brumaluz-lagto/objects/house_copper_bastion.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#house_copper_bastion",
+      "bytes": 2195372,
+      "sha256": "184fa1117c5004245ca136d14daebce88fce1e22901c7885aead1195c2d05ffb",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.450000047683716,
+          0,
+          -2.75
+        ],
+        "max": [
+          2.5,
+          7.460000038146973,
+          3.7200000286102295
+        ]
+      },
+      "triangles": 16824,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/forge_cobre_foundry",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "forge_cobre_foundry",
+      "label": "Gran Fundición de las Cumbres",
+      "category": "Edificios",
+      "description": "Taller de fundición monumental con hornos gemelos de cobre, chimenea de tiraje, depósito de mineral y solera de colada.",
+      "path": "brumaluz-lagto/objects/forge_cobre_foundry.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#forge_cobre_foundry",
+      "bytes": 1909460,
+      "sha256": "2293cf98bdede303a2c5b9b2767da4a555737d70c1d1e849419d7218e0d28925",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -3.5199999809265137,
+          0,
+          -3.4000000953674316
+        ],
+        "max": [
+          3.5199999809265137,
+          7.494999885559082,
+          3
+        ]
+      },
+      "triangles": 12956,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/tower_drake_watch",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "tower_drake_watch",
+      "label": "Torreón Vigía de Roca",
+      "category": "Edificios",
+      "description": "Atalaya de sillería octogonal con aspilleras reforzadas, matacanes de cobre martillado y pebetero cenital de señales.",
+      "path": "brumaluz-lagto/objects/tower_drake_watch.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#tower_drake_watch",
+      "bytes": 1688556,
+      "sha256": "c9e8cb9a0ef8f10b56d2efdf809ac49e8e8f4fa2f96a66ee82b1aefe51ddfe2d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.633056640625,
+          0,
+          -2.633056640625
+        ],
+        "max": [
+          2.633056640625,
+          11.680000305175781,
+          3.6700000762939453
+        ]
+      },
+      "triangles": 8142,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/cavern_terrace_shelter",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "cavern_terrace_shelter",
+      "label": "Refugio de Risco y Caverna",
+      "category": "Edificios",
+      "description": "Refugio integrado en la roca viva con arriostramientos de cedro, marquesina de cobre, portón reforzado y terraza superior.",
+      "path": "brumaluz-lagto/objects/cavern_terrace_shelter.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#cavern_terrace_shelter",
+      "bytes": 1620860,
+      "sha256": "e3b408f6cb7ee6027d9049718c04ba1059b404f2cf15f2f713742ab4d7c1e664",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.75,
+          0,
+          -2.5
+        ],
+        "max": [
+          2.75,
+          5.775000095367432,
+          2.369999885559082
+        ]
+      },
+      "triangles": 7112,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/shrine_scale_ancestor",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "shrine_scale_ancestor",
+      "label": "Santuario de los Ancestros de Roca",
+      "category": "Edificios",
+      "description": "Templo ceremonial de sillería escalonada con pilares esculpidos en escama, entablamento de cobre y pebetero sacrificial con llama eterna.",
+      "path": "brumaluz-lagto/objects/shrine_scale_ancestor.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#shrine_scale_ancestor",
+      "bytes": 1645024,
+      "sha256": "87fb2bd25a187a6a27bf795d787bae21edb0ad64e340e3868662b75c03c83f73",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.9000000953674316,
+          0,
+          -2.9000000953674316
+        ],
+        "max": [
+          2.9000000953674316,
+          6.919999599456787,
+          2.9000000953674316
+        ]
+      },
+      "triangles": 9526,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/hall_stone_council",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "hall_stone_council",
+      "label": "Cámara del Consejo de las Cumbres",
+      "category": "Edificios",
+      "description": "Gran sala consistorial con columnata de sillar fajada en cobre, frontón escalonado y medallón del clan de los Lagto'.",
+      "path": "brumaluz-lagto/objects/hall_stone_council.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#hall_stone_council",
+      "bytes": 1857936,
+      "sha256": "b4ce45311734979de6952a32322de7abe7518e9aff547af164757d5b19556a99",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -3.5999999046325684,
+          0,
+          -3.3999998569488525
+        ],
+        "max": [
+          3.5999999046325684,
+          6.940000057220459,
+          4.787600040435791
+        ]
+      },
+      "triangles": 12548,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/gatehouse_copper_rampart",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "gatehouse_copper_rampart",
+      "label": "Puerta Fortificada de las Cumbres",
+      "category": "Edificios",
+      "description": "Bastión de paso fortificado con torres gemelas, rastrillo de rejas de cobre, matacanes y adarve almenado.",
+      "path": "brumaluz-lagto/objects/gatehouse_copper_rampart.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#gatehouse_copper_rampart",
+      "bytes": 1516676,
+      "sha256": "87096b7f78b8d183a0396fc2637a7ec85aef3473543c4e256da093a9c4234982",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -3.5399999618530273,
+          0,
+          -2
+        ],
+        "max": [
+          3.5399999618530273,
+          4.909999847412109,
+          2.01200008392334
+        ]
+      },
+      "triangles": 4880,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/mine_shaft_headframe",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "mine_shaft_headframe",
+      "label": "Bocamina y Castañete de Extracción",
+      "category": "Edificios",
+      "description": "Castañete de extracción minera con castillete de cedro, ruedas de polea gemelas de cobre, tolva de descarga y bocamina en sillería.",
+      "path": "brumaluz-lagto/objects/mine_shaft_headframe.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#mine_shaft_headframe",
+      "bytes": 1442088,
+      "sha256": "8de71e754d02277cfbe475714723756504ebedff46d3c0f8bb7cf20af574298c",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.6600000858306885,
+          0,
+          -2.7750000953674316
+        ],
+        "max": [
+          1.6600000858306885,
+          5.934999942779541,
+          1.819501519203186
+        ]
+      },
+      "triangles": 3688,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/bridge_copper_arch",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "bridge_copper_arch",
+      "label": "Puente de Cantería y Cobre",
+      "category": "Edificios",
+      "description": "Puente monumental de arco escarzano en sillería de granito, calzada empedrada, pretiles de cobre remachados y pilones con faroles.",
+      "path": "brumaluz-lagto/objects/bridge_copper_arch.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#bridge_copper_arch",
+      "bytes": 1495232,
+      "sha256": "8c17ba5886a135552f0ebc656288ae5aca2d08f9165d6ad9cf1f72bcc769d884",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.069999933242798,
+          0,
+          -3.739999771118164
+        ],
+        "max": [
+          2.069999933242798,
+          3.3154499530792236,
+          3.739999771118164
+        ]
+      },
+      "triangles": 4632,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/granary_silo_stone",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "granary_silo_stone",
+      "label": "Silo y Granero de Roca",
+      "category": "Edificios",
+      "description": "Depósito cilíndrico de sillar con zunchos de refuerzo de cobre, ranuras de ventilación y cubierta cónica de cobre con veleta.",
+      "path": "brumaluz-lagto/objects/granary_silo_stone.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#granary_silo_stone",
+      "bytes": 1517808,
+      "sha256": "481a742275bb8f5a49a9079fd6070340fe49a7a025aaedb7c22f8e2b2b139448",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -2.3499999046325684,
+          0,
+          -2.3499999046325684
+        ],
+        "max": [
+          2.3499999046325684,
+          8.050000190734863,
+          2.4854142665863037
+        ]
+      },
+      "triangles": 5972,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/barracks_drake_guard",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "barracks_drake_guard",
+      "label": "Cuartel de la Guardia de Escama",
+      "category": "Edificios",
+      "description": "Cuartel defensivo de infantería sauria con pórtico de sillar, cubierta de cobre alistonada, escudos de armas y armeros exteriores.",
+      "path": "brumaluz-lagto/objects/barracks_drake_guard.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#barracks_drake_guard",
+      "bytes": 1591012,
+      "sha256": "97093bdb1b8dfedd406ee0e47c5906c6921507e5aacf8f82844ba338c397143c",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -3.7200000286102295,
+          0,
+          -2.5999999046325684
+        ],
+        "max": [
+          3.7200000286102295,
+          5.529999732971191,
+          2.450000047683716
+        ]
+      },
+      "triangles": 5960,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/market_stall_ore_smith",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "market_stall_ore_smith",
+      "label": "Puesto de Comercio Minero y Cobre",
+      "category": "Edificios",
+      "description": "Puesto de tasación y venta de mineral con mostrador de granito, balanza de cobre, toldo de cuero rojo y lingotes expuestos.",
+      "path": "brumaluz-lagto/objects/market_stall_ore_smith.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#market_stall_ore_smith",
+      "bytes": 1450764,
+      "sha256": "141424f272ae102f914873fa1a8220322881fe37bdcc030a16dcef9f9b682aeb",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.7999999523162842,
+          0,
+          -1.399999976158142
+        ],
+        "max": [
+          1.7999999523162842,
+          3.1831796169281006,
+          1.399999976158142
+        ]
+      },
+      "triangles": 3524,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/throne_basalt_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "throne_basalt_copper",
+      "label": "Trono de Basalto y Cobre",
+      "category": "Mobiliario",
+      "description": "Asiento ceremonial tallado en roca oscura de las Cumbres con apoyabrazos de cobre martillado y respaldo con cresta de escamas.",
+      "path": "brumaluz-lagto/objects/throne_basalt_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#throne_basalt_copper",
+      "bytes": 1366648,
+      "sha256": "f0f21f18089a2f7537a142d575882ed2e62ba06ecff8df1424da9028c5d88531",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8399999737739563,
+          0,
+          -0.8500000238418579
+        ],
+        "max": [
+          0.8399999737739563,
+          2.430000066757202,
+          0.75
+        ]
+      },
+      "triangles": 2276,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/table_stone_refectory",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "table_stone_refectory",
+      "label": "Mesa de Cantero Reforzada",
+      "category": "Mobiliario",
+      "description": "Mesa comunal de losa de pizarra pulida sobre pedestales de piedra escuadrada, traviesa de cedro y cantoneras de cobre remachadas.",
+      "path": "brumaluz-lagto/objects/table_stone_refectory.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#table_stone_refectory",
+      "bytes": 1390532,
+      "sha256": "ea3add02e03d7ac58b9dc651079f38307bbbd641d7d91288f43aabf8a647bbb5",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.2620000839233398,
+          0,
+          -0.6369999647140503
+        ],
+        "max": [
+          1.2620000839233398,
+          1.3849999904632568,
+          0.6369999647140503
+        ]
+      },
+      "triangles": 2712,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/bench_quarry_slab",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "bench_quarry_slab",
+      "label": "Banco Corrido de Roca y Cuero",
+      "category": "Mobiliario",
+      "description": "Banco corrido de sillar de granito con colchoneta de cuero atada por cinchas con hebillas de cobre.",
+      "path": "brumaluz-lagto/objects/bench_quarry_slab.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#bench_quarry_slab",
+      "bytes": 1303264,
+      "sha256": "a45629707dc7b298b65d42b588929c0d4305568dcf6d0ad5539149153355ff7d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0499999523162842,
+          2.9802322387695312e-8,
+          -0.28999999165534973
+        ],
+        "max": [
+          1.0499999523162842,
+          0.5879999995231628,
+          0.28999999165534973
+        ]
+      },
+      "triangles": 708,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/chair_high_carved",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "chair_high_carved",
+      "label": "Silla Alta de las Cumbres",
+      "category": "Mobiliario",
+      "description": "Silla de cedro oscuro y respaldo alto con placa de pizarra esculpida en motivos geométricos y clavazón de cobre.",
+      "path": "brumaluz-lagto/objects/chair_high_carved.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#chair_high_carved",
+      "bytes": 1343012,
+      "sha256": "fb692df350a586c41313e37a492824fe4f059b9552e4c28424a09ba9ffa279bb",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.32749998569488525,
+          0,
+          -0.3075000047683716
+        ],
+        "max": [
+          0.32750001549720764,
+          1.4800000190734863,
+          0.3075000047683716
+        ]
+      },
+      "triangles": 1608,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/bed_cavern_hearth",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "bed_cavern_hearth",
+      "label": "Cama Térmica de Piedra y Pieles",
+      "category": "Mobiliario",
+      "description": "Cama de sillería con base de canales térmicos para el frío de las cumbres, manta de piel de borrego y faroles de cobre.",
+      "path": "brumaluz-lagto/objects/bed_cavern_hearth.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#bed_cavern_hearth",
+      "bytes": 1474176,
+      "sha256": "9394c270603a06f39af46024acf9faf252afe65100856e71ea4abd4c31538ffa",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.3299999237060547,
+          0,
+          -1.25
+        ],
+        "max": [
+          1.3299999237060547,
+          1.8660001754760742,
+          1.3049999475479126
+        ]
+      },
+      "triangles": 6084,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/cabinet_vaulted_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "cabinet_vaulted_copper",
+      "label": "Alacena Acorazada de Cobre",
+      "category": "Mobiliario",
+      "description": "Armario de cedro oscuro con puertas paneladas en chapa de cobre martillado, cerrojo pasador y herrajes forjados.",
+      "path": "brumaluz-lagto/objects/cabinet_vaulted_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#cabinet_vaulted_copper",
+      "bytes": 1368148,
+      "sha256": "59d47d5276874126e8ce51d2258427e4c52260655d27c9f85740b303e07b2040",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.75,
+          0,
+          -0.41999998688697815
+        ],
+        "max": [
+          0.75,
+          2.2899999618530273,
+          0.5
+        ]
+      },
+      "triangles": 2124,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/chest_ore_strongbox",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "chest_ore_strongbox",
+      "label": "Arcón Blindado de Mineral",
+      "category": "Mobiliario",
+      "description": "Arcón de madera férrea y sillar con tapa abovedada, zunchos de cobre remachados y candado macizo de fundición.",
+      "path": "brumaluz-lagto/objects/chest_ore_strongbox.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#chest_ore_strongbox",
+      "bytes": 1436844,
+      "sha256": "289373e3f128c9f1e3a47b2deb0849c13008d9b951f0cfdfd8b4efd1c8f35429",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6809999942779541,
+          0,
+          -0.46000003814697266
+        ],
+        "max": [
+          0.6809999346733093,
+          1.0299999713897705,
+          0.5099999904632568
+        ]
+      },
+      "triangles": 4040,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/shelf_mason_tools",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "shelf_mason_tools",
+      "label": "Estantería de Cantería y Menas",
+      "category": "Mobiliario",
+      "description": "Armazón de cedro y repisas de pizarra con cajones de menas, cinceles de cantero y probetas de cobre.",
+      "path": "brumaluz-lagto/objects/shelf_mason_tools.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#shelf_mason_tools",
+      "bytes": 1375032,
+      "sha256": "d1421f44e444c5e91040faa86c34decbb71e2e53c3c61097e7b95cb6916e170f",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7699999809265137,
+          0,
+          -0.304999977350235
+        ],
+        "max": [
+          0.7700000405311584,
+          2.299999713897705,
+          0.29999998211860657
+        ]
+      },
+      "triangles": 2156,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/desk_cartographer_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "desk_cartographer_copper",
+      "label": "Mesa de Trazado y Mapas Mineros",
+      "category": "Mobiliario",
+      "description": "Pupitre inclinado de cantero y agrimensor con losa de dibujo, pergamino de galerías, escuadra de bronce y cajonería.",
+      "path": "brumaluz-lagto/objects/desk_cartographer_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#desk_cartographer_copper",
+      "bytes": 1346848,
+      "sha256": "ce91e7e7af7f5de6cf3a70272deec4a4a735d0660f3925f37d99f27755ae0087",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8399999737739563,
+          0,
+          -0.4399999976158142
+        ],
+        "max": [
+          0.7600000500679016,
+          1.1050000190734863,
+          0.4440000057220459
+        ]
+      },
+      "triangles": 1788,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/anvil_master_forge",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "anvil_master_forge",
+      "label": "Gran Yunque de Fundición",
+      "category": "Mobiliario",
+      "description": "Yunque monumental de doble cuerno sobre tajo de roble zunchado en hierro, cubeta de temple y martillos de forja.",
+      "path": "brumaluz-lagto/objects/anvil_master_forge.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#anvil_master_forge",
+      "bytes": 1340904,
+      "sha256": "42bbbcf42cd7144742aee41f38997db4dee4623846d64ef83f12c55f0f52ce0b",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8400000333786011,
+          0,
+          -0.6499999761581421
+        ],
+        "max": [
+          0.753000020980835,
+          1.1299999952316284,
+          0.6499999761581421
+        ]
+      },
+      "triangles": 1972,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/hearth_brazier_hewn",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "hearth_brazier_hewn",
+      "label": "Hogar de Suelo y Campana de Cobre",
+      "category": "Mobiliario",
+      "description": "Hogar circular exento de cantería con lecho de brasas, parrilla giratoria de hierro y campana suspendida de cobre batido.",
+      "path": "brumaluz-lagto/objects/hearth_brazier_hewn.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#hearth_brazier_hewn",
+      "bytes": 1356764,
+      "sha256": "2cd30b7ed74c1cbd77cb75ddc3f660abdccbad62ae368e38b2ce26c71e835038",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.1799999475479126,
+          0,
+          -1.1799999475479126
+        ],
+        "max": [
+          1.1799999475479126,
+          2.9549999237060547,
+          1.1799999475479126
+        ]
+      },
+      "triangles": 2216,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/rug_lizard_weave",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "rug_lizard_weave",
+      "label": "Alfombra de Lana y Cuero Lagto'",
+      "category": "Mobiliario",
+      "description": "Tapiz de suelo de lana gruesa y ribetes de cuero trenzado con patrón geométrico de escamas de reptil en rojo y ocre.",
+      "path": "brumaluz-lagto/objects/rug_lizard_weave.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#rug_lizard_weave",
+      "bytes": 1302284,
+      "sha256": "c6c942b3be0a2cc4bccdb67301a0a065740de2edd2e40c65fb22ed40d659a972",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.524999976158142,
+          0,
+          -0.9900000095367432
+        ],
+        "max": [
+          1.524999976158142,
+          0.054999999701976776,
+          0.9900000095367432
+        ]
+      },
+      "triangles": 764,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/weapon_rack_stone_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "weapon_rack_stone_copper",
+      "label": "Armero de Cantería y Cobre",
+      "category": "Mobiliario",
+      "description": "Armero de suelo con montantes de sillar, traviesas de cedro ranuradas y guarniciones de cobre para alabardas y mandobles.",
+      "path": "brumaluz-lagto/objects/weapon_rack_stone_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#weapon_rack_stone_copper",
+      "bytes": 1332828,
+      "sha256": "983268c5613303e0fd8721aea6429f936abb29be4bad973e912940065e926f65",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0299999713897705,
+          0,
+          -0.3499999940395355
+        ],
+        "max": [
+          1.0299999713897705,
+          2.380000114440918,
+          0.3499999940395355
+        ]
+      },
+      "triangles": 1340,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/bunk_bed_miner",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "bunk_bed_miner",
+      "label": "Litera Minera de Cedro y Sillar",
+      "category": "Mobiliario",
+      "description": "Litera doble de cuadrantes de cedro anclada a pies de sillar, con jergones de lana, barandilla de cobre y escala lateral.",
+      "path": "brumaluz-lagto/objects/bunk_bed_miner.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#bunk_bed_miner",
+      "bytes": 1411072,
+      "sha256": "f95bd6a5843cbb040f33e477522433511de472ab263140541ad72d31aaf0bbcf",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0099999904632568,
+          0,
+          -1.309999942779541
+        ],
+        "max": [
+          1.0099999904632568,
+          2.359999895095825,
+          1.3100000619888306
+        ]
+      },
+      "triangles": 2936,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/low_table_cushions",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "low_table_cushions",
+      "label": "Mesa Baja con Cojines de Suelo",
+      "category": "Mobiliario",
+      "description": "Mesa de tertulia baja de granito pulido rodeada de cuatro pufs de cuero reptiliano con tetera y cuencos de cobre.",
+      "path": "brumaluz-lagto/objects/low_table_cushions.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#low_table_cushions",
+      "bytes": 1414752,
+      "sha256": "4bc3d83456e444ab4127283ea060c9466a7805c1a3e61958f7a84ad6d5c6b5eb",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.399999976158142,
+          0,
+          -1.2000000476837158
+        ],
+        "max": [
+          1.399999976158142,
+          0.7599999904632568,
+          1.2000000476837158
+        ]
+      },
+      "triangles": 3880,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/bookcase_tablet_vault",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "bookcase_tablet_vault",
+      "label": "Librería de Tablillas y Cilindros",
+      "category": "Mobiliario",
+      "description": "Estantería de archivo de sillería con alvéolos para tablillas de terracota, mapas de galerías en cilindro y reglas de bronce.",
+      "path": "brumaluz-lagto/objects/bookcase_tablet_vault.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#bookcase_tablet_vault",
+      "bytes": 1372780,
+      "sha256": "440ed171cfacdc2dd8d09e004cfd25302cd0850136a4083ee27cfcafe3ac24d3",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8799999952316284,
+          0,
+          -0.4000000059604645
+        ],
+        "max": [
+          0.8799999952316284,
+          2.299999952316284,
+          0.4000000059604645
+        ]
+      },
+      "triangles": 2100,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/washing_basin_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "washing_basin_copper",
+      "label": "Aguamanil y Palancana de Cobre",
+      "category": "Mobiliario",
+      "description": "Lavamanos de pedestal de sillar tallado con palangana de cobre batido, aguamanil de latón y toallero de cedro con paño.",
+      "path": "brumaluz-lagto/objects/washing_basin_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#washing_basin_copper",
+      "bytes": 1321228,
+      "sha256": "a0a0cf49dcf1b3690ac7594822f025e9d855e8ac25ef33c5c2e4a5b6ac29df77",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.3840000033378601,
+          0,
+          -0.3799999952316284
+        ],
+        "max": [
+          0.4099999964237213,
+          1.3014768362045288,
+          0.3799999952316284
+        ]
+      },
+      "triangles": 1646,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/cauldron_hearth_tripod",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "cauldron_hearth_tripod",
+      "label": "Caldero de Cobre sobre Trípode",
+      "category": "Mobiliario",
+      "description": "Gran marmita de cobre martillado con asa de arco suspendida sobre trípode de forja, bandeja de rescoldo y cucharón de madera.",
+      "path": "brumaluz-lagto/objects/cauldron_hearth_tripod.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#cauldron_hearth_tripod",
+      "bytes": 1355620,
+      "sha256": "60893a6e544bf7ecee26d445e05b7c97a52b83bd3d395c9ed49a5d94179cfaa7",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6000000238418579,
+          0,
+          -0.6000000238418579
+        ],
+        "max": [
+          0.6700000166893005,
+          1.7170000076293945,
+          0.6000000238418579
+        ]
+      },
+      "triangles": 2418,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/brazier_cobre_tripod",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "brazier_cobre_tripod",
+      "label": "Pebetero de Cobre de las Cumbres",
+      "category": "Atrezo y decoración",
+      "description": "Pebetero exento sobre trípode de hierro forjado con remates de garra, cuenco de cobre patinado y lecho de ascuas vivas.",
+      "path": "brumaluz-lagto/objects/brazier_cobre_tripod.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#brazier_cobre_tripod",
+      "bytes": 1324676,
+      "sha256": "2d91500c80aa389ae622dad9ca369189704f415bcbb59e02fdba6c20b107d920",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5184000730514526,
+          0,
+          -0.5184000134468079
+        ],
+        "max": [
+          0.5184000134468079,
+          1.1023999452590942,
+          0.5184000134468079
+        ]
+      },
+      "triangles": 1694,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/lamp_copper_pendant",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "lamp_copper_pendant",
+      "label": "Farol de Pared de Cobre y Soporte",
+      "category": "Atrezo y decoración",
+      "description": "Soporte mural de hierro forjado con brazo de pescante, farol ochavado de cobre con cristales ámbar y argolla de suspensión.",
+      "path": "brumaluz-lagto/objects/lamp_copper_pendant.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#lamp_copper_pendant",
+      "bytes": 1305420,
+      "sha256": "e863be3bd05ccd9fbbec8c6a1f8b496151ce281e4161dbd7ca74d611bda9cb04",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.15299999713897705,
+          0,
+          -0.30000001192092896
+        ],
+        "max": [
+          0.15299999713897705,
+          0.8400000333786011,
+          0.5329999923706055
+        ]
+      },
+      "triangles": 1092,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/cart_mine_ore",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "cart_mine_ore",
+      "label": "Vagoneta Minera de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Vagoneta de tolva de madera férrea y chapas de cobre remachadas sobre cuatro ruedas de fundición con carga de mena en bruto.",
+      "path": "brumaluz-lagto/objects/cart_mine_ore.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#cart_mine_ore",
+      "bytes": 1358252,
+      "sha256": "35e81860bd3c39b3b117b8009c8c703567758cca9bfee3b80f7750d8015560fa",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.5,
+          -3.239064128024438e-9,
+          -0.869999885559082
+        ],
+        "max": [
+          0.5,
+          0.9399999976158142,
+          0.8700000047683716
+        ]
+      },
+      "triangles": 2040,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/mine_track_segment",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "mine_track_segment",
+      "label": "Tramo de Raíles de Mina",
+      "category": "Atrezo y decoración",
+      "description": "Segmento de vía minera de 3 metros con traviesas de cedro, carriles de fundición y placas de fijación claveteadas.",
+      "path": "brumaluz-lagto/objects/mine_track_segment.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#mine_track_segment",
+      "bytes": 1315824,
+      "sha256": "276f38de7ad1942bc2e8c03c7c2fc338daa61003dd49661f2b7c97fe69fe9928",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.550000011920929,
+          0,
+          -1.5
+        ],
+        "max": [
+          0.550000011920929,
+          0.22499999403953552,
+          1.5
+        ]
+      },
+      "triangles": 892,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/ore_pile_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "ore_pile_copper",
+      "label": "Montón de Menas de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Cúmulo de roca viva excavada con vetas cristalinas de malaquita y fragmentos de cobre nativo metálico.",
+      "path": "brumaluz-lagto/objects/ore_pile_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#ore_pile_copper",
+      "bytes": 1275128,
+      "sha256": "31704e46c2df1d9f129d88774a99be4eb0a75bde655d238012f1aa3aec35aa20",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9372555017471313,
+          0,
+          -0.9564359188079834
+        ],
+        "max": [
+          0.9493240118026733,
+          1.0699999332427979,
+          0.9564359188079834
+        ]
+      },
+      "triangles": 280,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/bellows_forge_pedestal",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "bellows_forge_pedestal",
+      "label": "Fuelle Gigante de Fundición",
+      "category": "Atrezo y decoración",
+      "description": "Fuelle industrial de doble cámara con armazón de cedro y cuero claveteado, pedestal de sillería y tobera de cobre.",
+      "path": "brumaluz-lagto/objects/bellows_forge_pedestal.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#bellows_forge_pedestal",
+      "bytes": 1312664,
+      "sha256": "491a92accd5ad26e1339bd5445f06847a259ac6bc8520bcec47979a8761592e4",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.550000011920929,
+          0,
+          -1.409999966621399
+        ],
+        "max": [
+          0.550000011920929,
+          2.009999990463257,
+          1.0399999618530273
+        ]
+      },
+      "triangles": 988,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/banner_lagto_clan",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "banner_lagto_clan",
+      "label": "Estandarte de Guerra Lagto'",
+      "category": "Atrezo y decoración",
+      "description": "Mástil ceremonial sobre peana tallada con punta de lanza en garra de cobre, pendón de lana roja y lingotes de contrapeso.",
+      "path": "brumaluz-lagto/objects/banner_lagto_clan.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#banner_lagto_clan",
+      "bytes": 1333588,
+      "sha256": "9402411519752bb44e136f331f6d1ea1ad07422ead39a2685a8b46f882ef1c72",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7323082089424133,
+          0,
+          -0.44999998807907104
+        ],
+        "max": [
+          0.7323082089424133,
+          5.575000286102295,
+          0.44999998807907104
+        ]
+      },
+      "triangles": 2320,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/barrier_spiked_stone",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "barrier_spiked_stone",
+      "label": "Parapeto Defensivo de Sillar y Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Muro parapeto de granito con albardilla de chapa de cobre martillado y tres puas defensivas de hierro forjado.",
+      "path": "brumaluz-lagto/objects/barrier_spiked_stone.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#barrier_spiked_stone",
+      "bytes": 1301296,
+      "sha256": "3049de6a840997ace24841992dba405ec4a5bb8faf63c2c68e214b1ad208ba53",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.2000000476837158,
+          0,
+          -0.4000000059604645
+        ],
+        "max": [
+          1.2000000476837158,
+          1.1694999933242798,
+          0.9099999666213989
+        ]
+      },
+      "triangles": 768,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/gate_quarry_post",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "gate_quarry_post",
+      "label": "Poste de Portal con Cadenas",
+      "category": "Atrezo y decoración",
+      "description": "Monolito de portal escuadrado con collarín de cobre, argollas de anclaje y cadenas pesadas de suspensión.",
+      "path": "brumaluz-lagto/objects/gate_quarry_post.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#gate_quarry_post",
+      "bytes": 1311852,
+      "sha256": "6941af614102949203fed25ab55e4a292070bb91cbf601e598c1488e4209bf4e",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9009680151939392,
+          0,
+          -0.550000011920929
+        ],
+        "max": [
+          0.550000011920929,
+          3.5900001525878906,
+          0.550000011920929
+        ]
+      },
+      "triangles": 1056,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/crucible_molten_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "crucible_molten_copper",
+      "label": "Crisol con Cobre Fundido",
+      "category": "Atrezo y decoración",
+      "description": "Recipiente refractario cerámico sostenido por tenazas de colada con baño de cobre líquido incandescente.",
+      "path": "brumaluz-lagto/objects/crucible_molten_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#crucible_molten_copper",
+      "bytes": 1295708,
+      "sha256": "acdab34fbada41e2a86aea352f7f251fffe9a9b65cf03a6c5ba620b6b030d960",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.2000000476837158,
+          0,
+          -0.550000011920929
+        ],
+        "max": [
+          1.2000000476837158,
+          0.8199999928474426,
+          0.550000011920929
+        ]
+      },
+      "triangles": 904,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/quarry_crane_derrick",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "quarry_crane_derrick",
+      "label": "Grúa de Cantera y Cabestrante",
+      "category": "Atrezo y decoración",
+      "description": "Cabria de cantera en caballete de cedro con tambor de torno, poleas de cobre y tenaza de elevación de sillares.",
+      "path": "brumaluz-lagto/objects/quarry_crane_derrick.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#quarry_crane_derrick",
+      "bytes": 1323440,
+      "sha256": "4773d939200ae19e90319a40f4f68bfeb7367278193601cc0a635c8ae6f54d4a",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.9599999785423279,
+          0,
+          -1.100000023841858
+        ],
+        "max": [
+          0.9600000381469727,
+          3.618000030517578,
+          1.375
+        ]
+      },
+      "triangles": 1304,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/water_cistern_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "water_cistern_copper",
+      "label": "Cisterna de Roca y Filtro de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Aljibe de sillería de montaña con rejilla de filtración de cobre, grifo de bronce y cubo de servicio zunchado.",
+      "path": "brumaluz-lagto/objects/water_cistern_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#water_cistern_copper",
+      "bytes": 1297684,
+      "sha256": "4898be82c373a70a4ca568440b40fa5cbf0b1cd1aef5b4e55dcb60354bafde2c",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8999999761581421,
+          0,
+          -0.809999942779541
+        ],
+        "max": [
+          0.8999999761581421,
+          1.4100000858306885,
+          1.0299999713897705
+        ]
+      },
+      "triangles": 912,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/mine_cart_turnout",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "mine_cart_turnout",
+      "label": "Desvío y Aguja de Vía Minera",
+      "category": "Atrezo y decoración",
+      "description": "Aguja de desvío ferroviario con corazón de vía en fundición, palanca manual de contrapeso y placa de cobre.",
+      "path": "brumaluz-lagto/objects/mine_cart_turnout.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#mine_cart_turnout",
+      "bytes": 1328072,
+      "sha256": "d14a95db192571ad9c60f000d8d8b829fd7be7f6b70c0a0be0c52d11043fa6fe",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.0750000476837158,
+          0,
+          -1.9913311004638672
+        ],
+        "max": [
+          1.567992091178894,
+          0.8399999737739563,
+          1.7000000476837158
+        ]
+      },
+      "triangles": 1188,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/crusher_ore_stamp",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "crusher_ore_stamp",
+      "label": "Molino Triturador de Mineral",
+      "category": "Atrezo y decoración",
+      "description": "Mortero de trituración de sillar con dos mazas verticales de cedro calzadas en bronce, árbol de levas y tolva de descarga.",
+      "path": "brumaluz-lagto/objects/crusher_ore_stamp.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#crusher_ore_stamp",
+      "bytes": 1318864,
+      "sha256": "f93aa9ad48432ab436f5b19146260a09064ca8b9ab5f52a0c56daf80661499c0",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.100000023841858,
+          0,
+          -0.6000000238418579
+        ],
+        "max": [
+          1.100000023841858,
+          3.1999998092651367,
+          0.7050000429153442
+        ]
+      },
+      "triangles": 1392,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/ingot_stack_copper",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "ingot_stack_copper",
+      "label": "Pila de Lingotes de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Estiba de lingotes de cobre de fundición con marcas de ceca sobre palé de cedro y precinto de fleje de hierro.",
+      "path": "brumaluz-lagto/objects/ingot_stack_copper.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#ingot_stack_copper",
+      "bytes": 1319848,
+      "sha256": "fe68cedf96d6fa623be3bf0389e85d4951927315215e0ebbfb9093c076d29fbf",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.550000011920929,
+          0,
+          -0.6000000238418579
+        ],
+        "max": [
+          0.5499999523162842,
+          0.4649999737739563,
+          0.6000000238418579
+        ]
+      },
+      "triangles": 1044,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/ventilation_windlass_shaft",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "ventilation_windlass_shaft",
+      "label": "Pozo de Ventilación Minero",
+      "category": "Atrezo y decoración",
+      "description": "Chimenea de ventilación de pozo minero en sillería con caperuza giratoria de cobre, veleta y rejilla de seguridad.",
+      "path": "brumaluz-lagto/objects/ventilation_windlass_shaft.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#ventilation_windlass_shaft",
+      "bytes": 1278872,
+      "sha256": "2c17f8106570b73d962dfcdac855bdc2027ef3e119836b2238ff6f5899108ff7",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.800000011920929,
+          0,
+          -0.800000011920929
+        ],
+        "max": [
+          0.800000011920929,
+          2.8999998569488525,
+          0.800000011920929
+        ]
+      },
+      "triangles": 380,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/warning_beacon_totem",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "warning_beacon_totem",
+      "label": "Tótem Almenara de las Cumbres",
+      "category": "Atrezo y decoración",
+      "description": "Columna monolítica tallada con cabeza de saurio en altorrelieve que sostiene en sus fauces un pebetero de señales de cobre.",
+      "path": "brumaluz-lagto/objects/warning_beacon_totem.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#warning_beacon_totem",
+      "bytes": 1322156,
+      "sha256": "807d3384d6d5da212764ed5f8afd67d5d12559460e1106a9a0688047496f9da5",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.550000011920929,
+          0,
+          -0.550000011920929
+        ],
+        "max": [
+          0.550000011920929,
+          3.176999807357788,
+          1.2360000610351562
+        ]
+      },
+      "triangles": 1370,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/cavern_crystal_geode",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "cavern_crystal_geode",
+      "label": "Geoda Gigante de Malaquita y Azurita",
+      "category": "Atrezo y decoración",
+      "description": "Bloque de roca hendida de las cumbres que revela una cavidad interior tapizada de cristales de malaquita verde y azurita.",
+      "path": "brumaluz-lagto/objects/cavern_crystal_geode.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#cavern_crystal_geode",
+      "bytes": 1271212,
+      "sha256": "f9bd9480b6d58417d3f267f01918d6745435fc730b065e33dcb16b1f9972ae41",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.8956584930419922,
+          0,
+          -0.7029160261154175
+        ],
+        "max": [
+          0.8956584930419922,
+          1.100000023841858,
+          0.4327879846096039
+        ]
+      },
+      "triangles": 240,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/water_flume_sluice",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "water_flume_sluice",
+      "label": "Canaleta de Lavado de Mineral",
+      "category": "Atrezo y decoración",
+      "description": "Canaleta inclinada de lavado de oro y cobre sobre caballetes de cedro con deflectores de cobre para decantación de arenas.",
+      "path": "brumaluz-lagto/objects/water_flume_sluice.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#water_flume_sluice",
+      "bytes": 1308856,
+      "sha256": "1cd7da1e32ab3622b049a34cb8429c44a8e01f83db76419f836123db37c55a40",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4431621730327606,
+          0.007284641265869141,
+          -1.2904895544052124
+        ],
+        "max": [
+          0.4431621730327606,
+          1.19314706325531,
+          1.2904895544052124
+        ]
+      },
+      "triangles": 852,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    },
+    {
+      "id": "brumaluz-lagto/objects/tent_miner_outpost",
+      "pack": "brumaluz-lagto",
+      "kind": "objects",
+      "name": "tent_miner_outpost",
+      "label": "Tienda de Campaña Minera",
+      "category": "Atrezo y decoración",
+      "description": "Pabellón de campaña para prospección en cumbres con cubiertas de lona y piel encerada, mástiles de cedro y farol de interior.",
+      "path": "brumaluz-lagto/objects/tent_miner_outpost.glb",
+      "source": "art/lagto/brumaluz-lagto.blend#tent_miner_outpost",
+      "bytes": 1313056,
+      "sha256": "6d48eb3ccf4c89837ffb771340be1276707ca83009477e794fa71b9fe3b71baa",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -1.4120948314666748,
+          0,
+          -1.2999999523162842
+        ],
+        "max": [
+          1.4350000619888306,
+          2.2100000381469727,
+          1.2999999523162842
+        ]
+      },
+      "triangles": 1064,
+      "materials": 1,
+      "removedDegenerateOrDuplicateTriangles": 0
+    }
+  ]
+}

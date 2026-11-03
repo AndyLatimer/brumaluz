@@ -12,6 +12,7 @@ export const EQUIPPABLE: Record<string, { slot: EquipmentSlot; cls?: ClassId }> 
 for (const custom of ((itemsCatalog as any).items || [])) {
   if (custom && custom.active !== false && custom.equippable && custom.slot) {
     EQUIPPABLE[custom.id] = {
+      ...EQUIPPABLE[custom.id],
       slot: custom.slot,
       cls: custom.requiredClass && custom.requiredClass !== 'any' ? custom.requiredClass : undefined,
     };

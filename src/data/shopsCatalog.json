@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "shops": [
+    {
+      "id": "tienda_provisiones_pompelin",
+      "name": "Puesto de provisiones de Pompelín",
+      "description": "Establecimiento comercial en la plaza de Pompelín con suministros básicos, pociones reconstituyentes y equipo inicial para nuevos aventureros.",
+      "category": "general",
+      "npcId": "testiculos",
+      "currency": "pelines",
+      "active": true,
+      "items": [
+        {
+          "itemId": "pocion_vida_minuscula",
+          "buyPrice": 15,
+          "sellPrice": 7,
+          "stock": null
+        },
+        {
+          "itemId": "pocion_mana_minuscula",
+          "buyPrice": 15,
+          "sellPrice": 7,
+          "stock": null
+        },
+        {
+          "itemId": "pocion_estamina_minuscula",
+          "buyPrice": 15,
+          "sellPrice": 7,
+          "stock": null
+        },
+        {
+          "itemId": "pan_duro",
+          "buyPrice": 4,
+          "sellPrice": 2,
+          "stock": null
+        },
+        {
+          "itemId": "espada_cobre_t1",
+          "buyPrice": 50,
+          "sellPrice": 25,
+          "stock": null
+        },
+        {
+          "itemId": "escudo_roble_t1",
+          "buyPrice": 40,
+          "sellPrice": 20,
+          "stock": null
+        },
+        {
+          "itemId": "baston_ambar_t1",
+          "buyPrice": 50,
+          "sellPrice": 25,
+          "stock": null
+        },
+        {
+          "itemId": "daga_cazador_t1",
+          "buyPrice": 45,
+          "sellPrice": 22,
+          "stock": null
+        }
+      ],
+      "tags": [
+        "inicial",
+        "pompelin",
+        "consumibles"
+      ]
+    },
+    {
+      "id": "tienda_fragua_isberto",
+      "name": "Fragua y pertrechos de Isberto",
+      "description": "El veterano herrero ofrece armas resistentes forjadas en cobre y protecciones ligeras de roble para los viajeros que cruzan la niebla.",
+      "category": "weapons_armor",
+      "npcId": "isberto",
+      "currency": "pelines",
+      "active": true,
+      "items": [
+        {
+          "itemId": "espada_cobre_t1",
+          "buyPrice": 50,
+          "sellPrice": 25,
+          "stock": null
+        },
+        {
+          "itemId": "espada_cobre_t2",
+          "buyPrice": 120,
+          "sellPrice": 60,
+          "stock": 5
+        },
+        {
+          "itemId": "escudo_roble_t1",
+          "buyPrice": 40,
+          "sellPrice": 20,
+          "stock": null
+        },
+        {
+          "itemId": "escudo_roble_t2",
+          "buyPrice": 90,
+          "sellPrice": 45,
+          "stock": 5
+        }
+      ],
+      "tags": [
+        "herreria",
+        "armas",
+        "escudos"
+      ]
+    },
+    {
+      "id": "tienda_botica_alquimia",
+      "name": "Botica del Barrio de los Artesanos",
+      "description": "Frascos destilados, extractos aromáticos y viales sellados con resinas preparadas en la mesa de alquimia.",
+      "category": "potions_alchemy",
+      "npcId": "maestro_alquimia",
+      "currency": "pelines",
+      "active": true,
+      "items": [
+        {
+          "itemId": "pocion_vida_minuscula",
+          "buyPrice": 15,
+          "sellPrice": 7,
+          "stock": 50
+        },
+        {
+          "itemId": "pocion_mana_minuscula",
+          "buyPrice": 15,
+          "sellPrice": 7,
+          "stock": 50
+        },
+        {
+          "itemId": "pocion_estamina_minuscula",
+          "buyPrice": 15,
+          "sellPrice": 7,
+          "stock": 50
+        }
+      ],
+      "tags": [
+        "alquimia",
+        "pociones",
+        "artesanos"
+      ]
+    },
+    {
+      "id": "tienda_telas_sastreria",
+      "name": "Prendas y paños de la Maestra",
+      "description": "Prendas confeccionadas con lino y paño resistente, perfectas para protegerse de la bruma y el rocío de la campiña.",
+      "category": "tailoring",
+      "npcId": "maestro_sastreria",
+      "currency": "pelines",
+      "active": true,
+      "items": [],
+      "tags": [
+        "sastreria",
+        "ropa",
+        "artesanos"
+      ]
+    },
+    {
+      "id": "tienda_ebanisteria_muebles",
+      "name": "Mobiliario y enseres de Ebanistería",
+      "description": "Piezas talladas a mano para acondicionar el descanso en los hogares y posadas de Brumaluz.",
+      "category": "carpentry_furniture",
+      "npcId": "maestro_ebanisteria",
+      "currency": "pelines",
+      "active": true,
+      "items": [],
+      "tags": [
+        "muebles",
+        "ebanisteria",
+        "hogar"
+      ]
+    }
+  ]
+}
+

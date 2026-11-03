@@ -1,6 +1,7 @@
 // Mochila, equipo, comercio y banco: cada operación la decide el servidor.
 import { story, ui, play, session, vitals } from './state';
 import { RPG_CATALOG } from '../data/professions';
+import {homeAt,homeState} from '../data/homes';
 import { performProfession } from './professions';
 import { selectProfessionTab } from '../ui/professionsWindow';
 import { autoAssignToActionBar, initActionBar } from '../ui/actionBar';
@@ -13,7 +14,7 @@ import { vitalsOf } from '../data/stats';
 import { chatCombat } from '../ui/chatWindow';
 import { t } from '../ui/i18n';
 import { skillAction } from '../ui/skillsWindow';
-import { skillRank, skillCost, COMBAT_KITS } from '../data/combat';
+import { CLASS_SKILLS, skillCost, skillFor, skillRank, type SkillId } from '../data/combat';
 import { skillIcon } from '../ui/skillIcons';
 import { setWindow } from '../ui/menus';
 import { runOnServer } from './server';
@@ -22,6 +23,7 @@ import { holder, keys, marker, playerVel } from './stage';
 import { updateHud } from './hud';
 import { storyLock } from './conversation';
 import { getCombatActionFeedback, releaseCombatTarget, useWorldCombatSkill } from './combat';
+import { skillCooldownRemaining } from './skillCooldown';
 import { rebuildNow } from './avatar';
 import { totalHealth } from './vitals';
 import { restartClass, floatText } from './effects';
@@ -50,7 +52,8 @@ export async function vendorTransaction(call: (id: string, vendorId: string) => 
 export const testBank = emptyBank();
 export const nearBank = () => {
   const spot = BANK_SPOTS[play.city.locationId];
-  return houseOpen() && !!spot && Math.hypot(holder.position.x - spot.x, holder.position.z - spot.z) <= spot.radius;
+  const home=homeAt(play.city.locationId),homes=homeState(session.state.rpg?.homes);
+  return (home?homes.owned.includes(home.id)&&!homes.visit:houseOpen()) && !!spot && Math.hypot(holder.position.x - spot.x, holder.position.z - spot.z) <= spot.radius;
 };
 export async function bankTransaction(action: BankAction, value: number | null = null, expected: ItemStack | null = null, target: number | null = null) {
   const done = await runOnServer(async id => {
@@ -112,6 +115,7 @@ export async function useInventoryItem(slot: number) {
       if(ui.openWindow==='inventory')setWindow('inventory',false);
     }return;
   }
+  if(extra?.furniture&&session.state.location!=='casa_de_isberto_interior'){setWindow('homes');return;}
   if(extra?.enchant||extra?.furniture){selectProfessionTab(extra.enchant?'enchants':'furniture');setWindow('professions');void performProfession('state');return;}
   const before = totalHealth();
   const resourceBefore = vitalsOf(session.state).resource;
@@ -141,20 +145,32 @@ export function installActionBar() {
       const slot = session.state.inventory.findIndex((s) => s?.id === item);
       if (slot < 0) toast('No te quedan', '', true); else void useInventoryItem(slot);
     },
-    skill: () => {
-      const cls = session.state.cls, skill = COMBAT_KITS[cls].skill;
-      const resource = vitalsOf(session.state).resource, cost = skillCost(session.state);
-      const unavailableReason = play.dead ? 'dead' : !hasCombatWeapon(session.state) ? 'weapon' : resource < cost ? 'resource' : undefined;
-      let icon = icons.get(skill.id);
-      if (!icon) { icon = skillIcon(skill.id); icons.set(skill.id, icon); }
-      return {
-        id: skillAction(cls), cls, rank: skillRank(session.state), equipment: session.state.equipment, icon,
-        cooldown: Math.max(0, (vitals.skillReadyAt - performance.now()) / 1000), duration: skill.cooldown,
-        available: !unavailableReason, unavailableReason, resource, cost,
-      };
+    skill: (actionId) => {
+      const cls = session.state.cls;
+      const actions = CLASS_SKILLS[cls].filter(skill => session.state.level >= skill.unlockLevel);
+      const action = actions.find(skill => skillAction(skill.id) === actionId) ?? actions[0];
+      if (!action) throw new Error(`No hay una habilidad inicial para ${cls}.`);
+      return makeAction(action.id);
     },
+    skills: () => CLASS_SKILLS[session.state.cls]
+      .filter(skill => session.state.level >= skill.unlockLevel)
+      .map(skill => makeAction(skill.id)),
     useSkill: useWorldCombatSkill,
     feedback: getCombatActionFeedback,
     itemCooldown:()=>Math.max(0,(session.state.potionReadyAt??0)-Date.now()/1000),
   });
+
+  function makeAction(id: SkillId) {
+    const cls = session.state.cls, skill = skillFor(cls, id);
+    if (!skill) throw new Error(`La habilidad ${id} no pertenece a ${cls}.`);
+    const resource = vitalsOf(session.state).resource, cost = skillCost(session.state, id);
+    const unavailableReason: 'dead'|'weapon'|'resource'|undefined = play.dead ? 'dead' : !hasCombatWeapon(session.state) ? 'weapon' : resource < cost ? 'resource' : undefined;
+    let icon = icons.get(id);
+    if (!icon) { icon = skillIcon(id); icons.set(id, icon); }
+    return {
+      id: skillAction(id), skillId: id, cls, rank: skillRank(session.state, id), equipment: session.state.equipment, icon,
+      cooldown: skillCooldownRemaining(id), duration: skill.cooldown,
+      available: !unavailableReason, unavailableReason, resource, cost,
+    };
+  }
 }

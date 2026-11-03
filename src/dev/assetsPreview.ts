@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { catalog, loadLibraryAsset, animationLibrariesFor } from '../art/library';
 import { attachAnimationHelpers } from '../art/animationBindings';
 import './wardrobePreview.css';
@@ -24,6 +25,10 @@ const next = element<HTMLButtonElement>('#next');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
+// Copper needs reflected surroundings to read as metal in this isolated viewer.
+const environmentGenerator=new THREE.PMREMGenerator(renderer),environmentRoom=new RoomEnvironment();
+const metalEnvironment=environmentGenerator.fromScene(environmentRoom,.05);
+environmentRoom.dispose();environmentGenerator.dispose();
 scene.background = new THREE.Color('#d9dfdc');
 scene.add(new THREE.HemisphereLight('#fff5e5', '#8e9caa', 2.4));
 const key = new THREE.DirectionalLight('#fff0d5', 3);
@@ -40,6 +45,18 @@ let clips: THREE.AnimationClip[] = [];
 let request = 0;
 let closed = false;
 const clock = new THREE.Clock();
+const packAuthors = new Map(catalog.packs.map(entry => [entry.id, entry.author]));
+const cachedAnimationLibraries = new Map<string, Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>>();
+
+function loadAnimationLibrary(id: string) {
+  let pending = cachedAnimationLibraries.get(id);
+  if (!pending) {
+    pending = loadLibraryAsset(id).then(loaded => ({ scene: loaded.gltf.scene, animations: loaded.gltf.animations }));
+    pending.catch(() => cachedAnimationLibraries.delete(id));
+    cachedAnimationLibraries.set(id, pending);
+  }
+  return pending;
+}
 
 function dispose(root: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>();
@@ -87,16 +104,18 @@ async function rebuild() {
   let pending: THREE.Group | null = null;
   try {
     const { asset, url, gltf } = await loadLibraryAsset(select.value);
+    scene.environment=asset.pack==='brumaluz-lagto'?metalEnvironment.texture:null;
+    scene.environmentIntensity=.4;
+    renderer.toneMapping=asset.pack==='brumaluz-lagto'?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;
     pending = gltf.scene;
     if (closed || version !== request) { dispose(pending); return; }
     const available = [...gltf.animations];
     if (asset.kind === 'characters') {
-      for (const library of animationLibrariesFor(asset)) {
-        const loaded = await loadLibraryAsset(library.id);
-        try {
-          attachAnimationHelpers(pending, loaded.gltf.scene, loaded.gltf.animations);
-          available.push(...loaded.gltf.animations);
-        } finally { dispose(loaded.gltf.scene); }
+      const libraries = await Promise.all(animationLibrariesFor(asset).map(library => loadAnimationLibrary(library.id)));
+      if (closed || version !== request) { dispose(pending); return; }
+      for (const loaded of libraries) {
+        attachAnimationHelpers(pending, loaded.scene, loaded.animations);
+        available.push(...loaded.animations);
       }
     }
     if (closed || version !== request) { dispose(pending); return; }
@@ -125,8 +144,10 @@ async function rebuild() {
     download.download = `${asset.name}.glb`;
     download.hidden = false;
     status.textContent = `Listo. ${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)} m.`;
-    const author = catalog.packs.find(pack => pack.id === asset.pack)!.author;
+    const author = packAuthors.get(asset.pack) ?? asset.pack;
     element('#details').textContent = `${asset.name} · ${author} · ${asset.meshes} mallas · ${asset.skins} rigs${asset.rig ? ` (${asset.rig})` : ''} · ${clips.length} animaciones · ${(asset.bytes / 1024).toFixed(1)} KB. Origen: ${asset.source}`;
+    const title = asset.label ? `${asset.label} (${asset.name})` : asset.name;
+    element('#details').textContent = `${title} · ${author} · ${asset.meshes} mallas · ${asset.skins} rigs${asset.rig ? ` (${asset.rig})` : ''} · ${clips.length} animaciones · ${(asset.bytes / 1024).toFixed(1)} KB. Origen: ${asset.source}`;
   } catch (error) {
     if (pending) dispose(pending);
     if (!closed && version === request) {
@@ -141,8 +162,8 @@ function filter() {
   const query = search.value.trim().toLowerCase();
   const matches = catalog.assets.filter(asset =>
     (!pack.value || asset.pack === pack.value) && (!kind.value || asset.kind === kind.value)
-    && asset.name.toLowerCase().includes(query));
-  select.replaceChildren(...matches.map(asset => new Option(`${asset.pack} / ${asset.name}`, asset.id)));
+    && (asset.name.toLowerCase().includes(query) || (asset.label && asset.label.toLowerCase().includes(query)) || (asset.category && asset.category.toLowerCase().includes(query))));
+  select.replaceChildren(...matches.map(asset => new Option(`${asset.pack} / ${asset.label ? `${asset.label} (${asset.name})` : asset.name}`, asset.id)));
   if (matches.some(asset => asset.id === selected)) select.value = selected;
   element('#count').textContent = `${matches.length} de ${catalog.assets.length} recursos`;
   select.disabled = previous.disabled = next.disabled = matches.length === 0;
@@ -152,7 +173,11 @@ for (const value of catalog.packs) pack.add(new Option(value.label, value.id));
 element('#summary').textContent = `${catalog.assets.length} recursos de ${catalog.packs.length} paquetes`;
 pack.addEventListener('change', filter);
 kind.addEventListener('change', filter);
-search.addEventListener('input', filter);
+let searchTimer = 0;
+search.addEventListener('input', () => {
+  window.clearTimeout(searchTimer);
+  searchTimer = window.setTimeout(filter, 100);
+});
 select.addEventListener('change', () => void rebuild());
 for (const [button, direction] of [[previous, -1], [next, 1]] as const) {
   button.addEventListener('click', () => {
@@ -178,11 +203,17 @@ renderer.setAnimationLoop(() => {
 window.addEventListener('pagehide', () => {
   closed = true;
   request++;
+  window.clearTimeout(searchTimer);
   renderer.setAnimationLoop(null);
   clear();
+  for (const pending of cachedAnimationLibraries.values()) {
+    void pending.then(loaded => dispose(loaded.scene)).catch(() => {});
+  }
+  cachedAnimationLibraries.clear();
   controls.dispose();
   grid.geometry.dispose();
   for (const material of Array.isArray(grid.material) ? grid.material : [grid.material]) material.dispose();
   renderer.dispose();
+  metalEnvironment.dispose();
   window.removeEventListener('resize', resize);
 });

@@ -1,15 +1,18 @@
 import fs from 'node:fs';
 import { createServer } from 'vite';
 import { professionItemIcon } from './rpg-icon-art.mjs';
-const server=await createServer({configFile:false,logLevel:'error',server:{middlewareMode:true}});
+import {homeItemIcon} from './home-icons.mjs';
+const server=await createServer({configFile:false,logLevel:'error',server:{middlewareMode:true,hmr:false,watch:null}});
 let equipment,items,sets;
-try { ({EQUIPPABLE:equipment}=await server.ssrLoadModule('/src/data/equipment.ts')); ({ITEMS:items}=await server.ssrLoadModule('/src/data/items.ts')); ({armorSet:sets}=await server.ssrLoadModule('/src/data/sets.ts')); } finally {await server.close();}
+try { await server.ssrLoadModule('/src/data/data.ts'); ({EQUIPPABLE:equipment}=await server.ssrLoadModule('/src/data/equipment.ts')); ({ITEMS:items}=await server.ssrLoadModule('/src/data/items.ts')); ({armorSet:sets}=await server.ssrLoadModule('/src/data/sets.ts')); } finally {await server.close();}
 const names=['Aprendiz','Iniciado','Oficial','Experto','Maestro','Gran maestro'];
 const rarities=['common','uncommon','rare','epic','legendary','artifact'];
 const professions={herreria:'Herrería',peleteria:'Peletería',sastreria:'Sastrería',carpinteria:'Carpintería',ebanisteria:'Ebanistería',joyeria:'Joyería',alquimia:'Alquimia',encantamiento:'Encantamiento',cocina:'Cocina',minero:'Minero',lenador:'Leñador',recolector:'Recolector'};
 const catalog={professions,ranks:names,items:{},recipes:{},nodes:{},stations:{},sets:{},equipment};
 catalog.teachers={};
 const recipePrices=[50,250,1250,6250,25000,0];
+const cozyRules=JSON.parse(fs.readFileSync('src/data/cozyRules.json','utf8'));
+catalog.cozyRules=cozyRules;
 catalog.rareRecipeDrop={tier:5,chance:.005,minEnemyLevel:26};
 catalog.dailyOrders=JSON.parse(fs.readFileSync('src/data/dailyOrders.json','utf8'));
 catalog.professionTutorial=JSON.parse(fs.readFileSync('src/data/professionTutorial.json','utf8'));
@@ -50,7 +53,7 @@ for(const [job,label]of Object.entries(toolNames))for(let tier=0;tier<6;tier++){
 const enchantNames={fire:'Fuego',vampirism:'Vampirismo',frost:'Escarcha',lightning:'Rayo',dark:'Maldición umbría'};
 for(const [effect,label]of Object.entries(enchantNames))for(let tier=1;tier<6;tier++){const id=`pergamino_${effect}_${tier}`;catalog.items[id]={id,label:`${label} · ${names[tier]}`,category:'Pergamino de encantamiento',description:'Aplicación garantizada al arma principal de esta calidad o superior. Consume el pergamino y sustituye el encantamiento anterior sin ligar el arma.',tier,enchant:effect,rarity:rarities[tier],value:50*3**tier,stack:20,icon};}
 catalog.items.nucleo_restauracion={id:'nucleo_restauracion',label:'Núcleo de restauración',category:'Restauración',description:'Restaura la durabilidad actual y el máximo original de una herramienta. Muy raro.',tier:5,rarity:'artifact',value:5000,stack:10,icon};
-const seconds=[30,120,1800,7200,86400,172800];
+const seconds=cozyRules.equipmentMinutes.map(([low,high])=>Math.round((low+high)*30));
 function recipe(id,job,tier,label){
  const mat=job==='herreria'||job==='joyeria'?'minero':job==='carpinteria'||job==='ebanisteria'?'lenador':'recolector';
  const ingredients={[`material_${mat}_0`]:2+tier,[`material_${mat}_${tier}`]:3+tier*2};
@@ -63,6 +66,9 @@ function recipe(id,job,tier,label){
  catalog.recipes[id]={id,job,tier,label:label??items[id]?.label??catalog.items[id]?.label??id,output:id,count:1,seconds:duration,ingredients,source:tier===0?'trainer':'discovery'};
 }
 for(const[id,meta]of Object.entries(equipment)){
+ // Editor-authored equipment without a crafting rank has no generated recipe.
+ // Using undefined here emits NaN ingredients and recipe scrolls with no tier.
+ if(!Number.isInteger(meta.tier)||meta.tier<0||meta.tier>5)continue;
  const armor=sets(id);if(armor)catalog.sets[id]={...armor,slot:meta.slot,cls:meta.cls};
  if(meta.tier===0 && meta.slot==='weapon')continue;
  const isArmor=['head','chest','hands','legs'].includes(meta.slot);
@@ -78,14 +84,32 @@ for(let tier=1;tier<6;tier++){
  }
  const id=`comida_${tier}`;catalog.items[id]={id,label:`Provisión del caminante · ${names[tier]}`,category:'Comida',description:'Ración de cereal, fruta y hongos preparada para el camino.',tier,rarity:rarities[tier],value:8*3**tier,stack:50,icon,usable:true,food:id,foodEffect:{duration:900,maxHealth:5+tier*5,maxResource:3+tier*3},effects:[`+${5+tier*5} de vida máxima y +${3+tier*3} de recurso durante 15 minutos de conexión. No rellena las reservas.`]};recipe(id,'cocina',tier);catalog.recipes[id].ingredients[`fruta_${tier}`]=1;catalog.recipes[id].ingredients[`hongo_${tier}`]=1;
 }
-for(const [kind,label,size,complexity]of [['taburete','Taburete de taller',1,1],['mesa','Mesa de artesano',2,1.2],['biblioteca','Biblioteca tallada',3,1.8],['estacion','Banco de trabajo',2,1.5]])for(let tier=0;tier<6;tier++){
+const homeFurnishings=JSON.parse(fs.readFileSync('src/data/homeFurnishings.json','utf8'));
+for(const [kind,{label,size,complexity}]of Object.entries(homeFurnishings))for(let tier=0;tier<6;tier++){
  const id=`mueble_${kind}_${tier}`;catalog.items[id]={id,label:`${label} · ${names[tier]}`,category:'Mueble',description:'Mueble colocable en un interior habilitado. Su fabricación depende de calidad, tamaño y complejidad.',tier,furniture:kind,rarity:rarities[tier],value:40*3**tier,stack:1,icon};
- recipe(id,'ebanisteria',tier);catalog.recipes[id].seconds=Math.round(seconds[tier]*(2+.5*(size-1)+.5*(complexity-1)));
+ recipe(id,'ebanisteria',tier);const [low,high]=cozyRules.furnitureMinutes[tier];
+ const weight=Math.max(0,Math.min(1,((size-1)+(complexity-1))/6));
+ catalog.recipes[id].seconds=Math.round(60*(low+(high-low)*weight));
 }
 // Every advanced recipe is a tradable discovery, not automatically granted by the trainer.
 for(const job of Object.keys(professions).filter(job=>!mats[job])){
- const id=`componente_${job}_0`;catalog.items[id]={id,label:`Componente de ${professions[job]}`,category:'Componente de artesanía',description:'Componente básico utilizado también en recetas avanzadas del oficio.',tier:0,rarity:'common',value:6,stack:99,icon};recipe(id,job,0);
+ const id=`componente_${job}_0`;catalog.items[id]={id,label:`Componente de ${professions[job]}`,category:'Componente de artesanía',description:'Componente básico utilizado también en recetas avanzadas del oficio.',tier:0,rarity:'common',value:6,stack:99,icon};recipe(id,job,0);catalog.recipes[id].seconds=cozyRules.componentSeconds[0];
  for(const r of Object.values(catalog.recipes))if(r.job===job&&r.tier>0)r.ingredients[id]=1+Math.floor(r.tier/2);
+}
+// Everyday cooking and supervised social dishes share ingredients, not learning.
+catalog.meals={};
+for(let tier=0;tier<6;tier++){
+ const base=tier===0?'pan_duro':`comida_${tier}`;
+ const dishes=[['torta','Torta de cereal y fruta',1],['guiso','Guiso de hongos',2],['empanada','Empanada de la huerta',3]];
+ catalog.meals[base]={id:base,label:catalog.recipes[base].label,tier,difficulty:tier===0?1:3,output:base,ingredients:catalog.recipes[base].ingredients};
+ for(const [kind,label,difficulty]of dishes)for(const exclusive of [false,true]){
+  const id=`${exclusive?'merienda':'plato'}_${kind}_${tier}`;
+  const ingredients=kind==='torta'?{[`grano_${tier}`]:2,[`fruta_${tier}`]:2}:kind==='guiso'?{[`hongo_${tier}`]:3,[`material_recolector_${tier}`]:2,[`grano_${tier}`]:1}:{[`grano_${tier}`]:3,[`hongo_${tier}`]:2,[`material_recolector_${tier}`]:2};
+  const title=exclusive?({torta:'Bizcocho compartido de frutas',guiso:'Crema de hongos del taller',empanada:'Panecillos de la merienda'})[kind]:label;
+  catalog.items[id]={id,label:`${title} · ${names[tier]}`,category:'Comida',description:'Un plato elaborado con ingredientes de Pompelín.',tier,rarity:rarities[tier],value:8*3**tier,stack:50,icon,usable:true,food:id,foodEffect:{duration:900,maxHealth:5+tier*5,maxResource:3+tier*3}};
+  if(!exclusive){recipe(id,'cocina',tier);catalog.recipes[id].ingredients=ingredients;}
+  catalog.meals[id]={id,label:catalog.items[id].label,tier,difficulty,output:id,ingredients,exclusive};
+ }
 }
 // A slower alternative to hunting: four lower hides plus herbs make one higher hide.
 // The master teaches processing at its own rank; equipment recipes remain discoveries.
@@ -110,7 +134,7 @@ for(const item of Object.values(catalog.items)){
  else if(item.id.startsWith('fruta'))item.icon=`<path d="M12 7c-9-6-12 11-3 14l3-1 3 1c9-3 6-20-3-14Z" fill="${c}" stroke="#5a6243"/><path d="M12 8V3m0 2q6-5 7 0-4 3-7 0" stroke="#638155" fill="#8caf68"/>`;
  else if(item.id.startsWith('cuero'))item.icon=`<path d="m7 3 5 3 5-3 4 6-4 3 3 9-8-2-8 2 3-9-4-3Z" fill="#b28b62" stroke="#6c4d36"/><path d="m8 8 4 2 4-2M9 17l3-1 3 1" stroke="${c}" fill="none"/>`;
  else item.icon=`<path d="M5 6 12 2l7 5 2 10-9 5-9-6Z" fill="${c}" stroke="#4d5c4b"/><path d="m5 6 7 5 7-4m-7 4v11" fill="none" stroke="#e0e8c8"/>`;
- item.icon=professionItemIcon(item)??item.icon;
+ item.icon=homeItemIcon(item.furniture)??professionItemIcon(item)??item.icon;
  if(item.recipe||item.tool||item.enchant||item.furniture)item.usable=true;
  if(item.recipe){const r=catalog.recipes[item.recipe];item.stats=[{label:'Oficio',value:professions[r.job]},{label:'Dominio necesario',value:names[r.tier]}];}
  else if(item.tool)item.stats=[{label:'Oficio',value:professions[item.tool]},{label:'Menos desgaste por calidad',value:`${item.tier*4} %`}];
@@ -120,7 +144,17 @@ if(previous){
  for(const site of Object.values(catalog.stations)){const old=previous.stations?.[site.id];if(old?.job===site.job&&old.location===site.location)Object.assign(site,{x:old.x,z:old.z,radius:old.radius});}
  if(previous.camp)catalog.camp=previous.camp;
 }
+for(const [id,item]of Object.entries(catalog.items))if(/^(material_|gema_|fibra_|cuero_|fruta_|hongo_|grano_)/.test(id))item.sellable=false;
 fs.mkdirSync('src/data/generated',{recursive:true});fs.writeFileSync('src/data/generated/rpg-catalog.json',JSON.stringify(catalog));
 const literal=JSON.stringify(catalog).replaceAll("'","''");
+// Hot character calculations need rules, never the artwork and recipe descriptions.
+// Separate constants keep PostgreSQL from copying the entire catalog per slot/stat.
+const rules={
+ game_rpg_sets:catalog.sets,
+ game_rpg_food_effects:Object.fromEntries(Object.entries(catalog.items).filter(([,item])=>item.foodEffect).map(([id,item])=>[id,item.foodEffect])),
+ game_rpg_stack_limits:Object.fromEntries(Object.entries(catalog.items).map(([id,item])=>[id,item.stack])),
+};
+const ruleSql=Object.entries(rules).map(([name,value])=>`create or replace function public.${name}() returns jsonb language sql immutable set search_path='' as $rules$ select '${JSON.stringify(value).replaceAll("'","''")}'::jsonb $rules$;\nrevoke all on function public.${name}() from public,anon,authenticated;`).join('\n');
 fs.writeFileSync('supabase/server/18-rpg-catalog.sql',`-- Generated by tools/build-rpg-catalog.mjs.\ncreate or replace function public.game_rpg_catalog() returns jsonb language sql immutable set search_path='' as $catalog$ select '${literal}'::jsonb $catalog$;\nrevoke all on function public.game_rpg_catalog() from public,anon,authenticated;\n`);
+fs.writeFileSync('supabase/server/18a-rpg-runtime-rules.sql',`-- Generated by tools/build-rpg-catalog.mjs; compact rules for frequent character calculations.\n${ruleSql}\n`);
 console.log(`RPG catalog: ${Object.keys(catalog.recipes).length} recipes, ${Object.keys(catalog.nodes).length} nodes, ${Object.keys(catalog.items).length} items.`);

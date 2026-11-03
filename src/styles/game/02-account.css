@@ -2,99 +2,266 @@
 #account-backdrop { display: none; position: fixed; inset: 0; z-index: 0; overflow: hidden; }
 body.auth-visible #account-backdrop,
 body.characters-visible #account-backdrop { display: block; }
-body.auth-visible #account-backdrop {
-  background:
-    radial-gradient(ellipse at 50% 105%, rgba(75,93,128,.45), transparent 52%),
-    radial-gradient(ellipse at 50% 0%, #253c5b 0, #17263f 45%, #111a2c 100%);
-}
+/* Paleta del cielo sincronizada con la ilustración del login (brumaluz-login*.svg) */
+body.auth-visible #account-backdrop,
 body.characters-visible #account-backdrop {
   background:
-    radial-gradient(ellipse at 52% 52%, rgba(255,205,132,.68), transparent 30%),
-    linear-gradient(180deg, #edaa83 0%, #e9bd91 44%, #9b8064 72%, #40503d 100%);
+    radial-gradient(ellipse 45% 38% at 78% 14%, rgba(253, 215, 132, .16) 0%, rgba(70, 120, 158, .08) 45%, transparent 75%),
+    radial-gradient(ellipse 90% 40% at 50% 78%, rgba(182, 122, 61, .30) 0%, rgba(84, 55, 41, .18) 45%, transparent 75%),
+    linear-gradient(180deg, #040913 0%, #091424 22%, #12233a 42%, #1f3652 60%, #3a3640 74%, #543729 86%, #8a5a2f 100%);
 }
+body.characters-visible.daytime #account-backdrop,
+body.daytime.auth-visible #account-backdrop {
+  background:
+    radial-gradient(ellipse 45% 38% at 78% 14%, rgba(255, 248, 219, .45) 0%, rgba(255, 215, 120, .16) 40%, transparent 75%),
+    radial-gradient(ellipse 90% 40% at 50% 78%, rgba(253, 215, 166, .45) 0%, transparent 70%),
+    linear-gradient(180deg, #2a5d93 0%, #467bb5 20%, #6fa3d4 40%, #a4c9ec 58%, #fdd7a6 76%, #e8b984 100%);
+}
+
+/* Cielo estrellado */
+.account-stars {
+  position: absolute; inset: 0 0 35% 0; pointer-events: none; opacity: .9;
+  background-image:
+    radial-gradient(1.5px 1.5px at 11% 16%, #ffffff, transparent),
+    radial-gradient(2px 2px at 26% 11%, #fff4cf, transparent),
+    radial-gradient(1px 1px at 39% 21%, #e5edff, transparent),
+    radial-gradient(2.5px 2.5px at 58% 13%, #fffae8, transparent),
+    radial-gradient(1.5px 1.5px at 78% 18%, #ffffff, transparent),
+    radial-gradient(1px 1px at 89% 9%, #d8e5ff, transparent),
+    radial-gradient(2px 2px at 17% 32%, #fff2cb, transparent),
+    radial-gradient(1px 1px at 33% 28%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 48% 26%, #e2eeff, transparent),
+    radial-gradient(2px 2px at 70% 34%, #fff6d9, transparent),
+    radial-gradient(1px 1px at 86% 26%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 5% 7%, #ffffff, transparent),
+    radial-gradient(1px 1px at 45% 5%, #fff0c0, transparent),
+    radial-gradient(2px 2px at 94% 22%, #e8f0ff, transparent);
+  animation: account-stars-shimmer 7s ease-in-out infinite alternate;
+}
+body.daytime .account-stars, body.sunset .account-stars { opacity: 0; animation: none; }
+
+/* Luna (noche) / Sol (día): misma posición y colores que en la ilustración */
 .account-moon {
-  position: absolute; top: 12%; left: 50%; width: clamp(90px, 13vw, 180px); aspect-ratio: 1;
+  position: absolute; top: 9%; left: 89%; width: clamp(70px, 8vw, 120px); aspect-ratio: 1;
   border-radius: 50%; transform: translateX(-50%);
-  background: radial-gradient(circle at 38% 35%, #fff3d0, #f7ce8d 62%, #e8ab6c);
-  box-shadow: 0 0 45px rgba(255,221,165,.48), 0 0 150px rgba(255,215,159,.22);
+  background: radial-gradient(circle at 38% 36%, #ffffff 0%, #fff8db 32%, #f8dc94 68%, #ddaa56 90%, #b27530 100%);
+  box-shadow: 0 0 0 2px rgba(255, 244, 214, .55), 0 0 40px rgba(255, 238, 199, .45), 0 0 110px rgba(250, 208, 128, .28), 0 0 200px rgba(214, 150, 64, .12);
 }
-body.characters-visible .account-moon { top: 8%; left: 76%; opacity: .82; }
+.account-moon::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(ellipse 26% 20% at 36% 40%, rgba(147, 104, 54, .3), transparent 70%),
+    radial-gradient(ellipse 22% 15% at 58% 26%, rgba(147, 104, 54, .26), transparent 70%),
+    radial-gradient(ellipse 28% 22% at 66% 56%, rgba(147, 104, 54, .3), transparent 70%),
+    radial-gradient(ellipse 18% 15% at 40% 70%, rgba(147, 104, 54, .26), transparent 70%);
+}
+body.daytime .account-moon {
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fff4c8 35%, #ffd266 70%, #fca230 92%, #ef7918 100%);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .8), 0 0 45px rgba(255, 248, 219, .85), 0 0 120px rgba(255, 215, 120, .45), 0 0 220px rgba(255, 168, 52, .18);
+}
+body.daytime .account-moon::after { background: radial-gradient(circle, rgba(255, 255, 255, .55), transparent 70%); }
+
+/* Montañas lejanas */
+.account-mountains-far {
+  position: absolute; inset: auto 0 0; height: 60%;
+  background: linear-gradient(180deg, #3b4c60 0%, #233142 50%, #111a26 100%);
+  clip-path: polygon(0 70%, 9% 46%, 19% 62%, 31% 23%, 44% 53%, 58% 19%, 70% 55%, 83% 29%, 93% 58%, 100% 43%, 100% 100%, 0 100%);
+  opacity: .9;
+}
+body.daytime .account-mountains-far {
+  background: linear-gradient(180deg, #6985a6 0%, #8ba2be 45%, #b6cbe0 100%);
+  opacity: .95;
+}
+
+/* Montañas medias */
 .account-mountains {
-  position: absolute; inset: auto 0 0; height: 53%;
-  background: linear-gradient(150deg, #3a4a65, #222d43 68%);
-  clip-path: polygon(0 63%, 13% 25%, 25% 64%, 43% 5%, 61% 63%, 76% 30%, 100% 69%, 100% 100%, 0 100%);
+  position: absolute; inset: auto 0 0; height: 50%;
+  background: linear-gradient(180deg, #2a3a50 0%, #1c2635 60%);
+  clip-path: polygon(0 62%, 12% 28%, 24% 60%, 41% 10%, 59% 58%, 74% 24%, 88% 54%, 100% 32%, 100% 100%, 0 100%);
 }
 .account-mountains::after {
-  content: ''; position: absolute; inset: 22% 0 0;
-  background: linear-gradient(155deg, #293951, #172337 72%);
-  clip-path: polygon(0 50%, 19% 14%, 36% 54%, 57% 20%, 78% 61%, 100% 31%, 100% 100%, 0 100%);
+  content: ''; position: absolute; inset: 26% 0 0;
+  background: linear-gradient(180deg, #18232a, #0d1416 74%);
+  clip-path: polygon(0 48%, 17% 18%, 34% 52%, 52% 22%, 69% 54%, 86% 24%, 100% 46%, 100% 100%, 0 100%);
 }
-body.characters-visible .account-mountains { background: linear-gradient(150deg, #a87565, #5d6250 70%); }
-body.characters-visible .account-mountains::after { background: linear-gradient(155deg, #806452, #3c493e 72%); }
-.account-town { position: absolute; inset: auto 0 0; height: 25%; }
+body.daytime .account-mountains { background: linear-gradient(180deg, #7089a4 0%, #5d7590 60%); }
+body.daytime .account-mountains::after { background: linear-gradient(180deg, #3a5a4b, #2c473c 74%); }
+
+/* Bruma de Brumaluz */
+.account-mist {
+  position: absolute; inset: auto 0 18%; height: 26%; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 80% at 20% 70%, rgba(214, 232, 250, .18), transparent 70%),
+    radial-gradient(ellipse 80% 90% at 75% 65%, rgba(250, 231, 203, .16), transparent 75%);
+  filter: blur(12px);
+  animation: account-mist-drift 32s ease-in-out infinite alternate;
+}
+.account-mist-fore {
+  position: absolute; inset: auto 0 0; height: 14%; pointer-events: none; z-index: 1;
+  background: linear-gradient(180deg, transparent, rgba(18, 14, 10, .65));
+}
+body.daytime .account-mist {
+  background:
+    radial-gradient(ellipse 70% 80% at 20% 70%, rgba(255, 255, 255, .32), transparent 70%),
+    radial-gradient(ellipse 80% 90% at 75% 65%, rgba(255, 241, 214, .3), transparent 75%);
+}
+body.daytime .account-mist-fore {
+  background: linear-gradient(180deg, transparent, rgba(60, 50, 40, .5));
+}
+
+/* Silueta urbana de Brumaluz */
+.account-town { position: absolute; inset: auto 0 0; height: 27%; }
 .account-town::before {
-  content: ''; position: absolute; inset: 45% 0 0;
-  background: linear-gradient(180deg, #171f2d, #101722);
+  content: ''; position: absolute; inset: 48% 0 0;
+  background: linear-gradient(180deg, #1e1913, #120e0a);
 }
-body.characters-visible .account-town::before { background: linear-gradient(180deg, #51453b, #282a28); }
-.account-tower, .account-house {
-  position: absolute; bottom: 0; display: block; background: linear-gradient(90deg, #222a37, #374052 55%, #202838);
+body.daytime .account-town::before { background: linear-gradient(180deg, #605446, #52473c); }
+
+.account-wall {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 32%;
+  background: linear-gradient(90deg, #241d16, #3a3027 50%, #241d16);
+  clip-path: polygon(
+    0 100%, 0 25%, 3% 25%, 3% 40%, 6% 40%, 6% 25%, 9% 25%, 9% 40%, 12% 40%, 12% 25%,
+    16% 25%, 16% 40%, 20% 40%, 20% 25%, 24% 25%, 24% 40%, 28% 40%, 28% 25%,
+    32% 25%, 32% 40%, 36% 40%, 36% 25%, 40% 25%, 40% 40%, 44% 40%, 44% 25%,
+    48% 25%, 48% 40%, 52% 40%, 52% 25%, 56% 25%, 56% 40%, 60% 40%, 60% 25%,
+    64% 25%, 64% 40%, 68% 40%, 68% 25%, 72% 25%, 72% 40%, 76% 40%, 76% 25%,
+    80% 25%, 80% 40%, 84% 40%, 84% 25%, 88% 25%, 88% 40%, 92% 40%, 92% 25%,
+    96% 25%, 96% 40%, 100% 40%, 100% 100%
+  );
+  opacity: .95;
 }
-.account-tower { left: 50%; width: clamp(52px, 7vw, 90px); height: 94%; transform: translateX(-50%); }
+body.daytime .account-wall { background: linear-gradient(90deg, #6b5e50, #8c7e6e 50%, #6b5e50); }
+
+.account-tower, .account-house, .account-gate-spire {
+  position: absolute; bottom: 0; display: block;
+  background: linear-gradient(90deg, #221b14, #463a2e 55%, #201912);
+}
+.account-tower {
+  left: 48%; width: clamp(48px, 6vw, 75px); height: 50%; transform: translateX(-50%);
+}
 .account-tower::before {
   content: ''; position: absolute; top: -27%; left: -19%; width: 138%; height: 34%;
-  background: #202938; clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, #344654, #1c2730); clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 .account-tower::after {
   content: ''; position: absolute; left: 33%; top: 32%; width: 34%; height: 26%;
   border: 3px solid #111b2a; border-radius: 50% 50% 2px 2px; background: #dba965;
-  box-shadow: 0 47px 0 -2px #dba965;
+  box-shadow: 0 0 12px rgba(245, 190, 95, .65);
+  animation: account-lantern-glow 4s ease-in-out infinite alternate;
 }
-.account-house { width: clamp(92px, 12vw, 160px); height: 48%; }
+
+.account-citadel {
+  left: auto; right: 12%; transform: none; width: clamp(62px, 8vw, 108px); height: 92%;
+}
+.account-citadel::after {
+  left: 32%; top: 28%; width: 36%; height: 28%;
+  box-shadow: 0 0 16px rgba(255, 205, 110, .75);
+}
+
+.account-house { width: clamp(86px, 11vw, 150px); height: 46%; }
 .account-house::before {
   content: ''; position: absolute; top: -40%; left: -10%; width: 120%; height: 50%;
-  background: #262d38; clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, #344654, #1c2730); clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 .account-house::after {
   content: ''; position: absolute; left: 40%; top: 38%; width: 20%; height: 42%;
-  background: #dca45f; box-shadow: -34px 0 0 -4px #dca45f, 34px 0 0 -4px #dca45f;
+  background: #dca45f; box-shadow: -30px 0 0 -4px #dca45f, 30px 0 0 -4px #dca45f, 0 0 12px rgba(240, 185, 95, .5);
+  animation: account-lantern-glow 5s ease-in-out infinite alternate 1.5s;
 }
-.account-house-one { left: 8%; height: 42%; }
-.account-house-two { right: 8%; height: 46%; }
-.account-house-three { left: 27%; height: 28%; width: clamp(72px, 9vw, 120px); }
-body.characters-visible .account-tower,
-body.characters-visible .account-house { background: linear-gradient(90deg, #4b4038, #71604d 55%, #463c36); }
-body.characters-visible .account-tower::before,
-body.characters-visible .account-house::before { background: #493c35; }
-body.daytime.auth-visible #account-backdrop {
+
+.account-house-one { left: 3%; height: 44%; }
+.account-house-two { right: 3%; height: 48%; }
+.account-house-three { left: 20%; height: 34%; width: clamp(70px, 8.5vw, 115px); }
+.account-house-four { right: 22%; height: 38%; width: clamp(74px, 9vw, 120px); }
+
+.account-gate-spire {
+  left: 14%; width: clamp(24px, 3.2vw, 38px); height: 84%;
+}
+.account-gate-spire::before {
+  content: ''; position: absolute; top: -38%; left: -25%; width: 150%; height: 42%;
+  background: linear-gradient(135deg, #344654, #1c2730); clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.account-gate-spire::after {
+  content: ''; position: absolute; left: 30%; top: 28%; width: 40%; height: 20%;
+  border-radius: 50%; background: #f0c375; box-shadow: 0 0 12px #f0c375;
+  animation: account-lantern-glow 3.5s ease-in-out infinite alternate 0.7s;
+}
+
+body.daytime .account-tower,
+body.daytime .account-house,
+body.daytime .account-gate-spire {
+  background: linear-gradient(90deg, #5e5244, #8a7c6c 55%, #584b3d);
+}
+body.daytime .account-tower::before,
+body.daytime .account-house::before,
+body.daytime .account-gate-spire::before {
+  background: linear-gradient(135deg, #64839e, #4a667f 45%, #2c4254);
+}
+/* De día las ventanas reflejan el cielo, igual que en la ilustración */
+body.daytime .account-tower::after,
+body.daytime .account-gate-spire::after {
+  background: #cfe6f8; border-color: #3d2a1b; box-shadow: none; animation: none;
+}
+body.daytime .account-house::after {
+  background: #cfe6f8; box-shadow: -30px 0 0 -4px #cfe6f8, 30px 0 0 -4px #cfe6f8; animation: none;
+}
+
+/* Atardecer: recupera el fondo cálido que antes se usaba de día. */
+body.sunset.auth-visible #account-backdrop,
+body.sunset.characters-visible #account-backdrop {
   background:
     radial-gradient(ellipse at 52% 52%, rgba(255,205,132,.68), transparent 30%),
     linear-gradient(180deg, #edaa83 0%, #e9bd91 44%, #9b8064 72%, #40503d 100%);
 }
-body.daytime.auth-visible .account-moon { top: 8%; left: 76%; opacity: .82; }
-body.daytime.auth-visible .account-mountains { background: linear-gradient(150deg, #a87565, #5d6250 70%); }
-body.daytime.auth-visible .account-mountains::after { background: linear-gradient(155deg, #806452, #3c493e 72%); }
-body.daytime.auth-visible .account-town::before { background: linear-gradient(180deg, #51453b, #282a28); }
-body.daytime.auth-visible .account-tower,
-body.daytime.auth-visible .account-house { background: linear-gradient(90deg, #4b4038, #71604d 55%, #463c36); }
-body.daytime.auth-visible .account-tower::before,
-body.daytime.auth-visible .account-house::before { background: #493c35; }
-body.characters-visible:not(.daytime) #account-backdrop {
-  background:
-    radial-gradient(ellipse at 50% 105%, rgba(75,93,128,.45), transparent 52%),
-    radial-gradient(ellipse at 50% 0%, #253c5b 0, #17263f 45%, #111a2c 100%);
+body.sunset .account-moon {
+  top: 8%; left: 76%; opacity: .82; width: clamp(90px, 13vw, 180px);
+  background: radial-gradient(circle at 38% 35%, #fff3d0, #f7ce8d 62%, #e8ab6c);
+  box-shadow: 0 0 45px rgba(255,221,165,.48), 0 0 150px rgba(255,215,159,.22);
 }
-body.characters-visible:not(.daytime) .account-moon { top: 12%; left: 50%; opacity: 1; }
-body.characters-visible:not(.daytime) .account-mountains { background: linear-gradient(150deg, #3a4a65, #222d43 68%); }
-body.characters-visible:not(.daytime) .account-mountains::after { background: linear-gradient(155deg, #293951, #172337 72%); }
-body.characters-visible:not(.daytime) .account-town::before { background: linear-gradient(180deg, #171f2d, #101722); }
-body.characters-visible:not(.daytime) .account-tower,
-body.characters-visible:not(.daytime) .account-house { background: linear-gradient(90deg, #222a37, #374052 55%, #202838); }
-body.characters-visible:not(.daytime) .account-tower::before,
-body.characters-visible:not(.daytime) .account-house::before { background: #202938; }
+body.sunset .account-moon::after { background: none; }
+body.sunset .account-mountains-far { opacity: .35; background: linear-gradient(180deg, #be9b93, #8b7e82 55%, #a38268); }
+body.sunset .account-mountains {
+  height: 53%; background: linear-gradient(150deg, #a87565, #5d6250 70%);
+  clip-path: polygon(0 63%, 13% 25%, 25% 64%, 43% 5%, 61% 63%, 76% 30%, 100% 69%, 100% 100%, 0 100%);
+}
+body.sunset .account-mountains::after {
+  inset: 22% 0 0; background: linear-gradient(155deg, #806452, #3c493e 72%);
+  clip-path: polygon(0 50%, 19% 14%, 36% 54%, 57% 20%, 78% 61%, 100% 31%, 100% 100%, 0 100%);
+}
+body.sunset .account-mist {
+  background:
+    radial-gradient(ellipse 70% 80% at 20% 70%, rgba(255,221,185,.23), transparent 70%),
+    radial-gradient(ellipse 80% 90% at 75% 65%, rgba(255,225,184,.2), transparent 75%);
+}
+body.sunset .account-mist-fore { background: linear-gradient(180deg, transparent, rgba(60,50,40,.5)); }
+body.sunset .account-town::before { background: linear-gradient(180deg, #51453b, #282a28); }
+body.sunset .account-wall { background: linear-gradient(90deg, #564439, #78604b 50%, #564439); }
+body.sunset .account-tower,
+body.sunset .account-house,
+body.sunset .account-gate-spire { background: linear-gradient(90deg, #4b4038, #71604d 55%, #463c36); }
+body.sunset .account-tower::before,
+body.sunset .account-house::before,
+body.sunset .account-gate-spire::before { background: #493c35; }
+
+@keyframes account-stars-shimmer {
+  0%, 100% { opacity: .78; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+@keyframes account-mist-drift {
+  0% { transform: translateX(-3%) scaleY(0.95); opacity: .75; }
+  100% { transform: translateX(3%) scaleY(1.05); opacity: 1; }
+}
+@keyframes account-lantern-glow {
+  0%, 100% { opacity: .82; filter: drop-shadow(0 0 4px rgba(245,190,95,.4)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 8px rgba(245,190,95,.8)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-stars, .account-mist, .account-town i::after { animation: none !important; }
+}
 
 #account-gate {
-  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px;
+  position: fixed; inset: 0; z-index: 30; display: grid; place-items: safe center; padding: 24px;
   overflow-y: auto; background: transparent;
 }
 .account-card {
@@ -109,6 +276,18 @@ body.characters-visible:not(.daytime) .account-house::before { background: #2029
 #character-screen { width: min(780px, 100%); overflow-y: visible; padding: 32px 38px; }
 .account-brand { position: relative; display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 14px; color: #7c592e; font: 700 13px 'Cinzel', serif; letter-spacing: .15em; text-transform: uppercase; }
 .account-crest { color: #bd8739; font-size: 21px; text-shadow: 0 0 12px rgba(227,180,90,.55); }
+.account-logo-emblem { display: block; width: 62px; height: 74px; flex: none; filter: drop-shadow(0 2px 2px #69472226); }
+.account-logo-wordmark { display: flex; flex-direction: column; align-items: center; gap: 3px; text-shadow: 0 1px #fff8e8; }
+.account-logo-kicker { display: flex; align-items: center; gap: 10px; color: #896132; font: 700 10px 'Cinzel', serif; letter-spacing: .29em; }
+.account-logo-kicker::before, .account-logo-kicker::after { content: ''; width: 25px; height: 1px; background: linear-gradient(90deg, transparent, #b18b4b); }
+.account-logo-kicker::after { transform: scaleX(-1); }
+.account-logo-name { color: #66421f; font: 700 34px/1.2 'Cinzel Decorative', 'Cinzel', serif; letter-spacing: .055em; }
+@media (max-width: 760px) {
+  .account-logo-emblem { width: 48px; height: 58px; }
+  .account-logo-name { font-size: 27px; letter-spacing: .025em; }
+  .account-logo-kicker { font-size: 8px; letter-spacing: .24em; gap: 7px; }
+  .account-logo-kicker::before, .account-logo-kicker::after { width: 17px; }
+}
 .sign-out-icon {
   grid-column: 2; grid-row: 1 / span 2; display: grid; place-items: center; width: 32px; height: 32px;
   border: 1px solid rgba(156,111,42,.55); border-radius: 50%;
@@ -127,7 +306,7 @@ body.characters-visible:not(.daytime) .account-house::before { background: #2029
 .language-switch button:focus-visible { outline: 2px solid #a17438; outline-offset: 2px; }
 #account-language-switch { display: none; }
 body.auth-visible #account-language-switch, body.characters-visible #account-language-switch {
-  position: fixed; top: 18px; right: 18px; z-index: 40; display: flex;
+  position: fixed; top: 20px; right: 20px; z-index: 40; display: flex;
 }
 #account-details { display: none; }
 body.characters-visible #account-details {

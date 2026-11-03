@@ -40,6 +40,51 @@ test('using an item while walking animates the hands without changing the leg po
   assert.equal(result.overlay, true);
 });
 
+test('walking and running preserve their step phase while a jump fades naturally on landing', async () => {
+  const result = await page.evaluate(() => {
+    const a = actor();
+    a.update(0);
+    a.setGait('walk');
+    const startsAtRest = a.gaitAction().time === 0;
+    const walk = a.gaitAction();
+    walk.time = walk.getClip().duration * .4;
+    a.setGait('run');
+    const runPhase = a.gaitAction().time / a.gaitAction().getClip().duration;
+    a.setGait('idle');
+    a.setGait('walk');
+    const restartsAtStep = a.gaitAction().time === 0;
+    const duration = a.jump();
+    let time = 0;
+    const sampleWeight = progress => {
+      while (a.jumpTime < duration * progress) {
+        time += .04;
+        a.update(time);
+      }
+      return a.jumpAction?.getEffectiveWeight() ?? 0;
+    };
+    const takeoff = sampleWeight(.08);
+    const airborne = sampleWeight(.5);
+    const gaitWeightInAir = a.gaitAction().getEffectiveWeight();
+    const landing = sampleWeight(.94);
+    const gaitWeightAtLanding = a.gaitAction().getEffectiveWeight();
+    while (a.jumpAction) {
+      time += .04;
+      a.update(time);
+    }
+    const result = { startsAtRest, runPhase, restartsAtStep, takeoff, airborne, gaitWeightInAir, landing, gaitWeightAtLanding, jumpFinished: a.jumpTime < 0 };
+    a.dispose();
+    return result;
+  });
+  assert.equal(result.startsAtRest, true);
+  assert.ok(Math.abs(result.runPhase - .4) < .02, 'Changing gait must preserve the footfall phase');
+  assert.equal(result.restartsAtStep, true, 'Starting from idle must not resume a stale gait phase');
+  assert.ok(result.airborne > .98, 'Jump pose must fully replace the gait in mid-air');
+  assert.ok(result.gaitWeightInAir < .02, 'Gait must not dilute the airborne pose');
+  assert.ok(result.landing < result.airborne, 'Jump pose must blend out before landing');
+  assert.ok(result.gaitWeightAtLanding > .8, 'Gait must return progressively before landing');
+  assert.equal(result.jumpFinished, true);
+});
+
 test('gathering repeats until movement and its cleanup cannot cancel a newer attack', async () => {
   const result = await page.evaluate(() => {
     const a = actor(); a.update(0);

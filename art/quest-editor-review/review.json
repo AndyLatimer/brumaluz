@@ -2,16 +2,24 @@
   "passed": true,
   "liveWrites": false,
   "checks": [
-    "schema and references",
+    "schema and real craftable references",
+    "ordered visits and crafting",
+    "same-event stage isolation",
     "local rehearsal lifecycle",
     "atomic writes and conflicts",
     "five-step guided creation",
     "searchable target lists",
     "inline error navigation",
-    "preservation of custom objective text",
+    "undo and redo",
+    "custom objective text",
     "automatic question and return",
+    "dialogue diagnostics and connections",
+    "linked quests and circular requirement prevention",
+    "safe merging and conflict rejection",
+    "individual quest export with prerequisites",
+    "local trace export",
     "editor desktop and mobile",
     "draft and current step recovery",
-    "actual game dialogue desktop and mobile"
+    "actual game ordered dialogue desktop and mobile"
   ]
 }

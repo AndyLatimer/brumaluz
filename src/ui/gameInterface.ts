@@ -3,7 +3,7 @@ import { applyLanguage, t, getLanguage, setLanguage } from './i18n';
 import { initTooltips } from './tooltip';
 import { createTradeWindow } from './tradeWindow';
 import { play, session, story, ui, vitals } from '../game/state';
-import { chatSystem, initChat, chatSelfSay, chatReceive, setChatSpeechListener } from './chatWindow';
+import { chatSystem, initChat, chatSelfSay, chatReceive, setChatSpeechListener, setNpcSpeechListener } from './chatWindow';
 import { animateVisibility } from './uiMotion';
 import { sendChatMessage } from '../services/account';
 import { createQuestTracking } from './questTracking';
@@ -17,7 +17,8 @@ import { isDialogOpen, setDialogLogger, refreshDialog } from './dialog';
 import { initPartyHud } from './partyPanel';
 import { renderBuffs } from './buffs';
 import { renderControls } from './controls';
-import { updateHud, playerSay, speechSeconds, npcSay } from '../game/hud';
+import { updateHud, playerSay, speechSeconds, npcSay, npcChatSay } from '../game/hud';
+import { isAmbientResident } from '../data/cityPopulation';
 import { playerInteractions } from '../game/interaction';
 import { setWindow } from './menus';
 import { keys, marker, TEST, holder } from '../game/stage';
@@ -55,7 +56,7 @@ export function zoneMapPoints(): MapPoint[] {
   const resources=professionState(session.state.rpg),now=Date.now()/1000;
   const tracked=questTracking.current(session.state);
   const quest = play.city.locationId === 'brumaluz'||tracked==='profession' ? tracked : null;
-  const objective = quest === 'profession' ? tutorialTarget(session.state,play.city.locationId) : quest === 'shadow'
+  const objective = quest === 'profession' ? tutorialTarget(session.state,play.city.locationId,t) : quest === 'shadow'
     ? { name:t(shadowObjective(session.state.shadowQuest, corpseLooted(), play.city.locationId)), ...shadowQuestTarget() }
     : quest === 'welcome' && session.state.welcome
       ? { name:t(welcomeObjective(session.state.welcome)), ...(session.state.welcome.stage === 'active' ? WELCOME_BADGE : story.welcomeWorld.root.position) }
@@ -67,7 +68,7 @@ export function zoneMapPoints(): MapPoint[] {
       id:`resource:${node.id}`,name:`${t(node.label)} · ${gatherEnergy(professionRank(resources,node.job),node.tier??0)} ${t('energía')} · ${node.seconds} s`,
       x:node.x,z:node.z,kind:resourceFamily(node.item??'')??'herb',resource:true,
     })),
-    ...npcActors.filter(npc => npc.character.root.visible)
+    ...npcActors.filter(npc => npc.character.root.visible && !isAmbientResident(npc.id))
       .map(npc => ({ id:npc.id, name:story.NPCS[npc.id].name, x:npc.character.root.position.x, z:npc.character.root.position.z,kind:story.NPCS[npc.id].type==='trainer'?'workshop' as const:'npc' as const })),
     ...(story.welcomeWorld.root.visible ? [{id:'gnomi',name:session.registeredNpcs.gnomi.name,x:story.welcomeWorld.root.position.x,z:story.welcomeWorld.root.position.z}] : []),
     ...play.city.portals.map(portal => ({
@@ -81,6 +82,10 @@ export function zoneMapPoints(): MapPoint[] {
 }
 export function refreshLanguageDependentUI() {
   remotePlayers.refreshLanguage();
+  for (const npc of npcActors) {
+    const subtitle = npc.plate.querySelector('.npc-subtitle');
+    if (subtitle) subtitle.textContent = t(story.NPCS[npc.id].title);
+  }
   if (play.mode === 'play' && session.worldConnection) refreshWorldStatus();
   const language = getLanguage();
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-language]')) {
@@ -92,7 +97,7 @@ export function refreshLanguageDependentUI() {
   renderBuffs(session.state, !vitals.foodRunning);
   renderControls($('#controls-view'));
   refreshAmbientControls();
-  if (ui.openWindow === 'sheet' || ui.openWindow === 'vendor' || ui.openWindow === 'bank' || ui.openWindow === 'quests' || ui.openWindow === 'skills' || ui.openWindow === 'map' || ui.openWindow === 'collections' || ui.openWindow === 'professions') setWindow(ui.openWindow, false);
+  if (ui.openWindow === 'sheet' || ui.openWindow === 'vendor' || ui.openWindow === 'bank' || ui.openWindow === 'quests' || ui.openWindow === 'skills' || ui.openWindow === 'map' || ui.openWindow === 'collections' || ui.openWindow === 'professions' || ui.openWindow==='homes') setWindow(ui.openWindow, false);
   if (session.currentUser) displayCharacters(session.cachedCharacters);
   $('#auth-submit').textContent = session.authMode === 'register' ? t('Crear cuenta') : t('Iniciar sesión');
   $('#forgot-password').textContent = t('¿Olvidaste tu contraseña?');
@@ -164,6 +169,7 @@ export function installGameInterface() {
     if (own) playerSay(name, text);
     else remotePlayers.say(userId, name, text);
   });
+  setNpcSpeechListener(npcChatSay);
   setDialogLogger((speaker, text) => {
     if (speaker === null) play.char.speak(speechSeconds(text));
     else { focusConversationSpeaker(speaker); npcSay(speaker, t(text)); }

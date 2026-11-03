@@ -1,151 +1,35 @@
 // Barbas y bigotes, ajustados a la cara.
 import * as THREE from 'three';
 import type { HeadOptions } from './types';
-import { V, HEAD_C, paintCell, piece, compose, mergeGeoms } from './geometry';
+import { V, piece, compose, mergeGeoms } from './geometry';
 import { hasTravelerMask } from './accessoryLayers';
+import { sculptedBeard } from './sculptedBeard';
 
 /** Barba de la cabeza (parte de buildHead). */
 export function buildBeard({ o, mouthY, rayHead, headR, hairCell }: { o: HeadOptions; mouthY: number; rayHead: (o: THREE.Vector3, d: THREE.Vector3) => { point: THREE.Vector3; normal: THREE.Vector3; } | null; headR: (d: THREE.Vector3) => number; hairCell: number }) {
   const beardGeos: THREE.BufferGeometry[] = [];
   if (o.beard > 0 && !hasTravelerMask(o.acc ?? 0)) {
-    const my = mouthY;
-    const beardPatch = (distance: (x: number, y: number) => number, wrapSides = false) => {
-      const xMin = -0.48, xMax = 0.48, yMin = 1.02, yMax = 1.68, nx = 120, ny = 110;
-      const dx = (xMax - xMin) / nx, dy = (yMax - yMin) / ny;
-      type Sample = { x: number; y: number; d: number };
-      const grid: Sample[] = [];
-      for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
-        const x = xMin + i * dx, y = yMin + j * dy;
-        const d = distance(x, y);
-        grid.push({ x, y, d: d > -0.02 && !wrapSides && !rayHead(V(x, y, 2), V(0, 0, -1)) ? -0.02 : d });
+    if (o.beard !== 7) beardGeos.push(...sculptedBeard(o, mouthY, headR, rayHead));
+    else {
+      const dots: THREE.BufferGeometry[] = [];
+      // Staggered, deterministic growth: no repeated dot grid or solid painted jaw.
+      for (let row = 0; row < 19; row++) for (let col = 0; col < 33; col++) {
+        const seed = Math.sin(row * 127.1 + col * 311.7) * 43758.5453;
+        const noise = seed - Math.floor(seed);
+        const x = (col - 16) * .019 + (row % 2) * .009 + (noise - .5) * .01;
+        const y = mouthY + .047 - row * .017 + Math.sin(col * 3.7 + row) * .004;
+        const top = mouthY - .044 + .07 * (Math.abs(x) / .32) ** 1.6;
+        const underNose = Math.abs(x) < .17 && Math.abs(y - (mouthY + .035 - x * x)) < .02;
+        if ((!underNose && y > top) || Math.abs(x) > .31 || noise < .16) continue;
+        const hit = rayHead(V(x, y, 2), V(0, 0, -1));
+        if (!hit) continue;
+        const rot = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), hit.normal));
+        dots.push(piece(new THREE.CircleGeometry(.0019 + noise * .001, 5), hairCell,
+          compose(hit.point.addScaledVector(hit.normal, .003), rot, V(.65, 1.25, 1)), .45, .7));
       }
-      const positions: number[] = [], indices: number[] = [];
-      const vertexIds = new Map<string, number>();
-      const vertex = (x: number, y: number) => {
-        const key = `${x.toFixed(5)},${y.toFixed(5)}`;
-        const existing = vertexIds.get(key);
-        if (existing !== undefined) return existing;
-        let point: THREE.Vector3;
-        if (wrapSides) {
-          const longitude = THREE.MathUtils.clamp(x / 0.48, -1, 1) * 1.35;
-          const latitude = Math.asin(THREE.MathUtils.clamp((y - HEAD_C.y) / 0.48, -0.99, 0.99));
-          const direction = V(Math.sin(longitude) * Math.cos(latitude), Math.sin(latitude), Math.cos(longitude) * Math.cos(latitude)).normalize();
-          point = HEAD_C.clone().addScaledVector(direction, headR(direction) + 0.009);
-        } else {
-          const hit = rayHead(V(x, y, 2), V(0, 0, -1));
-          if (!hit) return null;
-          point = hit.point.addScaledVector(hit.normal, 0.009);
-        }
-        const id = positions.length / 3;
-        positions.push(point.x, point.y, point.z);
-        vertexIds.set(key, id);
-        return id;
-      };
-      const addTriangle = (a: Sample, b: Sample, c: Sample) => {
-        const input = [a, b, c], polygon: Sample[] = [];
-        for (let i = 0; i < input.length; i++) {
-          const current = input[i], previous = input[(i + input.length - 1) % input.length];
-          const currentInside = current.d >= 0, previousInside = previous.d >= 0;
-          if (currentInside !== previousInside) {
-            const t = previous.d / (previous.d - current.d);
-            polygon.push({
-              x: THREE.MathUtils.lerp(previous.x, current.x, t),
-              y: THREE.MathUtils.lerp(previous.y, current.y, t),
-              d: 0,
-            });
-          }
-          if (currentInside) polygon.push(current);
-        }
-        for (let i = 1; i < polygon.length - 1; i++) {
-          const triangle = [
-            vertex(polygon[0].x, polygon[0].y),
-            vertex(polygon[i].x, polygon[i].y),
-            vertex(polygon[i + 1].x, polygon[i + 1].y),
-          ];
-          if (triangle.every((id) => id !== null)) indices.push(...triangle as number[]);
-        }
-      };
-      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-        const a = grid[j * (nx + 1) + i], b = grid[j * (nx + 1) + i + 1];
-        const c = grid[(j + 1) * (nx + 1) + i + 1], d = grid[(j + 1) * (nx + 1) + i];
-        if (Math.max(a.d, b.d, c.d, d.d) < 0) continue;
-        addTriangle(a, b, c);
-        addTriangle(a, c, d);
-      }
-      if (!indices.length) return;
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      g.setIndex(indices);
-      g.computeVertexNormals();
-      paintCell(g, hairCell, 0.35, 0.7);
-      beardGeos.push(g);
-    };
-    const sm = THREE.MathUtils.smoothstep;
-    const smoothMin = (a: number, b: number, k: number) => {
-      const h = Math.max(k - Math.abs(a - b), 0) / k;
-      return Math.min(a, b) - h * h * k * 0.25;
-    };
-    const mouthHole = (x: number, y: number) => Math.hypot(x / 1.25, (y - my) * 1.1) - 0.065;
-    const jaw = (x: number, y: number, height: number, width: number) => {
-      const ax = Math.abs(x);
-      const top = my - height - 0.015 * Math.pow(Math.min(ax / width, 1), 2);
-      return smoothMin(smoothMin(top - y, width - ax, 0.045), mouthHole(x, y), 0.02);
-    };
-    const stache = (x: number, y: number) => {
-      const ax = Math.abs(x);
-      const yc = my + 0.04 - x * x * 0.8;
-      const thickness = 0.026 * (1 - sm(ax, 0.055, 0.16)) + 0.003;
-      return Math.min(thickness - Math.abs(y - yc), 0.175 - ax);
-    };
-    const goatee = (x: number, y: number) => {
-      const centerY = my - 0.17;
-      const vertical = (y - centerY) / 0.105, horizontal = x / 0.075;
-      return (1 - horizontal * horizontal - vertical * vertical) * 0.055;
-    };
-    switch (o.beard) {
-      case 1:
-        beardPatch((x, y) => Math.max(jaw(x, y, 0.05, 0.23), stache(x, y)));
-        break;
-      case 2:
-        beardPatch((x, y) => {
-          const ax = Math.abs(x), width = 0.46;
-          const top = my - 0.05 + 0.08 * Math.pow(Math.min(ax / width, 1), 1.5);
-          const outline = smoothMin(top - y, width - ax, 0.045);
-          const mouthOpening = Math.hypot(x / 1.15, (y - my) * 1.2) - 0.06;
-          const cheekAndChin = smoothMin(outline, mouthOpening, 0.02);
-          return Math.max(cheekAndChin, stache(x, y));
-        }, true);
-        break;
-      case 3:
-        beardPatch((x, y) => Math.max(stache(x, y), goatee(x, y)));
-        break;
-      case 4:
-        beardPatch(stache);
-        break;
-      case 5:
-        beardPatch(goatee);
-        break;
-      case 6:
-        beardPatch((x, y) => Math.min(0.045 - Math.abs(Math.abs(x) - 0.36), y - (my - 0.09), my + 0.22 - y), true);
-        break;
-      case 7: {
-        const dots: THREE.BufferGeometry[] = [];
-        for (let row = 0; row < 16; row++) for (let col = 0; col < 29; col++) {
-          const x = (col - 14) * 0.019 + (row % 2) * 0.009, y = my + 0.063 - row * 0.019;
-          if (Math.max(jaw(x, y, 0.025, 0.29), stache(x, y)) < 0) continue;
-          const hit = rayHead(V(x, y, 2), V(0, 0, -1));
-          if (!hit) continue;
-          const rot = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), hit.normal));
-          dots.push(piece(new THREE.CircleGeometry(0.0028, 5), hairCell, compose(hit.point.addScaledVector(hit.normal, 0.004), rot, V(1, 1, 1)), 0.6, 0.6));
-        }
-        const geometry = mergeGeoms(dots);
-        if (geometry) beardGeos.push(geometry);
-        dots.forEach(dot => dot.dispose());
-        break;
-      }
-      case 8:
-        beardPatch((x, y) => Math.min(0.23 - Math.abs(x), 0.02 - Math.abs(y - (my + 0.04 + Math.pow(Math.abs(x) * 1.5, 2)))));
-        break;
+      const geometry = mergeGeoms(dots);
+      if (geometry) beardGeos.push(geometry);
+      dots.forEach(dot => dot.dispose());
     }
   }
 

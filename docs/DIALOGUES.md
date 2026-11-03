@@ -65,6 +65,33 @@ siguen pendientes; no se añaden clientes, sucesos ni instituciones.
 
 ## Implementación
 
+La población ambiental solicitada el 28 de octubre añade pequeñas charlas
+entre habitantes de Brumaluz y saludos al jugador. Mantienen este tono a
+partir de paseos, descanso, conversación y preferencias. El ajuste posterior
+elimina referencias a cestas, bolsas, herramientas o labores que los habitantes
+no llevan. Sus comentarios salen en el chat y en un bocadillo, como los del
+resto de NPC; hablan con menos frecuencia. No se asignan misiones ni biografías.
+Las voces y apariencias son una
+primera implementación revisable. Comportamiento, archivos y comprobaciones
+en [Población de las ciudades](CITY-POPULATION.md).
+
+El ajuste del 30 de octubre reduce los intercambios ambientales a escenas
+cortas con respuestas directas: saludos, descanso, orientación y dudas sobre
+los oficios y los barrios que ya existen. Se eliminan las ocurrencias sobre
+«dar otra vuelta», las frases que siempre buscan un remate y los subtítulos
+personales de afición. Todos estos habitantes comparten **Habitante de Brumaluz**.
+Las referencias a una puerta o al pozo solo se usan cerca de ese lugar. La
+selección recuerda qué escenas y personas se han oído y permite quedarse en
+silencio si no hay ninguna apropiada. Los turnos esperan a que terminen el
+bocadillo y la boca del interlocutor anterior.
+
+Se ajustan también seis frases de maestros que presuponían acciones del
+jugador o añadían bromas sin pie, y se corrige la indicación de «traer la receta»
+cuando el pergamino ya se ha consumido al aprenderla. Los requisitos, precios,
+misiones y voces confirmadas se conservan. El personaje de depuración mantiene
+su conversación explícita, pero deja de intercalar sus metachistes como charla
+automática en las calles.
+
 - Bienvenida y respuestas de origen: `src/ui/questWindow.ts` y
   `src/data/quests.ts`.
 - Isberto, Gnomi y el polvo de hada: `src/story/npcs.ts` y

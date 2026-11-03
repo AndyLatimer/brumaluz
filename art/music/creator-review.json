@@ -1,0 +1,62 @@
+{
+  "report": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "music": {
+        "x": 1142.03125,
+        "y": 24,
+        "width": 117.96875,
+        "height": 28
+      },
+      "audio": {
+        "enabled": true,
+        "playing": true,
+        "creator": true,
+        "voices": 13,
+        "contextState": "running"
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "music": {
+        "x": 132.28125,
+        "y": 143,
+        "width": 106.171875,
+        "height": 24
+      },
+      "audio": {
+        "enabled": true,
+        "playing": true,
+        "creator": true,
+        "voices": 9,
+        "contextState": "running"
+      }
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "music": {
+        "x": 102.28125,
+        "y": 143,
+        "width": 106.171875,
+        "height": 24
+      },
+      "audio": {
+        "enabled": true,
+        "playing": true,
+        "creator": true,
+        "voices": 16,
+        "contextState": "running"
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,91 @@
+{
+  "label": "expanded",
+  "samples": [
+    {
+      "name": "levante",
+      "total": 54,
+      "visible": 4,
+      "frames": 12,
+      "elapsedMs": 4674.10000000149,
+      "animationUpdatesPerFrame": 4,
+      "animationMsPerFrame": 0.3666666665424903,
+      "simulationMsPerFrame": 0.11666666685293119,
+      "presentationOverheadMsPerFrame": 0.1083333333954215,
+      "drawCalls": 339,
+      "triangles": 795322,
+      "presentation": {
+        "total": 54,
+        "visible": 4,
+        "animated": 4,
+        "near": 3,
+        "medium": 1,
+        "far": 0
+      }
+    },
+    {
+      "name": "centro",
+      "total": 54,
+      "visible": 5,
+      "frames": 12,
+      "elapsedMs": 5164,
+      "animationUpdatesPerFrame": 5,
+      "animationMsPerFrame": 0.308333333581686,
+      "simulationMsPerFrame": 0.10000000024835269,
+      "presentationOverheadMsPerFrame": 0.041666667287548385,
+      "drawCalls": 451.0833333333333,
+      "triangles": 985682.8333333334,
+      "presentation": {
+        "total": 54,
+        "visible": 5,
+        "animated": 5,
+        "near": 2,
+        "medium": 2,
+        "far": 1
+      }
+    },
+    {
+      "name": "jardin",
+      "total": 54,
+      "visible": 8,
+      "frames": 12,
+      "elapsedMs": 4856.300000000745,
+      "animationUpdatesPerFrame": 7.75,
+      "animationMsPerFrame": 0.40000000037252903,
+      "simulationMsPerFrame": 0.5250000009934107,
+      "presentationOverheadMsPerFrame": 0.0500000004346172,
+      "drawCalls": 544.3333333333334,
+      "triangles": 1077955.6666666667,
+      "presentation": {
+        "total": 54,
+        "visible": 8,
+        "animated": 8,
+        "near": 5,
+        "medium": 0,
+        "far": 3
+      }
+    },
+    {
+      "name": "ronda",
+      "total": 54,
+      "visible": 4,
+      "frames": 12,
+      "elapsedMs": 4168.699999999255,
+      "animationUpdatesPerFrame": 4,
+      "animationMsPerFrame": 0.24166666623204947,
+      "simulationMsPerFrame": 0.34166666648040217,
+      "presentationOverheadMsPerFrame": 0.041666666977107525,
+      "drawCalls": 323,
+      "triangles": 810030,
+      "presentation": {
+        "total": 54,
+        "visible": 4,
+        "animated": 4,
+        "near": 2,
+        "medium": 2,
+        "far": 0
+      }
+    }
+  ],
+  "errors": [],
+  "readyMs": 34389.5326
+}

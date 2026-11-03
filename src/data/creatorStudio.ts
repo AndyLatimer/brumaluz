@@ -5,7 +5,7 @@ import { withAccessoryLayer, hasTravelerMask, type AccessorySelection } from '..
 
 /** Only cosmetic choices belong in a look; progression and account data never do. */
 export const CREATOR_GROUPS = {
-  raza: ['race', 'sex', 'height', 'build'],
+  raza: ['race', 'sex', 'height', 'build', 'walkStyle'],
   rostro: ['skin', 'face', 'eyeShape', 'eyeColor', 'brows', 'nose', 'mouth', 'beard', 'trait', 'detail', 'makeup', 'makeupColor'],
   cabello: ['hair', 'hairColor', 'hairAcc', 'hairAccColor'],
   ropa: ['clothA', 'clothB', 'acc', 'accColor'],

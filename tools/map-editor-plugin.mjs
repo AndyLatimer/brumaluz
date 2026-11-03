@@ -27,10 +27,18 @@ async function publishedStatus(publishDir) {
   return Array.isArray(value) ? value : [];
 }
 
-/** Escribe el índice del mundo: importa estáticamente cada mapa publicado. */
-async function writeManifest(publishDir, srcDir, metas) {
+/** Hosted maps load on travel. Portable builds keep static imports for top-level await. */
+export async function writeManifest(publishDir, srcDir, metas) {
   metas.sort((a, b) => a.id.localeCompare(b.id));
+  const common=[HEADER,`import type { PublishedWorld, PublishedMapMeta, PublishedMapModule } from '${importPath(publishDir, join(srcDir, 'world', 'mapCity'))}';`];
   await writeAtomic(join(publishDir, 'published.ts'), [
+    ...common,
+    `const META: PublishedMapMeta[] = ${JSON.stringify(metas)};`,
+    `const MODULES: (() => Promise<PublishedMapModule>)[] = [${metas.map(meta=>`() => import('./maps/${meta.id}')`).join(', ')}];`,
+    'export const PUBLISHED_WORLD: PublishedWorld = Object.fromEntries(META.map((meta, index) => [meta.id, { ...meta, load: MODULES[index] }]));',
+    '',
+  ].join('\n'));
+  await writeAtomic(join(publishDir, 'published-standalone.ts'), [
     HEADER,
     `import type { PublishedWorld, PublishedMapMeta, PublishedMapModule } from '${importPath(publishDir, join(srcDir, 'world', 'mapCity'))}';`,
     // Importación estática: el build es un único archivo con `await` en el nivel superior y un
@@ -236,7 +244,7 @@ export function mapEditorPlugin({ mapsDir, publishDir: publishOption, sqlFile: s
             const persistPublication = async operation => {
               const ids = new Set((await publishedStatus(publishDir)).map(meta => meta.id));
               if (typeof operation.id === 'string') ids.add(operation.id);
-              const files = [join(publishDir, 'published.ts'), join(publishDir, 'city.ts'), join(publishDir, 'city.json'), join(publishDir, 'collectibles.json'), sqlFile,
+              const files = [join(publishDir, 'published.ts'), join(publishDir, 'published-standalone.ts'), join(publishDir, 'city.ts'), join(publishDir, 'city.json'), join(publishDir, 'collectibles.json'), sqlFile,
                 ...[...ids].flatMap(id => ['ts', 'json'].map(ext => join(publishDir, 'maps', `${id}.${ext}`)))];
               return publicationTransaction(files, async () => {
                 const result = await operation.run();

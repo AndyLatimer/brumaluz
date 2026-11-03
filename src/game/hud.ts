@@ -13,8 +13,11 @@ import { TARGET_RANGE } from '../ui/targetFrame';
 import { $ } from '../ui/dom';
 import { setWindow } from '../ui/menus';
 import { npcActors } from './cities';
+import { isAmbientResident } from '../data/cityPopulation';
 import { settings } from './audio';
 import { camera, holder } from './stage';
+import { speechSeconds } from '../data/speech';
+export { speechSeconds } from '../data/speech';
 
 export function updateHud() {
   renderActionBar();
@@ -67,9 +70,8 @@ export function refreshNameplateText() {
   title.classList.toggle('staff-title', session.state.title !== 'none' && isReservedTitle(session.state.title));
   title.hidden = session.state.title === 'none';
 }
-// Bocadillo de habla sobre tu personaje (solo mensajes públicos del chat); los NPC únicamente mueven la boca.
+// Public player messages and NPC chat lines share the same speech presentation.
 export const speech = { el: null as HTMLElement | null, until: 0 };
-export const speechSeconds = (text: string) => Math.min(8, 2.5 + text.length * 0.06);
 export function playerSay(name: string, text: string) {
   const secs = speechSeconds(text);
   play.char.speak(secs);
@@ -93,10 +95,81 @@ export function npcSay(name: string, text: string) {
   const npc = npcActors.find((n) => story.NPCS[n.id]?.name === name);
   npc?.character.speak(speechSeconds(text));
 }
+interface NpcSpeech {
+  element: HTMLElement;
+  root: THREE.Object3D;
+  character: typeof play.char;
+  plate?: HTMLElement;
+  until: number;
+  generation: number;
+  location: string;
+}
+const npcSpeech = new Map<string, NpcSpeech>();
+const npcSpeechAnchor = new THREE.Vector3();
+
+/** Called once by chatNpc, covering residents, named NPCs, guides and scripted comments. */
+export function npcChatSay(name: string, text: string) {
+  npcSay(name, text);
+  const guide = name === session.registeredNpcs.gnomi.name;
+  const actor = npcActors.find(npc => story.NPCS[npc.id]?.name === name);
+  const root = guide ? story.welcomeWorld.root : actor?.character.root;
+  const character = guide ? session.worldCharacters.gnomi : actor?.character;
+  if (play.mode !== 'play' || !root || (!root.visible && !(actor && isAmbientResident(actor.id))) || !character) return;
+  const id = guide ? 'gnomi' : actor!.id;
+  let bubble = npcSpeech.get(id);
+  if (!bubble) {
+    const element = document.createElement('div');
+    element.className = 'speech-bubble npc-speech-bubble';
+    element.dataset.npcId = id;
+    element.setAttribute('aria-hidden', 'true');
+    element.hidden = true;
+    element.innerHTML = '<b></b><span></span>';
+    document.body.appendChild(element);
+    bubble = { element, root, character, plate: guide ? ui.welcomePlate : actor?.plate,
+      until: 0, generation: play.playGeneration, location: play.city.locationId };
+    npcSpeech.set(id, bubble);
+  }
+  bubble.root = root; bubble.character = character;
+  bubble.generation = play.playGeneration; bubble.location = play.city.locationId;
+  bubble.element.querySelector('b')!.textContent = name;
+  bubble.element.querySelector('span')!.textContent = text;
+  bubble.until = performance.now() + speechSeconds(text) * 1000;
+  bubble.element.classList.remove('pop');
+  void bubble.element.offsetWidth;
+  bubble.element.classList.add('pop');
+}
+
+function updateNpcSpeech() {
+  for (const [id, bubble] of npcSpeech) {
+    if (play.mode !== 'play' || play.dead || performance.now() >= bubble.until || (!bubble.root.parent && !isAmbientResident(id))
+      || bubble.generation !== play.playGeneration || bubble.location !== play.city.locationId) {
+      bubble.element.remove(); npcSpeech.delete(id); continue;
+    }
+    if (!bubble.root.visible) { bubble.element.hidden = true; continue; }
+    bubble.character.headWorld(npcSpeechAnchor);
+    npcSpeechAnchor.y += .28 * (bubble.character.opts.scale ?? 1);
+    const cinematic = document.body.classList.contains('cinematic-open');
+    const inRange = cinematic || bubble.root.position.distanceToSquared(holder.position) <= 24 * 24;
+    const unobstructed = cinematic || !play.city.lineOfSight || play.city.lineOfSight(camera.position, npcSpeechAnchor);
+    npcSpeechAnchor.project(camera);
+    const inView = bubble.root.visible && inRange && unobstructed && npcSpeechAnchor.z > -1 && npcSpeechAnchor.z < 1
+      && Math.abs(npcSpeechAnchor.x) < 1 && Math.abs(npcSpeechAnchor.y) < 1;
+    bubble.element.hidden = !inView;
+    if (inView) {
+      const margin = bubble.element.offsetWidth * .5 + 8;
+      const clearance = settings.nameplates ? (bubble.plate?.offsetHeight ?? 22) + 8 : 8;
+      // Viewport units keep the bubble on screen immediately after a resize, even between game frames.
+      bubble.element.style.left = `clamp(${margin}px, ${((npcSpeechAnchor.x * .5 + .5) * 100).toFixed(3)}vw, calc(100vw - ${margin}px))`;
+      bubble.element.style.top = `max(${bubble.element.offsetHeight + 8}px, calc(${((-npcSpeechAnchor.y * .5 + .5) * 100).toFixed(3)}vh - ${clearance}px))`;
+      bubble.element.style.transform = 'translate(-50%, -100%)';
+    }
+  }
+}
 // Coloca la placa sobre la cabeza del personaje proyectando su posición en pantalla.
 export function updateNameplate() {
   nameplate.el ??= $('#nameplate');
   const visible = play.mode === 'play' && settings.nameplates;
+  updateNpcSpeech();
   if (speech.el) {
     const show = play.mode === 'play' && !play.dead && performance.now() < speech.until;
     if (show) {
@@ -125,6 +198,9 @@ export function updateNameplate() {
     nameplate.el.hidden = !inView;
   } else if (!nameplate.el.hidden) nameplate.el.hidden = true;
   for (const npc of npcActors) {
+    if (!visible || !npc.character.root.visible || npc.character.root.position.distanceToSquared(holder.position) > TARGET_RANGE * TARGET_RANGE) {
+      npc.plate.hidden = true; continue;
+    }
     if (npc.id === 'isberto' && !npc.character.root.visible) { npc.plate.hidden = true; continue; }
     const heightScale = (npc.character.opts.scale ?? 1) * (npc.character.opts.proportions?.height ?? 1);
     npc.anchor.set(npc.character.root.position.x, npc.character.root.position.y + 1.95 * heightScale, npc.character.root.position.z).project(camera);

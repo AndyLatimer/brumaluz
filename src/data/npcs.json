@@ -1470,6 +1470,5676 @@
         "weapon": "",
         "offhand": ""
       }
+    },
+    {
+      "id": "vecino_levante_1",
+      "name": "Aldina",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.25,
+        "build": 0.25,
+        "skin": 0,
+        "face": 0,
+        "hair": 0,
+        "hairColor": 0,
+        "beard": 0,
+        "eyeShape": 0,
+        "eyeColor": 0,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_levante_2",
+      "name": "Faelion",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.37,
+        "build": 0.41000000000000003,
+        "skin": 1,
+        "face": 1,
+        "hair": 1,
+        "hairColor": 1,
+        "beard": 0,
+        "eyeShape": 1,
+        "eyeColor": 1,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 8,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 8,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 8,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 8,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 8,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_levante_3",
+      "name": "Ishtar",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.49,
+        "build": 0.5700000000000001,
+        "skin": 0,
+        "face": 2,
+        "hair": 3,
+        "hairColor": 2,
+        "beard": 0,
+        "eyeShape": 2,
+        "eyeColor": 2,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 2,
+            "secondary": 6
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 2,
+            "secondary": 6
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 2,
+            "secondary": 6
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 2,
+            "secondary": 6
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 2,
+            "secondary": 6
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_pozo_1",
+      "name": "Lumiro",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.61,
+        "build": 0.73,
+        "skin": 1,
+        "face": 3,
+        "hair": 4,
+        "hairColor": 3,
+        "beard": 0,
+        "eyeShape": 3,
+        "eyeColor": 3,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 7,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 7,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 7,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 7,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 7,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_pozo_2",
+      "name": "Elora",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.73,
+        "build": 0.25,
+        "skin": 0,
+        "face": 0,
+        "hair": 6,
+        "hairColor": 4,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 3,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 3,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 3,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 3,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 3,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_pozo_3",
+      "name": "Laerion",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.25,
+        "build": 0.41000000000000003,
+        "skin": 1,
+        "face": 1,
+        "hair": 9,
+        "hairColor": 5,
+        "beard": 0,
+        "eyeShape": 5,
+        "eyeColor": 1,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 6,
+            "secondary": 2
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 6,
+            "secondary": 2
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 6,
+            "secondary": 2
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 6,
+            "secondary": 2
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 6,
+            "secondary": 2
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "head": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "cape": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "back": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_jardin_1",
+      "name": "Kashik",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.37,
+        "build": 0.5700000000000001,
+        "skin": 0,
+        "face": 2,
+        "hair": 12,
+        "hairColor": 6,
+        "beard": 0,
+        "eyeShape": 6,
+        "eyeColor": 2,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 9,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 9,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 9,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 9,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 9,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_jardin_2",
+      "name": "Nilin",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.49,
+        "build": 0.73,
+        "skin": 1,
+        "face": 3,
+        "hair": 14,
+        "hairColor": 7,
+        "beard": 0,
+        "eyeShape": 7,
+        "eyeColor": 3,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 2,
+            "secondary": 8
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 2,
+            "secondary": 8
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 2,
+            "secondary": 8
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 2,
+            "secondary": 8
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 2,
+            "secondary": 8
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_jardin_3",
+      "name": "Marena",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.61,
+        "build": 0.25,
+        "skin": 0,
+        "face": 0,
+        "hair": 15,
+        "hairColor": 8,
+        "beard": 0,
+        "eyeShape": 0,
+        "eyeColor": 0,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 5,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 5,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 5,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 5,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 5,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_artesanos_1",
+      "name": "Sylanor",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.73,
+        "build": 0.41000000000000003,
+        "skin": 1,
+        "face": 1,
+        "hair": 17,
+        "hairColor": 0,
+        "beard": 0,
+        "eyeShape": 1,
+        "eyeColor": 1,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_artesanos_2",
+      "name": "Rek'li",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.25,
+        "build": 0.5700000000000001,
+        "skin": 0,
+        "face": 2,
+        "hair": 18,
+        "hairColor": 1,
+        "beard": 1,
+        "eyeShape": 2,
+        "eyeColor": 2,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 8,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 8,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 8,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 8,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 8,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_artesanos_3",
+      "name": "Rosia",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.37,
+        "build": 0.73,
+        "skin": 1,
+        "face": 3,
+        "hair": 19,
+        "hairColor": 2,
+        "beard": 0,
+        "eyeShape": 3,
+        "eyeColor": 3,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 2,
+            "secondary": 6
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 2,
+            "secondary": 6
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 2,
+            "secondary": 6
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 2,
+            "secondary": 6
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 2,
+            "secondary": 6
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_huertas_1",
+      "name": "Belina",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.49,
+        "build": 0.25,
+        "skin": 0,
+        "face": 0,
+        "hair": 22,
+        "hairColor": 3,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 0,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 7,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 7,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 7,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 7,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 7,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_huertas_2",
+      "name": "Thalwen",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.61,
+        "build": 0.41000000000000003,
+        "skin": 1,
+        "face": 1,
+        "hair": 23,
+        "hairColor": 4,
+        "beard": 0,
+        "eyeShape": 5,
+        "eyeColor": 1,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 3,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 3,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 3,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 3,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 3,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_huertas_3",
+      "name": "Tolsha",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.73,
+        "build": 0.5700000000000001,
+        "skin": 0,
+        "face": 2,
+        "hair": 24,
+        "hairColor": 5,
+        "beard": 0,
+        "eyeShape": 6,
+        "eyeColor": 2,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 6,
+            "secondary": 2
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 6,
+            "secondary": 2
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 6,
+            "secondary": 2
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 6,
+            "secondary": 2
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 6,
+            "secondary": 2
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "head": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "cape": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          },
+          "back": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_lonja_1",
+      "name": "Tisro",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.25,
+        "build": 0.73,
+        "skin": 1,
+        "face": 3,
+        "hair": 25,
+        "hairColor": 6,
+        "beard": 0,
+        "eyeShape": 7,
+        "eyeColor": 3,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 9,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 9,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 9,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 9,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 9,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_lonja_2",
+      "name": "Corina",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.37,
+        "build": 0.25,
+        "skin": 0,
+        "face": 0,
+        "hair": 26,
+        "hairColor": 7,
+        "beard": 0,
+        "eyeShape": 0,
+        "eyeColor": 0,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 2,
+            "secondary": 8
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 2,
+            "secondary": 8
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 2,
+            "secondary": 8
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 2,
+            "secondary": 8
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 2,
+            "secondary": 8
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "vecino_lonja_3",
+      "name": "Aerin",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.49,
+        "build": 0.41000000000000003,
+        "skin": 1,
+        "face": 1,
+        "hair": 27,
+        "hairColor": 8,
+        "beard": 0,
+        "eyeShape": 1,
+        "eyeColor": 1,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 5,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 5,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 5,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 5,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 5,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_19",
+      "name": "Islina",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.2,
+        "build": 0.25,
+        "skin": 0,
+        "face": 3,
+        "hair": 1,
+        "hairColor": 0,
+        "beard": 0,
+        "eyeShape": 0,
+        "eyeColor": 0,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_20",
+      "name": "Nythas",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.31,
+        "build": 0.38,
+        "skin": 1,
+        "face": 0,
+        "hair": 3,
+        "hairColor": 1,
+        "beard": 0,
+        "eyeShape": 1,
+        "eyeColor": 1,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 3,
+            "secondary": 8
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 3,
+            "secondary": 8
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 3,
+            "secondary": 8
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 3,
+            "secondary": 8
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 3,
+            "secondary": 8
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "head": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "cape": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "back": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_21",
+      "name": "Artir",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.42000000000000004,
+        "build": 0.51,
+        "skin": 2,
+        "face": 3,
+        "hair": 4,
+        "hairColor": 2,
+        "beard": 2,
+        "eyeShape": 2,
+        "eyeColor": 2,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_22",
+      "name": "Bairi",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.53,
+        "build": 0.64,
+        "skin": 3,
+        "face": 0,
+        "hair": 6,
+        "hairColor": 3,
+        "beard": 0,
+        "eyeShape": 3,
+        "eyeColor": 3,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 6,
+            "secondary": 11
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 6,
+            "secondary": 11
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 6,
+            "secondary": 11
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 6,
+            "secondary": 11
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 6,
+            "secondary": 11
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "head": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "cape": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "back": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_23",
+      "name": "Aneria",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.64,
+        "build": 0.77,
+        "skin": 0,
+        "face": 1,
+        "hair": 9,
+        "hairColor": 4,
+        "beard": 1,
+        "eyeShape": 4,
+        "eyeColor": 4,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 7,
+            "secondary": 12
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 7,
+            "secondary": 12
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 7,
+            "secondary": 12
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 7,
+            "secondary": 12
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 7,
+            "secondary": 12
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_24",
+      "name": "Daelnora",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.25,
+        "skin": 1,
+        "face": 0,
+        "hair": 12,
+        "hairColor": 5,
+        "beard": 0,
+        "eyeShape": 5,
+        "eyeColor": 5,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 8,
+            "secondary": 14
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 8,
+            "secondary": 14
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 8,
+            "secondary": 14
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 8,
+            "secondary": 14
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 8,
+            "secondary": 14
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "head": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "cape": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "back": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_25",
+      "name": "Eksek",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.2,
+        "build": 0.38,
+        "skin": 2,
+        "face": 1,
+        "hair": 13,
+        "hairColor": 6,
+        "beard": 0,
+        "eyeShape": 6,
+        "eyeColor": 6,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 9,
+            "secondary": 15
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 9,
+            "secondary": 15
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 9,
+            "secondary": 15
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 9,
+            "secondary": 15
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 9,
+            "secondary": 15
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "head": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "cape": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "back": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_26",
+      "name": "Closu",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.31,
+        "build": 0.51,
+        "skin": 3,
+        "face": 2,
+        "hair": 14,
+        "hairColor": 7,
+        "beard": 1,
+        "eyeShape": 7,
+        "eyeColor": 7,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 11,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 11,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 11,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 11,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 11,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "head": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_27",
+      "name": "Edeth",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.42000000000000004,
+        "build": 0.64,
+        "skin": 0,
+        "face": 3,
+        "hair": 15,
+        "hairColor": 8,
+        "beard": 2,
+        "eyeShape": 8,
+        "eyeColor": 0,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 12,
+            "secondary": 2
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 12,
+            "secondary": 2
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 12,
+            "secondary": 2
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 12,
+            "secondary": 2
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 12,
+            "secondary": 2
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "head": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "cape": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "back": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_28",
+      "name": "Gaelalas",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.53,
+        "build": 0.77,
+        "skin": 1,
+        "face": 2,
+        "hair": 18,
+        "hairColor": 9,
+        "beard": 0,
+        "eyeShape": 9,
+        "eyeColor": 1,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 14,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 14,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 14,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 14,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 14,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_29",
+      "name": "Issnak",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.64,
+        "build": 0.25,
+        "skin": 2,
+        "face": 3,
+        "hair": 19,
+        "hairColor": 10,
+        "beard": 1,
+        "eyeShape": 10,
+        "eyeColor": 2,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 15,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 15,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 15,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 15,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 15,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_30",
+      "name": "Furu",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.38,
+        "skin": 3,
+        "face": 0,
+        "hair": 22,
+        "hairColor": 11,
+        "beard": 0,
+        "eyeShape": 11,
+        "eyeColor": 3,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 16,
+            "secondary": 6
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 16,
+            "secondary": 6
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 16,
+            "secondary": 6
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 16,
+            "secondary": 6
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 16,
+            "secondary": 6
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "cape": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "back": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_31",
+      "name": "Gaora",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.2,
+        "build": 0.51,
+        "skin": 0,
+        "face": 1,
+        "hair": 1,
+        "hairColor": 0,
+        "beard": 0,
+        "eyeShape": 12,
+        "eyeColor": 4,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_32",
+      "name": "Liadir",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.31,
+        "build": 0.64,
+        "skin": 1,
+        "face": 0,
+        "hair": 3,
+        "hairColor": 1,
+        "beard": 0,
+        "eyeShape": 0,
+        "eyeColor": 5,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 3,
+            "secondary": 8
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 3,
+            "secondary": 8
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 3,
+            "secondary": 8
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 3,
+            "secondary": 8
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 3,
+            "secondary": 8
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "head": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "cape": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "back": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_33",
+      "name": "Krokar",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.42000000000000004,
+        "build": 0.77,
+        "skin": 2,
+        "face": 1,
+        "hair": 4,
+        "hairColor": 2,
+        "beard": 2,
+        "eyeShape": 1,
+        "eyeColor": 6,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_34",
+      "name": "Jubel",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.53,
+        "build": 0.25,
+        "skin": 3,
+        "face": 2,
+        "hair": 6,
+        "hairColor": 3,
+        "beard": 0,
+        "eyeShape": 2,
+        "eyeColor": 7,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 6,
+            "secondary": 11
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 6,
+            "secondary": 11
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 6,
+            "secondary": 11
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 6,
+            "secondary": 11
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 6,
+            "secondary": 11
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "head": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "cape": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "back": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_35",
+      "name": "Luisa",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.64,
+        "build": 0.38,
+        "skin": 0,
+        "face": 1,
+        "hair": 9,
+        "hairColor": 4,
+        "beard": 1,
+        "eyeShape": 3,
+        "eyeColor": 0,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 7,
+            "secondary": 12
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 7,
+            "secondary": 12
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 7,
+            "secondary": 12
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 7,
+            "secondary": 12
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 7,
+            "secondary": 12
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_36",
+      "name": "Myrdal",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.51,
+        "skin": 1,
+        "face": 2,
+        "hair": 12,
+        "hairColor": 5,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 1,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 8,
+            "secondary": 14
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 8,
+            "secondary": 14
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 8,
+            "secondary": 14
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 8,
+            "secondary": 14
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 8,
+            "secondary": 14
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "head": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "cape": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "back": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_37",
+      "name": "Razek",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.2,
+        "build": 0.64,
+        "skin": 2,
+        "face": 3,
+        "hair": 13,
+        "hairColor": 6,
+        "beard": 0,
+        "eyeShape": 5,
+        "eyeColor": 2,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 9,
+            "secondary": 15
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 9,
+            "secondary": 15
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 9,
+            "secondary": 15
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 9,
+            "secondary": 15
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 9,
+            "secondary": 15
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "head": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "cape": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "back": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_38",
+      "name": "Lodo",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.31,
+        "build": 0.77,
+        "skin": 3,
+        "face": 0,
+        "hair": 14,
+        "hairColor": 7,
+        "beard": 0,
+        "eyeShape": 6,
+        "eyeColor": 3,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 11,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 11,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 11,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 11,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 11,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "head": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_39",
+      "name": "Perela",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.42000000000000004,
+        "build": 0.25,
+        "skin": 0,
+        "face": 3,
+        "hair": 15,
+        "hairColor": 8,
+        "beard": 2,
+        "eyeShape": 7,
+        "eyeColor": 4,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 12,
+            "secondary": 2
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 12,
+            "secondary": 2
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 12,
+            "secondary": 2
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 12,
+            "secondary": 2
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 12,
+            "secondary": 2
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "head": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "cape": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "back": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_40",
+      "name": "Serearia",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.53,
+        "build": 0.38,
+        "skin": 1,
+        "face": 0,
+        "hair": 18,
+        "hairColor": 9,
+        "beard": 0,
+        "eyeShape": 8,
+        "eyeColor": 5,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 14,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 14,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 14,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 14,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 14,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_41",
+      "name": "Skar'li",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.64,
+        "build": 0.51,
+        "skin": 2,
+        "face": 1,
+        "hair": 19,
+        "hairColor": 10,
+        "beard": 1,
+        "eyeShape": 9,
+        "eyeColor": 6,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 15,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 15,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 15,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 15,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 15,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_42",
+      "name": "Nalia",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.64,
+        "skin": 3,
+        "face": 0,
+        "hair": 22,
+        "hairColor": 11,
+        "beard": 0,
+        "eyeShape": 10,
+        "eyeColor": 7,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 16,
+            "secondary": 6
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 16,
+            "secondary": 6
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 16,
+            "secondary": 6
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 16,
+            "secondary": 6
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 16,
+            "secondary": 6
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "cape": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "back": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_43",
+      "name": "Viran",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.2,
+        "build": 0.77,
+        "skin": 0,
+        "face": 1,
+        "hair": 1,
+        "hairColor": 0,
+        "beard": 0,
+        "eyeShape": 11,
+        "eyeColor": 0,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 2,
+            "secondary": 7
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 2,
+            "secondary": 7
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "head": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "cape": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          },
+          "back": {
+            "piece": "",
+            "primary": 2,
+            "secondary": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_44",
+      "name": "Viraalas",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.31,
+        "build": 0.25,
+        "skin": 1,
+        "face": 2,
+        "hair": 3,
+        "hairColor": 1,
+        "beard": 1,
+        "eyeShape": 12,
+        "eyeColor": 1,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 3,
+            "secondary": 8
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 3,
+            "secondary": 8
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 3,
+            "secondary": 8
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 3,
+            "secondary": 8
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 3,
+            "secondary": 8
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "head": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "cape": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          },
+          "back": {
+            "piece": "",
+            "primary": 3,
+            "secondary": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_45",
+      "name": "Tzathar",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.42000000000000004,
+        "build": 0.38,
+        "skin": 2,
+        "face": 3,
+        "hair": 4,
+        "hairColor": 2,
+        "beard": 2,
+        "eyeShape": 0,
+        "eyeColor": 2,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 5,
+            "secondary": 9
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 5,
+            "secondary": 9
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "head": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "cape": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          },
+          "back": {
+            "piece": "",
+            "primary": 5,
+            "secondary": 9
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_46",
+      "name": "Poluna",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.53,
+        "build": 0.51,
+        "skin": 3,
+        "face": 2,
+        "hair": 6,
+        "hairColor": 3,
+        "beard": 0,
+        "eyeShape": 1,
+        "eyeColor": 3,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 6,
+            "secondary": 11
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 6,
+            "secondary": 11
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 6,
+            "secondary": 11
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 6,
+            "secondary": 11
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 6,
+            "secondary": 11
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "head": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "cape": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          },
+          "back": {
+            "piece": "",
+            "primary": 6,
+            "secondary": 11
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_47",
+      "name": "Marmir",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.64,
+        "build": 0.64,
+        "skin": 0,
+        "face": 3,
+        "hair": 9,
+        "hairColor": 4,
+        "beard": 1,
+        "eyeShape": 2,
+        "eyeColor": 4,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue_Hooded.torso",
+            "primary": 7,
+            "secondary": 12
+          },
+          "leftArm": {
+            "piece": "Rogue_Hooded.leftArm",
+            "primary": 7,
+            "secondary": 12
+          },
+          "rightArm": {
+            "piece": "Rogue_Hooded.rightArm",
+            "primary": 7,
+            "secondary": 12
+          },
+          "leftLeg": {
+            "piece": "Rogue_Hooded.leftLeg",
+            "primary": 7,
+            "secondary": 12
+          },
+          "rightLeg": {
+            "piece": "Rogue_Hooded.rightLeg",
+            "primary": 7,
+            "secondary": 12
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "head": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "cape": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          },
+          "back": {
+            "piece": "",
+            "primary": 7,
+            "secondary": 12
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_48",
+      "name": "Ithneth",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.77,
+        "skin": 1,
+        "face": 0,
+        "hair": 12,
+        "hairColor": 5,
+        "beard": 0,
+        "eyeShape": 3,
+        "eyeColor": 5,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 8,
+            "secondary": 14
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 8,
+            "secondary": 14
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 8,
+            "secondary": 14
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 8,
+            "secondary": 14
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 8,
+            "secondary": 14
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "head": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "cape": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          },
+          "back": {
+            "piece": "",
+            "primary": 8,
+            "secondary": 14
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_49",
+      "name": "Kasak",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.2,
+        "build": 0.25,
+        "skin": 2,
+        "face": 1,
+        "hair": 13,
+        "hairColor": 6,
+        "beard": 0,
+        "eyeShape": 4,
+        "eyeColor": 6,
+        "brows": 5,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 9,
+            "secondary": 15
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 9,
+            "secondary": 15
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 9,
+            "secondary": 15
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 9,
+            "secondary": 15
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 9,
+            "secondary": 15
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "head": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "cape": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          },
+          "back": {
+            "piece": "",
+            "primary": 9,
+            "secondary": 15
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_50",
+      "name": "Senei",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.31,
+        "build": 0.38,
+        "skin": 3,
+        "face": 0,
+        "hair": 14,
+        "hairColor": 7,
+        "beard": 0,
+        "eyeShape": 5,
+        "eyeColor": 7,
+        "brows": 4,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 11,
+            "secondary": 16
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 11,
+            "secondary": 16
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 11,
+            "secondary": 16
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 11,
+            "secondary": 16
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 11,
+            "secondary": 16
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "head": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "cape": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          },
+          "back": {
+            "piece": "",
+            "primary": 11,
+            "secondary": 16
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_51",
+      "name": "Ariana",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "humano",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.42000000000000004,
+        "build": 0.51,
+        "skin": 0,
+        "face": 1,
+        "hair": 15,
+        "hairColor": 8,
+        "beard": 2,
+        "eyeShape": 6,
+        "eyeColor": 0,
+        "brows": 3,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 12,
+            "secondary": 2
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 12,
+            "secondary": 2
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 12,
+            "secondary": 2
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 12,
+            "secondary": 2
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 12,
+            "secondary": 2
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "head": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "cape": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          },
+          "back": {
+            "piece": "",
+            "primary": 12,
+            "secondary": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_52",
+      "name": "Aurlia",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "elfo",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.53,
+        "build": 0.64,
+        "skin": 1,
+        "face": 2,
+        "hair": 18,
+        "hairColor": 9,
+        "beard": 0,
+        "eyeShape": 7,
+        "eyeColor": 1,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 14,
+            "secondary": 3
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 14,
+            "secondary": 3
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 14,
+            "secondary": 3
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 14,
+            "secondary": 3
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 14,
+            "secondary": 3
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "head": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "cape": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          },
+          "back": {
+            "piece": "",
+            "primary": 14,
+            "secondary": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_53",
+      "name": "Arlik",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "lagto",
+        "cls": "guerrero",
+        "sex": 0,
+        "height": 0.64,
+        "build": 0.77,
+        "skin": 2,
+        "face": 1,
+        "hair": 19,
+        "hairColor": 10,
+        "beard": 1,
+        "eyeShape": 8,
+        "eyeColor": 2,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "Rogue.torso",
+            "primary": 15,
+            "secondary": 5
+          },
+          "leftArm": {
+            "piece": "Rogue.leftArm",
+            "primary": 15,
+            "secondary": 5
+          },
+          "rightArm": {
+            "piece": "Rogue.rightArm",
+            "primary": 15,
+            "secondary": 5
+          },
+          "leftLeg": {
+            "piece": "Rogue.leftLeg",
+            "primary": 15,
+            "secondary": 5
+          },
+          "rightLeg": {
+            "piece": "Rogue.rightLeg",
+            "primary": 15,
+            "secondary": 5
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "head": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "cape": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          },
+          "back": {
+            "piece": "",
+            "primary": 15,
+            "secondary": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "habitante_brumaluz_54",
+      "name": "Tislia",
+      "subtitle": "Habitante de Brumaluz",
+      "notes": "Habitante ambiental con identidad técnica estable. Paseos, descanso y charlas en src/data/cityPopulation.ts. Sin biografía ni misión asignadas; su ficha se puede editar en el taller de NPCs.",
+      "badgeIcon": "",
+      "appearance": {
+        "race": "pelso",
+        "cls": "guerrero",
+        "sex": 1,
+        "height": 0.75,
+        "build": 0.25,
+        "skin": 3,
+        "face": 2,
+        "hair": 22,
+        "hairColor": 11,
+        "beard": 0,
+        "eyeShape": 9,
+        "eyeColor": 3,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0,
+        "detail": 0,
+        "trait": 0,
+        "hairAcc": 0,
+        "hairAccColor": 0,
+        "acc": 0,
+        "makeup": 0,
+        "makeupColor": 2,
+        "accColor": 0
+      },
+      "stats": {
+        "level": 1,
+        "maxHealth": 100,
+        "health": 100,
+        "attributes": {
+          "fuerza": 5,
+          "intelecto": 5,
+          "corpulencia": 5,
+          "agilidad": 5,
+          "pericia": 5,
+          "presencia": 5,
+          "percepcion": 5
+        }
+      },
+      "render": {
+        "scale": 1,
+        "width": 1,
+        "height": 1,
+        "weapon": "",
+        "offhand": "",
+        "clothing": {
+          "torso": {
+            "piece": "medieval.torso",
+            "primary": 16,
+            "secondary": 6
+          },
+          "leftArm": {
+            "piece": "medieval.leftArm",
+            "primary": 16,
+            "secondary": 6
+          },
+          "rightArm": {
+            "piece": "medieval.rightArm",
+            "primary": 16,
+            "secondary": 6
+          },
+          "leftLeg": {
+            "piece": "medieval.leftLeg",
+            "primary": 16,
+            "secondary": 6
+          },
+          "rightLeg": {
+            "piece": "medieval.rightLeg",
+            "primary": 16,
+            "secondary": 6
+          },
+          "overlay": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "footwear": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "head": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "cape": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          },
+          "back": {
+            "piece": "",
+            "primary": 16,
+            "secondary": 6
+          }
+        }
+      }
     }
   ]
 }

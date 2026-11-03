@@ -70,6 +70,7 @@ interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      cozy_view: {Args:{p_character_id:string};Returns:Json};
       rpg_action: {Args:{p_character_id:string;p_action:string;p_args:Json;p_request:string;p_revision:number};Returns:Json};
       expedition_action: {Args:{p_character_id:string;p_action:string;p_target?:number};Returns:Json};
       wilderness_action: {Args:{p_character_id:string;p_action:string;p_spawn?:string|null;p_slot?:number|null};Returns:Json};
@@ -602,6 +603,10 @@ export const rpgAction = async (id:string,action:string,args:Record<string,unkno
   const result=await serverCall(requireClient().rpc('rpg_action',{p_character_id:id,p_action:action,p_args:args as Json,p_request:crypto.randomUUID(),p_revision:revision}));
   if(!result||typeof result!=='object'||Array.isArray(result))throw new Error('Respuesta de oficios no válida.');return result;
 };
+export async function getCozyView(id:string):Promise<Record<string,unknown>>{
+ const result=await serverCall(requireClient().rpc('cozy_view',{p_character_id:id}));
+ if(!result||typeof result!=='object'||Array.isArray(result))throw new Error('Respuesta de vivienda no válida.');return result;
+}
 export const expeditionAction=async(id:string,action:string,target?:number,signal?:AbortSignal)=>await serverCall(requireClient().rpc('expedition_action',{p_character_id:id,p_action:action,...(target===undefined?{}:{p_target:target})}).abortSignal(signal??AbortSignal.timeout(4000))) as Record<string,unknown>;
 export const wildernessAction=async(id:string,action:string,spawn?:string|null,slot?:number|null,signal?:AbortSignal)=>await serverCall(requireClient().rpc('wilderness_action',{p_character_id:id,p_action:action,p_spawn:spawn??null,p_slot:slot??null}).abortSignal(signal??AbortSignal.timeout(action==='loot'?8000:4000))) as Record<string,unknown>;
 export const healAlly=async(id:string,target:string,signal?:AbortSignal)=>await serverCall(requireClient().rpc('heal_ally',{p_character_id:id,p_target:target}).abortSignal(signal??AbortSignal.timeout(4000))) as Record<string,unknown>;

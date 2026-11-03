@@ -29,6 +29,8 @@ import { updateHud } from '../game/hud';
 import { characterContext } from '../game/avatar';
 import { toast } from './toast';
 import { renderProfessions } from './professionsWindow';
+import {renderHomes,selectHomesTab} from './homesWindow';
+import {clearFurniturePreview} from '../world/professionWorld';
 
 export function setGameMenuOpen(open: boolean, restoreFocus = true) {
   if (open) playerInteractions.close();
@@ -77,6 +79,7 @@ export function setWorldMenuOpen(open: boolean, restoreFocus = true) {
 }
 export const draftTotal = () => Object.values(ui.pointDraft).reduce((sum, n) => sum + (n ?? 0), 0);
 export function setWindow(win: PlayerWindow | null, closeMenu = true) {
+  if(win!=='homes')clearFurniturePreview(play.city);
   const journalKey = win === 'quests' ? JSON.stringify([
     session.activeCharacterId, session.state.welcome, session.state.shadowQuest, session.state.fairyDustQuest, session.state.rpg?.tutorial,session.state.rpg?.learned,session.state.rpg?.dailyOrders,new Date().toISOString().slice(0,10),session.state.inventory.map(item=>item?[item.id,item.count]:null),session.state.location, corpseLooted(), getLanguage(),
     questTracking.isTracked('welcome'), questTracking.isTracked('shadow'), questTracking.isTracked('fairy-dust'),questTracking.isTracked('profession'),
@@ -106,6 +109,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   document.body.classList.toggle('window-open', !!win && win !== 'loot');
   document.body.classList.toggle('window-full', !!win && win !== 'loot');
   document.body.classList.toggle('skills-open', win === 'skills');
+  document.body.classList.toggle('homes-open',win==='homes');
   $('#window-backdrop').hidden = !win;
   $('#window-confirm').hidden = true;
   keys.clear();
@@ -122,6 +126,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
   $('#window-backdrop .game-window').classList.toggle('skills-window-frame', win === 'skills');
   $('#window-backdrop .game-window').classList.toggle('map-window-frame', win === 'map');
   $('#window-backdrop .game-window').classList.toggle('profession-window-frame', win === 'professions');
+  $('#window-backdrop .game-window').classList.toggle('homes-window-frame',win==='homes');
   $('#map-window-close').hidden = win !== 'map';
   $('#window-backdrop .game-window').classList.toggle('sheet-window-frame', win === 'sheet' || win === 'vendor' || win === 'bank');
   if (closeMenu) { setPlayerMenuOpen(false, false); setWorldMenuOpen(false, false); }
@@ -135,6 +140,7 @@ export function setWindow(win: PlayerWindow | null, closeMenu = true) {
     if (corpse?.status === 'defeated' && !corpse.looted) renderLoot(body, corpse, collectCorpseLoot);
     else { setWindow(null); return; }
   }
+  else if(win==='homes'){$('#window-title').textContent=t('Mis viviendas');renderHomes(body,session.state);}
   else if(win==='professions') {$('#window-title').textContent=t('Profesiones');renderProfessions(body,session.state);}
   else if (win === 'inventory') renderInventory(body, session.state, renderer, (slot) => void useInventoryItem(slot), (from,to) => void moveInventorySlot(from,to), equipInventoryItem, slot => void updateEquipment(slot, null));
   else if (win === 'skills') renderSkills(body, session.state, assignSkillToActionBar, async (id, rank) => {
@@ -230,6 +236,7 @@ export function installMenus() {
   $('#world-menu-toggle').onclick = () => setWorldMenuOpen(!ui.worldMenuOpen);
   $('#world-menu-collections').onclick = () => setWindow('collections');
   $('#world-menu-map').onclick = () => setWindow('map');
+  $('#world-menu-homes').onclick = () => { selectHomesTab(); setWindow('homes'); };
   for (const b of document.querySelectorAll<HTMLButtonElement>('#player-menu-panel [data-window]')) {
     b.onclick = () => setWindow(b.dataset.window as PlayerWindow);
   }

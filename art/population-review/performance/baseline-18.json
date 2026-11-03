@@ -1,0 +1,59 @@
+{
+  "label": "baseline-18",
+  "samples": [
+    {
+      "name": "levante",
+      "total": 18,
+      "visible": 18,
+      "frames": 12,
+      "elapsedMs": 4859.699999999255,
+      "animationUpdatesPerFrame": 18,
+      "animationMsPerFrame": 1.691666666418314,
+      "simulationMsPerFrame": 0.02500000037252903,
+      "drawCalls": 459,
+      "triangles": 714466,
+      "presentation": null
+    },
+    {
+      "name": "centro",
+      "total": 18,
+      "visible": 18,
+      "frames": 12,
+      "elapsedMs": 5189.39999999851,
+      "animationUpdatesPerFrame": 18,
+      "animationMsPerFrame": 1.1083333327745397,
+      "simulationMsPerFrame": 0.025000000062088173,
+      "drawCalls": 540.1666666666666,
+      "triangles": 911384,
+      "presentation": null
+    },
+    {
+      "name": "jardin",
+      "total": 18,
+      "visible": 18,
+      "frames": 12,
+      "elapsedMs": 5481.800000000745,
+      "animationUpdatesPerFrame": 18,
+      "animationMsPerFrame": 0.991666667163372,
+      "simulationMsPerFrame": 0.3666666668529312,
+      "drawCalls": 531.1666666666666,
+      "triangles": 871722.3333333334,
+      "presentation": null
+    },
+    {
+      "name": "ronda",
+      "total": 18,
+      "visible": 18,
+      "frames": 12,
+      "elapsedMs": 4278.10000000149,
+      "animationUpdatesPerFrame": 18,
+      "animationMsPerFrame": 1.0583333338921268,
+      "simulationMsPerFrame": 0.5166666662941376,
+      "drawCalls": 442.4166666666667,
+      "triangles": 725812.3333333334,
+      "presentation": null
+    }
+  ],
+  "errors": [],
+  "readyMs": 23660.5153
+}

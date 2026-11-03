@@ -8,7 +8,7 @@ export function musicPhaseAtHour(hour:number):DayMusicPhase {
 }
 
 interface Track { phase:DayMusicPhase; gain:GainNode; bar:number; next:number; retireAt:number; voices:Set<MusicVoice> }
-const CROSSFADE=8,LOOKAHEAD=.35;
+const CROSSFADE=8,LOOKAHEAD=.35,OUTPUT_GAIN=1.4;
 
 /** An original, clock-led score. Rendering is scheduled independently of the 3D frame rate. */
 export class DayMusic {
@@ -25,7 +25,7 @@ export class DayMusic {
   private starting=false;
   private running=false;
   private generation=0;
-  private level=.45;
+  private level=.65;
   private active=true;
   private mix='';
   private frame:MusicWorldFrame={playing:false,hour:12};
@@ -88,12 +88,17 @@ export class DayMusic {
     }catch(error){
       // A new trusted gesture may unlock audio after a browser policy rejection.
       if(version===this.generation){this.unlocked=false;this.stop();console.warn('No se pudo iniciar la música ambiental:',error);}
-    }finally{this.starting=false;if(this.allowed()&&!this.running)queueMicrotask(()=>this.sync());}
+    }finally{
+      this.starting=false;
+      if(this.allowed()){if(!this.running)queueMicrotask(()=>this.sync());}
+      // A pending resume can complete after the music is muted or hidden.
+      else this.suspend();
+    }
   }
   private applyMix(){
     if(!this.context||!this.master||!this.filter)return;
-    const attenuation=this.frame.dialogue ? .42 : this.frame.combat ? .72 : 1;
-    const volume=.48*this.level*attenuation*(this.frame.inside ? .78 : 1);
+    const attenuation=this.frame.dialogue ? .6 : this.frame.combat ? .8 : 1;
+    const volume=OUTPUT_GAIN*this.level*attenuation*(this.frame.inside ? .85 : 1);
     const key=`${volume}:${!!this.frame.inside}`;if(key===this.mix)return;this.mix=key;
     this.master.gain.setTargetAtTime(volume,this.context.currentTime,.6);
     this.filter.frequency.setTargetAtTime(this.frame.inside?3100:6500,this.context.currentTime,1.2);
@@ -130,11 +135,17 @@ export class DayMusic {
     }
   };
   private removeTrack(track:Track){for(const voice of track.voices){voice.stop();this.voices.delete(voice);}track.voices.clear();track.gain.disconnect();}
+  private suspend(){
+    const audio=this.context;
+    if(audio?.state==='running')void audio.suspend().catch((error:unknown)=>{
+      if(!this.disposed&&audio.state!=='closed')console.warn('No se pudo pausar la música ambiental:',error);
+    });
+  }
   private stop(){
     this.generation++;this.running=false;window.clearInterval(this.timer);this.timer=undefined;
     if(this.context&&this.master){this.master.gain.cancelScheduledValues(this.context.currentTime);this.master.gain.setValueAtTime(0,this.context.currentTime);}
     for(const track of this.tracks)this.removeTrack(track);this.tracks=[];this.mix='';
-    if(this.context?.state==='running')void this.context.suspend().catch(()=>{});
+    this.suspend();
   }
   async dispose(){
     this.disposed=true;this.stop();document.removeEventListener('pointerdown',this.unlock,{capture:true});document.removeEventListener('keydown',this.unlock,{capture:true});document.removeEventListener('visibilitychange',this.visibility);

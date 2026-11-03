@@ -6,6 +6,7 @@ import { t } from './i18n';
 import { currentQuest, type QuestId, type QuestTracking } from './questTracking';
 import {PROFESSION_TUTORIAL,tutorialObjective,tutorialSteps,tutorialProgress} from '../data/professionTutorial';
 import {RPG_CATALOG} from '../data/professions';
+import {WORKSHOP_MISSION_JOBS,WORKSHOP_MISSION_REWARD,isWorkshopMissionId,workshopMissionActivity,workshopMissionId,workshopMissionObjective,workshopMissionTitle,type WorkshopMissionJob} from '../data/workshopMissions';
 
 /** ID de la misión de bienvenida (welcome). */
 const WELCOME_QUEST_KEY = 'welcome';
@@ -180,10 +181,27 @@ export function renderQuestJournal(container: HTMLElement, data: CharData, track
       const giver=document.createElement('span');giver.className='quest-giver';giver.textContent=t('Gnomi y el maestro del oficio');left.append(title,giver);header.append(left);
       if(!completed)header.append(createTrackButton(tracking,'profession'));
       const description=document.createElement('p');description.textContent=t('Prueba un oficio con sus herramientas, materiales y encargos normales. La elección del tutorial no limita los oficios que puedes aprender.');
-      const steps=document.createElement('ol');steps.className='quest-steps';const list=tutorialSteps(data);let first=true;
-      list.forEach((s,i)=>{const li=document.createElement('li');li.className=s.done?'done':first?'current':'';if(!s.done&&first){li.setAttribute('aria-current','step');first=false;}const mark=document.createElement('span');mark.textContent=s.done?'✓':String(i+1);mark.setAttribute('aria-hidden','true');li.append(mark,t(s.label));steps.append(li);});
-      const objective=document.createElement('section');objective.className='quest-objective';const label=document.createElement('small');label.textContent=t(completed?'Completada':'Siguiente paso');const text=document.createElement('p');text.textContent=t(tutorialObjective(data));objective.append(label,text);
+      const steps=document.createElement('ol');steps.className='quest-steps';const list=tutorialSteps(data,t);let first=true;
+      list.forEach((s,i)=>{const li=document.createElement('li');li.className=s.done?'done':first?'current':'';if(!s.done&&first){li.setAttribute('aria-current','step');first=false;}const mark=document.createElement('span');mark.textContent=s.done?'✓':String(i+1);mark.setAttribute('aria-hidden','true');li.append(mark,s.label);steps.append(li);});
+      const objective=document.createElement('section');objective.className='quest-objective';const label=document.createElement('small');label.textContent=t(completed?'Completada':'Siguiente paso');const text=document.createElement('p');text.textContent=tutorialObjective(data,t);objective.append(label,text);
       entry.append(seal,header,description,steps,objective,createQuestRewards(completed,PROFESSION_TUTORIAL.reward));appendEntry(entry,completed);
+    }
+    for(const job of WORKSHOP_MISSION_JOBS){
+      const mission=data.rpg?.workshopMissions?.[job];
+      if(!mission||(mission.status==='completed')!==completed)continue;
+      const profession=t(RPG_CATALOG.professions[job]),questId=workshopMissionId(job);
+      const entry=document.createElement('article');entry.className='quest-entry workshop-mission-quest';entry.dataset.quest=questId;entry.classList.toggle('tracked',!completed&&tracking.isTracked(questId));
+      const seal=document.createElement('span');seal.className='quest-seal';seal.textContent=completed?'✓':'!';
+      const header=document.createElement('header'),left=document.createElement('div');left.className='quest-header-left';
+      const title=document.createElement('h3');title.textContent=t(workshopMissionTitle(profession));
+      const giver=document.createElement('span');giver.className='quest-giver';giver.textContent=`${t('Maestro de')} ${profession}`;left.append(title,giver);header.append(left);
+      if(!completed)header.append(createTrackButton(tracking,questId));
+      const description=document.createElement('p');description.textContent=t('Una práctica opcional con una acción normal del oficio. No requiere objetos especiales.');
+      const steps=document.createElement('ol');steps.className='quest-steps';
+      const labels=[workshopMissionActivity(job,profession),`Volver a hablar con el maestro de ${profession}`];
+      labels.forEach((label,index)=>{const done=index===0?mission.progress:completed,current=!completed&&(index===0?!mission.progress:mission.progress);const li=document.createElement('li');li.className=done?'done':current?'current':'';if(current)li.setAttribute('aria-current','step');const mark=document.createElement('span');mark.textContent=done?'✓':String(index+1);mark.setAttribute('aria-hidden','true');li.append(mark,t(label));steps.append(li);});
+      const objective=document.createElement('section');objective.className='quest-objective';const label=document.createElement('small');label.textContent=t(completed?'Completada':'Siguiente paso');const text=document.createElement('p');text.textContent=t(workshopMissionObjective(job,profession,mission.progress));objective.append(label,text);
+      entry.append(seal,header,description,steps,objective,createQuestRewards(completed,WORKSHOP_MISSION_REWARD));appendEntry(entry,completed);
     }
     if (data.fairyDustQuest && !completed) {
       const entry = document.createElement('article'); entry.className = 'quest-entry fairy-dust-quest';
@@ -309,12 +327,18 @@ export function createQuestTracker(open: () => void, tracking: QuestTracking) {
       const quest = tracking.current(data), shadow = quest === SHADOW_QUEST_KEY, dust = quest === 'fairy-dust';
       root.hidden = !visible || !quest;
       if (root.hidden) return;
-      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${data.fairyDustQuest}:${looted}:${data.location}:${JSON.stringify([data.rpg?.tutorial,data.rpg?.learned,data.rpg?.dailyOrders,new Date().toISOString().slice(0,10),data.inventory.map(item=>item?[item.id,item.count]:null)])}:${t('Diario')}`;
+      const key = `${quest}:${JSON.stringify(data.welcome)}:${data.shadowQuest}:${data.fairyDustQuest}:${looted}:${data.location}:${JSON.stringify([data.rpg?.tutorial,data.rpg?.workshopMissions,data.rpg?.learned,data.rpg?.dailyOrders,new Date().toISOString().slice(0,10),data.inventory.map(item=>item?[item.id,item.count]:null)])}:${t('Diario')}`;
       if (key === signature) return;
       signature = key;
       if(quest==='profession'){
-        const q=tutorialProgress(data)!,steps=tutorialSteps(data),index=steps.findIndex(s=>!s.done);
-        root.setAttribute('aria-label',t('Misión seguida'));heading.textContent=t('Misiones');journal.setAttribute('aria-label',t('Abrir diario'));refreshToggle();label.textContent=t('Iniciación al oficio');title.textContent=`${t(PROFESSION_TUTORIAL.title)} · ${t(RPG_CATALOG.professions[q.job])}`;objective.textContent=t(tutorialObjective(data));progress.textContent=t('Paso {current} de {total}',{current:index+1,total:steps.length});progress.style.setProperty('--quest-progress',`${index/(steps.length-1)*100}%`);button.setAttribute('aria-label',`${t('Abrir diario')}: ${title.textContent}`);return;
+        const q=tutorialProgress(data)!,steps=tutorialSteps(data,t),index=steps.findIndex(s=>!s.done);
+        root.setAttribute('aria-label',t('Misión seguida'));heading.textContent=t('Misiones');journal.setAttribute('aria-label',t('Abrir diario'));refreshToggle();label.textContent=t('Iniciación al oficio');title.textContent=`${t(PROFESSION_TUTORIAL.title)} · ${t(RPG_CATALOG.professions[q.job])}`;objective.textContent=tutorialObjective(data,t);progress.textContent=t('Paso {current} de {total}',{current:index+1,total:steps.length});progress.style.setProperty('--quest-progress',`${index/(steps.length-1)*100}%`);button.setAttribute('aria-label',`${t('Abrir diario')}: ${title.textContent}`);return;
+      }
+      if(quest&&isWorkshopMissionId(quest)){
+        const job=quest.slice('workshop-'.length) as WorkshopMissionJob,mission=data.rpg?.workshopMissions?.[job];
+        if(!mission){root.hidden=true;return;}
+        const profession=t(RPG_CATALOG.professions[job]),index=mission.progress?1:0;
+        root.setAttribute('aria-label',t('Misión seguida'));heading.textContent=t('Misiones');journal.setAttribute('aria-label',t('Abrir diario'));refreshToggle();label.textContent=t('Práctica de taller');title.textContent=t(workshopMissionTitle(profession));objective.textContent=t(workshopMissionObjective(job,profession,mission.progress));progress.textContent=t('Paso {current} de {total}',{current:index+1,total:2});progress.style.setProperty('--quest-progress',`${index*100}%`);button.setAttribute('aria-label',`${t('Abrir diario')}: ${title.textContent}`);return;
       }
       root.setAttribute('aria-label', t('Misión seguida'));
       heading.textContent = t('Misiones');

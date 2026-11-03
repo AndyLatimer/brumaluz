@@ -5,7 +5,42 @@ cuidado y con más opciones. Mantiene el mundo y los comienzos aprobados en
 [LORE.md](LORE.md): los motivos se eligen con Gnomi, sin inventar trasfondos,
 regiones, razas, clases ni ventajas nuevas.
 
+## Nombres compartidos con los habitantes
+
+El 28 de octubre el usuario pide nombres propios para los habitantes y muchos
+más nombres aleatorios, también disponibles en el creador. `characterNames.ts`
+amplía las sílabas por linaje conservando las anteriores. El mismo `randomName`
+que utiliza el dado del creador y la creación de personaje ofrece ahora 3 769
+nombres humanos, 4 109 élficos, 4 410 Lagto' y 6 004 Pelso: 18 292 opciones entre
+los cuatro catálogos. Se comprueba el límite de 3–16 caracteres del servidor;
+los apóstrofos consecutivos se unifican. No se renombran personajes guardados.
+
+Los habitantes tienen nombres fijos de ese catálogo y subtítulos descriptivos;
+sus IDs y biografías siguen siendo independientes de la generación de nombres.
+Comprobación: `npm run test:population` y revisión del taller de NPCs con
+`node tools/review-population.mjs`.
+
 ## Opciones y presentación
+
+El 28 de octubre se confirma la elección de **forma de andar A, B o C** en
+la pestaña Raza, junto al cuerpo. Cada alternativa reproduce su clip real
+(`Walking_A`, `Walking_B`, `Walking_C`) en el pedestal; «Ver andando» y
+«Detener vista previa» permiten revisarla. Al salir de esa pestaña se detiene
+la prueba. No cambia la velocidad, la carrera ni la natación.
+
+La elección se guarda en `walkStyle` (0, 1 o 2), se incluye en el historial y
+se comparte con los demás jugadores. Los personajes y clientes anteriores
+usan A si no traen ese campo. Las inspiraciones conservan la elección.
+El recurso de animaciones incorpora únicamente el clip C que faltaba y
+`Cheering` de la biblioteca Simulation; A y B ya estaban en el personaje.
+
+Al crear un personaje correctamente se reproduce **`Cheering`** una vez,
+en el creador y con el cuerpo encuadrado. El saludo existente conserva `Cheer`.
+La entrada espera al evento de fin del clip; después continúa la llegada y
+las cinemáticas existentes. Durante ese gesto los controles de edición quedan
+inactivos. Un error de guardado no celebra, y entrar con un personaje ya
+guardado desde la selección conserva su flujo habitual. Si se cancela la
+sesión, la celebración no provoca una entrada tardía al mundo.
 
 La revisión de expresiones diferencia las trece opciones de ojos mediante
 contornos propios del párpado superior e inferior, apertura, comisuras y
@@ -32,9 +67,22 @@ La decisión posterior del usuario elimina de todas las pestañas la barra
 `studio-toolbar`, «Variar sección», «Tus apariencias», «Herramientas de edición»
 y «Comparar diseños». Se retiran sus controles y operaciones de la interfaz;
 los datos de apariencias que pudieran existir en el navegador no se borran.
-El desplegable restante se llama «Inspiración».
-`node tools/review-creator-interface.mjs` guarda las vistas `parchment-*` de
-escritorio, rostro, catálogo y móvil en `art/creator-studio-review/`.
+El desplegable restante se llama «Inspiración». La decisión posterior del
+28 de octubre lo mueve a una ventana independiente justo debajo de los
+controles de cámara e iluminación, fuera del panel de opciones. Conserva el
+marco de madera y latón y los retratos sobre pergamino, con desplazamiento
+propio y altura adaptada a la pantalla. En móvil se despliega sobre las opciones;
+al volver a abrir el creador empieza recogido.
+La simplificación del **28 de octubre** retira también «Fijar», las galerías
+«Ver las X opciones» y las barras superiores de accesos a piel, mirada,
+facciones y otros apartados. Cada ajuste tiene un bloque propio con etiqueta;
+el color de ojos se distingue de su forma. «Personalizar marcas» y
+«Personalizar complementos» recogen las capas independientes, y las armonías
+de ropa quedan en un desplegable. Clase conserva vocación y equipo inicial,
+sin controles para recolorear el traje. Ropa mantiene sus colores de diario.
+`node tools/review-creator-interface.mjs` guarda las vistas `parchment-*`,
+`simplified-*` y `styled-select*` de escritorio y móvil en
+`art/creator-studio-review/`, y comprueba alineación y límites del menú.
 
 El personaje se presenta sobre un pedestal en un escenario propio, separado de
 la geometría de los mapas. El fondo y la luz permiten revisar los rasgos sin que
@@ -46,8 +94,11 @@ zoom. En móvil, «Vista amplia» pliega las opciones para inspeccionar el cuerp
 pestaña actual, también al revisar complementos desde Ropa.
 
 Se mantienen los cuatro linajes y las cinco clases, los cuerpos y las opciones
-de apariencia existentes. Cada selector conserva las flechas y la lista nativa,
-y añade un catálogo desplegable con todas las opciones y el estado seleccionado.
+de apariencia existentes. Cada selector conserva las flechas, alineadas a toda
+la altura del control, y abre una lista de texto propia de pergamino y latón,
+con selección dorada. No genera una galería de miniaturas. Permite usar flechas,
+Inicio, Fin, Intro, Espacio, Escape y búsqueda escribiendo; el menú se ajusta
+al espacio disponible y se cierra al desplazar el panel o cambiar de pestaña.
 Los colores muestran también su nombre. Altura y complexión muestran su valor
 relativo; el porcentaje no representa centímetros ni modifica estadísticas.
 
@@ -68,11 +119,10 @@ sin un esquema paralelo ni migración SQL. La lista breve sigue ofreciendo las
 18 recetas originales; una combinación de capas se identifica como personal.
 Todas las combinaciones aparecen también en el catálogo del editor de NPCs.
 
-Los catálogos de cara, ojos, cejas, nariz, boca, pelo, barba y complementos
-incluyen retratos del personaje con cada alternativa. Se generan al abrirlos,
-solo para las opciones visibles dentro del panel, y se reutilizan mientras no
-cambien los demás rasgos. Desplazar el panel carga las siguientes miniaturas.
-Las vistas de rasgos usan un encuadre más cercano.
+Las galerías de alternativas de cada rasgo pertenecen a la ampliación anterior
+y se retiran de la interfaz del jugador en la simplificación del 28 de octubre.
+El personaje 3D sigue mostrando cada elección al seleccionarla. El editor de
+NPCs conserva su catálogo completo.
 
 El escenario incorpora luz principal y de contorno, suelo con borde difuminado
 y tres ambientes: taller, día y farol. Solo cambian la revisión visual; no se
@@ -83,7 +133,7 @@ El apartado de inspiración ofrece dieciséis combinaciones con retratos 3D y di
 armonías para los colores de ropa y complementos. Son recetas cosméticas, sin
 significado canónico ni beneficios de juego. No cambian linaje, cuerpo, nombre,
 clase ni atributos. Los retratos se calculan al abrir el apartado y se reutilizan
-mientras no cambie el resultado de la receta con la base y bloqueos actuales.
+mientras no cambie el resultado de la receta con la base actual.
 
 ## Segunda ampliación: siluetas y complementos
 
@@ -110,14 +160,12 @@ se conservan y vuelven a verse al retirarlo. Bufandas, medallones y colgantes
 siguen al pecho; gafas y pendientes mantienen los anclajes de cabeza y orejas.
 Los catálogos de NPCs y los retratos comparten el mismo montaje y los 200 IDs.
 
-Los catálogos visuales incorporan búsqueda con contador y los peinados se
-filtran por cortos, melenas, recogidos, trenzados y rizados. Los retratos se
-generan en lotes de dos entre fotogramas y solo para opciones visibles: cerrar
-un catálogo, cambiar la búsqueda o salir de su pestaña cancela la cola pendiente.
-Pestañas y accesos a apartados conservan el espacio de edición en móvil; al
-cambiar de pestaña se recuerda la posición de desplazamiento de cada una.
-La navegación interna permite llegar directamente a mirada, facciones, capas,
-adornos, paletas o tejidos.
+En la ampliación anterior, los catálogos visuales incorporaban búsqueda con
+contador y filtros de peinados por familias. Los retratos se generaban en lotes
+de dos entre fotogramas, solo para opciones visibles. Cambiar de pestaña sigue
+recordando la posición de desplazamiento de cada una.
+La simplificación posterior retira estos catálogos, sus filtros y los accesos
+internos a apartados; las cinco pestañas principales siguen disponibles.
 
 Las ocho inspiraciones y armonías adicionales son combinaciones cosméticas de
 los catálogos. No añaden trasfondos, ropa con estadísticas ni compromisos de oficio.
@@ -152,8 +200,9 @@ el contador.
   y los colgantes una anilla de suspensión. El medallón tiene borde biselado.
   Estas piezas mantienen sus anclajes y el color guardado por el personaje.
 
-Los catálogos de pelo y complementos permiten elegir frente, perfil o espalda
-para comparar los modelos antes de seleccionarlos. La lámina general y los
+Los catálogos de pelo y complementos de aquella ampliación permitían elegir
+frente, perfil o espalda. Esos catálogos se retiran de la interfaz del jugador;
+los controles de cámara del personaje siguen disponibles. La lámina general y los
 detalles ampliados se generan con `node tools/review-creator-options.mjs`, en
 `expanded-options.png` y `sculpted-details.png`. Las pruebas recorren los cuatro
 rostros y linajes, posturas y proporciones, verifican el cierre de las superficies
@@ -174,23 +223,22 @@ biselados, con unión a la cuenta del pasador. Las hojas tienen punta, curvatura
 espesor, nervadura y tallo común. La revisión se recoge también en
 `art/creator-studio-review/refined-options.png`.
 
-Los catálogos de maquillaje, marcas y rasgos del linaje incluyen retratos. Si
-el pañuelo oculta boca, barba, maquillaje o detalles, solo sus miniaturas lo
-retiran para mostrar la opción. Al abrir el catálogo se explica esta diferencia;
-el personaje conserva el pañuelo y las demás capas. Elegir un rasgo nunca borra
-otra elección para hacerla visible.
+Las galerías retiradas incluían retratos de maquillaje, marcas y linaje,
+con el pañuelo oculto en las miniaturas de rasgos que tapaba. La simplificación
+conserva las elecciones del personaje: elegir un rasgo nunca borra otra
+elección para hacerla visible.
 
-Las inspiraciones muestran el resultado efectivo con los bloqueos vigentes.
+Las inspiraciones muestran el resultado efectivo de la receta con la base actual.
 Su caché incluye todos los rasgos que sobreviven a la receta, por lo que cambiar
 la nariz u otra base también actualiza las imágenes. Se recalculan solo las
 miniaturas afectadas y visibles; las colas se detienen al cerrar el apartado,
 ocultar un control, ir a la selección de personajes o entrar al juego.
 
-Las rejillas permiten mover el foco con las flechas, Inicio y Fin, y elegir con
-Intro o Espacio. La búsqueda y los filtros conservan el foco de edición; las
-opciones ocultas no entran en el recorrido de teclado.
-Al abrir otra sesión del creador se recogen los catálogos y apartados y se
-restablecen búsquedas, categorías, ángulos y desplazamiento. Este reinicio no
+Las listas personalizadas permiten mover el foco activo con las flechas,
+Inicio y Fin, y elegir con Intro o Espacio. Escape las cierra sin cambiar
+el personaje; Tab continúa el recorrido de los controles.
+Al abrir otra sesión del creador se cierran los menús y apartados y se
+restablece el desplazamiento. Este reinicio no
 modifica el personaje; la posición de cada pestaña
 se conserva mientras se siga editando en la misma sesión.
 
@@ -258,20 +306,82 @@ todos sus rasgos, cuatro vistas, proporciones extremas y casos equipados.
 anclajes de pendientes, cobertura por ropa y el ajuste animado de cuello.
 Sus capturas se guardan en `art/creator-connections-review/`.
 
+## Música del creador (28 de octubre)
+
+La petición del usuario confirma una música cozy y agradable, alegre y con
+ilusión de aventura. **Una mochila de ilusiones** es una composición original
+en re mayor, con balanceo de 6/8 a negra = 90: 32 compases, unos 64 segundos.
+La flauta lleva una melodía con preguntas, respuestas y respiraciones; el laúd
+y el arpa acompañan con arpegios, cuerdas cálidas y percusión muy discreta.
+Las cuatro frases varían y enlazan al volver a empezar, sin depender de la hora.
+
+El creador usa su propia partitura, `src/ui/creatorMusicScore.ts`, y los
+instrumentos del mundo. Entra suavemente tras una interacción del jugador,
+comparte el botón «Música» y su preferencia guardada con el acceso y la selección,
+y respeta los volúmenes general y de música. Se detiene al ocultar la pestaña
+o entrar en partida; regresar a la selección recupera su arreglo habitual.
+Las muestras se preparan entre fotogramas y se reutiliza un solo contexto para
+la música del acceso y del creador.
+
+`npm run test:music` comprueba la partitura completa y el sonido real del creador,
+su control en escritorio y móvil, silencio, visibilidad y salida a partida.
+`npm run music:render -- --creator --full` exporta una escucha WAV a
+`art/music/creator-full.wav` con los mismos instrumentos.
+
+## Detalle y variedad de personalización (3 de noviembre)
+
+La nueva petición prioriza opciones bonitas, bien definidas y colocadas, con
+variedad de estilos. Se conservan la interfaz simplificada, los IDs anteriores
+y las elecciones guardadas. La autorización para consultar referencias externas
+se aplica al acabado visual; no introduce decisiones de mundo ni sistemas nuevos.
+
+- El catálogo pasa de 28 a **32 peinados**. Se añaden al final Corto de lado (28),
+  Rizos con volumen (29), Ondas largas (30) y Laterales rapados (31). Sus superficies
+  tienen perfiles, relieve, volumen y caída propios. El corte rapado distingue
+  el pelo superior del cuero cabelludo mediante una mezcla del tono de piel y
+  pelo del personaje en una celda de paleta reservada; ambos siguen los colores
+  elegidos. La unión entre las zonas sigue una hilera continua de la malla.
+- Barba recortada, completa, perillas, bigotes y patillas pasan de manchas planas
+  a volúmenes cerrados con raíces junto a la piel, extremos afinados y canales
+  de mechones. El contorno sigue la mandíbula de cada uno de los cuatro rostros.
+  La barba de tres días usa una distribución irregular y determinista. Los nueve
+  IDs mantienen su significado y el pañuelo sigue ocultándolos sin borrarlos.
+- Pecas y pecas de sol tienen tamaños y distribución más naturales. La cicatriz
+  de mejilla tiene trazo fino y pequeñas señales; la de ceja sigue la posición
+  de la ceja seleccionada. Constelaciones conectan puntos reales, las hojas
+  tienen contorno y nervaduras y las runas usan trazos propios. Las marcas se
+  proyectan también dentro de sus triángulos sobre la piel curvada y se agrupan
+  por color para reducir mallas. Se conservan los 180 IDs de combinaciones.
+
+El montaje es compartido por creador, retratos, editor de NPCs y partida. No
+requiere regenerar GLB, cambiar el esquema de apariencia ni migrar personajes.
+Las plantillas de barba tienen caché limitada y entregan geometrías independientes.
+
+Revisión reproducible:
+
+- `node --test scripts/test-creator-craft.mjs`: cierre, orientación, separación
+  de la piel y caché de barba; trazos visibles y ajustados en cuatro rostros y
+  cuatro linajes.
+- `node --test scripts/test-creator-fit.mjs`: incluye las 32 opciones al comprobar
+  superficies y catálogo, además de las pruebas de ajuste y animación existentes.
+- `node tools/review-creator-craft.mjs final`: láminas de barbas, marcas, pelo y
+  linajes; las vistas `before-*` conservan la comparación anterior.
+- `node tools/review-creator-craft-live.mjs`: selección real de los cuatro cortes,
+  frente, perfil y espalda, móvil de 390 px, paso a Brumaluz y editor de NPCs,
+  sin escrituras a cuentas ni a catálogos. Capturas e informe en
+  `art/creator-craft-review/`.
+
 ## Edición
 
-- Cada rasgo y color tiene un bloqueo que protege contra el botón Aleatorio
-  y las recetas de inspiración. Se puede editar directamente
-  una elección bloqueada. Cambiar de linaje aplica los límites de opciones
-  válidas para ese linaje, incluso a los índices bloqueados.
-- «Aleatorio» permite variar todo el diseño, incluido linaje y clase, respetando
-  bloqueos. Conserva nombre, atributos y progreso. No impone barba o
+- Los bloqueos se retiran del creador por decisión del 28 de octubre.
+- «Aleatorio» permite variar todo el diseño, incluido linaje y clase.
+  Conserva nombre, atributos y progreso. No impone barba o
   maquillaje en función del sexo.
 - Deshacer/rehacer conserva hasta 80 estados de edición, incluidos nombre,
   clase y atributos. Los movimientos seguidos de un deslizador se agrupan;
   una edición tras deshacer descarta la rama posterior. Ctrl/Cmd+Z y
   Ctrl/Cmd+Mayús+Z o Ctrl/Cmd+Y funcionan fuera de los campos de texto.
-- Un nuevo acceso al editor inicia un historial nuevo y libera los bloqueos.
+- Un nuevo acceso al editor inicia un historial nuevo y recoge los apartados.
 
 ## Respuesta al editar
 
@@ -308,16 +418,23 @@ no concede armaduras ni desbloquea ramas alternativas.
 ## Verificación
 
 - `npm run build`: compilación TypeScript y producción.
+- `node --test scripts/test-creator-walk-sql.mjs`: validación y persistencia
+  de A/B/C, clientes anteriores y difusión pública, en PostgreSQL aislado.
+  Las funciones de creación y apariencia pública se actualizan en los SQL
+  habituales del servidor; no se modifican columnas ni personajes existentes.
 - `node --test scripts/test-creator-fit.mjs`: ajuste, materiales, anclajes y
   conservación de las opciones existentes en los cuatro rostros y linajes.
 - `node --test scripts/test-creator-studio.mjs`: creador real en navegador,
-  variaciones, aislamiento del progreso, historial, bloqueos, catálogos,
+  variaciones, aislamiento del progreso, historial, selectores personalizados,
   paletas, atributos, móvil y combinaciones en personajes y NPCs.
   Recorre las 180 combinaciones para comprobar unicidad, capas y normalización,
   conserva los IDs antiguos y renderiza combinaciones completas en los cuatro
   rostros y linajes. Comprueba también la retirada de los bloques solicitados,
-  la carga de retratos al desplazar los catálogos,
+  navegación de teclado, cierre y ajuste de las listas,
   iluminación, traducciones y la llegada de un ID nuevo al juego real.
+  Comprueba también los tres clips al andar, la vista previa y su historial,
+  y que `Cheering` termine antes de entrar y arrancar la llegada. Cancelar o
+  reconstruir el personaje durante el gesto libera los controles sin entrar.
 - Las capturas de esta revisión se guardan en `art/creator-studio-review/`.
 - `node tools/review-creator-world.mjs`: revisa un personaje elfo con las cinco
   capas en el mapa publicado de Brumaluz, con el escenario del taller apagado;

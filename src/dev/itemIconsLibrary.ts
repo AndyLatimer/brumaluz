@@ -268,3 +268,4 @@ export function filterPresetIcons(query: string, category = 'all'): PresetIcon[]
     return icon.name.toLowerCase().includes(q) || icon.tags.some(t => t.toLowerCase().includes(q));
   });
 }
+

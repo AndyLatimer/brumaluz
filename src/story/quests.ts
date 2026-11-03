@@ -27,6 +27,10 @@ import { settings } from '../game/audio';
 import {professionTutorialConversation} from './professionTutorial';
 import {performProfession} from '../game/professions';
 import {tutorialTarget} from '../data/professionTutorial';
+import {RPG_CATALOG} from '../data/professions';
+import type {CharData} from '../data/data';
+import workshopData from '../data/workshops.json';
+import {isWorkshopMissionId,workshopMissionNeedsGathering,workshopMissionObjective,type WorkshopMissionJob} from '../data/workshopMissions';
 
 export function isbertoUnlocked() {
   return session.state.welcome?.stage === 'completed';
@@ -179,14 +183,50 @@ export function shadowQuestTarget(): { x: number; z: number } {
   return npcActors.find(npc => npc.id === 'isberto')?.character.root.position
     ?? session.state.isbertoPosition ?? {x: -3, z: TEST ? LOCAL_COMBAT_SITE.z : COMBAT_SITE.z};
 }
+function workshopQuestTarget(data:CharData,job:WorkshopMissionJob,location:string):{x:number;z:number;name:string}|null{
+ const mission=data.rpg?.workshopMissions?.[job],teacher=RPG_CATALOG.teachers[job],workshop=workshopData.workshops.find(w=>w.job===job);
+ if(!mission||mission.status!=='active'||!teacher||!workshop)return null;
+ const profession=RPG_CATALOG.professions[job];
+ let target:{location:string;x:number;z:number;name:string};
+ if(mission.progress){
+  target={location:teacher.location,x:teacher.x,z:teacher.z,name:workshopMissionObjective(job,profession,true)};
+ }else if(workshopMissionNeedsGathering(job)&&!(data.rpg?.tools[job]?.durability??0)){
+  const smith=RPG_CATALOG.teachers.herreria;
+  target={location:smith.location,x:smith.x,z:smith.z,name:'Equipa una herramienta de recolección'};
+ }else if(workshopMissionNeedsGathering(job)&&location==='pompelin'){
+  const now=Date.now()/1000,all=Object.values(RPG_CATALOG.nodes).filter(node=>node.job===job&&node.tier===0);
+  const ready=all.filter(node=>(data.rpg?.nodes[node.id]??0)<=now),candidates=ready.length?ready:all;
+  candidates.sort((a,b)=>Math.hypot(a.x-(data.position?.x??0),a.z-(data.position?.z??0))-Math.hypot(b.x-(data.position?.x??0),b.z-(data.position?.z??0)));
+  const node=candidates[0];if(!node)return null;
+  return{...node,name:ready.length?workshopMissionObjective(job,profession,false):'Espera a que se recupere el recurso.'};
+ }else if(workshopMissionNeedsGathering(job)){
+  target={location:'pompelin',x:175.2,z:0,name:'Sal a Pompelín por la Puerta del Este'};
+ }else{
+  const learned=data.rpg?.learned.some(id=>RPG_CATALOG.recipes[id]?.job===job)??false,station=RPG_CATALOG.stations[job];
+  const destination=learned&&station?station:teacher;
+  target={location:destination.location,x:destination.x,z:destination.z,name:learned?workshopMissionObjective(job,profession,false):'Habla con el maestro para elegir una receta'};
+ }
+ if(location===target.location)return{x:target.x,z:target.z,name:target.name};
+ if(location==='brumaluz'){
+  if(target.location==='pompelin')return{x:175.2,z:0,name:target.name};
+  const destination=workshopData.workshops.find(w=>w.mapId===target.location);
+  return destination?{x:destination.entrance.x,z:destination.entrance.z,name:`Entra en el taller de ${destination.label}`}:null;
+ }
+ if(location==='pompelin')return target.location==='pompelin'?null:{x:-70,z:-90,name:'Regresa a Brumaluz'};
+ const current=workshopData.workshops.find(w=>w.mapId===location);
+ if(current)return{x:current.exit.x,z:current.exit.z,name:'Sal del taller para continuar'};
+ if(location==='casa_de_isberto_interior')return{x:0,z:2.5,name:'Sal de casa para continuar'};
+ return null;
+}
 export function updateWelcome(dt: number, time: number) {
   story.welcomeWorld.update(session.state.welcome, play.mode === 'play' && play.city.locationId === 'brumaluz', holder.position, play.dead || talk.isbertoArrival || isDialogOpen() || !!ui.openWindow ? 0 : dt, time, talk.conversationActor === story.welcomeWorld.root, session.state.shadowQuest === 'returning' || session.state.shadowQuest === 'returned');
   const visible = play.mode === 'play' && !play.dead && !storyLock() && !ui.openWindow && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.optionsOpen && !tradeWindow.isOpen && !isDialogOpen();
   ui.questTracker.update(session.state, visible, corpseLooted());
   ui.welcomePlate.hidden = true;
   ui.questIndicator.hide();
-  const professionTracked=questTracking.current(session.state)==='profession';
-  if(visible&&professionTracked){const target=tutorialTarget(session.state,play.city.locationId);if(target)ui.questIndicator.update({...target,y:play.city.groundY(target.x,target.z)+1},holder.position,camera);}
+  const trackedQuest=questTracking.current(session.state),professionTracked=trackedQuest==='profession',workshopTracked=!!trackedQuest&&isWorkshopMissionId(trackedQuest);
+  if(visible&&professionTracked){const target=tutorialTarget(session.state,play.city.locationId,t);if(target)ui.questIndicator.update({...target,y:play.city.groundY(target.x,target.z)+1},holder.position,camera);}
+  if(visible&&workshopTracked){const job=trackedQuest!.slice('workshop-'.length) as WorkshopMissionJob,target=workshopQuestTarget(session.state,job,play.city.locationId);if(target)ui.questIndicator.update({...target,y:play.city.groundY(target.x,target.z)+1},holder.position,camera);}
   if (!story.welcomeWorld.root.visible || !visible) return;
   camera.updateMatrixWorld();
   const welcomeHeight = 1.1 * session.registeredNpcs.gnomi.render.scale / .48 * session.registeredNpcs.gnomi.render.height / .92;
@@ -195,7 +235,7 @@ export function updateWelcome(dt: number, time: number) {
     ui.welcomePlate.hidden = false;
     ui.welcomePlate.style.transform = `translate(${(questAnchor.x * .5 + .5) * innerWidth}px, ${(-questAnchor.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
   }
-  if(professionTracked)return;
+  if(professionTracked||workshopTracked)return;
   if (questTracking.current(session.state) === 'fairy-dust') {
     if (session.state.fairyDustQuest === 'ask_gnomi') {
       const target = story.welcomeWorld.root.position;

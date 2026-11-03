@@ -1,5 +1,24 @@
 # Biblioteca KayKit y Kenney
 
+El catálogo original **Cumbres de Cobre · Pueblo Lagto'** (`brumaluz-lagto`) aporta 50 piezas de arquitectura ciclópea, fundición, mobiliario reforzado y minería modeladas en Blender, disponibles en `/assets.html` y `/maps.html`. La revisión del 3 de noviembre incorpora atlas PBR CC0, normales cuidadas y correcciones de construcción. `npm run art:lagto` las reconstruye; inventario, fuentes y pruebas en [Cumbres de Cobre (Lagto')](LAGTO-ASSETS.md).
+
+El catálogo original **Brumaluz · Un rincón propio** (`brumaluz-home`) aporta dieciocho modelos de
+mobiliario doméstico y artesanal con cantos suaves, ensamblajes y materiales PBR
+(taburete, mesa, biblioteca, estación, silla, banco, mesita, arcón, alfombra, farol,
+macetero, biombo, butaca, aparador, escritorio, perchero, costurero y jardinera), separados de los paquetes importados y de las colecciones
+reservadas a otras ciudades. Los GLB comparten la geometría del juego y están
+disponibles en `/assets.html` y `/maps.html`. `npm run art:home` los reconstruye;
+uso y recetas en [Viviendas y vida cotidiana](HOMES-AND-COZY-LIFE.md).
+La revisión del 2 de noviembre emplea madera y lino CC0 descargados de Poly Haven,
+con atlas locales y la misma geometría en el editor y el juego. Fuentes y pruebas
+en [Modelos del hogar](HOME-MODELS.md).
+
+El [inventario completo de rigs y animaciones](ANIMATIONS.md) recoge los
+personajes normales (Medium) y grandes (Large), todos los clips por archivo,
+sus duraciones, las variantes del juego y qué está integrado o disponible
+para una implementación posterior. Incluye las diferencias entre los rigs
+originales y el de producción de 41 huesos.
+
 Las piezas de Ranger y Rogue Hooded utilizadas por el creador se preparan con
 `npm run art:creator`. Su integración y los IDs de apariencia se documentan
 en [Pelo y complementos](./CHARACTER-ART.md#pelo-y-complementos-del-creador).
@@ -115,10 +134,13 @@ clips en sus maniquies. Se comprueban ademas 1563 combinaciones personaje/clip
 del paquete completo, con coincidencia de nombres y pose de reposo.
 
 El visor y el catalogo completo no forman parte de la entrada de produccion.
-El juego importa unicamente la seleccion descrita a continuacion, no los
+El juego importa una seleccion de recursos, no los
 aproximadamente 58.3 MB de GLB de la biblioteca. Los nuevos IDs de apariencia no requieren migrar
 personajes; el SQL de movimiento admite hasta 2.4 unidades de altura relativa
 para saltos sobre superficies bajas.
+La seleccion actual incluye las fuentes Medium de combate y los cinco clips
+del complemento ambiental; sus cargas y acciones se detallan en
+[Animaciones que usa actualmente el juego](ANIMATIONS.md#animaciones-que-usa-actualmente-el-juego).
 
 ## Primera pasada de ambientacion y animaciones
 
@@ -129,10 +151,12 @@ para saltos sobre superficies bajas.
   **despues de la confirmacion** de la accion. Consumir comida o pociones
   activa `Use_Item`, tambien solo tras una respuesta correcta.
   Son gestos locales y cosmeticos, no tiempos de canalizacion ni nuevas reglas.
-  No sustituyen ataques o saltos en curso, se omiten durante la locomocion y
-  se cancelan al empezar a caminar, correr o saltar. La muerte tiene prioridad.
+  La recogida normal se omite durante la locomocion; el consumo usa ahora una
+  mascara aditiva de torso y brazos que permite mantener la marcha.
+  No sustituyen ataques en curso. La muerte tiene prioridad.
 - `tools/prepare-ambient-animations.mjs` (`npm run art:ambient`) extrae solo
-  los dos clips nuevos a `src/assets/models/ambient-animations.glb`, comprueba
+  la seleccion de clips a `src/assets/models/ambient-animations.glb`: ahora
+  contiene `Idle_B`, `Hit_B`, `Crawling`, `Walking_C` y `Cheering`. Comprueba
   la pose de reposo de los objetivos y elimina mallas y texturas. No reemplaza
   el rig de 41 huesos ni recorta los clips usados hasta ahora.
 - `src/world/cityDetails.ts` coloca pequenas escenas de suministros y jardines
@@ -170,6 +194,9 @@ para saltos sobre superficies bajas.
   de unos 9.26 MB a 10.80 MB sin comprimir; no incluye el visor ni el resto de
   la biblioteca.
 
-No se anaden enemigos, clases, equipamiento, recompensas ni cambios de balance.
-Las animaciones de combate existentes se conservan: estos paquetes gratuitos
-no aportan nuevos ataques especificos de clase.
+Esta primera pasada no anadio enemigos, clases, equipamiento, recompensas ni
+cambios de balance. La biblioteca completa si contiene ataques de una y dos
+manos, dos armas, bloqueo, combate sin armas, arco y magia. El juego ya utiliza
+una seleccion para sus variantes de combate y recoleccion; disponer del resto
+no habilita automaticamente nuevas acciones. El estado vigente se recoge en
+[el inventario de animaciones](ANIMATIONS.md).

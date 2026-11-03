@@ -29,6 +29,10 @@ const PROFILES: Record<number, { fringe: number; nape: number; part: number; loc
   25: { fringe: 1.12, nape: 1.9, part: .01, locks: 22 },
   26: { fringe: 1.06, nape: 2.03, part: .085, locks: 28 },
   27: { fringe: 1.18, nape: 1.98, part: .08, locks: 24 },
+  28: { fringe: 1.08, nape: 1.83, part: .19, locks: 16, sweep: -.24 },
+  29: { fringe: 1.16, nape: 2.02, part: 0, locks: 26 },
+  30: { fringe: 1.02, nape: 2.16, part: -.1, locks: 18, sweep: -.08 },
+  31: { fringe: 1.06, nape: 1.84, part: .12, locks: 19, sweep: .26 },
 };
 
 /** Finished surfaces: flow, hairline and silhouette are modelled together, before attachments. */
@@ -41,8 +45,9 @@ export function sculptedHair(o: HeadOptions, headAt: Surface): HairPiece[] | nul
     pieces.push({ geo: paintCell(geo, cell, .17, .8), kit: o.face });
   };
   const gathered = [4, 5, 6, 9, 10, 16, 17, 18, 19, 21, 22, 23, 26, 27].includes(o.hair);
-  const curly = o.hair === 11 || o.hair === 25;
-  const long = o.hair === 8;
+  const coily = o.hair === 29, cropped = o.hair === 31;
+  const curly = o.hair === 11 || o.hair === 25 || coily;
+  const long = o.hair === 8 || o.hair === 30;
   const bob = [3, 11, 20, 24].includes(o.hair);
   const profile = PROFILES[o.hair] ?? { fringe: 1.1, nape: 2.12, part: .11, locks: 22 };
   const twinRoots = [6, 10, 17, 27].includes(o.hair);
@@ -52,26 +57,32 @@ export function sculptedHair(o: HeadOptions, headAt: Surface): HairPiece[] | nul
     const front = Math.max(0, Math.cos(phi)), back = Math.max(0, -Math.cos(phi));
     const side = Math.abs(Math.sin(phi));
     const parted = profile.part * Math.sin(phi * 2) * front + .025 * Math.sin(phi * 5 + .4) * front;
-    const scallop = curly ? (o.hair === 25 ? .024 : .038) * Math.sin(phi * 18 + .4) : .009 * Math.sin(phi * 12);
+    const scallop = curly ? (o.hair === 25 ? .024 : coily ? .02 : .038) * Math.sin(phi * 18 + .4) : .009 * Math.sin(phi * 12);
     return 1.94 - (1.94 - profile.fringe) * front ** 1.4 + (profile.nape - 1.94) * back - .22 * side ** 12
       + parted + scallop + (profile.sweep ?? 0) * Math.sin(phi) * front;
   };
+  const croppedBoundary = (phi: number) => THREE.MathUtils.lerp(Math.acos(.57), boundaryAt(phi) - .005, smooth(Math.cos(phi), .2, .75));
   // Roots and braids use the finished surface, including its relief and volume.
   const at = (phi: number, t: number, inner = false) => {
     const front = Math.max(0, Math.cos(phi)), back = Math.max(0, -Math.cos(phi));
-    const theta = t * boundaryAt(phi);
+    const cropLine = croppedBoundary(phi);
+    const theta = cropped ? t <= .5 ? t * 2 * cropLine : cropLine + (t - .5) * 2 * (boundaryAt(phi) - cropLine) : t * boundaryAt(phi);
     const dir = V(Math.sin(theta) * Math.sin(phi), Math.cos(theta), Math.sin(theta) * Math.cos(phi));
     const gather = gathered ? Math.max(0, twinRoots ? Math.max(dir.dot(leftRoot), dir.dot(rightRoot)) : dir.dot(rootDirection)) ** 5 : 0;
     const flow = phi + (gathered ? .33 : .14) * Math.sin(theta) * Math.sin(phi) + (profile.sweep ?? 0) * Math.sin(theta);
-    const volume = .028 + .035 * Math.sin(t * Math.PI) ** 2 + gather * .025;
+    const top = smooth(dir.y, .25, .65);
+    const volume = cropped ? .007 + .078 * top : coily ? .082 + .075 * Math.sin(t * Math.PI / 2) : .028 + .035 * Math.sin(t * Math.PI) ** 2 + gather * .025;
     // Broad locks and incised secondary channels, tapered at the crown and hairline.
     const relief = (.008 * Math.cos(flow * profile.locks + theta * 2) + .0025 * Math.cos(flow * profile.locks * 3 + theta * 5))
-      * Math.sin(Math.PI * Math.min(1, t * 1.3)) ** .6;
-    const curl = curly ? (.011 * Math.sin(flow * 23 + Math.sin(theta * 9)) * Math.sin(theta * 27 + Math.cos(phi * 11))
+      * Math.sin(Math.PI * Math.min(1, t * 1.3)) ** .6 * (cropped ? .1 + top * .9 : 1);
+    const coilRelief = .008 * Math.cos(phi * 26 + Math.sin(theta * 12) * .7)
+      + .0085 * Math.cos(theta * 24 + Math.sin(phi * 13) * .55) + .002 * Math.cos(phi * 42 - theta * 15);
+    const curl = coily ? coilRelief * smooth(t, 0, .16) : curly ? (.011 * Math.sin(flow * 23 + Math.sin(theta * 9)) * Math.sin(theta * 27 + Math.cos(phi * 11))
       + .012 * Math.cos(flow * 12 - theta * 15) ** 2) * smooth(t, 0, .12) : 0;
     const messy = o.hair === 2 ? .025 * Math.sin(phi * 7 + theta * 6) ** 2 * Math.sin(Math.PI * t) : 0;
     const finished = volume + relief + curl + messy;
-    const lift = (o.hat === 'none' ? finished : .015 + finished * .18) - (inner ? (o.hat === 'none' ? .018 : .009) : 0);
+    const thickness = cropped ? .004 + top * .014 : .018;
+    const lift = (o.hat === 'none' ? finished : .015 + finished * .18) - (inner ? (o.hat === 'none' ? thickness : .009) : 0);
     const p = headAt(dir, lift);
     const fall = smooth(t, .55, 1) * (1 - front ** 3);
     const length = long ? .46 : bob ? .2 : 0;
@@ -80,17 +91,19 @@ export function sculptedHair(o: HeadOptions, headAt: Surface): HairPiece[] | nul
       p.y -= fall * (length + asymmetry);
       p.x += Math.sin(phi) * fall * (.035 + (curly ? .025 * Math.cos(phi * 9 + t * 8) : 0));
       p.z -= back * fall * .045;
-      const wave = o.hair === 20 || o.hair === 24 || curly ? .014 * Math.sin(t * 11 + phi * 7) * fall : 0;
+      const wave = o.hair === 30 ? (.035 * Math.sin(t * 10 + phi * 6) + .012 * Math.sin(t * 19 - phi * 11)) * fall
+        : o.hair === 20 || o.hair === 24 || curly ? .014 * Math.sin(t * 11 + phi * 7) * fall : 0;
       p.x += Math.sin(phi) * wave; p.z += Math.cos(phi) * wave;
     }
     return p;
   };
   const hairAt = (direction: THREE.Vector3, out = 0) => {
     const dir = direction.clone().normalize(), phi = Math.atan2(dir.x, dir.z);
-    const t = THREE.MathUtils.clamp(Math.acos(dir.y) / boundaryAt(phi), 0, 1);
+    const angle = Math.acos(dir.y), cropLine = croppedBoundary(phi);
+    const t = THREE.MathUtils.clamp(cropped ? angle < cropLine ? angle / cropLine * .5 : .5 + (angle - cropLine) / (boundaryAt(phi) - cropLine) * .5 : angle / boundaryAt(phi), 0, 1);
     return at(phi, t).addScaledVector(dir, out);
   };
-  const segments = curly ? 144 : 128, rows = curly ? 48 : 36;
+  const segments = coily ? 192 : curly ? 144 : 128, rows = coily ? 64 : curly ? 48 : 36;
   const positions: number[] = [], indices: number[] = [];
   // One continuous closed shell, including an inner surface and rolled hairline.
   for (let layer = 0; layer < 2; layer++) for (let row = 0; row <= rows; row++) for (let col = 0; col <= segments; col++) {
@@ -108,6 +121,19 @@ export function sculptedHair(o: HeadOptions, headAt: Surface): HairPiece[] | nul
   }
   const shell = new THREE.BufferGeometry(); shell.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); shell.setIndex(indices);
   shell.computeVertexNormals(); add(smoothNormals(shell, 75));
+  if (cropped) {
+    // A dedicated scalp palette cell blends skin and hair, keeping the shaved sides readable in every colour.
+    const flat = shell.toNonIndexed(); shell.dispose(); pieces[0].geo = flat;
+    const p = flat.attributes.position, uv = flat.attributes.uv;
+    for (let i = 0; i < p.count; i += 3) {
+      const center = V(0, 0, 0);
+      for (let j = 0; j < 3; j++) center.add(V(0, 0, 0).fromBufferAttribute(p, i + j));
+      center.multiplyScalar(1 / 3).sub(HEAD_C).normalize();
+      if (Math.acos(THREE.MathUtils.clamp(center.y, -1, 1)) < croppedBoundary(Math.atan2(center.x, center.z))) continue;
+      for (let j = 0; j < 3; j++) uv.setXY(i + j, 7.5 / 8, (7 + .28 + .35 * (1 - smooth(center.y, -.4, .57))) / 8);
+    }
+    flat.userData.surfaceReady = true;
+  }
 
   // Closed, grooved lock with a broad embedded root and a pointed end.
   const lock = (points: THREE.Vector3[], radius: number, end: number, steps = 64, flat = .8, cell = C_HAIR, closed = false) => {

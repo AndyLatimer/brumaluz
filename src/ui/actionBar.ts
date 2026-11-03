@@ -6,6 +6,7 @@ import { t } from './i18n';
 import { setItemTooltip } from './itemTooltip';
 import { DRAG_SKILL_TYPE } from './skillsWindow';
 import type { ClassId } from '../data/data';
+import type { SkillId } from '../data/combat';
 import type { Equipment } from '../data/inventory';
 import { setSkillTooltip, skillTooltipEquipment } from './skillTooltip';
 
@@ -22,7 +23,7 @@ export interface CombatActionFeedback {
 }
 
 interface ActionBarSkill {
-  id: string; cls: ClassId; rank: number; equipment?: Equipment; icon: string;
+  id: string; skillId: SkillId; cls: ClassId; rank: number; equipment?: Equipment; icon: string;
   cooldown: number; duration: number; available: boolean;
   unavailableReason?: 'dead' | 'weapon' | 'resource';
   resource?: number;
@@ -37,8 +38,9 @@ export interface ActionBarHooks {
   bound: (item: string) => boolean;
   /** Se pidió usar el objeto del hueco. */
   use: (item: string) => void;
-  skill: () => ActionBarSkill;
-  useSkill: () => void;
+  skill: (actionId?: string) => ActionBarSkill;
+  skills: () => ActionBarSkill[];
+  useSkill: (id: SkillId) => void;
   itemCooldown?:()=>number;
   feedback?: () => CombatActionFeedback;
 }
@@ -54,7 +56,7 @@ let loadedSkill = '';
 let signature = '';
 let nextStructureAt = 0;
 let cachedRoot: HTMLElement | null = null;
-let skillSlots: { slot: HTMLElement; timer: HTMLElement }[] = [];
+let skillSlots: { slot: HTMLElement; timer: HTMLElement; action: ActionBarSkill }[] = [];
 let potionSlots: { slot: HTMLElement; timer: HTMLElement }[] = [];
 const pressAnimations = new WeakMap<HTMLElement, Animation>();
 let explainUntil = 0, explained = '';
@@ -70,7 +72,7 @@ export function explainAction(message:string){
 
 const root = () => cachedRoot?.isConnected ? cachedRoot : cachedRoot = document.querySelector<HTMLElement>('#action-bar')!;
 
-function load(skillId = hooks.skill().id) {
+function load(skillId = hooks.skills().map(skill => skill.id).join('|')) {
   const key = hooks.storageKey();
   const skill = skillId;
   if (key === loadedKey && skill === loadedSkill) return;
@@ -84,17 +86,21 @@ function load(skillId = hooks.skill().id) {
     const raw = JSON.parse(localStorage.getItem(key) ?? '[]');
     // Formato antiguo: una sola lista plana de huecos.
     const saved: unknown[][] = Array.isArray(raw) && raw.every((p) => !Array.isArray(p)) ? [raw] : Array.isArray(raw) ? raw : [];
+    const knownSkills = new Set(hooks.skills().map(skill => skill.id));
     saved.slice(0, ACTION_BAR_PAGES).forEach((p, n) => {
-      if (Array.isArray(p)) p.slice(0, ACTION_BAR_SIZE).forEach((id, i) => { if (typeof id === 'string' && (itemDef(id)?.usable || id === skill)) pages[n][i] = id; });
+      if (Array.isArray(p)) p.slice(0, ACTION_BAR_SIZE).forEach((id, i) => { if (typeof id === 'string' && (itemDef(id)?.usable || knownSkills.has(id))) pages[n][i] = id; });
     });
   } catch { /* datos corruptos: barra vacía */ }
   slots = pages[0];
-  if (!localStorage.getItem(`${key}:learned:${skill}`)) {
-    const freePage = pages.find(p => p.includes(null));
-    if (freePage) {
-      if (!pages.some(p => p.includes(skill))) freePage[freePage.indexOf(null)] = skill;
-      localStorage.setItem(`${key}:learned:${skill}`, 'true');
-      save();
+  for (const learned of hooks.skills()) {
+    const marker = `${key}:learned:${learned.id}`;
+    if (!localStorage.getItem(marker)) {
+      const freePage = pages.find(p => p.includes(null));
+      if (freePage && !pages.some(p => p.includes(learned.id))) {
+        freePage[freePage.indexOf(null)] = learned.id;
+        save();
+      }
+      localStorage.setItem(marker, 'true');
     }
   }
   signature = '';
@@ -124,13 +130,13 @@ export function actionBarSkillBinding(){
 /** Dibuja la barra solo si algo ha cambiado (para no romper el arrastre ni los tooltips). */
 export function renderActionBar(force = false) {
   const skill = hooks.skill();
-  load(skill.id);
+  load();
   const now = performance.now();
   // Inventario y tooltips no necesitan rehacerse a la frecuencia del render 3D.
   // El reloj de las recargas sí se actualiza suavemente cada frame.
   if (!force && signature && now < nextStructureAt) { updateActionState(skill); return; }
   nextStructureAt = now + 100;
-  const next = `${page}|${skill.id}:${skill.rank}:${JSON.stringify(skill.equipment)}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
+  const next = `${page}|${hooks.skills().map(skill=>`${skill.id}:${skill.rank}:${skill.available}`).join(',')}|${JSON.stringify(skill.equipment)}|${slots.map((id) => (id ? `${id}:${hooks.count(id)}:${hooks.bound(id)}` : '-')).join(',')}`;
   if (!force && next === signature) { updateActionState(skill); return; }
   signature = next;
   const focusedIndex = document.activeElement instanceof HTMLElement && root().contains(document.activeElement)
@@ -180,16 +186,17 @@ function updateActionState(skill: ActionBarSkill,immediate=false) {
   if(!immediate&&now<nextVisualAt)return;
   nextVisualAt=now+1000/30;
   const feedback = hooks.feedback?.();
-  for (const { slot, timer } of skillSlots) {
+  for (const { slot, timer, action } of skillSlots) {
+    const current = hooks.skill(action.id);
     // Full server snapshots replace equipment objects even when their values match.
     // Keep the tooltip's live attribute context without rebuilding the action slot.
-    if(skillTooltipEquipment(slot)!==skill.equipment)setSkillTooltip(slot,skill.cls,skill.rank,skill.equipment);
-    const unavailable = !skill.available;
+    if(skillTooltipEquipment(slot)!==current.equipment||slot.dataset.skillRank!==String(current.rank))setSkillTooltip(slot,current.cls,current.skillId,current.rank,current.equipment);
+    const unavailable = !current.available;
     slot.classList.toggle('empty', unavailable);
-    slot.classList.toggle('insufficient-resource', skill.unavailableReason === 'resource');
+    slot.classList.toggle('insufficient-resource', current.unavailableReason === 'resource');
     const busy=feedback?.state==='casting'||feedback?.state==='recovering'&&!feedback.interruptible;
-    setAttribute(slot, 'aria-disabled', String(unavailable||skill.cooldown>0||busy));
-    cooldownState(slot, timer, skill.cooldown, skill.duration);
+    setAttribute(slot, 'aria-disabled', String(unavailable||current.cooldown>0||busy));
+    cooldownState(slot, timer, current.cooldown, current.duration);
     const state = feedback?.state==='casting'? 'casting' : unavailable||feedback?.interruptible||feedback?.state==='resolving' ? 'idle' : feedback?.state ?? 'idle';
     slot.classList.toggle('action-rejected',now<explainUntil);
     if (slot.dataset.actionState !== state) slot.dataset.actionState = state;
@@ -197,10 +204,10 @@ function updateActionState(skill: ActionBarSkill,immediate=false) {
       slot.style.setProperty('--action-progress', `${Math.max(0, Math.min(1, 1 - feedback.remaining / Math.max(.01, feedback.duration))) * 100}%`);
     }
     const status = state === 'casting' ? t('Preparando habilidad.')
-      : skill.cooldown > 0 ? t('Recuperándose: {n} s', { n: skill.cooldown < 1 ? (Math.ceil(skill.cooldown * 10) / 10).toFixed(1) : Math.ceil(skill.cooldown) })
-      : skill.unavailableReason === 'dead' ? t('Debes volver a la vida.')
-      : skill.unavailableReason === 'weapon' ? t('Equipa un arma de tu clase.')
-      : skill.unavailableReason === 'resource' ? t('Recurso insuficiente: {current} / {cost}.', { current: Math.floor(skill.resource ?? 0), cost: Math.ceil(skill.cost ?? 0) })
+      : current.cooldown > 0 ? t('Recuperándose: {n} s', { n: current.cooldown < 1 ? (Math.ceil(current.cooldown * 10) / 10).toFixed(1) : Math.ceil(current.cooldown) })
+      : current.unavailableReason === 'dead' ? t('Debes volver a la vida.')
+      : current.unavailableReason === 'weapon' ? t('Equipa un arma de tu clase.')
+      : current.unavailableReason === 'resource' ? t('Recurso insuficiente: {current} / {cost}.', { current: Math.floor(current.resource ?? 0), cost: Math.ceil(current.cost ?? 0) })
       : state === 'recovering' ? t('Terminando la habilidad: {n} s',{n:feedback!.remaining.toFixed(1)})
       : state === 'approaching' ? t('Acercándote para usar la habilidad.')
       : t('Habilidad lista');
@@ -241,10 +248,11 @@ function slotElement(id: string | null, index: number, skill: ActionBarSkill) {
     const isSkill = id.startsWith('skill:');
     const count = hooks.count(id);
     slot.classList.add('filled');
-    slot.classList.toggle('empty', isSkill ? !skill.available || id !== skill.id : count === 0);
-    slot.classList.toggle('on-cooldown', isSkill && skill.cooldown > 0);
+    const action = isSkill ? hooks.skill(id) : skill;
+    slot.classList.toggle('empty', isSkill ? !action.available : count === 0);
+    slot.classList.toggle('on-cooldown', isSkill && action.cooldown > 0);
     if (isSkill) {
-      setSkillTooltip(slot, skill.cls, skill.rank, skill.equipment);
+      setSkillTooltip(slot, action.cls, action.skillId, action.rank, action.equipment);
     } else {
       slot.dataset.itemId = id;
       setItemTooltip(slot, id, hooks.bound(id));
@@ -260,7 +268,8 @@ function slotElement(id: string | null, index: number, skill: ActionBarSkill) {
       const sweep = document.createElement('span'); sweep.className = 'ab-cooldown-sweep'; sweep.setAttribute('aria-hidden','true');
       const timer = document.createElement('span'); timer.className = 'ab-cooldown-time'; timer.setAttribute('aria-hidden','true');
       slot.append(sweep, timer);
-      (isSkill ? skillSlots : potionSlots).push({ slot, timer });
+      if (isSkill) skillSlots.push({ slot, timer, action });
+      else potionSlots.push({ slot, timer });
       if (isSkill) {
         const progress = document.createElement('span'); progress.className = 'ab-action-progress'; progress.setAttribute('aria-hidden', 'true');
         slot.append(progress);
@@ -283,7 +292,7 @@ function slotElement(id: string | null, index: number, skill: ActionBarSkill) {
     slot.classList.remove('over');
     const skillDrop = e.dataTransfer?.getData(DRAG_SKILL_TYPE);
     if (skillDrop) {
-      if (skillDrop !== hooks.skill().id) return;
+      if (!hooks.skills().some(known => known.id === skillDrop)) return;
       for (const p of pages) p.forEach((s, n) => { if (s === skillDrop) p[n] = null; });
       slots[index] = skillDrop;
       save(); renderActionBar();
@@ -295,7 +304,7 @@ function slotElement(id: string | null, index: number, skill: ActionBarSkill) {
     try { parsed = JSON.parse(data); } catch { console.warn('Invalid action-bar drag payload'); return; }
     if (!parsed || typeof parsed !== 'object' || !('id' in parsed) || typeof parsed.id !== 'string') { console.warn('Invalid action-bar drag payload'); return; }
     const dropped = parsed.id;
-    if (!itemDef(dropped)?.usable && dropped !== hooks.skill().id) return;
+    if (!itemDef(dropped)?.usable && !hooks.skills().some(known => known.id === dropped)) return;
     const from = 'from' in parsed ? parsed.from : undefined;
     const fromPage = 'page' in parsed ? parsed.page : page;
     if (typeof from === 'number') {
@@ -323,7 +332,7 @@ export function autoAssignToActionBar(item: string) {
 
 export function assignSkillToActionBar(id: string) {
   load();
-  if (id !== hooks.skill().id) return false;
+  if (!hooks.skills().some(skill => skill.id === id)) return false;
   if (pages.some(p => p.includes(id))) return true;
   const freePage = pages.find(p => p.includes(null));
   if (!freePage) return false;
@@ -337,16 +346,17 @@ export function useActionBarSlot(index: number) {
   load();
   const id = slots[index];
   if (!id) return false;
-  const skill = hooks.skill();
+  const skill = id.startsWith('skill:') ? hooks.skill(id) : hooks.skill();
   const el = root().children[index + 1] as HTMLElement | undefined;
   const potionCooldown = itemDef(id)?.restore ? Math.max(0,hooks.itemCooldown?.()??0) : 0;
   const dead=skill.unavailableReason==='dead';
   const feedback=hooks.feedback?.();
   const busy=feedback?.state==='casting'||feedback?.state==='recovering'&&!feedback.interruptible;
-  const available = id===skill.id ? skill.available&&skill.cooldown<=0&&!busy : !dead&&hooks.count(id)>0&&potionCooldown<=0;
+  const isSkill = id.startsWith('skill:');
+  const available = isSkill ? skill.available&&skill.cooldown<=0&&!busy : !dead&&hooks.count(id)>0&&potionCooldown<=0;
   if (el) pressSlot(el,available);
   if (!available) {
-    explained = id === skill.id ? skill.unavailableReason === 'dead' ? t('Debes volver a la vida.')
+    explained = isSkill ? skill.unavailableReason === 'dead' ? t('Debes volver a la vida.')
       : skill.unavailableReason === 'weapon' ? t('Equipa un arma de tu clase.')
       : skill.unavailableReason === 'resource' ? t('Recurso insuficiente: {current} / {cost}.',{current:Math.floor(skill.resource??0),cost:Math.ceil(skill.cost??0)})
       : busy ? t('Espera a que termine el golpe actual.')
@@ -355,7 +365,7 @@ export function useActionBarSlot(index: number) {
     explainUntil=performance.now()+650;updateActionState(skill,true);
     return true;
   } else { explainUntil=0;explained=''; }
-  if (id === skill.id) hooks.useSkill();
+  if (isSkill) hooks.useSkill(skill.skillId);
   else if (!id.startsWith('skill:')) hooks.use(id);
   return true;
 }

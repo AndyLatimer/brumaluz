@@ -170,10 +170,16 @@ begin
   if not found then raise exception 'PORTAL_NOT_FOUND'; end if;
   -- La casa de Isberto está cerrada hasta que él invita al jugador (los personajes anteriores a la historia, siempre abierta).
   if p.target_map = 'casa_de_isberto_interior' and not public.game_isberto_house_open(c.data) then raise exception 'PORTAL_LOCKED'; end if;
+  if p.target_map='casa_del_olmo' then
+    if not public.game_home_owned(c.data,'olmo') and public.game_home_owner(c.id,c.data||jsonb_build_object('location',p.target_map))=c.id then raise exception 'Esta casa todavía no te pertenece. Consulta Mis viviendas.';end if;
+  end if;
   distance := sqrt(power((w.position ->> 'x')::double precision - p.x, 2) + power((w.position ->> 'z')::double precision - p.z, 2));
   if distance is null or distance > p.radius + 0.5 then raise exception 'PORTAL_TOO_FAR'; end if;
   if not public.game_location_contains(p.target_map, (p.target ->> 'x')::double precision, (p.target ->> 'z')::double precision) then
     raise exception 'INVALID_WORLD_STATE';
+  end if;
+  if nullif(c.data->'rpg'->'homes'->>'visit','') is not null and (here in ('habitacion_posada_lucero_del_alba','casa_del_olmo') or coalesce(c.data->'rpg'->'homes'->>'visitHome','lucero') is distinct from case p.target_map when 'habitacion_posada_lucero_del_alba' then 'lucero' when 'casa_del_olmo' then 'olmo' end) then
+    c.data:=jsonb_set(c.data,'{rpg,homes}',(c.data->'rpg'->'homes')-'visit'-'visitHome');
   end if;
   c.data := public.game_store(c.id, c.data || jsonb_build_object(
     'location', p.target_map, 'position', p.target, 'position_at', extract(epoch from now())));
@@ -190,11 +196,13 @@ begin
 end;
 $$;
 create or replace function public.heal_ally(p_character_id uuid,p_target uuid) returns jsonb language plpgsql security definer set search_path='' as $$
-declare c public.characters;target public.characters;w public.world_players;other public.world_players;stamp numeric:=extract(epoch from clock_timestamp());amount numeric;cost numeric;fraction numeric;hp int;room int;result jsonb;party uuid;
+declare c public.characters;target public.characters;w public.world_players;other public.world_players;stamp numeric:=extract(epoch from clock_timestamp());amount numeric;cost numeric;fraction numeric;hp int;room int;result jsonb;party uuid;definition jsonb;rank int;deadline numeric;ready jsonb;
 begin
  perform pg_catalog.pg_advisory_xact_lock(731029,3);c:=public.game_lock_character(p_character_id);c.data:=public.game_wilderness_consume(c.id,c.data);stamp:=extract(epoch from clock_timestamp());
  if c.data->>'cls'<>'clerigo' or not public.game_has_weapon(c.data) or public.game_health(c.data)=0 then raise exception 'No puedes usar Curación.';end if;
- if stamp<coalesce((c.data->>'combatNextSkill')::numeric,0) then raise exception 'COMBAT_COOLDOWN';end if;
+ definition:=public.game_skill_data('healing');rank:=public.game_skill_rank(c.data,'healing');
+ deadline:=coalesce((c.data->'combatSkillReadyAt'->>'healing')::numeric,(c.data->>'combatNextSkill')::numeric,0);
+ if stamp<deadline then raise exception 'COMBAT_COOLDOWN';end if;
  select party_id into party from public.party_members where character_id=c.id;
  if p_target<>c.id and (party is null or not exists(select 1 from public.party_members where character_id=p_target and party_id=party)) then raise exception 'Selecciona un compañero de tu grupo.';end if;
  select * into target from public.characters where id=p_target for update;
@@ -207,12 +215,13 @@ begin
  target.data:=public.game_wilderness_consume(target.id,public.game_food_data(target.id,public.game_party_data(target.id,target.data)));
  if target.id=c.id then c.data:=target.data;end if;hp:=public.game_health(target.data);room:=public.game_max_health(target.data)-hp;
  if hp<=0 or room<=0 then raise exception 'El aliado no necesita curación o está derrotado.';end if;
- cost:=12*(1-(public.game_set_bonuses(c.data)->>'skillCost')::numeric)*public.game_intellect_efficiency(c.data);
+ cost:=(definition->>'cost')::numeric*(1-(public.game_set_bonuses(c.data)->>'skillCost')::numeric)*public.game_intellect_efficiency(c.data);
  if (public.game_public_vitals(c.data)->>'resource')::numeric<cost then raise exception 'COMBAT_NOT_ENOUGH_RESOURCE';end if;
- amount:=(public.game_equipment_stat(c.data,'healing')+4*(public.game_skill_rank(c.data)-1))*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(public.game_set_bonuses(c.data)->>'healing')::numeric)*(1+(public.game_set_bonuses(c.data)->>'skillPower')::numeric);
+ amount:=((definition->>'baseHealing')::numeric+public.game_equipment_stat(c.data,'healing')+(rank-1)*(definition->>'rankBonus')::numeric)*coalesce((definition->>'power')::numeric,1)*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(public.game_set_bonuses(c.data)->>'healing')::numeric)*(1+(public.game_set_bonuses(c.data)->>'skillPower')::numeric);
  amount:=amount+coalesce((target.data->>'health_regen')::numeric,0);fraction:=case when amount>=room then 0 else amount-floor(amount) end;amount:=least(room,floor(amount));
  cost:=cost+coalesce((c.data->>'resourceCostFraction')::numeric,0);
- c.data:=c.data||jsonb_build_object('resource',(public.game_public_vitals(c.data)->>'resource')::numeric-floor(cost),'resourceCostFraction',cost-floor(cost),'combatNextSkill',stamp+6,'combatVisual',jsonb_build_object('at',stamp,'action','heal'),'combat_at',stamp);
+ ready:=coalesce(c.data->'combatSkillReadyAt','{}')||jsonb_build_object('healing',stamp+(definition->>'cooldown')::numeric);
+ c.data:=c.data||jsonb_build_object('resource',(public.game_public_vitals(c.data)->>'resource')::numeric-floor(cost),'resourceCostFraction',cost-floor(cost),'combatSkillReadyAt',ready,'combatNextSkill',stamp+(definition->>'cooldown')::numeric,'combatVisual',jsonb_build_object('at',stamp,'action','heal'),'combat_at',stamp);
  if target.id=c.id then c.data:=c.data||jsonb_build_object('health',hp+amount,'health_regen',fraction);
  else perform public.game_store(target.id,target.data||jsonb_build_object('health',hp+amount,'health_regen',fraction));end if;
  if c.data ? 'expeditionId' then
@@ -221,5 +230,5 @@ begin
  perform public.game_wilderness_heal_threat(c.id,p_target,amount);
  if c.data->>'location'='pompelin' then c.data:=public.game_wilderness_context(c.id,c.data,(w.position->>'x')::numeric,(w.position->>'z')::numeric);end if;
  c.data:=public.game_store(c.id,c.data);
- return jsonb_build_object('data',c.data,'wilderness',public.game_wilderness_view(c.id),'vitals',public.game_public_vitals(c.data),'encounter',c.data->'combatEncounter','healing',amount,'damage',0,'healTarget',p_target,'skillCooldown',6,'action','skill');
+ return jsonb_build_object('data',c.data,'wilderness',public.game_wilderness_view(c.id),'skillId','healing','skillReadyAt',ready->>'healing','skillCooldowns',ready,'vitals',public.game_public_vitals(c.data),'encounter',c.data->'combatEncounter','healing',amount,'damage',0,'healTarget',p_target,'skillCooldown',(definition->>'cooldown')::numeric,'action','skill');
 end $$;

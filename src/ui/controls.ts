@@ -43,6 +43,8 @@ export const CONTROLS: ControlBinding[] = [
   { keys: ['KeyM'], caption: 'M', label: 'Abrir / cerrar el mapa de la zona', group: 'system' },
   { keys: ['KeyO'], caption: 'O', label: 'Abrir / cerrar las opciones', group: 'system' },
   { keys: ['Backquote'], caption: 'º', label: 'Mostrar / ocultar el minimapa', group: 'system' },
+  { keys: ['F8'], caption: 'F8', label: 'Reportar bug o mejora con captura', group: 'system' },
+  { keys: ['ShiftLeft', 'ShiftRight', 'F8'], caption: 'Mayús + F8', label: 'Ver lista de reportes guardados', group: 'system' },
   { mouse: 'click', label: 'Ir al punto', group: 'move' },
   { mouse: 'drag', label: 'Arrastrar con botón derecho o izquierdo para girar la cámara', group: 'camera' },
   { mouse: 'wheel', label: 'Acercar / alejar', group: 'camera' },

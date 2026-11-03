@@ -1,0 +1,317 @@
+{
+  "label": "optimized",
+  "scope": "Fresh Chromium context on localhost, production build, compatible mode; software-rendered startup, not a hardware FPS benchmark",
+  "htmlBytes": 45327,
+  "readyMs": 12512.5576,
+  "transferredBytes": 16049346,
+  "requests": 81,
+  "glbRequests": 53,
+  "heapBytes": 541560906,
+  "geometries": 151,
+  "textures": 202,
+  "documents": [
+    {
+      "transferBytes": 10881,
+      "decodedBytes": 45327
+    }
+  ],
+  "resources": [
+    {
+      "path": "/assets/index-CFJ1ncSG.js",
+      "bytes": 1357720
+    },
+    {
+      "path": "/assets/medieval-bridge-DqnhebGm.js",
+      "bytes": 58
+    },
+    {
+      "path": "/assets/Textiles_Stack_Small-COfzzxmS.js",
+      "bytes": 68
+    },
+    {
+      "path": "/assets/Iron_Bars-B47jUVZN.js",
+      "bytes": 57
+    },
+    {
+      "path": "/assets/Wood_Log_Stack-BdIsjgbG.js",
+      "bytes": 57
+    },
+    {
+      "path": "/assets/Wood_Planks_Stack_Small-CN7WCiS5.js",
+      "bytes": 66
+    },
+    {
+      "path": "/assets/table_small_decorated_A-jXDW8mf2.js",
+      "bytes": 66
+    },
+    {
+      "path": "/assets/barrel_small_stack-qrX_RUcO.js",
+      "bytes": 66
+    },
+    {
+      "path": "/assets/Rock_1_A_Color1-B5aq48i5.js",
+      "bytes": 111
+    },
+    {
+      "path": "/assets/brumaluz-emblem-94j12bhC.svg",
+      "bytes": 1165
+    },
+    {
+      "path": "/assets/index-CiipUNd8.css",
+      "bytes": 61685
+    },
+    {
+      "path": "/assets/brumaluz-login-day-D9wIBzRL.svg",
+      "bytes": 9982
+    },
+    {
+      "path": "/assets/brumaluz-login-sunset-COcu5Adt.svg",
+      "bytes": 10033
+    },
+    {
+      "path": "/assets/brumaluz-login-D-QPbHGN.svg",
+      "bytes": 10258
+    },
+    {
+      "path": "/assets/Mage-BwgshFhM.glb",
+      "bytes": 1010892
+    },
+    {
+      "path": "/assets/Knight-aLQjuKCX.glb",
+      "bytes": 364400
+    },
+    {
+      "path": "/assets/Rogue-BZijgmTN.glb",
+      "bytes": 326876
+    },
+    {
+      "path": "/assets/Barbarian-BxWZDNG-.glb",
+      "bytes": 319456
+    },
+    {
+      "path": "/assets/helpers-Iqi6xVHg.glb",
+      "bytes": 461204
+    },
+    {
+      "path": "/assets/medieval-Czjy52iX.glb",
+      "bytes": 1078892
+    },
+    {
+      "path": "/favicon.ico",
+      "bytes": 8514
+    },
+    {
+      "path": "/assets/traje_guerrero_artesano-DDfTSKn9.glb",
+      "bytes": 1409744
+    },
+    {
+      "path": "/assets/espada_inicial-BWXR4Sn1.glb",
+      "bytes": 51848
+    },
+    {
+      "path": "/assets/escudo_inicial-BA2eTXhk.glb",
+      "bytes": 78232
+    },
+    {
+      "path": "/assets/baston_inicial-Crx6wd9A.glb",
+      "bytes": 54680
+    },
+    {
+      "path": "/assets/daga_inicial-DgzQaFGb.glb",
+      "bytes": 48060
+    },
+    {
+      "path": "/assets/daga_secundaria_inicial-CaDclVYT.glb",
+      "bytes": 48084
+    },
+    {
+      "path": "/assets/varita_inicial-CiWafmkn.glb",
+      "bytes": 42884
+    },
+    {
+      "path": "/assets/libro_inicial-D7M8YMCN.glb",
+      "bytes": 51244
+    },
+    {
+      "path": "/assets/ballesta_inicial-Cldg43-R.glb",
+      "bytes": 64984
+    },
+    {
+      "path": "/assets/ambient-animations-oatOrRmb.glb",
+      "bytes": 1038716
+    },
+    {
+      "path": "/assets/Rig_Medium_CombatRanged-CRh8asHM.glb",
+      "bytes": 970624
+    },
+    {
+      "path": "/assets/Rig_Medium_CombatMelee-DFUcgR2f.glb",
+      "bytes": 952168
+    },
+    {
+      "path": "/assets/creator-parts-CA_xzSHE.glb",
+      "bytes": 160688
+    },
+    {
+      "path": "/assets/Rogue_Hooded-JD7-1wHe.glb",
+      "bytes": 379060
+    },
+    {
+      "path": "/assets/brumaluz-BpR9wwrC.js",
+      "bytes": 234084
+    },
+    {
+      "path": "/assets/Bush_4_A_Color1-BuGNP0jo.js",
+      "bytes": 63
+    },
+    {
+      "path": "/assets/flax_flower_B-DPYPQQww.js",
+      "bytes": 102
+    },
+    {
+      "path": "/assets/Wood_Log_A-CPIxnH3x.js",
+      "bytes": 58
+    },
+    {
+      "path": "/assets/Wood_Planks_Stack_Large-D3RtgQDT.js",
+      "bytes": 66
+    },
+    {
+      "path": "/assets/crate_carrots-DysBsxTk.js",
+      "bytes": 56
+    },
+    {
+      "path": "/assets/crate_onions-CZlEM2O1.js",
+      "bytes": 60
+    },
+    {
+      "path": "/assets/pickaxe-CxlfPXZw.js",
+      "bytes": 50
+    },
+    {
+      "path": "/assets/city-DTwWa4ft.glb",
+      "bytes": 3080176
+    },
+    {
+      "path": "/assets/Textiles_Stack_Small-DzsonBc_.glb",
+      "bytes": 92520
+    },
+    {
+      "path": "/assets/Rock_1_A_Color1-CCE1Huep.glb",
+      "bytes": 52880
+    },
+    {
+      "path": "/assets/Bush_1_A_Color1-Cfh8j2Do.glb",
+      "bytes": 52404
+    },
+    {
+      "path": "/assets/Iron_Bars-JR1etIs1.glb",
+      "bytes": 61768
+    },
+    {
+      "path": "/assets/Wood_Planks_Stack_Small-DkUUkzEF.glb",
+      "bytes": 42500
+    },
+    {
+      "path": "/assets/barrel_small_stack-DsEvStB6.glb",
+      "bytes": 91944
+    },
+    {
+      "path": "/assets/Wood_Log_Stack-DnUyTjHJ.glb",
+      "bytes": 218684
+    },
+    {
+      "path": "/assets/well-Buvy3RhG.glb",
+      "bytes": 59164
+    },
+    {
+      "path": "/assets/Bush_4_A_Color1-CQ4SiOX-.glb",
+      "bytes": 51080
+    },
+    {
+      "path": "/assets/market-D6fP0NH0.glb",
+      "bytes": 102080
+    },
+    {
+      "path": "/assets/crate_carrots-DE1oiLgE.glb",
+      "bytes": 85608
+    },
+    {
+      "path": "/assets/crate_onions-BSq7rtGY.glb",
+      "bytes": 83088
+    },
+    {
+      "path": "/assets/crate_cheese-CK6_xrDm.glb",
+      "bytes": 72672
+    },
+    {
+      "path": "/assets/crate_tomatoes-DnbnE5Qb.glb",
+      "bytes": 104332
+    },
+    {
+      "path": "/assets/Rock_3_A_Color1-D4tlnlOg.glb",
+      "bytes": 54492
+    },
+    {
+      "path": "/assets/Rock_3_D_Color1-CzSe9WJY.glb",
+      "bytes": 54364
+    },
+    {
+      "path": "/assets/Rock_2_A_Color1-CHl1NED1.glb",
+      "bytes": 50892
+    },
+    {
+      "path": "/assets/Rock_1_C_Color1-C0tbq0wk.glb",
+      "bytes": 52944
+    },
+    {
+      "path": "/assets/Stone_Bricks_Stack_Large-DFlNKQzm.glb",
+      "bytes": 108880
+    },
+    {
+      "path": "/assets/pickaxe-x62bCbOG.glb",
+      "bytes": 50592
+    },
+    {
+      "path": "/assets/watchtower-DirR-C5u.glb",
+      "bytes": 79440
+    },
+    {
+      "path": "/assets/farm_plot-BrXMloT7.glb",
+      "bytes": 52968
+    },
+    {
+      "path": "/assets/farm_wheat-C8GVqp_R.glb",
+      "bytes": 13604
+    },
+    {
+      "path": "/assets/lumbermill-F8o1yljd.glb",
+      "bytes": 82572
+    },
+    {
+      "path": "/assets/Wood_Planks_Stack_Large-BtQFcb3C.glb",
+      "bytes": 106888
+    },
+    {
+      "path": "/assets/Wood_Log_A-iqcd49go.glb",
+      "bytes": 67412
+    },
+    {
+      "path": "/assets/barracks-Cbw3z3f7.glb",
+      "bytes": 114432
+    },
+    {
+      "path": "/assets/house-BUgRS7e5.glb",
+      "bytes": 73136
+    },
+    {
+      "path": "/assets/flax_flower_A-DTHP624f.glb",
+      "bytes": 42692
+    },
+    {
+      "path": "/assets/flax_flower_B-BU9IHFf9.glb",
+      "bytes": 42476
+    }
+  ],
+  "errors": []
+}

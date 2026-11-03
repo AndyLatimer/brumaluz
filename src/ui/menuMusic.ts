@@ -1,6 +1,10 @@
 import { t } from './i18n';
+import { CREATOR_MUSIC, creatorMusicBar } from './creatorMusicScore';
+import { primeMusicVoices, renderNote, type MusicVoice } from '../world/dayMusicVoice';
 
-// Composiciones originales para el dia y la noche, sin archivos externos.
+const OUTPUT_GAIN = 1.4;
+
+// Composiciones originales para el acceso y el creador, sin archivos externos.
 export function initMenuMusic() {
   const button = document.getElementById('menu-music') as HTMLButtonElement;
   const message = document.getElementById('menu-music-message')!;
@@ -11,12 +15,15 @@ export function initMenuMusic() {
   let timer: number | undefined;
   let active = false;
   let generation = 0;
-  let level = 0.8;
+  let level = 1.0;
   let failed = false;
   let nextBar = 0;
   let bar = 0;
-  let daytime = document.body.classList.contains('daytime');
+  let daytime = document.body.matches('.daytime, .sunset');
+  let creator = false;
+  let creatorBus: GainNode | undefined;
   const voices = new Set<OscillatorNode>();
+  const creatorVoices = new Set<MusicVoice>();
   const chords = [[48, 55, 60, 64], [45, 52, 57, 60], [41, 48, 53, 57], [43, 50, 55, 62]];
   const melody = [[72, 76, 79, 76], [76, 72, 69, 72], [69, 72, 76, 72], [74, 79, 76, 67]];
   const dayChords = [[48, 55, 60, 64], [53, 57, 60, 65], [43, 55, 59, 62], [48, 55, 64, 67]];
@@ -46,6 +53,8 @@ export function initMenuMusic() {
     }
     for (const voice of voices) voice.stop();
     voices.clear();
+    for (const voice of creatorVoices) voice.stop();
+    creatorVoices.clear();
   }
 
   function note(pitch: number, start: number, duration: number, volume: number, pad = false) {
@@ -70,8 +79,20 @@ export function initMenuMusic() {
 
   function schedule() {
     if (!active || !context) return;
+    if (creator && nextBar < context.currentTime - .15) nextBar = context.currentTime + .05;
     // Programar por adelantado evita saltos por variaciones del temporizador.
     while (nextBar < context.currentTime + 0.5) {
+      if (creator) {
+        const beat = 60 / CREATOR_MUSIC.bpm;
+        for (const note of creatorMusicBar(bar)) {
+          const voice = renderNote(context, creatorBus!, note, nextBar + note.beat * beat, note.duration * beat);
+          creatorVoices.add(voice);
+          voice.onended = () => creatorVoices.delete(voice);
+        }
+        nextBar += CREATOR_MUSIC.beatsPerBar * beat;
+        bar++;
+        continue;
+      }
       const index = bar % chords.length;
       if (daytime) {
         for (const pitch of dayChords[index]) note(pitch, nextBar, 3, 0.025, true);
@@ -95,18 +116,51 @@ export function initMenuMusic() {
     }
   }
 
+  function prepareCreatorMix() {
+    if (creatorBus) return;
+    const audio = context!;
+    creatorBus = audio.createGain();
+    const filter = audio.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 6000; filter.Q.value = .45;
+    const compressor = audio.createDynamicsCompressor();
+    compressor.threshold.value = -18; compressor.knee.value = 18; compressor.ratio.value = 2.5;
+    compressor.attack.value = .02; compressor.release.value = .4;
+    const room = audio.createConvolver(), wet = audio.createGain();
+    const impulse = audio.createBuffer(2, Math.ceil(audio.sampleRate * 1.3), audio.sampleRate);
+    let seed = 20261028;
+    for (let channel = 0; channel < 2; channel++) {
+      const data = impulse.getChannelData(channel);
+      for (let i = 0; i < data.length; i++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+        data[i] = ((seed >>> 0) / 2147483648 - 1) * (1 - i / data.length) ** 3;
+      }
+    }
+    room.buffer = impulse; wet.gain.value = .12;
+    creatorBus.connect(filter);
+    creatorBus.connect(room).connect(wet).connect(filter);
+    filter.connect(compressor).connect(master!);
+  }
+
   async function start() {
     const version = ++generation;
     active = true;
     try {
-      context ??= new AudioContext();
+      if (!context) {
+        context = new AudioContext();
+        Object.defineProperty(context, 'brumaluzAudio', { value: 'menu-music' });
+      }
       master ??= context.createGain();
       await context.resume();
       if (version !== generation || !active) return;
       if (context.state !== 'running') throw new Error('AudioContext is not running');
+      if (creator) {
+        prepareCreatorMix();
+        await primeMusicVoices(context, () => version === generation && active);
+        if (version !== generation || !active) return;
+      }
       master.gain.value = 0;
       master.connect(context.destination);
-      master.gain.setTargetAtTime(0.5 * level, context.currentTime, 0.4);
+      master.gain.setTargetAtTime(OUTPUT_GAIN * level, context.currentTime, 0.4);
       nextBar = context.currentTime + 0.05;
       bar = 0;
       schedule();
@@ -122,15 +176,18 @@ export function initMenuMusic() {
   }
 
   function sync() {
-    const nextDaytime = document.body.classList.contains('daytime');
-    if (nextDaytime !== daytime) {
-      daytime = nextDaytime;
+    const nextDaytime = document.body.matches('.daytime, .sunset');
+    const nextCreator = document.getElementById('account-gate')!.hidden
+      && !document.body.matches('.auth-visible, .characters-visible, .playing');
+    if (nextCreator !== creator || (!nextCreator && nextDaytime !== daytime)) {
       if (active) stop();
     }
+    creator = nextCreator;
+    daytime = nextDaytime;
     const onMenu = document.body.matches('.auth-visible, .characters-visible')
       && !document.getElementById('account-gate')!.hidden
       && !document.body.classList.contains('playing');
-    if (enabled && unlocked && onMenu && !document.hidden) {
+    if (enabled && unlocked && level > 0 && (onMenu || creator) && !document.hidden) {
       if (!active) void start();
     } else if (active) stop();
   }
@@ -157,9 +214,14 @@ export function initMenuMusic() {
 
   return {
     sync,
+    get diagnostics() {
+      return { enabled, playing: active && !!timer, creator, voices: voices.size + creatorVoices.size,
+        contextState: context?.state ?? 'uncreated' };
+    },
     setLevel(value: number) {
-      level = Math.max(0, Math.min(1, value));
-      if (active && context && master) master.gain.setTargetAtTime(0.5 * level, context.currentTime, 0.1);
+      level = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+      if (active && context && master) master.gain.setTargetAtTime(OUTPUT_GAIN * level, context.currentTime, 0.1);
+      sync();
     },
     async dispose() {
       stop();

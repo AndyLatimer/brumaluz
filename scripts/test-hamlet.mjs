@@ -60,7 +60,10 @@ test('original Blender pack joins the library without changing the imported inve
   assert.equal(own.packs[0].count, manifest.assets.length);
   assert.deepEqual(own.assets.map(asset => asset.name), manifest.assets.map(asset => asset.name));
   const arboleda = JSON.parse(await readFile(join(libraryDir, 'brumaluz-arboleda', 'catalog.json'), 'utf8'));
-  assert.equal(combined.assets.length, imported.assets.length + own.assets.length + arboleda.assets.length);
+  const worldProps = JSON.parse(await readFile(join(libraryDir, 'pompelin-world-props', 'catalog.json'), 'utf8'));
+  const home = JSON.parse(await readFile(join(libraryDir, 'brumaluz-home', 'catalog.json'), 'utf8'));
+  const lagto = JSON.parse(await readFile(join(libraryDir, 'brumaluz-lagto', 'catalog.json'), 'utf8'));
+  assert.equal(combined.assets.length, imported.assets.length + own.assets.length + arboleda.assets.length + worldProps.assets.length + home.assets.length + lagto.assets.length);
   assert.equal(new Set(combined.assets.map(asset => asset.id)).size, combined.assets.length);
   assert.ok(own.assets.length > 0);
 });

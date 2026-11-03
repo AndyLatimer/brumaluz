@@ -767,7 +767,8 @@ test('publishing preserves multiple maps, generates SQL and rejects broken arriv
   assert.match(module, new RegExp(`${library.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?url';`));
   assert.ok(module.includes(JSON.stringify(library.id)));
   assert.ok(!module.includes('city/home_A'), 'las piezas de la ciudad ya van en el juego');
-  assert.match(await readFile(join(publishDirectory, 'published.ts'), 'utf8'), /import \* as m0 from '\.\/maps\/ciudad_test';[\s\S]*PUBLISHED_WORLD/);
+  assert.match(await readFile(join(publishDirectory, 'published.ts'), 'utf8'), /\(\) => import\('\.\/maps\/ciudad_test'\)/);
+  assert.match(await readFile(join(publishDirectory, 'published-standalone.ts'), 'utf8'), /import \* as m0 from '\.\/maps\/ciudad_test';[\s\S]*PUBLISHED_WORLD/);
   // El módulo generado se resuelve tal cual (rutas relativas a la biblioteca correctas).
   const loaded = await server.ssrLoadModule(join(publishDirectory, 'maps', 'ciudad_test.ts'));
   assert.equal(loaded.map.id, 'ciudad_test');

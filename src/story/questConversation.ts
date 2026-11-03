@@ -9,7 +9,7 @@ export function questConversation(q: QuestDefinition, phase: QuestPhase, npcName
   for (const n of q.dialogue.nodes) conversation.nodes[n.id] = {
     text:n.text, speaker:n.speaker ? npcName(n.speaker) : undefined,
     quest: n.id === q.dialogue.entries.offer || n.id === q.dialogue.entries.ready ? {
-      title:q.title,objective:q.objectives.map(o => o.description).join('\n'),
+      title:q.title,objective:q.objectives.map((o,index) => `${q.objectiveOrder === 'sequence' ? `${index+1}. ` : ''}${o.description}`).join('\n'),
       experience:q.rewards.experience,pelines:q.rewards.pelines,turnIn:n.id === q.dialogue.entries.ready,
       items:q.rewards.items.map(r => ({ label:itemName(r.item), count:r.count })),
     } : undefined,

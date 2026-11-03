@@ -97,7 +97,7 @@ function command(action: CombatCommand) {
   render();
 }
 function render() {
-  const vitals = vitalsOf({...defaultChar(),cls});
+  const vitals = vitalsOf({...defaultChar(),cls,equipment});
   for(const [id,value,max] of [
     ['health',state.health,state.maxHealth],['resource',state.resource,vitals.maxResource],['enemy',state.enemyHealth,100],
   ] as const) {
@@ -158,7 +158,7 @@ const timer=window.setInterval(()=>{
   }
   if(state.health===0&&automatic){automatic=false;approaching=false;message('Has caído. Puedes reaparecer.');}
   if(state.enemyHealth===0&&automatic){automatic=false;approaching=false;message('Rival derrotado. Sin recompensas en este banco de pruebas.');}
-  const vitals=vitalsOf({...defaultChar(),cls});
+  const vitals=vitalsOf({...defaultChar(),cls,equipment});
   state=regenerateCombat(state,vitals.maxResource,vitals.resourceKind,dt,time-lastCombat<REGENERATION.combatGrace);
   render();
 },16);

@@ -30,7 +30,7 @@ export function applyVolumes() {
 applyVolumes();
 export function setWorldMusicEnabled(enabled:boolean){settings.musicEnabled=enabled;saveSettings(settings);worldMusic.setEnabled(enabled);refreshAmbientControls();}
 export function updateWorldAudio(hour:number,inside:boolean){
-  worldMusic.update({playing:play.mode==='play'&&!play.mapTravelling,hour,inside,
+  worldMusic.update({playing:play.mode==='play',hour,inside,
     dialogue:document.body.classList.contains('conversation-open')||document.body.classList.contains('cinematic-open'),combat:isInCombat(fight.combatEncounter)});
   ambientSoundscape.setWorldTime(hour,inside);
 }

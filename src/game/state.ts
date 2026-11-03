@@ -21,7 +21,7 @@ import type { createTargetFrame } from '../ui/targetFrame';
 
 export type Focus = 'body' | 'face';
 
-export type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'bank' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map' | 'professions';
+export type PlayerWindow = 'inventory' | 'sheet' | 'vendor' | 'bank' | 'social' | 'quests' | 'skills' | 'collections' | 'loot' | 'map' | 'professions' | 'homes';
 
 /** Cuenta y personaje activos, y la conexión con el mundo. */
 export const session = {
@@ -59,6 +59,7 @@ export const play = {
   portalsArmed: false,
   char: undefined! as Character,
   pendingHop: false,
+  creatorWalkPreview: false,
   rebuildQueued: false,
   ambientEnabled: localStorage.getItem('brumaluz-ambient') !== 'off',
   running: true,

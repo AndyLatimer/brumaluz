@@ -1,0 +1,19 @@
+{
+  "banco": {
+    "label": "Un banco para el taller",
+    "job": "ebanisteria",
+    "description": "El maestro prepara un banco para quienes pasan por el taller. Lleva dos componentes de Ebanistería de Aprendiz; la receta que aprendiste en la iniciación sigue sirviendo.",
+    "thanks": "Con estas piezas puedo terminar el banco. Ya sé a quién pedir ayuda cuando falte madera bien trabajada. Guarda estos Pelines para tu casa.",
+    "ingredients": {"componente_ebanisteria_0": 2},
+    "pelines": 75
+  },
+  "plantas": {
+    "label": "Verde en las ventanas",
+    "job": "alquimia",
+    "description": "Ayuda con las plantas del barrio: fabrica dos componentes de Alquimia de Aprendiz. Te reservarán un macetero para tu hogar.",
+    "thanks": "Las plantas ya tienen con qué agarrar. Este macetero es para tu ventana; llévatelo cuando te mudes o disfrútalo ya en la posada.",
+    "ingredients": {"componente_alquimia_0": 2},
+    "pelines": 25,
+    "gift": "mueble_macetero_0"
+  }
+}

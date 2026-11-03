@@ -4,9 +4,11 @@ import { coatMark } from '../../data/data';
 import type { HeadOptions } from './types';
 import { V, softBlushTexture, PI } from './geometry';
 import { detailParts } from './detailLayers';
+import { faceInk } from './faceInk';
+import { BROW, EYE } from './eyes';
 
 /** Detalles de la cara de la cabeza (parte de buildHead). */
-export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, rayHead, nose, o, mouthY }: { extraMat: (c: string) => THREE.Material; facing: (x: number, y: number) => THREE.Euler; onFace: (x: number, y: number, out?: number) => THREE.Vector3; conform: (grp: THREE.Object3D, lift: number, clampY?: number) => void; decals: THREE.Object3D[]; rayHead: (o: THREE.Vector3, d: THREE.Vector3) => { point: THREE.Vector3; normal: THREE.Vector3; } | null; nose: THREE.Vector3; o: HeadOptions; mouthY: number }) {
+export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, rayHead, nose, o, mouthY, eyeX, eyeY }: { extraMat: (c: string) => THREE.Material; facing: (x: number, y: number) => THREE.Euler; onFace: (x: number, y: number, out?: number) => THREE.Vector3; conform: (grp: THREE.Object3D, lift: number, clampY?: number) => void; decals: THREE.Object3D[]; rayHead: (o: THREE.Vector3, d: THREE.Vector3) => { point: THREE.Vector3; normal: THREE.Vector3; } | null; nose: THREE.Vector3; o: HeadOptions; mouthY: number; eyeX: number; eyeY: number }) {
   const decal = (geo: THREE.BufferGeometry, color: string, x: number, y: number, rz = 0, sc = V(1, 1, 1), out = 0.005) => {
     // pegado a la curva de la cara (en las mejillas no se despega)
     const m = new THREE.Mesh(geo, extraMat(color));
@@ -49,6 +51,7 @@ export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, ra
   };
   const cheekY = nose.y - 0.04;
   const details = detailParts(o.detail);
+  const ink = faceInk(rayHead);
   const blushMat = new THREE.MeshBasicMaterial({ map: softBlushTexture(), color: o.makeup === 9 ? o.makeupColor : '#ff6f7a', transparent: true, opacity: details.includes(1) || o.makeup === 9 ? 0.85 : o.race === 'lagto' ? 0.16 : (o.makeup ?? 0) > 0 ? 0.42 : 0.24, depthWrite: false });
   for (const s of [-1, 1]) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.14, 12, 8), blushMat);
@@ -62,40 +65,57 @@ export function buildFaceDetails({ extraMat, facing, onFace, conform, decals, ra
   }
   for (const detail of details) switch (detail) {
     case 1: break;
-    case 2: for (const s of [-1, 1]) for (let k = 0; k < 5; k++) decal(new THREE.CircleGeometry(0.011, 6), '#a0603a', s * (0.2 + (k % 3) * 0.045), cheekY + (k % 2 ? 0.03 : -0.01) - (k > 2 ? 0.035 : 0), 0, V(1, 1, 1), 0.006); break;
-    case 3: // cicatriz en la mejilla, con puntadas
-      decal(new THREE.CapsuleGeometry(0.008, 0.11, 2, 6), '#c47a70', 0.27, cheekY + 0.01, 0.5, V(1, 1, 0.4), 0.008);
-      for (const k of [-1, 0, 1]) decal(new THREE.CapsuleGeometry(0.004, 0.04, 2, 4), '#a8605a', 0.27 - k * 0.03 * Math.sin(0.5), cheekY + 0.01 + k * 0.03 * Math.cos(0.5), 0.5 + PI / 2, V(1, 1, 0.4), 0.01);
+    case 2:
+      for (const side of [-1, 1]) for (let k = 0; k < 13; k++) {
+        const phase = k * 2.39996 + side * .7, radius = .025 + .065 * Math.sqrt(k / 13);
+        const x = side * .255 + Math.cos(phase) * radius, y = cheekY + .006 + Math.sin(phase) * radius * .56;
+        ink.dot(x, y, .0035 + (k * 7 % 5) * .0008, k % 3 ? '#a36c49' : '#b88058', .8 + k % 3 * .12);
+      }
+      break;
+    case 3:
+      ink.stroke([[.302, cheekY - .055], [.275, cheekY - .01], [.253, cheekY + .045]], .004, '#c18478');
+      ink.stroke([[.307, cheekY - .053], [.280, cheekY - .01], [.258, cheekY + .043]], .0017, '#e8b5a0');
+      for (const k of [-1, 0, 1]) ink.stroke([[.267 - k * .012, cheekY + k * .026 - .006], [.286 - k * .012, cheekY + k * .026 + .003]], .0018, '#ad7269', .004);
       break;
     case 4: for (const s of [-1, 1]) for (let k = 0; k < 2; k++) warPaintStripe(s * 0.3, cheekY + 0.02 - k * 0.055, s * -0.2); break;
-    case 5: decal(new THREE.CircleGeometry(0.016, 10), '#3a2420', 0.2, mouthY + 0.01, 0, V(1, 1, 1), 0.006); break;
+    case 5: ink.dot(.2, mouthY + .01, .011, '#594032', .9); break;
     case 6:
-      for (let k = 0; k < 19; k++) {
-        const x = (k - 9) * 0.033, y = cheekY + 0.025 + Math.sin(k * 2.4) * 0.033;
-        decal(new THREE.CircleGeometry(0.006 + k % 3 * 0.0018, 8), '#a3704e', x, y, 0, V(1, 0.85, 1), 0.005);
+      for (let k = 0; k < 37; k++) {
+        const x = (k - 18) * .017 + Math.sin(k * 4.1) * .009, y = cheekY + .023 + Math.sin(k * 2.4) * .034;
+        // The bridge has its own nose volume; leave a narrow clear strip rather than burying ink inside it.
+        if (Math.abs(x) < .065) continue;
+        ink.dot(x, y, .003 + k % 4 * .0009, k % 3 ? '#b1835b' : '#9f704d', .8);
       }
       break;
     case 7:
-      for (const side of [-1, 1]) for (let k = 0; k < 4; k++) {
-        const x = side * (0.19 + k * 0.042), y = cheekY + Math.sin(k * 1.7) * 0.043;
-        decal(new THREE.CircleGeometry(k === 1 ? 0.013 : 0.008, 8), '#e0bb74', x, y);
-        if (k < 3) decal(new THREE.CapsuleGeometry(0.002, 0.04, 2, 4), '#d1ad71', x + side * 0.02, y - 0.003, side * -0.9, V(1, 1, 0.3));
+      for (const side of [-1, 1]) {
+        const points: [number, number][] = [[side * .18, cheekY + .009], [side * .228, cheekY + .039], [side * .273, cheekY - .008], [side * .329, cheekY + .017]];
+        for (let k = 0; k < points.length - 1; k++) ink.stroke([points[k], points[k + 1]], .0016, '#b28b51');
+        points.forEach(([x, y], k) => {
+          ink.dot(x, y, k === 1 ? .009 : .0055, '#f2d89b');
+          if (k === 1) { ink.stroke([[x - .014, y], [x + .014, y]], .0015, '#f4d99a', .004); ink.stroke([[x, y - .014], [x, y + .014]], .0015, '#f4d99a', .004); }
+        });
       }
       break;
     case 8:
-      for (const side of [-1, 1]) {
-        decal(new THREE.CircleGeometry(0.035, 24), '#638469', side * 0.29, cheekY, side * 0.65, V(0.55, 1.5, 1));
-        decal(new THREE.CapsuleGeometry(0.0025, 0.075, 2, 4), '#c8c593', side * 0.29, cheekY, side * 0.65, V(1, 1, 0.3), 0.007);
+      for (const side of [-1, 1]) ink.leaf(side * .29, cheekY, side * .65, '#638469');
+      break;
+    case 9: {
+      const x = -eyeX * .96 - .04, y = eyeY - .012 + (EYE[o.eyeShape] ?? EYE[0]).ry * 1.18 + .055 + (BROW[o.brows] ?? BROW[0]).dy;
+      ink.stroke([[x - .012, y - .035], [x, y], [x + .009, y + .038]], .004, '#d9a18a', .011);
+      ink.stroke([[x - .007, y - .035], [x + .004, y], [x + .013, y + .038]], .0015, '#f0c1a2', .012);
+      break;
+    }
+    case 10:
+      for (const side of [-1, 1]) for (let k = 0; k < 3; k++) {
+        const x = side * (.205 + k * .052), y = cheekY - k * .013, h = .023 - k * .003;
+        ink.stroke([[x, y - h], [x, y + h]], .0025, '#568a82');
+        ink.stroke([[x - side * .013, y + h * .7], [x, y], [x + side * .013, y + h * .7]], .0023, '#568a82');
+        if (k === 0) ink.dot(x, y + h + .01, .003, '#82aa91');
       }
       break;
-    case 9:
-      decal(new THREE.CapsuleGeometry(0.006, 0.11, 2, 6), '#d79b87', -0.22, nose.y + 0.22, -0.3, V(1, 1, 0.3), 0.018);
-      break;
-    case 10:
-      for (const side of [-1, 1]) for (let k = 0; k < 3; k++)
-        decal(new THREE.CircleGeometry(0.018 - k * 0.003, 4), '#568a82', side * (0.22 + k * 0.047), cheekY - k * 0.017, PI / 4, V(0.65, 1, 1));
-      break;
   }
+  decals.push(...ink.finish(extraMat));
   return { decal, cheekY, blushMat };
 }
 /** Rasgos del linaje en la cara de la cabeza (parte de buildHead). */

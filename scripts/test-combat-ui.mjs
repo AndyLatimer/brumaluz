@@ -50,9 +50,11 @@ test('quickbar preserves keyboard focus and prevents repeated potion requests du
    const potion=Object.values(ITEMS).find(i=>i.restore?.kind==='health').id;
    localStorage.setItem('ui-bar',JSON.stringify([['skill:heavy_strike',potion]]));
    window.uiBar={bar,potion,count:3,cooldown:0,uses:0,skills:0,state:'idle'};
-   window.uiBar.skill={id:'skill:heavy_strike',cls:'guerrero',rank:1,equipment:starterEquipment('guerrero'),icon:'<svg></svg>',cooldown:0,duration:6,available:true};
-   bar.initActionBar({storageKey:()=> 'ui-bar',count:()=>uiBar.count,bound:()=>false,use:()=>uiBar.uses++,skill:()=>uiBar.skill,useSkill:()=>uiBar.skills++,itemCooldown:()=>uiBar.cooldown,feedback:()=>({state:uiBar.state,remaining:.3,duration:.6,interruptible:uiBar.interruptible})});
+   window.uiBar.skillList=['heavy_strike','shield_rush','sweeping_edge','mountain_breaker'].map(skillId=>({id:`skill:${skillId}`,skillId,cls:'guerrero',rank:1,equipment:starterEquipment('guerrero'),icon:'<svg></svg>',cooldown:0,duration:6,available:true}));
+   window.uiBar.skill=uiBar.skillList[0];
+   bar.initActionBar({storageKey:()=> 'ui-bar',count:()=>uiBar.count,bound:()=>false,use:()=>uiBar.uses++,skill:id=>uiBar.skillList.find(skill=>skill.id===id)??uiBar.skill,skills:()=>uiBar.skillList,useSkill:()=>uiBar.skills++,itemCooldown:()=>uiBar.cooldown,feedback:()=>({state:uiBar.state,remaining:.3,duration:.6,interruptible:uiBar.interruptible})});
   });
+  assert.equal(await page.locator('.ab-slot[data-skill-id]').count(),4,'Each learned class skill is assigned to the action bar');
   await page.locator('.ab-slot[data-item-id]').focus();
   await page.evaluate(()=>{uiBar.count=2;uiBar.bar.renderActionBar(true);});
   assert.equal(await page.locator('.ab-slot[data-item-id]').evaluate(el=>el===document.activeElement),true);
@@ -68,7 +70,7 @@ test('quickbar preserves keyboard focus and prevents repeated potion requests du
   assert.equal(await page.evaluate(()=>uiBar.skills),0,'Becoming ready never replays rejected presses');
   await page.evaluate(()=>{uiBar.state='casting';uiBar.bar.useActionBarSlot(0);uiBar.bar.renderActionBar(true);});
   assert.equal(await page.evaluate(()=>uiBar.skills),0,'The current skill cannot start twice during preparation');
-  assert.equal(await page.locator('.ab-slot[data-skill-id]').getAttribute('aria-disabled'),'true');
+  assert.equal(await page.locator('.ab-slot[data-skill-id="heavy_strike"]').getAttribute('aria-disabled'),'true');
   await page.evaluate(()=>{uiBar.state='recovering';uiBar.interruptible=true;uiBar.bar.useActionBarSlot(0);});
   assert.equal(await page.evaluate(()=>uiBar.skills),1,'A skill can interrupt an automatic attack recovery');
   await page.evaluate(()=>{uiBar.state='casting';uiBar.bar.renderActionBar();});

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor visual de tiendas y comerciantes · Brumaluz</title>
+    <link rel="icon" type="image/svg+xml" href="./src/assets/brand/brumaluz-favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico" sizes="any">
+  </head>
+  <body>
+    <!-- CABECERA DEL TALLER -->
+    <header class="workshop-header">
+      <div>
+        <span class="eyebrow">Taller de Brumaluz</span>
+        <h1>Editor de tiendas y comerciantes</h1>
+        <p>Configura establecimientos comerciales, mercancías y precios para el MMORPG sin tocar código.</p>
+      </div>
+      <nav aria-label="Navegación del taller">
+        <a href="./npcs.html">NPCs</a>
+        <a href="./maps.html">Mapas</a>
+        <a href="./quests.html">Misiones</a>
+        <a href="./items.html">Objetos</a>
+        <a href="./recipes.html">Recetas</a>
+        <a href="./shops.html" class="active">Tiendas</a>
+        <a href="./assets.html">Recursos</a>
+        <a href="./reports.html">Reportes</a>
+      </nav>
+    </header>
+
+    <!-- BARRA DE ESTADO GLOBAL -->
+    <div id="status" role="status" aria-live="polite">Cargando catálogo de tiendas…</div>
+
+    <!-- WORKSPACE DE 3 PANELES -->
+    <div class="workspace">
+      <!-- PANEL IZQUIERDO: BIBLIOTECA DE TIENDAS -->
+      <aside class="library panel" aria-label="Biblioteca de tiendas">
+        <div class="library-heading">
+          <span class="eyebrow" style="margin: 0;">Biblioteca</span>
+          <span id="shops-count-badge" class="pill">Cargando…</span>
+        </div>
+        <h2 style="margin: 0 0 4px; font-size: 16px;">Tiendas registradas</h2>
+
+        <!-- PÍLDORAS DE FILTRADO RÁPIDO -->
+        <div class="quick-filter-pills" id="quick-filter-pills">
+          <button type="button" class="filter-chip-btn active" data-cat="all">Todas</button>
+          <button type="button" class="filter-chip-btn" data-cat="general">🛒 General</button>
+          <button type="button" class="filter-chip-btn" data-cat="weapons_armor">⚔️ Armería</button>
+          <button type="button" class="filter-chip-btn" data-cat="potions_alchemy">🧪 Alquimia</button>
+          <button type="button" class="filter-chip-btn" data-cat="tailoring">🧵 Sastrería</button>
+          <button type="button" class="filter-chip-btn" data-cat="carpentry_furniture">🪑 Carpintería</button>
+        </div>
+
+        <label>
+          Buscar tienda
+          <input id="search-input" type="search" placeholder="Buscar por nombre, ID, NPC o producto…">
+        </label>
+
+        <div class="filters-grid">
+          <label>
+            Categoría
+            <select id="category-filter"></select>
+          </label>
+          <label>
+            Estado
+            <select id="status-filter">
+              <option value="all">Todas</option>
+              <option value="active">Solo activas</option>
+              <option value="inactive">Solo inactivas</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filters-grid">
+          <label>
+            Comerciante
+            <select id="npc-filter"></select>
+          </label>
+          <label>
+            Ordenar por
+            <select id="sort-filter">
+              <option value="name_asc">Nombre (A - Z)</option>
+              <option value="name_desc">Nombre (Z - A)</option>
+              <option value="id_asc">ID técnico</option>
+              <option value="items_desc">Más productos</option>
+              <option value="items_asc">Menos productos</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 2px;">
+          <button type="button" class="btn primary" id="new-shop-btn" style="flex: 1;">
+            + Nueva tienda
+          </button>
+        </div>
+
+        <!-- LISTA DE TIENDAS -->
+        <ul class="shops-list" id="shops-list"></ul>
+
+        <!-- PAGINACIÓN -->
+        <div class="pagination-row">
+          <button type="button" class="pagination-btn" id="prev-page-btn" disabled>← Anterior</button>
+          <span id="page-info">Página 1</span>
+          <button type="button" class="pagination-btn" id="next-page-btn" disabled>Siguiente →</button>
+        </div>
+      </aside>
+
+      <!-- PANEL CENTRAL: FORMULARIO DE EDICIÓN -->
+      <main class="designer panel" aria-label="Editor de tienda activa">
+        <div class="designer-header">
+          <div class="designer-title-wrap">
+            <span class="eyebrow">Edición visual</span>
+            <h2>Configuración del establecimiento</h2>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn secondary sm" id="undo-btn" title="Deshacer (Ctrl + Z)" disabled>↶ Deshacer</button>
+            <button type="button" class="btn secondary sm" id="redo-btn" title="Rehacer (Ctrl + Y)" disabled>↷ Rehacer</button>
+            <button type="button" class="btn primary sm" id="save-btn" title="Guardar cambios (Ctrl + S)">💾 Guardar</button>
+          </div>
+        </div>
+
+        <!-- PESTAÑAS -->
+        <nav class="tabs-nav" aria-label="Secciones de edición">
+          <button type="button" class="tab-btn active" data-tab="general">1. Información general</button>
+          <button type="button" class="tab-btn" data-tab="merchant">2. Comerciante & Moneda</button>
+          <button type="button" class="tab-btn" data-tab="products">3. Catálogo de productos</button>
+        </nav>
+
+        <!-- CONTENIDO PESTAÑA 1: GENERAL -->
+        <div class="tab-content" id="tab-general">
+          <div class="field-grid-2">
+            <label>
+              ID técnico (snake_case)
+              <input type="text" id="shop-id" placeholder="tienda_suministros" required>
+            </label>
+            <label>
+              Nombre visible
+              <input type="text" id="shop-name" placeholder="Puesto de suministros" required>
+            </label>
+          </div>
+
+          <div class="field-grid-2">
+            <label>
+              Categoría comercial
+              <select id="shop-category"></select>
+            </label>
+            <label style="justify-content: flex-end; padding-bottom: 8px;">
+              <span class="checkbox-row">
+                <input type="checkbox" id="shop-active">
+                <strong>Tienda activa en el juego</strong>
+              </span>
+            </label>
+          </div>
+
+          <label>
+            Descripción / Ambientación
+            <textarea id="shop-description" rows="3" placeholder="Texto ambientado que describe el establecimiento comercial…"></textarea>
+          </label>
+
+          <label>
+            Etiquetas (separadas por comas)
+            <input type="text" id="shop-tags" placeholder="pompelin, inicial, armas, alquimia">
+          </label>
+        </div>
+
+        <!-- CONTENIDO PESTAÑA 2: COMERCIANTE Y MONEDA -->
+        <div class="tab-content" id="tab-merchant" hidden>
+          <div class="field-grid-2">
+            <label>
+              Comerciante / NPC asociado
+              <select id="shop-npc"></select>
+            </label>
+            <label>
+              Moneda base de la tienda
+              <select id="shop-currency"></select>
+            </label>
+          </div>
+
+          <div style="background: var(--bg-card); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-top: 8px;">
+            <h4 style="margin: 0 0 6px; font-size: 13.5px; color: var(--gold-bright);">Vínculo con el mundo</h4>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+              La tienda se asocia al identificador del NPC sin modificar su ficha de personaje ni su comportamiento jugable. Si el NPC ya tiene configurada una opción de comercio, esta definición proveerá el catálogo de mercancías.
+            </p>
+          </div>
+        </div>
+
+        <!-- CONTENIDO PESTAÑA 3: CATÁLOGO DE PRODUCTOS -->
+        <div class="tab-content" id="tab-products" hidden>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="pill" id="products-count-badge">0 productos</span>
+            <button type="button" class="btn primary sm" id="add-product-btn">
+              + Añadir producto del catálogo
+            </button>
+          </div>
+
+          <div class="products-table-container">
+            <table class="products-table">
+              <thead>
+                <tr>
+                  <th style="min-width: 170px;">Producto</th>
+                  <th style="width: 130px;">Precio compra</th>
+                  <th style="width: 130px;">Precio venta</th>
+                  <th style="width: 100px;">Stock</th>
+                  <th style="width: 120px;">Moneda</th>
+                  <th style="width: 110px; text-align: center;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BARRA INFERIOR DE ACCIONES -->
+        <div class="bottom-action-bar">
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn secondary sm" id="duplicate-shop-btn">📋 Duplicar tienda</button>
+            <button type="button" class="btn danger sm" id="delete-shop-btn">🗑️ Eliminar tienda</button>
+          </div>
+          <div>
+            <button type="button" class="btn primary" id="save-bottom-btn" onclick="document.getElementById('save-btn').click();">
+              💾 Guardar cambios
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <!-- PANEL DERECHO: VISTA PREVIA Y AUDITORÍA -->
+      <aside class="preview-panel panel" aria-label="Vista previa y auditoría">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span class="eyebrow" style="margin: 0;">Escaparate en vivo</span>
+          <span class="pill" style="color: var(--gold-bright);">Modo juego</span>
+        </div>
+
+        <!-- CONTENEDOR DE LA VISTA PREVIA -->
+        <div id="live-preview-container"></div>
+
+        <!-- AUDITORÍA DE INTEGRIDAD -->
+        <section style="background: var(--bg-card); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-top: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <span class="eyebrow" style="margin: 0;">Auditoría de integridad</span>
+            <span class="pill">Verificación</span>
+          </div>
+          <div id="audit-box"></div>
+        </section>
+
+        <!-- UTILIDADES ADICIONALES -->
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button type="button" class="btn secondary sm" id="export-catalog-btn" style="flex: 1;">
+            📤 Exportar JSON
+          </button>
+          <button type="button" class="btn secondary sm" id="backup-btn" style="flex: 1;">
+            🔒 Crear copia
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- MODAL DE SELECCIÓN DE PRODUCTOS -->
+    <div class="modal-overlay" id="item-picker-modal" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Seleccionar producto del catálogo</h3>
+          <button type="button" class="modal-close-btn" id="close-picker-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="filters-grid">
+            <input type="search" id="picker-search" placeholder="Buscar por nombre, ID o categoría…">
+            <select id="picker-category"></select>
+            <select id="picker-rarity">
+              <option value="all">Todas las rarezas</option>
+              <option value="common">Común</option>
+              <option value="uncommon">Poco común</option>
+              <option value="rare">Raro</option>
+              <option value="epic">Épico</option>
+              <option value="legendary">Legendario</option>
+              <option value="mythic">Mítico</option>
+            </select>
+          </div>
+          <div class="catalog-picker-grid" id="picker-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/dev/shopEditor.ts"></script>
+  </body>
+</html>
+

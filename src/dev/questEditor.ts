@@ -4,12 +4,14 @@ import { newQuest, validateQuestCatalog, newRehearsal, objectiveProgress, questP
   type QuestCatalog, type QuestDefinition, type QuestReferences, type QuestObjective, type QuestPhase } from '../data/questCatalog';
 import { openConversation, closeDialog, isDialogOpen, advanceDialog, exitDialog, moveDialogChoice } from '../ui/dialog';
 import { questConversation } from '../story/questConversation';
+import { DraftHistory, questWarnings } from './questEditorTools';
+import { objectiveType, objectiveUnlocked } from '../data/questCatalog';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const clone = <T>(value: T): T => structuredClone(value);
 const storageKey = 'brumaluz-quest-editor-draft-v1';
 let catalog: QuestCatalog = { version: 1, quests: [] };
-let refs: QuestReferences = { npcs: [], items: [], enemies: [], maps: [] };
+let refs: QuestReferences = { npcs: [], items: [], enemies: [], maps: [], craftables: [] };
 let draft = newQuest();
 let originalId = '';
 let revision = '';
@@ -22,6 +24,9 @@ let testContext = { level: 1, completed: [] as string[] };
 let currentStep = 0;
 let editingPhase: QuestPhase = 'offer';
 let showErrors = false;
+const history = new DraftHistory();
+let savedBaseline = '';
+let testLog: {number: number; text: string; phase: QuestPhase}[] = [];
 const phaseNames: Record<QuestPhase, string> = { offer:'Oferta', active:'En curso', ready:'Lista para entregar', completed:'Completada' };
 
 function status(text: string, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
@@ -31,8 +36,9 @@ function persist() {
     else localStorage.removeItem(storageKey);
   } catch { status('El navegador no pudo conservar el borrador. Exporta el JSON para conservarlo.', true); }
 }
-function markDirty() {
-  dirty = true; $('dirty').textContent = 'Cambios sin guardar'; $('draft-title').textContent = draft.title || 'Sin título'; persist();
+function markDirty(key = '') {
+  history.record(draft,key); updateHistory();
+  dirty = !originalId || JSON.stringify(draft) !== savedBaseline; $('dirty').textContent = dirty || libraryDirty ? 'Cambios sin guardar' : 'Guardada'; $('draft-title').textContent = draft.title || 'Sin título'; persist();
   if (testQuest) $('test-notice').textContent = 'La ficha ha cambiado. Inicia otro ensayo para probar esta versión.';
   renderOverview();
 }
@@ -46,9 +52,9 @@ function workingCatalog(): QuestCatalog {
 }
 function validated() { return validateQuestCatalog(workingCatalog(), refs); }
 function renderLibrary() {
-  const query = $<HTMLInputElement>('search').value.toLowerCase();
-  $('quest-list').innerHTML = catalog.quests.filter(q => `${q.title} ${q.id}`.toLowerCase().includes(query)).map(q =>
-    `<button type="button" data-quest="${escape(q.id)}" class="${q.id === originalId ? 'active' : ''}">${escape(q.title)}<small>${q.objectives.length} ${q.objectives.length === 1 ? 'objetivo' : 'objetivos'}</small></button>`).join('') || '<p class="empty-library">Tu primera misión empieza aquí. Elige un tipo de encargo y pulsa Crear misión.</p>';
+  const query = normalize($<HTMLInputElement>('search').value); const category = $<HTMLSelectElement>('library-filter').value;
+  $('quest-list').innerHTML = catalog.quests.filter(q => (category === 'all' || (q.category ?? 'side') === category) && normalize(`${q.title} ${q.id} ${q.summary} ${refs.npcs.find(n => n.id === q.giver)?.name ?? ''}`).includes(query)).map(q =>
+    `<button type="button" data-quest="${escape(q.id)}" class="${q.id === originalId ? 'active' : ''}">${escape(q.title)}<small>${q.objectives.length} ${q.objectives.length === 1 ? 'objetivo' : 'objetivos'}</small></button>`).join('') || `<p class="empty-library">${catalog.quests.length ? 'No hay misiones que coincidan con esta búsqueda o categoría.' : 'Tu primera misión empieza aquí. Elige un tipo de encargo y pulsa Crear misión.'}</p>`;
 }
 function render() {
   $('draft-title').textContent = draft.title || 'Nueva misión';
@@ -57,8 +63,20 @@ function render() {
   $('fields').innerHTML = renderForm(draft,refs,catalog,originalId,editingPhase);
   const shortNames = ['Inicio','Tareas','Diálogo','Premios','Probar'];
   $('steps').innerHTML = steps.map((s,index) => `<button type="button" data-step="${index}" aria-controls="step-panel-${index}" aria-label="${index+1}. ${s.name}"><span class="step-number">${index+1}</span><span class="step-label">${s.name}</span><span class="step-short">${shortNames[index]}</span></button>`).join('');
-  applyStep(); renderOverview(); renderLibrary();
+  applyStep(); renderOverview(); renderLibrary(); updateHistory();
 }
+function updateHistory() {
+  $<HTMLButtonElement>('undo').disabled = saving || !history.canUndo;
+  $<HTMLButtonElement>('redo').disabled = saving || !history.canRedo;
+}
+function restoreHistory(value: QuestDefinition | null) {
+  if (!value || saving) return;
+  draft = value; dirty = !originalId || JSON.stringify(draft) !== savedBaseline;
+  render(); persist();
+  if (testQuest) $('test-notice').textContent = 'La ficha ha cambiado. Empieza otra prueba para usar esta versión.';
+}
+$('undo').onclick = () => restoreHistory(history.undo());
+$('redo').onclick = () => restoreHistory(history.redo());
 
 type Issue = { step: number; path: string; text: string };
 function issues(): Issue[] {
@@ -70,8 +88,8 @@ function issues(): Issue[] {
   if (!Number.isInteger(draft.minLevel) || draft.minLevel < 1 || draft.minLevel > 10000) add(0,'minLevel','El nivel mínimo debe ser un número entero entre 1 y 10000.');
   if (!draft.objectives.length) add(1,'','Añade al menos un objetivo.');
   draft.objectives.forEach((o,i) => {
-    const available = refs[o.type === 'fetch' ? 'items' : o.type === 'kill' ? 'enemies' : 'npcs'];
-    if (!available.some(v => v.id === o.target)) add(1,`objectives.${i}.target`,`Objetivo ${i+1}: elige ${o.type === 'fetch' ? 'qué objeto recoger' : o.type === 'kill' ? 'qué enemigo derrotar' : 'con quién hablar'}.`);
+    const available = refs[objectiveType(o.type).kind];
+    if (!available.some(v => v.id === o.target)) add(1,`objectives.${i}.target`,`Objetivo ${i+1}: elige ${o.type === 'fetch' ? 'qué objeto recoger' : o.type === 'kill' ? 'qué enemigo derrotar' : o.type === 'visit' ? 'qué lugar visitar' : o.type === 'craft' ? 'qué objeto fabricar' : 'con quién hablar'}.`);
     if (!Number.isInteger(o.count) || o.count < 1 || o.count > 9999) add(1,`objectives.${i}.count`,`Objetivo ${i+1}: indica una cantidad entera entre 1 y 9999.`);
     if (!o.description.trim()) add(1,`objectives.${i}.description`,`Objetivo ${i+1}: escribe el texto que verá el jugador.`);
   });
@@ -129,6 +147,8 @@ function renderOverview() {
   $('overview').innerHTML = `<span class="eyebrow">Tu misión de un vistazo</span><h2>${escape(draft.title || 'Tu próximo encargo')}</h2><ol class="journey"><li><span>Empieza con</span><strong>${escape(name('npcs',draft.giver))}</strong></li><li><span>El jugador debe</span>${draft.objectives.map(o => `<p>${escape(o.target ? o.description : objectiveDescription(o,refs))}</p>`).join('') || '<p>Añadir un objetivo.</p>'}</li><li><span>Vuelve con</span><strong>${escape(name('npcs',draft.receiver))}</strong></li></ol><div class="overview-rewards">${draft.rewards.experience || 0} XP · ${draft.rewards.pelines || 0} Pelines${draft.rewards.items.length ? `<br>${draft.rewards.items.length} ${draft.rewards.items.length === 1 ? 'objeto de regalo' : 'objetos de regalo'}` : ''}</div><p class="readiness">${ready} de 4 apartados preparados</p>`;
   $('review-content').innerHTML = `<div class="review-banner ${errors.length ? 'pending' : 'ready'}"><h3>${errors.length ? 'Quedan unos detalles por completar' : 'Todo preparado para probar y guardar'}</h3><p>${errors.length ? 'Pulsa sobre un detalle para ir directamente al campo que falta.' : 'Comprueba que el encargo se entiende y que las cantidades y recompensas encajan con lo que buscas.'}</p>${errors.length ? `<ul>${errors.map(e => `<li><button type="button" data-go-step="${e.step}" data-focus-path="${escape(e.path)}">${escape(e.text)}</button></li>`).join('')}</ul>` : ''}</div>
     <dl class="review-list"><div><dt>En el diario</dt><dd>${escape(draft.summary || 'Sin descripción')}</dd></div><div><dt>Quién puede aceptarla</dt><dd>Nivel ${draft.minLevel || 1}${draft.prerequisites.length ? `; después de ${draft.prerequisites.map(id => escape(catalog.quests.find(q => q.id === id)?.title ?? id)).join(', ')}` : '; sin misiones anteriores obligatorias'}.</dd></div><div><dt>Objetivos</dt><dd>${draft.objectives.map(o => `<p>${escape(o.description)}${o.map ? ` En ${escape(name('maps',o.map))}.` : ''}${o.type === 'fetch' ? o.consume ? ' Se entregan los objetos.' : ' El jugador conserva los objetos.' : ''}</p>`).join('')}</dd></div><div><dt>Recompensa</dt><dd>${draft.rewards.experience || 0} XP y ${draft.rewards.pelines || 0} Pelines${draft.rewards.items.map(r => `<p>${r.count || 0} × ${escape(name('items',r.item))}</p>`).join('')}</dd></div></dl>`;
+  const warnings = questWarnings(draft);
+  $('review-content').innerHTML += `${warnings.length ? `<details class="review-warnings"><summary>${warnings.length} ${warnings.length === 1 ? 'sugerencia de revisión' : 'sugerencias de revisión'} (no impiden guardar)</summary><ul>${warnings.map(w => `<li><button type="button" data-go-step="${w.step}" data-focus-path="${w.node === undefined ? '' : `dialogue.nodes.${w.node}.text`}">${escape(w.text)}</button></li>`).join('')}</ul></details>` : ''}<section class="journal-preview"><span class="eyebrow">Vista del diario</span><h3>${escape(draft.title || 'Sin título')}</h3><p>${escape(draft.summary)}</p><ol>${draft.objectives.map(o => `<li>${escape(o.description)}</li>`).join('')}</ol><p>${draft.objectiveOrder === 'sequence' ? 'Completa los pasos en este orden.' : 'Puedes completar los objetivos en cualquier orden.'}</p><small>Entrega a ${escape(name('npcs',draft.receiver))} · ${draft.rewards.experience || 0} XP · ${draft.rewards.pelines || 0} Pelines</small></section>`;
   $('validation').hidden = !showErrors || !errors.length;
   if (showErrors) $('validation').innerHTML = `<strong>Revisa esto antes de guardar</strong><p>${escape(errors[0]?.text ?? '')}</p>`;
   document.querySelectorAll('.field-error').forEach(el => el.remove());
@@ -148,8 +168,8 @@ document.addEventListener('click',event => {
   const b = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-go-step]'); if (b && !saving) goToStep(Number(b.dataset.goStep),b.dataset.focusPath);
 });
 
-function stopTest() { closeDialog(); testQuest = null; $('test-state').replaceChildren(); $('test-events').replaceChildren(); $<HTMLButtonElement>('test-talk').disabled = true; $('test-notice').textContent = ''; }
-function chooseDraft(q: QuestDefinition, saved: boolean) { stopTest(); draft = clone(q); originalId = saved ? q.id : ''; dirty = !saved; currentStep = 0; editingPhase = 'offer'; showErrors = false; render(); persist(); }
+function stopTest() { closeDialog(); testQuest = null; testLog = []; $('test-log').replaceChildren(); $<HTMLButtonElement>('export-trace').disabled = true; $('test-state').replaceChildren(); $('test-events').replaceChildren(); $<HTMLButtonElement>('test-talk').disabled = true; $('test-notice').textContent = ''; }
+function chooseDraft(q: QuestDefinition, saved: boolean) { stopTest(); draft = clone(q); originalId = saved ? q.id : ''; dirty = !saved; savedBaseline = saved ? JSON.stringify(q) : ''; history.reset(q); currentStep = 0; editingPhase = 'offer'; showErrors = false; status(saved ? `Editando «${q.title || 'Sin título'}».` : 'Nuevo borrador. Empieza por el nombre y el contacto del encargo.'); render(); persist(); }
 function unusedId(prefix: string, ids: string[]) { let n = 1; while (ids.includes(`${prefix}_${n}`)) n++; return `${prefix}_${n}`; }
 
 async function readResponse(response: Response) {
@@ -173,6 +193,7 @@ async function saveCatalog(next: QuestCatalog) {
     const response = await fetch('/__dev/quests', { method:'PUT', headers:{'Content-Type':'application/json','If-Match':revision}, body:JSON.stringify(next) });
     const data = await readResponse(response);
     catalog = validateQuestCatalog(data); revision = response.headers.get('ETag') || ''; libraryDirty = false; dirty = false; originalId = draft.id;
+    savedBaseline = JSON.stringify(draft); history.reset(draft);
     render(); persist(); status('Misión guardada. Puedes seguir editándola o crear otra.');
   } finally {
     setBusy(false);
@@ -180,9 +201,10 @@ async function saveCatalog(next: QuestCatalog) {
 }
 function setBusy(value: boolean) {
   saving = value; $<HTMLFieldSetElement>('editor-fields').disabled = value;
-  for (const id of ['new','duplicate','reload','import']) $<HTMLButtonElement>(id).disabled = value;
+  for (const id of ['new','duplicate','reload','import','refresh-references']) $<HTMLButtonElement>(id).disabled = value;
   $<HTMLButtonElement>('delete').disabled = value || !originalId;
   applyStep();
+  updateHistory();
 }
 
 const pickerOptions = new WeakMap<HTMLSelectElement, { id: string; name: string }[]>();
@@ -223,7 +245,7 @@ $('editor').addEventListener('input', event => {
   if (/^objectives\.\d+\.type$/.test(path)) {
     const o = target as QuestObjective;
     o.target = o.type === 'talk' ? draft.giver : '';
-    o.consume = o.type === 'fetch'; o.map = ''; if (o.type === 'talk') o.count = 1;
+    o.consume = o.type === 'fetch'; o.map = ''; if (objectiveType(o.type).single) o.count = 1;
     o.description = objectiveDescription(o,refs);
     render();
   }
@@ -242,7 +264,7 @@ $('editor').addEventListener('input', event => {
   if (objective && path.endsWith('.description')) {
     const text = document.querySelector<HTMLElement>(`[data-objective-preview="${objectiveIndex}"]`); if (text) text.textContent = objective.description;
   }
-  markDirty();
+  markDirty(path);
 });
 $('fields').addEventListener('click', event => {
   const phase = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-phase]')?.dataset.phase;
@@ -250,20 +272,33 @@ $('fields').addEventListener('click', event => {
   const b = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]'); if (!b) return;
   const i = Number(b.dataset.index); const action = b.dataset.action;
   switch (action) {
+    case 'follow-up': {
+      if (!originalId || dirty || libraryDirty) { status('Guarda primero esta misión para enlazar su continuación.',true); return; }
+      const q = createFromTemplate(unusedId('mision',catalog.quests.map(q => q.id)));
+      q.prerequisites = [draft.id]; q.giver = draft.receiver; q.receiver = draft.receiver; q.category = draft.category ?? 'side';
+      if (q.objectives[0].type === 'talk') { q.objectives[0].target = q.giver; q.objectives[0].description = objectiveDescription(q.objectives[0],refs); }
+      chooseDraft(q,false); status('Continuación preparada. Requiere haber completado la misión anterior.'); return;
+    }
     case 'objective-add': if (draft.objectives.length >= 20) { status('Máximo: 20 objetivos.',true); return; }
-      { const type = (b.dataset.type ?? 'talk') as QuestObjective['type']; const o: QuestObjective = {id:unusedId('objetivo',draft.objectives.map(o => o.id)),type,target:type === 'talk' ? draft.giver : '',count:type === 'talk' ? 1 : 3,description:'',map:'',consume:type === 'fetch'}; o.description = objectiveDescription(o,refs); draft.objectives.push(o); } break;
+      { const type = (b.dataset.type ?? 'talk') as QuestObjective['type']; const o: QuestObjective = {id:unusedId('objetivo',draft.objectives.map(o => o.id)),type,target:type === 'talk' ? draft.giver : '',count:objectiveType(type).single ? 1 : 3,description:'',map:'',consume:type === 'fetch'}; o.description = objectiveDescription(o,refs); draft.objectives.push(o); } break;
+    case 'objective-copy': {
+      if (draft.objectives.length >= 20) { status('Máximo: 20 objetivos.',true); return; }
+      const copy = clone(draft.objectives[i]); copy.id = unusedId('objetivo',draft.objectives.map(o => o.id));
+      if (copy.type === 'fetch') { copy.target = ''; copy.description = objectiveDescription(copy,refs); }
+      draft.objectives.splice(i+1,0,copy); break;
+    }
     case 'objective-delete': if (draft.objectives.length > 1) draft.objectives.splice(i,1); break;
     case 'objective-up': [draft.objectives[i-1],draft.objectives[i]] = [draft.objectives[i],draft.objectives[i-1]]; break;
     case 'objective-down': [draft.objectives[i+1],draft.objectives[i]] = [draft.objectives[i],draft.objectives[i+1]]; break;
-    case 'reward-add': draft.rewards.items.push({item:'',count:1}); break;
+    case 'reward-add': if (draft.rewards.items.length >= 20) { status('Máximo: 20 objetos de recompensa.',true); return; } draft.rewards.items.push({item:'',count:1}); break;
     case 'reward-delete': draft.rewards.items.splice(i,1); break;
-    case 'node-add': draft.dialogue.nodes.push({id:unusedId('nodo',draft.dialogue.nodes.map(n => n.id)),speaker:'',text:'Escribe lo que quiere decir el personaje.',choices:[]}); break;
+    case 'node-add': if (draft.dialogue.nodes.length >= 100) { status('Máximo: 100 conversaciones.',true); return; } draft.dialogue.nodes.push({id:unusedId('nodo',draft.dialogue.nodes.map(n => n.id)),speaker:'',text:'Escribe lo que quiere decir el personaje.',choices:[]}); break;
     case 'node-delete': {
       const node = draft.dialogue.nodes[i];
       if (Object.values(draft.dialogue.entries).includes(node.id) || draft.dialogue.nodes.some(n => n.choices.some(c => c.next === node.id))) { status('Este nodo se usa como inicio de fase o destino. Cambia esas conexiones antes de quitarlo.',true); return; }
       draft.dialogue.nodes.splice(i,1); break;
     }
-    case 'choice-add': draft.dialogue.nodes[i].choices.push({text:'Nueva respuesta',next:'',action:'none'}); break;
+    case 'choice-add': if (draft.dialogue.nodes[i].choices.length >= 8) { status('Máximo: 8 respuestas por conversación.',true); return; } draft.dialogue.nodes[i].choices.push({text:'Nueva respuesta',next:'',action:'none'}); break;
     case 'choice-delete': { const [n,c] = b.dataset.index!.split('.').map(Number); draft.dialogue.nodes[n].choices.splice(c,1); break; }
     case 'question-add': {
       const entry = draft.dialogue.nodes[i];
@@ -289,6 +324,7 @@ $('editor').addEventListener('submit', event => {
   void (async () => { try { await saveCatalog(validated()); } catch (error) { status((error as Error).message,true); } })();
 });
 $('search').addEventListener('input',renderLibrary);
+$('library-filter').addEventListener('change',renderLibrary);
 $('quest-list').addEventListener('click', event => {
   if (saving) return; const id = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-quest]')?.dataset.quest;
   if (!id || id === originalId || !discard()) return;
@@ -300,7 +336,7 @@ function createFromTemplate(id: string) {
   const type = $<HTMLSelectElement>('template').value as QuestObjective['type'];
   const o = q.objectives[0]; o.type = type; o.consume = type === 'fetch';
   o.target = type === 'talk' ? q.giver : '';
-  o.count = type === 'talk' ? 1 : 3;
+  o.count = objectiveType(type).single ? 1 : 3;
   o.description = objectiveDescription(o,refs);
   q.title = ''; q.summary = '';
   return q;
@@ -329,22 +365,45 @@ $('delete').onclick = () => {
     } catch(error) { status((error as Error).message,true); } finally { setBusy(false); }
   })();
 };
+function download(value: unknown, filename: string) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
+}
 $('export').onclick = () => {
   // Export raw drafts too, so a validation error never prevents recovering work.
   let value: QuestCatalog; try { value = workingCatalog(); } catch { value = {version:1,quests:[draft]}; }
-  const url = URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}));
-  const a = document.createElement('a'); a.href = url; a.download = 'brumaluz-misiones.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
+  download(value,'brumaluz-misiones.json');
+};
+$('export-current').onclick = () => {
+  const selected = new Set<string>(); const quests: QuestDefinition[] = [];
+  const visit = (q: QuestDefinition) => { if (selected.has(q.id)) return; selected.add(q.id); for (const id of q.prerequisites) { const p = catalog.quests.find(v => v.id === id); if (p) visit(p); } quests.push(q); };
+  visit(draft); download({version:1,quests},`${draft.id || 'mision'}.json`);
+};
+$('refresh-references').onclick = async () => {
+  try { refs = await readResponse(await fetch('/__dev/quests/references')); render(); status('NPCs, mapas, enemigos y objetos actualizados. Tu borrador se conserva.'); }
+  catch(error) { status((error as Error).message,true); }
 };
 $('import').onchange = async () => {
   const input = $<HTMLInputElement>('import'); const file = input.files?.[0]; if (!file) return;
   try {
     if (file.size > 4_000_000) throw new Error('El archivo supera los 4 MB.');
     const data = JSON.parse(await file.text());
-    const next = validateQuestCatalog(data,refs);
+    const merge = $<HTMLSelectElement>('import-mode').value === 'merge';
+    let next: QuestCatalog;
+    if (merge && data?.version === 1 && Array.isArray(data.quests)) {
+      const additions: QuestDefinition[] = [];
+      for (const q of data.quests) {
+        const existing = catalog.quests.find(v => v.id === q.id);
+        if (existing && JSON.stringify(existing) !== JSON.stringify(q)) throw new Error(`Ya existe una misión diferente con la referencia «${q.id}». Impórtala como biblioteca aparte o cambia su referencia antes de añadirla.`);
+        if (!existing) additions.push(q);
+      }
+      next = validateQuestCatalog({version:1,quests:[...catalog.quests,...additions]},refs);
+    } else next = validateQuestCatalog(data,refs);
     if (!next.quests.length) throw new Error('La biblioteca importada está vacía.');
-    if ((dirty || libraryDirty) && !confirm('¿Sustituir todos los cambios sin guardar por esta biblioteca importada?')) return;
-    catalog = next; libraryDirty = true; chooseDraft(next.quests[0],true); dirty = true; render(); persist();
-    status('Biblioteca importada como borrador. Revisa las fichas y pulsa Guardar para sustituir la biblioteca del proyecto.');
+    if ((dirty || libraryDirty) && !confirm(merge ? '¿Descartar los cambios sin guardar de la ficha e incorporar las misiones importadas?' : '¿Sustituir todos los cambios sin guardar por esta biblioteca importada?')) return;
+    const preferred = merge ? data.quests.find((q: QuestDefinition) => !catalog.quests.some(existing => existing.id === q.id))?.id ?? data.quests.at(-1)?.id : next.quests[0].id;
+    catalog = next; libraryDirty = true; chooseDraft(next.quests.find(q => q.id === preferred) ?? next.quests[0],true); dirty = true; render(); persist();
+    status(merge ? 'Misiones añadidas al borrador sin sustituir las existentes. Guarda para confirmar la biblioteca.' : 'Biblioteca importada como borrador. Revisa las fichas y pulsa Guardar para sustituir la biblioteca del proyecto.');
   } catch(error) { status((error as Error).message,true); } finally { input.value = ''; }
 };
 
@@ -352,9 +411,23 @@ function renderTest() {
   if (!testQuest) return;
   const q = testQuest; const phase = questPhase(q,testState);
   $('test-state').innerHTML = `<span class="pill">${phaseNames[phase]}</span><p>${escape(q.title)}</p><small>${testState.experience} XP · ${testState.pelines} pelines recibidos</small>`;
-  $('test-events').innerHTML = q.objectives.map((o,i) => `<div class="test-objective"><strong>${escape(o.description)}</strong><small>${objectiveProgress(o,testState)} / ${o.count}${o.map ? ` · ${escape(refs.maps.find(m => m.id === o.map)?.name ?? o.map)}` : ''}</small><button data-event="${i}" ${!testState.accepted || testState.completed || objectiveProgress(o,testState) >= o.count ? 'disabled' : ''}>${o.type === 'fetch' ? 'Recoger 1 objeto' : o.type === 'kill' ? 'Derrotar 1 enemigo' : 'Hablar con este personaje'}</button>${o.type === 'fetch' ? `<button data-remove="${escape(o.target)}" ${!(testState.inventory[o.target] > 0) || testState.completed ? 'disabled' : ''}>Quitar 1 de la mochila</button>` : ''}</div>`).join('');
+  $('test-events').innerHTML = q.objectives.map((o,i) => {
+    const progress = objectiveProgress(o,testState); const locked = !objectiveUnlocked(q,testState,i); const done = progress >= o.count;
+    return `<div class="test-objective"><strong>${escape(o.description)}</strong><small>${progress} / ${o.count}${locked && testState.accepted && !testState.completed && !done ? ' · espera a la etapa anterior' : ''}${o.map ? ` · ${escape(refs.maps.find(m => m.id === o.map)?.name ?? o.map)}` : ''}</small><progress max="${o.count}" value="${progress}" aria-label="Progreso del objetivo ${i+1}"></progress>
+      ${o.map || o.type === 'visit' ? `<details><summary>Lugar de esta acción</summary><label>Simular en<select data-event-map="${i}">${options(refs.maps,o.type === 'visit' ? o.target : o.map)}</select></label><small>Prueba otro mapa para comprobar el filtro.</small></details>` : ''}
+      <button data-event="${i}" ${locked || done ? 'disabled' : ''}>${objectiveType(o.type).eventLabel}</button>
+      ${o.count > 1 ? `<button data-bulk="${i}" ${locked || done ? 'disabled' : ''}>Simular las ${o.count-progress} acciones que faltan</button>` : ''}
+      ${o.type === 'fetch' ? `<button data-remove="${escape(o.target)}" ${!(testState.inventory[o.target] > 0) || testState.completed ? 'disabled' : ''}>Quitar 1 de la mochila</button>` : ''}</div>`;
+  }).join('');
   $<HTMLButtonElement>('test-talk').disabled = false;
   $('test-talk').textContent = `Hablar con ${refs.npcs.find(n => n.id === (phase === 'offer' ? q.giver : q.receiver))?.name ?? q.receiver}`;
+}
+function addTestLog(text: string) {
+  if (!testQuest) return;
+  testLog.push({number:(testLog.at(-1)?.number ?? 0)+1,text,phase:questPhase(testQuest,testState)});
+  if (testLog.length > 200) testLog.shift();
+  $('test-log').innerHTML = testLog.map(e => `<li><span>${e.number}. ${escape(e.text)}</span><small>${phaseNames[e.phase]}</small></li>`).join('');
+  $<HTMLButtonElement>('export-trace').disabled = false;
 }
 function talk() {
   if (!testQuest) return;
@@ -362,6 +435,7 @@ function talk() {
   const conversation = questConversation(q,phase,id => refs.npcs.find(n => n.id === id)?.name ?? id, action => {
     const ok = rehearseAction(q,testState,action,testContext);
     $('test-notice').textContent = ok ? action === 'complete' ? 'Entrega confirmada. Los objetos se retiran y las recompensas se reciben una sola vez.' : '' : 'Acción rechazada: comprueba los requisitos, la fase y los objetivos.';
+    addTestLog(`${action === 'accept' ? 'Aceptar misión' : action === 'complete' ? 'Entregar misión' : 'Elegir respuesta'}: ${ok ? 'permitido' : 'rechazado por fase, requisitos u objetivos'}.`);
     renderTest(); return ok;
   },id => refs.items.find(item => item.id === id)?.name ?? id);
   openConversation(conversation);
@@ -371,7 +445,9 @@ $('test-start').onclick = () => {
     validated(); const level = $<HTMLInputElement>('test-level').valueAsNumber;
     if (!Number.isInteger(level) || level < 1 || level > 10000) throw new Error('Introduce un nivel de prueba entre 1 y 10000.');
     stopTest(); testQuest = clone(draft); testState = newRehearsal();
+    if ($<HTMLInputElement>('test-inventory').checked) for (const o of draft.objectives) if (o.type === 'fetch') testState.inventory[o.target] = o.count;
     testContext = { level, completed:$<HTMLInputElement>('test-prerequisites').checked ? [...draft.prerequisites] : [] };
+    addTestLog('Prueba iniciada. Los datos son locales.');
     $('test-notice').textContent = 'Primero, acepta el encargo desde el diálogo.'; renderTest(); talk();
   } catch(error) {
     showErrors = true; const first = issues()[0];
@@ -379,18 +455,34 @@ $('test-start').onclick = () => {
     status(first?.text ?? (error as Error).message,true);
   }
 };
-$('test-reset').onclick = () => { stopTest(); $('test-notice').textContent = 'Ensayo reiniciado. Pulsa Iniciar ensayo para volver a probar.'; };
+$('test-reset').onclick = () => { stopTest(); $('test-notice').textContent = 'Prueba reiniciada. Pulsa Empezar prueba para volver a probar.'; };
+$('export-trace').onclick = () => { if (testQuest) download({version:1,quest:testQuest,context:testContext,state:testState,events:testLog},`${testQuest.id}-prueba.json`); };
 $('test-talk').onclick = talk;
 $('test-events').onclick = event => {
   if (!testQuest) return; const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button'); if (!button) return;
   closeDialog();
-  if (button.dataset.event !== undefined) { const o = testQuest.objectives[Number(button.dataset.event)]; rehearseEvent(testQuest,testState,o.type,o.target,o.map); }
-  if (button.dataset.remove) testState.inventory[button.dataset.remove] = Math.max(0,(testState.inventory[button.dataset.remove] ?? 0)-1);
+  const index = button.dataset.event ?? button.dataset.bulk;
+  if (index !== undefined) {
+    const o = testQuest.objectives[Number(index)];
+    const place = document.querySelector<HTMLSelectElement>(`[data-event-map="${index}"]`)?.value ?? o.map;
+    const amount = button.dataset.bulk !== undefined ? Math.max(1,o.count-objectiveProgress(o,testState)) : 1;
+    const before = objectiveProgress(o,testState);
+    rehearseEvent(testQuest,testState,o.type,o.type === 'visit' ? place : o.target,place,amount);
+    const delta = objectiveProgress(o,testState)-before;
+    addTestLog(`${objectiveType(o.type).name} (${amount}): ${delta ? `+${delta} de progreso` : 'sin avance; comprueba el lugar o la etapa activa'}.`);
+    $('test-notice').textContent = delta ? 'El objetivo ha avanzado.' : 'Esta acción no cuenta en ese lugar o en esta etapa.';
+  }
+  if (button.dataset.remove) { testState.inventory[button.dataset.remove] = Math.max(0,(testState.inventory[button.dataset.remove] ?? 0)-1); addTestLog('Se retira un objeto de entrega de la mochila.'); }
   renderTest();
 };
 window.addEventListener('beforeunload',event => { if (dirty || libraryDirty) { event.preventDefault(); event.returnValue = ''; } });
 document.addEventListener('keydown',event => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); if (!saving) $<HTMLFormElement>('editor').requestSubmit(); return; }
   if ((event.target as HTMLElement).closest('input,textarea,select')) return;
+  if ((event.ctrlKey || event.metaKey) && !saving) {
+    if (event.key.toLowerCase() === 'z') { event.preventDefault(); restoreHistory(event.shiftKey ? history.redo() : history.undo()); return; }
+    if (event.key.toLowerCase() === 'y') { event.preventDefault(); restoreHistory(history.redo()); return; }
+  }
   if (!isDialogOpen()) return;
   if (event.key === 'Escape') exitDialog();
   else if (event.key === 'ArrowDown') { event.preventDefault(); moveDialogChoice(1); }
@@ -407,6 +499,8 @@ void load().then(() => {
       if (!saved.draft || typeof saved.revision !== 'string' || typeof saved.originalId !== 'string') throw new Error('Borrador no válido');
       const stale = revision !== saved.revision;
       catalog = saved.catalog; draft = saved.draft; originalId = saved.originalId; revision = saved.revision; libraryDirty = !!saved.libraryDirty; dirty = true;
+      const baseline = catalog.quests.find(q => q.id === originalId);
+      savedBaseline = baseline ? JSON.stringify(baseline) : ''; history.reset(baseline ?? draft); history.record(draft);
       currentStep = Number.isInteger(saved.currentStep) && saved.currentStep >= 0 && saved.currentStep < steps.length ? saved.currentStep : 0;
       editingPhase = Object.hasOwn(phaseLabels,saved.editingPhase) ? saved.editingPhase : 'offer';
       render(); persist(); status(stale ? 'Borrador recuperado. El archivo cambió: exporta tu trabajo y recarga antes de guardar.' : 'Borrador recuperado del navegador.',stale);
@@ -417,5 +511,5 @@ void load().then(() => {
     }
   }
   $<HTMLFieldSetElement>('editor-fields').disabled = false;
-  for (const id of ['new','duplicate','reload','export','import','test-start','test-reset']) $<HTMLButtonElement>(id).disabled = false;
+  for (const id of ['new','duplicate','reload','export','export-current','refresh-references','import','test-start','test-reset']) $<HTMLButtonElement>(id).disabled = false;
 }).catch(error => status(`${error.message} Abre /quests.html con npm run dev.`,true));

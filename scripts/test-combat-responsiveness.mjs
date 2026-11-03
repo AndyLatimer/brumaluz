@@ -18,14 +18,14 @@ async function openFight(){
  await page.locator('#loading.hide').waitFor({state:'attached'});
  await page.evaluate(async()=>{
   const state=await import('/src/game/state.ts'),combat=await import('/src/game/combat.ts'),stage=await import('/src/game/stage.ts');
-  const {starterEquipment}=await import('/src/data/combat.ts');
+  const {starterEquipment,COMBAT_KITS}=await import('/src/data/combat.ts');
   window.brumaluz.set({cls:'guerrero',introSeen:true,welcome:{origin:0,stage:'completed'},shadowQuest:null,health:-1,resource:-1,equipment:starterEquipment('guerrero')});
   window.brumaluz.play();state.story.introArmed=false;state.talk.pendingIsbertoIntroduction=false;
   await combat.beginIsbertoEncounter();window.brumaluz.move(state.fight.combatEncounter.x-1,state.fight.combatEncounter.z);
   state.fight.nextLocalEnemyAttack=performance.now()/1000+100;combat.lockCombatTarget(true);state.fight.combatAuto=false;
   state.session.activeCharacterId=crypto.randomUUID();
   const attacks=[],original=state.play.char.attack.bind(state.play.char);state.play.char.attack=skill=>{attacks.push({skill:!!skill,at:performance.now()});original(skill);};
-  window.responseTest={state,combat,stage,attacks};
+  window.responseTest={state,combat,stage,attacks,skillId:COMBAT_KITS.guerrero.skill.id};
  });
  return {context,page,errors};
 }
@@ -81,11 +81,11 @@ test('a hung skill times out without leaving a permanent input or cooldown lock'
  try{
   const accepted={...await reply(page,2,90),skillCooldown:6};
   await page.route('**/rest/v1/rpc/combat_action',async route=>{calls++;if(calls===1)return;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(accepted)});});
-  const elapsed=await page.evaluate(async()=>{const start=performance.now();await responseTest.combat.performWorldCombatAction('skill');return performance.now()-start;});
+  const elapsed=await page.evaluate(async()=>{const start=performance.now();await responseTest.combat.performWorldCombatAction(responseTest.skillId);return performance.now()-start;});
   assert.ok(elapsed>=3900&&elapsed<5200,`A hung action releases after its bounded deadline: ${elapsed} ms`);
   assert.equal(await page.evaluate(()=>responseTest.state.fight.combatBusy),false);
   assert.equal(await page.evaluate(()=>responseTest.state.vitals.skillReadyAt<=performance.now()),true,'Rejected skill prediction is released');
-  await page.evaluate(()=>responseTest.combat.performWorldCombatAction('skill'));
+  await page.evaluate(()=>responseTest.combat.performWorldCombatAction(responseTest.skillId));
   assert.equal(calls,2);assert.equal(await page.evaluate(()=>responseTest.state.fight.combatEncounter.health),90);assert.deepEqual(errors,[]);
  }finally{await context.close();}
 });

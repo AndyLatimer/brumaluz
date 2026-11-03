@@ -28,6 +28,21 @@ async function lootMaterial(f,id,n){
  while(count(await f.data(),id)<n){let d=await f.data();const loot=(await f.db.query('select game_wilderness_loot($1,$2) loot',[d,{enemy:enemy[0]}])).rows[0].loot;for(const item of loot)d=(await f.db.query('select game_rpg_give($1,$2,false) d',[d,item])).rows[0].d;await f.seed(d);}
 }
 
+test('tutorial objectives show the actual materials and lead out of the workshop to gather',()=>{
+ for(const [job,cfg] of Object.entries(defs.jobs)){
+  const d=client.defaultChar(),lesson={job,status:'active',visited:true,equipped:true,gathered:0,crafted:0,collected:0,delivered:false,jobIds:[],startedAt:0};
+  d.inventory=Array(25).fill(null);d.rpg=client.professionState({learned:cfg.recipe?[cfg.recipe]:[],tutorial:lesson});
+  const ingredients=cfg.recipe?catalog.recipes[cfg.recipe].ingredients:catalog.dailyOrders.orders[cfg.order].ingredients;
+  const objective=client.tutorialObjective(d);
+  assert.match(objective,/Extrae un recurso de .* en Pompelín/);
+  assert.match(objective,/Reúne en la mochila para la práctica/);
+  for(const [id,amount] of Object.entries(ingredients))assert.ok(objective.includes(`${amount*(cfg.recipe?2:1)} × ${catalog.items[id].label}`),`${job}: ${id}`);
+  assert.equal(client.tutorialTarget(d,catalog.teachers[job].location).name,'Sal del taller para continuar',`${job}: exit to gathering`);
+  d.rpg.tutorial.gathered=1;
+  assert.doesNotMatch(client.tutorialObjective(d),/Extrae un recurso/);
+ }
+});
+
 test('the chosen profession runs its real loop for every master, without free recipes or waived daily limits',{timeout:120000},async()=>{
  const f=await fixture();try{
   for(const[job,cfg]of Object.entries(defs.jobs)){
@@ -48,8 +63,8 @@ test('the chosen profession runs its real loop for every master, without free re
     }
     d=await f.data();assert.equal(d.rpg.tutorial.collected,2);assert.equal(client.tutorialStep(d),'deliver');
    }
-   await f.move(catalog.teachers[job]);d=await f.action('daily_order',{id:cfg.order,master:catalog.teachers[job].id,reward:catalog.dailyOrders.orders[cfg.order].reward});
-   assert.equal(d.rpg.dailyOrders.completed,1);assert.equal(d.rpg.tutorial.delivered,true);assert.equal(client.tutorialStep(d),'report');const before=d.wallet.pelines;
+   await f.move(catalog.teachers[job]);d=await f.action('tutorial_supply',{master:catalog.teachers[job].id});
+   assert.equal(d.rpg.dailyOrders.completed,0);assert.equal(d.rpg.tutorial.delivered,true);assert.equal(client.tutorialStep(d),'report');const before=d.wallet.pelines;
    const req=randomUUID(),rev=d.rpg.revision;d=await f.action('tutorial_complete',{master:catalog.teachers[job].id},req,rev);
    assert.equal(d.rpg.tutorial.status,'completed');assert.equal(d.wallet.pelines,before);assert.equal(d.level,2);assert.equal(d.experience,30);assert.equal(client.currentQuest(d),null);
    assert.deepEqual((await f.action('tutorial_complete',{master:catalog.teachers[job].id},req,rev)).rpg.tutorial,d.rpg.tutorial);
@@ -80,11 +95,10 @@ test('cancelled or earlier jobs cannot provide fake tutorial completion, and can
  }finally{await f.db.close();}
 });
 
-test('normal daily exhaustion blocks the delivery without consuming the lesson or bypassing the cap',{timeout:60000},async()=>{
+test('the one-time harvesting lesson is outside the exhausted commission quota',{timeout:60000},async()=>{
  const f=await fixture();try{
   await f.db.exec("update test_clock set stamp='2026-10-27T23:58:00Z'");await start(f,'lenador',{rpg:{dailyOrders:{day:'2026-10-27',completed:3}}});await visit(f,'lenador');await equip(f,'lenador');await gather(f,'material_lenador_0',6);await f.move(catalog.teachers.lenador);
-  const before=await f.data();await assert.rejects(()=>f.action('daily_order',{id:'suministro_lenador',master:'maestro_lenador',reward:50}),/tres encargos/);assert.deepEqual(await f.data(),before);assert.equal(before.rpg.tutorial.delivered,false);
-  await f.step(130);const d=await f.action('daily_order',{id:'suministro_lenador',master:'maestro_lenador',reward:50});assert.equal(d.rpg.dailyOrders.completed,1);assert.ok(d.rpg.tutorial.delivered);
+  const before=await f.data(),d=await f.action('tutorial_supply',{master:'maestro_lenador'});assert.equal(d.wallet.pelines,before.wallet.pelines+50);assert.equal(d.rpg.dailyOrders.completed,3);assert.equal(d.rpg.tutorial.delivered,true);await assert.rejects(()=>f.action('tutorial_supply',{master:'maestro_lenador'}));
  }finally{await f.db.close();}
 });
 
@@ -92,7 +106,7 @@ test('existing knowledge/tools are recognized but old inventory does not replace
  const f=await fixture();try{
   const d=await start(f,'herreria',{rpg:{learned:['componente_herreria_0'],tools:{minero:{id:'herramienta_minero_0',count:1,durability:100}}},inventory:[{id:'componente_herreria_0',count:2},...Array(24).fill(null)]});
   assert.ok(d.rpg.tutorial.equipped);assert.equal(d.rpg.tutorial.collected,0);await visit(f,'herreria');const visited=await f.data();assert.equal(client.tutorialStep(visited),'gather');
-  await f.move(catalog.teachers.herreria);await f.action('daily_order',{id:'piezas_herreria',master:'isberto',reward:75});assert.equal((await f.data()).rpg.tutorial.delivered,false);
+  await f.move(catalog.teachers.herreria);await assert.rejects(()=>f.action('tutorial_supply',{master:'isberto'}),/práctica/);assert.equal((await f.data()).rpg.tutorial.delivered,false);
  }finally{await f.db.close();}
 });
 
@@ -117,10 +131,10 @@ test('development and SQL track the same queued and instant profession lessons',
    }
    await move(catalog.teachers[job]);result=await action('craft',{id:cfg.recipe,count:2});
    if(catalog.recipes[cfg.recipe].seconds){
-    await f.step(61);now+=61;const sqlIds=[...result.rpg.tutorial.jobIds],localIds=[...d.rpg.tutorial.jobIds];
+    await f.step(61);d.rpg.onlineUntil=now+61;now+=61;const sqlIds=[...result.rpg.tutorial.jobIds],localIds=[...d.rpg.tutorial.jobIds];
     for(let i=0;i<2;i++)await action('collect',{id:sqlIds[i]},{id:localIds[i]});
    }
-   await action('daily_order',{id:cfg.order,master:catalog.teachers[job].id,reward:75});await action('tutorial_complete',{master:catalog.teachers[job].id});assert.equal(d.experience,40);
+   await action('tutorial_supply',{master:catalog.teachers[job].id});await action('tutorial_complete',{master:catalog.teachers[job].id});assert.equal(d.experience,40);
   }
  }finally{await f.db.close();}
 });

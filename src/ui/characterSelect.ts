@@ -19,8 +19,11 @@ import { errorMessage } from '../game/server';
 import { showAuthScreen } from './accountScreens';
 import { toast } from './toast';
 import { setGameMenuOpen } from './menus';
+import { celebrateCreatedCharacter } from './creatorCelebration';
+import { publishedMaps } from '../world/mapCity';
 
 export function showEditor() {
+  play.creatorWalkPreview = false;
   resetCreatorStudio();
   resetCreatorNavigation();
   document.body.classList.remove('auth-visible', 'characters-visible');
@@ -51,7 +54,8 @@ export function showCharacterScreen() {
 }
 export function syncBackdropTime() {
   const hour = new Date().getHours();
-  document.body.classList.toggle('daytime', hour >= 6 && hour < 18);
+  document.body.classList.toggle('daytime', hour >= 7 && hour < 16);
+  document.body.classList.toggle('sunset', hour >= 16 && hour < 20);
   menuMusic.sync();
 }
 export function displayCharacters(characters: SavedCharacter[]) {
@@ -105,7 +109,11 @@ export function displayCharacters(characters: SavedCharacter[]) {
       if (session.enteringWorld) return;
       session.enteringWorld = true;
       play.disabled = true;
-      const finishTransition = beginTransition('Entrando en Brumaluz…');
+      const destination = publishedMaps()[data.location];
+      const finishTransition = beginTransition('Entrando en el mundo…', {
+        journey: 'enter',
+        destination: { id: data.location, name: locationName(data.location), kind: destination?.kind, region: destination?.region },
+      });
       try {
         loadCharacter(saved);
         if (!(await loadWorldState())) return;
@@ -246,7 +254,7 @@ export async function createCurrentCharacter() {
   }
 }
 export async function returnToCharacters() {
-  const finishTransition = beginTransition('Volviendo a tus personajes…');
+  const finishTransition = beginTransition('Volviendo a tus personajes…', { journey: 'return' });
   try {
     const user = session.currentUser;
     if (play.mode === 'play') {
@@ -352,7 +360,7 @@ export function installCharacterSelect() {
     session.enteringWorld = true;
     const enter = $<HTMLButtonElement>('#enter');
     enter.disabled = true;
-    const finishTransition = beginTransition('Preparando tu aventura…');
+    const finishTransition = beginTransition('Preparando tu aventura…', { journey: 'create' });
     const stillCurrent = characterContext();
     try {
       if (play.ambientEnabled) {
@@ -365,6 +373,8 @@ export function installCharacterSelect() {
       if (!stillCurrent()) return;
       if (!(await createCurrentCharacter())) return;
       if (!(await loadWorldState())) return;
+      finishTransition();
+      if (!(await celebrateCreatedCharacter())) return;
       view.focus = 'body';
       enterPlay();
       // La llegada ya presenta la ciudad y a Gnomi; un saludo automático rompería el paseo.

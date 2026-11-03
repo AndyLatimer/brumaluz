@@ -39,11 +39,11 @@ test('character cards keep portraits inside the inner frame and borders stable o
   } finally { await player.context.close(); }
 });
 
-test('menu music produces sound, persists its toggle and stops outside account screens', { timeout: 120000 }, async () => {
+test('menu music produces sound, persists its toggle and accompanies the creator before stopping in the world', { timeout: 120000 }, async () => {
   const player = await openPlayer(backend(), fixture('Alric', 'humano', 100));
   const page = player.page;
   const sample = () => page.evaluate(async () => {
-    const context = window.__audioContexts[0];
+    const context = window.__audioContexts.find(audio => audio.brumaluzAudio === 'menu-music');
     const analyser = context.createAnalyser();
     context.testMaster.connect(analyser);
     await new Promise(resolve => setTimeout(resolve, 180));
@@ -66,7 +66,7 @@ test('menu music produces sound, persists its toggle and stops outside account s
     await page.locator('[data-language="es"]').first().click();
     await music.click();
     assert.equal(await sample(), 0, 'Mute must produce exact silence');
-    await page.evaluate(() => window.__audioContexts[0].suspend());
+    await page.evaluate(() => window.__audioContexts.find(audio => audio.brumaluzAudio === 'menu-music').suspend());
     await music.click();
     await music.click();
     await music.click();
@@ -84,7 +84,9 @@ test('menu music produces sound, persists its toggle and stops outside account s
     await page.waitForTimeout(1000);
     assert.ok(await sample() > 0.0001, 'Visible tabs must restore music');
     await page.locator('#new-character').click();
-    assert.equal(await sample(), 0, 'Creator must stop menu music');
+    await page.waitForTimeout(1600);
+    assert.ok(await sample() > 0.0001, 'Creator must play its own welcoming music');
+    assert.equal(await music.isVisible(), true, 'Creator must retain its music control');
     await page.locator('#account-characters').click();
     await page.waitForTimeout(1000);
     assert.ok(await sample() > 0.0001, 'Returning to selection must restore music');
@@ -93,7 +95,7 @@ test('menu music produces sound, persists its toggle and stops outside account s
     await page.keyboard.press('KeyO');
     await page.locator('[data-tab="sound"]').click();
     await page.locator('#opt-master-volume').fill('0');
-    await page.keyboard.press('Escape');
+    await page.locator('#options-close').click();
     await leave(page);
     await page.waitForTimeout(1000);
     assert.ok(await sample() < 0.0001, 'Menu music must respect master volume');

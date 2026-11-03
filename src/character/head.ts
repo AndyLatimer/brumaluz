@@ -25,15 +25,7 @@ import { hasTravelerMask } from './head/accessoryLayers';
 
 export type { HeadKit, HeadSource, CreatorParts, HeadOptions, HeadResult } from './head/types';
 
-export const HAIR_STYLES = ['Rapado', 'Corto con flequillo', 'Despeinado', 'Media melena', 'Coleta', 'Moño', 'Dos coletas', 'Cresta', 'Melena larga', 'Trenza', 'Moños dobles', 'Rizos', 'Corte asimétrico', 'Corto pegado', 'Melena de explorador', 'Flequillo de viajero', 'Trenza lateral', 'Trenzas de la Arboleda', 'Moño de artesano', 'Coleta de aventurero', 'Ondas de Bruma', 'Corona trenzada', 'Trenza alta', 'Moño trenzado', 'Melena a un lado', 'Rizos cortos', 'Trenzas recogidas', 'Dos moños trenzados'];
-export const BEARDS = ['Ninguna', 'Barba recortada', 'Barba completa', 'Perilla y bigote', 'Bigote', 'Perilla', 'Patillas', 'Barba de tres días', 'Bigote de artesano'];
-export const EYE_SHAPES = ['Normales', 'Grandes', 'Pequeños', 'Rasgados', 'Dulces', 'Soñolientos', 'Redondos', 'Varoniles', 'Afilados', 'Almendrados', 'Curiosos', 'Serenos', 'Vivaces'];
-export const BROWS = ['Naturales', 'Finas', 'Gruesas', 'Altas', 'Preocupadas', 'Enfadadas', 'Arqueadas', 'Rectas', 'Suaves'];
-export const NOSES = ['Pequeña', 'Grande', 'Respingona', 'Ancha', 'Aguileña', 'Botón', 'Recta', 'Redondeada', 'Delicada'];
-export const MOUTHS = ['Sonrisa', 'Sonrisa abierta', 'Seria', 'Sorpresa', 'Pícara', 'Colmillo', 'Sonrisa tímida', 'Dos colmillos', 'Sonrisa de lado'];
-export { DETAILS } from './head/detailLayers';
-export const FACE_LABELS: Record<HeadKit, string> = { Mage: 'Serio', Knight: 'Noble', Rogue: 'Dulce', Barbarian: 'Cuadrada' };
-export const FACE_KITS: HeadKit[] = ['Rogue', 'Mage', 'Knight', 'Barbarian'];
+export { HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS, FACE_LABELS, FACE_KITS } from './head/options';
 
 export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, material: (kit: HeadKit) => THREE.Material, extraMat: (c: string) => THREE.Material, parts: CreatorParts): HeadResult {
   const A = analyse(sources[o.face === 'Barbarian' ? 'Mage' : o.face]);
@@ -51,7 +43,7 @@ export function buildHead(sources: Record<HeadKit, HeadSource>, o: HeadOptions, 
 
   const { decals, eyes, happy, closed } = buildEyes({ extraMat, A, facing, onFace, E, o, beast, E0, conform, B, material });
 
-  const { decal, cheekY, blushMat } = buildFaceDetails({ extraMat, facing, onFace, conform, decals, rayHead, nose, o, mouthY });
+  const { decal, cheekY, blushMat } = buildFaceDetails({ extraMat, facing, onFace, conform, decals, rayHead, nose, o, mouthY, eyeX: A.eyeX, eyeY: A.eyeY });
 
   buildLineageMarks({ o, decal, nose, cheekY });
 

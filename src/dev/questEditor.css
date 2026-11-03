@@ -68,6 +68,31 @@ textarea { min-height: 108px; line-height: 1.6; }
 .delete-options { padding: 12px 0 0; margin-top: 10px; }
 .delete-options summary { color: #bba79c; font-size: 11px; font-weight: 400; margin-bottom: 8px; }
 .scope-note { border-top: 1px solid #3e4c41; margin: 20px 0 0; padding-top: 16px; color: #a4afa3; font-size: 11px; }
+.history-toolbar { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 0 0 12px; }
+.history-toolbar button { font-size: 12px; padding: 6px 10px; background: transparent; }
+.history-toolbar span { color: #9aaa9c; margin-left: auto; font-size: 11px; }
+.quest-chain { display: grid; gap: 8px; background: #17221e; border: 1px solid #4a5b46; border-radius: 8px; padding: 14px; margin: 14px 0; text-align: center; overflow-wrap: anywhere; }
+.quest-chain span { font-size: 12px; color: #b3c2a5; }
+.dialogue-map > ol { list-style: none; padding: 0; display: grid; gap: 13px; }
+.dialogue-map > ol > li { padding: 13px; border: 1px solid #53644a; border-radius: 7px; background: #19261f; }
+.dialogue-map button { padding: 6px 8px; font-size: 12px; text-align: left; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.dialogue-map button small { display: block; color: #d3d7a7; margin-bottom: 4px; }
+.dialogue-map ul { padding-left: 18px; margin-top: 10px; }
+.dialogue-map li li { padding: 6px 0; font-size: 12px; color: #bbcab0; overflow-wrap: anywhere; }
+.dialogue-map li b { display: block; color: #e0d39a; font-size: 10px; }
+.review-warnings { margin-bottom: 22px; }
+.review-warnings button { background: transparent; border: 0; text-align: left; color: #e6ce9a; font-size: 12px; padding: 5px 0; }
+.journal-preview { color: #3c3425; background: #eee1bd; border: 1px solid #aa965e; border-radius: 10px; padding: 22px; margin: 22px 0; overflow-wrap: anywhere; }
+.journal-preview .eyebrow { color: #696940; }
+.journal-preview h3 { font: 600 21px Georgia,serif; }
+.journal-preview p,.journal-preview li { font: 16px/1.6 Georgia,serif; white-space: pre-wrap; }
+.journal-preview small { color: #645535; }
+.test-objective progress { width: 100%; height: 6px; accent-color: #b7c487; }
+.test-objective details { padding-top: 8px; margin-top: 4px; }
+.test-objective summary { font-size: 11px; font-weight: 400; margin-bottom: 8px; }
+.test-trace ol { padding-left: 18px; max-height: 320px; overflow: auto; }
+.test-trace li { padding: 5px 0; font-size: 12px; }
+.test-trace small { display: block; color: #b3c68e; }
 .empty-library { padding: 14px; border: 1px dashed #60705c; border-radius: 7px; color: #b9c5ad; font-size: 12px; }
 .journey { list-style: none; padding: 0; margin: 20px 0; counter-reset: journey; }
 .journey li { position: relative; border-left: 1px solid #697857; margin-left: 10px; padding: 0 0 24px 22px; }

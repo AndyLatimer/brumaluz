@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-standalone/
 .art-sources/
 art/equipment/*.blend1
 art/hamlet/*.blend1

@@ -14,6 +14,8 @@ export interface ItemStack {
   durability?: number;
   maxDurability?: number;
   originalDurability?: number;
+  craftedBy?: string;
+  used?: boolean;
 }
 
 export type InventorySlots = (ItemStack | null)[];
@@ -27,10 +29,12 @@ export const emptyEquipment = (): Equipment => Object.fromEntries(EQUIPMENT_SLOT
 
 export const asStack = (v: unknown): ItemStack | null => {
   if (!v || typeof v !== 'object') return null;
-  const { id, count, bound, instanceId, enchantment, durability, maxDurability, originalDurability } = v as Record<string, unknown>;
+  const { id, count, bound, instanceId, enchantment, durability, maxDurability, originalDurability, craftedBy, used } = v as Record<string, unknown>;
   const n = Number(count);
   if (typeof id !== 'string' || !id || !Number.isSafeInteger(n) || n <= 0) return null;
   const out: ItemStack = { id, count: n, ...(bound === true ? { bound: true } : {}) };
+  if(typeof craftedBy==='string'&&craftedBy.length<=120)out.craftedBy=craftedBy;
+  if(used===true)out.used=true;
   if (typeof instanceId === 'string' && /^[a-zA-Z0-9-]{8,80}$/.test(instanceId)) out.instanceId = instanceId;
   if (enchantment && typeof enchantment === 'object') {
     const e = enchantment as Record<string, unknown>;

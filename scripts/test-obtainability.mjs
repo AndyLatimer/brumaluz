@@ -13,11 +13,26 @@ import {recipeTrainingPatch} from '../tools/build-recipe-training-patch.mjs';
 
 const json=async file=>JSON.parse(await readFile(new URL(`../${file}`,import.meta.url),'utf8'));
 const catalog=await json('src/data/generated/rpg-catalog.json'),wild=await json('src/data/generated/wilderness.json');
-const bundle=await build({stdin:{contents:"export {defaultChar} from './src/data/data';export {transferEquipment} from './src/data/equipment';export {starterEquipment,basicAttackDamage} from './src/data/combat';export {recipeExperience} from './src/data/professions';",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node'});
+const bundle=await build({stdin:{contents:"export {defaultChar} from './src/data/data';export {EQUIPPABLE,transferEquipment} from './src/data/equipment';export {WEAPONS} from './src/data/weapons';export {ARMOR} from './src/data/outfits';export {ACCESSORIES} from './src/data/accessories';export {starterEquipment,basicAttackDamage} from './src/data/combat';export {recipeExperience} from './src/data/professions';",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node'});
 const client=await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].contents).toString('base64')}`);
 const definition=(source,name)=>{const start=source.indexOf(`create or replace function public.${name}(`);assert.ok(start>=0,name);return source.slice(start,source.indexOf('$$;',source.indexOf('as $$',start))+3);};
 const modulePath=process.env.PGLITE_TEST_MODULE??join(tmpdir(),'brumaluz-combat-sql-tools/node_modules/@electric-sql/pglite/dist/index.js');
 let sqlAvailable=true;try{await access(modulePath);}catch{sqlAvailable=false;}
+
+test('editor equipment overrides retain canonical metadata and generated crafting recipes',()=>{
+ const canonical={...client.WEAPONS,...client.ARMOR,...client.ACCESSORIES};
+ for(const [id,meta]of Object.entries(canonical)){
+  for(const [field,value]of Object.entries(meta)){
+   if(field!=='slot'&&field!=='cls')assert.deepEqual(client.EQUIPPABLE[id]?.[field],value,`${id}: client ${field}`);
+  }
+  assert.equal(catalog.equipment[id]?.tier,meta.tier,`${id}: catalog rank`);
+  if(meta.kind){
+   assert.equal(catalog.equipment[id]?.kind,meta.kind,`${id}: catalog weapon type`);
+  }
+  if(client.ARMOR[id])assert.equal(catalog.sets[id]?.tier,meta.tier,`${id}: armor set rank`);
+  if(meta.tier!==0||meta.slot!=='weapon')assert.equal(catalog.recipes[id]?.output,id,`${id}: crafting recipe`);
+ }
+});
 
 test('all recipe materials have an active source, and hides have independent hunting and processing routes',()=>{
  const report=auditObtainability(catalog,wild);assert.deepEqual(report.missingIngredients,[]);assert.deepEqual(report.blockedRecipes,[]);
@@ -99,11 +114,11 @@ test('each class can earn the purchase price, buy its first weapon recipe from t
 test('the narrow patch is repeatable and does not reset existing creatures or player progress',{skip:!sqlAvailable,timeout:60000},async()=>{
  const f=await fixture();try{
   await f.seed({name:'Preserved'});const original=await f.data();
-  await f.db.query('insert into wilderness_mobs values($1,$2)',['camino_1',{health:17,instanceId:'active-generation',status:'active',members:{[f.id]:{damage:4}}}]);
-  const old=(await f.db.query('select * from wilderness_mobs')).rows;
+  await f.db.query('insert into wilderness_mobs(spawn,state) values($1,$2) on conflict(spawn) do update set state=excluded.state',['camino_1',{health:17,instanceId:'active-generation',status:'active',members:{[f.id]:{damage:4}}}]);
+  const old=(await f.db.query("select * from wilderness_mobs where spawn='camino_1'")).rows;const originalCount=(await f.db.query('select count(*)::int n from wilderness_mobs')).rows[0].n;
   await f.db.exec(obtainabilityPatch());await f.db.exec(obtainabilityPatch());
   assert.deepEqual(await f.data(),original);assert.deepEqual((await f.db.query("select * from wilderness_mobs where spawn='camino_1'")).rows,old);
-  assert.equal((await f.db.query('select count(*)::int n from wilderness_mobs')).rows[0].n,6);
+  assert.equal((await f.db.query('select count(*)::int n from wilderness_mobs')).rows[0].n,originalCount);
   assert.equal((await f.db.query("select has_function_privilege('anon','public.game_rpg_recipe_xp(jsonb,jsonb)','EXECUTE') allowed")).rows[0].allowed,false);
  }finally{await f.db.close();}
 });
@@ -147,7 +162,7 @@ test('exceptional scrolls are rare high-level loot, never ordinary recipes or gu
 
 test('teacher migration is repeatable, preserves learned recipes and does not expose private loot helpers',{skip:!sqlAvailable,timeout:60000},async()=>{
  const f=await fixture();try{
-  await f.db.exec('create table public.rpg_expeditions(id uuid,party_id uuid,leader uuid,state jsonb,updated_at timestamptz);');
+  await f.db.exec('create table if not exists public.rpg_expeditions(id uuid,party_id uuid,leader uuid,state jsonb,updated_at timestamptz);');
   await f.seed({rpg:{learned:['componente_herreria_0','espada_cobre_t1']}});const before=await f.data();
   await f.db.exec(recipeTrainingPatch());await f.db.exec(recipeTrainingPatch());assert.deepEqual(await f.data(),before);
   const permissions=(await f.db.query("select proname,has_function_privilege('anon',oid,'EXECUTE') anon,has_function_privilege('authenticated',oid,'EXECUTE') authenticated from pg_proc where pronamespace='public'::regnamespace and proname in ('rpg_action','expedition_action','game_wilderness_loot','game_rpg_catalog')")).rows;

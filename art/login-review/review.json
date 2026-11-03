@@ -1,0 +1,10 @@
+{
+  "boundaries": 8,
+  "automaticTransitions": 3,
+  "ornaments": "original",
+  "logo": "valid SVG",
+  "responsiveForms": 12,
+  "editorAndGame": "passed",
+  "errors": [],
+  "screenshots": "art/login-review"
+}

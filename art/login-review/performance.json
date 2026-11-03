@@ -1,0 +1,20 @@
+[
+  {
+    "mode": "normal",
+    "typingMs": 944,
+    "scriptMs": 99,
+    "hidden3dRenders": 0,
+    "accountScreens": "paused",
+    "creatorAndGame": "resumed",
+    "errors": []
+  },
+  {
+    "mode": "compatible",
+    "typingMs": 875,
+    "scriptMs": 23,
+    "hidden3dRenders": 0,
+    "accountScreens": "paused",
+    "creatorAndGame": "resumed",
+    "errors": []
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "Owned starter room, fixed shell, menu and furnishing count",
+    "SQL placement, invalid doorway, cancellation and four distinct models",
+    "Mobile controls and persisted visit permission",
+    "Crafted chair is a real seat in the game",
+    "Room and inn door round trip in the game",
+    "English housing controls",
+    "Two optional SQL project deliveries use authored components and give one planter",
+    "Personal daily cooking menu, real contributions and reward collection on mobile",
+    "Accept and deliver a self-made commission in the real master dialogue",
+    "Purchase through the mobile menu preserves the inn room",
+    "A larger fixed floor plan and real furnishings in the new house",
+    "New house entry and exit through real game portals",
+    "Twelve exported models registered and previewed in the asset editor",
+    "Models available in the map editor without saving changes",
+    "New interior opened and inspected in the real map editor"
+  ],
+  "errors": [],
+  "scope": "Real editor and game renderers; isolated SQL; seeded furniture for interface review; not a measured human session."
+}

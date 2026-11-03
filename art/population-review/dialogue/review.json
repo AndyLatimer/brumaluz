@@ -1,0 +1,117 @@
+{
+  "editor": [],
+  "game": [],
+  "errors": [],
+  "chatter": {
+    "checks": [
+      {
+        "state": "dead",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "mapTravelling",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "actionBusy",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "gameMenuOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "playerMenuOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "worldMenuOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "optionsOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "openWindow",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "cinematic",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "background",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "dialogue",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "wall",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "hidden",
+        "lines": 0,
+        "cooldown": false
+      }
+    ],
+    "audible": 1,
+    "immediateRepeat": 1
+  },
+  "maps": {
+    "residents": 0,
+    "debug": true
+  },
+  "desktopFraming": {
+    "ready": true,
+    "subjects": [
+      {
+        "x": 942.2083277411257,
+        "y": 371.82990702927975,
+        "visible": true
+      },
+      {
+        "x": 458.95549479173883,
+        "y": 413.2130895440771,
+        "visible": true
+      }
+    ],
+    "dialogTop": 800.359375
+  },
+  "conversationCamera": {
+    "queries": 16,
+    "hidden": 0,
+    "maxNpcObstacles": 5
+  },
+  "mobileFraming": {
+    "ready": true,
+    "subjects": [
+      {
+        "x": 290.8829705961047,
+        "y": 309.8618126078353,
+        "visible": true
+      },
+      {
+        "x": 97.71995677170788,
+        "y": 333.9760136930217,
+        "visible": true
+      }
+    ],
+    "dialogTop": 647.21875
+  }
+}

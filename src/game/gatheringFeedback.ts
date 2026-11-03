@@ -44,7 +44,7 @@ export function gatheringFeedback(node:ProfessionSite,energy:number,onCancel:()=
    progress.value=Math.min(node.seconds!,elapsed);timer.textContent=`${Math.max(0,node.seconds!-elapsed).toFixed(1)} s`;
    const stroke=Math.floor(elapsed/(node.job==='recolector'?1:1.25));
    if(stroke!==lastStroke){lastStroke=stroke;
-    combatAudio.play(node.job==='minero'?'mining':node.job==='lenador'?'chopping':'harvesting',node.job,{gain:.45});
+    combatAudio.play(node.job==='minero'?'mining':node.job==='lenador'?'chopping':'harvesting',node.job,{gain:.75});
     if(!reduced)for(let i=0;i<(lowEnd?3:6);i++){const mesh=new THREE.Mesh(geometry,material),a=i*2.4;mesh.position.set(Math.sin(a)*.15,node.job==='lenador'?.65:.35,Math.cos(a)*.15);mesh.raycast=()=>{};root.add(mesh);chips.push({mesh,velocity:new THREE.Vector3(Math.sin(a)*.5,.6+(i%3)*.15,Math.cos(a)*.5),age:0});}
    }
    for(let i=chips.length-1;i>=0;i--){const chip=chips[i];chip.age+=dt;if(chip.age>.65){chip.mesh.removeFromParent();chips.splice(i,1);}else{chip.mesh.position.addScaledVector(chip.velocity,dt);chip.velocity.y-=dt*1.9;chip.mesh.scale.setScalar(1-chip.age/.65);}}
@@ -53,7 +53,7 @@ export function gatheringFeedback(node:ProfessionSite,energy:number,onCancel:()=
   complete(xp:number){
    document.body.classList.remove('gathering-resource');
    root.visible=false;card.classList.add('complete');title.textContent=`+1 ${t(itemLabel(node.item!))}`;eyebrow.textContent=t('Recurso obtenido');timer.textContent=xp?`+${xp} EXP`:'';hint.textContent=t('Guardado en tu mochila.');cancel.remove();progress.value=progress.max;
-   document.removeEventListener('keydown',key);combatAudio.play('crafted',node.job,{gain:.4});
+   document.removeEventListener('keydown',key);combatAudio.play('crafted',node.job,{gain:.7});
    const until=performance.now()+2200;
    const finish=()=>{if(performance.now()>=until||play.mode!=='play'||play.playGeneration!==generation)dispose();else requestAnimationFrame(finish);};requestAnimationFrame(finish);
   },dispose,

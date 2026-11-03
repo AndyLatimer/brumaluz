@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import {readdirSync,statSync} from 'node:fs';
+import {readBuildSource} from '../scripts/build-output.mjs';
 
-const html = readFileSync('dist/index.html', 'utf8');
+const html = readBuildSource();
 const re = /data:model\/gltf-binary;base64,([A-Za-z0-9+/=]+)/g;
 let match, index = 0;
 while ((match = re.exec(html))) {
@@ -10,4 +11,6 @@ while ((match = re.exec(html))) {
   console.log(index, (bytes.length / 1e6).toFixed(2) + 'MB', names.join(' | '));
   index += 1;
 }
-console.log('total html', Buffer.byteLength(html));
+const external=readdirSync('dist/assets',{withFileTypes:true}).filter(entry=>entry.isFile()&&entry.name.endsWith('.glb')).map(entry=>({name:entry.name,bytes:statSync(`dist/assets/${entry.name}`).size}));
+console.log('Initial HTML + executable JS bytes', Buffer.byteLength(html));
+console.log('External GLBs (downloaded only when requested)',external.length);

@@ -1,0 +1,430 @@
+{
+  "scope": "Real city and character models, deterministic 30 Hz routines; CPU timings exclude GPU rendering and do not measure hardware FPS.",
+  "locations": [
+    {
+      "name": "pozo",
+      "frames": [
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 6,
+            "animated": 5,
+            "near": 4,
+            "medium": 2,
+            "far": 0
+          },
+          "time": 19.247599999994158
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 6,
+            "animated": 5,
+            "near": 5,
+            "medium": 1,
+            "far": 0
+          },
+          "time": 34.24759999999466
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 4,
+            "animated": 4,
+            "near": 3,
+            "medium": 1,
+            "far": 0
+          },
+          "time": 49.24759999999381
+        }
+      ]
+    },
+    {
+      "name": "jardin",
+      "frames": [
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 10,
+            "animated": 10,
+            "near": 5,
+            "medium": 1,
+            "far": 4
+          },
+          "time": 64.24759999999296
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 10,
+            "animated": 8,
+            "near": 4,
+            "medium": 2,
+            "far": 4
+          },
+          "time": 79.2475999999921
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 9,
+            "animated": 8,
+            "near": 6,
+            "medium": 0,
+            "far": 3
+          },
+          "time": 94.24759999999125
+        }
+      ]
+    },
+    {
+      "name": "levante",
+      "frames": [
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 6,
+            "animated": 4,
+            "near": 4,
+            "medium": 2,
+            "far": 0
+          },
+          "time": 109.2475999999904
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 6,
+            "animated": 4,
+            "near": 4,
+            "medium": 2,
+            "far": 0
+          },
+          "time": 124.24759999998955
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 6,
+            "animated": 4,
+            "near": 3,
+            "medium": 3,
+            "far": 0
+          },
+          "time": 139.2475999999887
+        }
+      ]
+    },
+    {
+      "name": "huertas",
+      "frames": [
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 5,
+            "animated": 3,
+            "near": 3,
+            "medium": 2,
+            "far": 0
+          },
+          "time": 154.24759999998784
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 5,
+            "animated": 3,
+            "near": 3,
+            "medium": 2,
+            "far": 0
+          },
+          "time": 169.247599999987
+        },
+        {
+          "total": 54,
+          "presentation": {
+            "total": 54,
+            "visible": 5,
+            "animated": 5,
+            "near": 3,
+            "medium": 2,
+            "far": 0
+          },
+          "time": 184.24759999998614
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "maxVisible": 10,
+  "routinesMs": {
+    "mean": 0.48581481476624805,
+    "p95": 1.7000000178813934,
+    "max": 8.099999994039536
+  },
+  "presentationAndAnimationMs": {
+    "mean": 0.09357407406524376,
+    "p95": 0.20000001788139343,
+    "max": 1
+  },
+  "slowPlans": [],
+  "flips": [
+    [
+      "habitante_brumaluz_28",
+      12
+    ],
+    [
+      "habitante_brumaluz_23",
+      12
+    ],
+    [
+      "vecino_levante_1",
+      11
+    ],
+    [
+      "vecino_pozo_2",
+      11
+    ],
+    [
+      "habitante_brumaluz_25",
+      10
+    ],
+    [
+      "habitante_brumaluz_22",
+      10
+    ],
+    [
+      "habitante_brumaluz_31",
+      10
+    ],
+    [
+      "habitante_brumaluz_26",
+      10
+    ],
+    [
+      "vecino_pozo_1",
+      10
+    ],
+    [
+      "habitante_brumaluz_19",
+      10
+    ],
+    [
+      "habitante_brumaluz_33",
+      10
+    ],
+    [
+      "habitante_brumaluz_21",
+      10
+    ],
+    [
+      "habitante_brumaluz_45",
+      9
+    ],
+    [
+      "vecino_levante_2",
+      9
+    ],
+    [
+      "habitante_brumaluz_29",
+      9
+    ],
+    [
+      "habitante_brumaluz_32",
+      9
+    ],
+    [
+      "vecino_huertas_1",
+      9
+    ],
+    [
+      "habitante_brumaluz_49",
+      9
+    ],
+    [
+      "habitante_brumaluz_39",
+      9
+    ],
+    [
+      "habitante_brumaluz_50",
+      9
+    ],
+    [
+      "habitante_brumaluz_20",
+      9
+    ],
+    [
+      "vecino_pozo_3",
+      9
+    ],
+    [
+      "vecino_jardin_1",
+      9
+    ],
+    [
+      "habitante_brumaluz_34",
+      9
+    ],
+    [
+      "habitante_brumaluz_43",
+      9
+    ],
+    [
+      "habitante_brumaluz_24",
+      9
+    ],
+    [
+      "habitante_brumaluz_27",
+      9
+    ],
+    [
+      "vecino_jardin_2",
+      9
+    ],
+    [
+      "vecino_jardin_3",
+      9
+    ],
+    [
+      "habitante_brumaluz_41",
+      9
+    ],
+    [
+      "vecino_artesanos_2",
+      8
+    ],
+    [
+      "habitante_brumaluz_42",
+      8
+    ],
+    [
+      "vecino_levante_3",
+      8
+    ],
+    [
+      "habitante_brumaluz_35",
+      8
+    ],
+    [
+      "vecino_artesanos_3",
+      8
+    ],
+    [
+      "habitante_brumaluz_46",
+      8
+    ],
+    [
+      "habitante_brumaluz_48",
+      8
+    ],
+    [
+      "habitante_brumaluz_30",
+      8
+    ],
+    [
+      "vecino_huertas_2",
+      8
+    ],
+    [
+      "vecino_huertas_3",
+      8
+    ],
+    [
+      "habitante_brumaluz_40",
+      8
+    ],
+    [
+      "habitante_brumaluz_44",
+      8
+    ],
+    [
+      "vecino_lonja_1",
+      8
+    ],
+    [
+      "habitante_brumaluz_47",
+      8
+    ],
+    [
+      "vecino_lonja_2",
+      8
+    ],
+    [
+      "vecino_lonja_3",
+      8
+    ],
+    [
+      "habitante_brumaluz_51",
+      8
+    ],
+    [
+      "habitante_brumaluz_52",
+      8
+    ],
+    [
+      "habitante_brumaluz_53",
+      8
+    ],
+    [
+      "habitante_brumaluz_54",
+      8
+    ],
+    [
+      "vecino_artesanos_1",
+      7
+    ],
+    [
+      "habitante_brumaluz_36",
+      7
+    ],
+    [
+      "habitante_brumaluz_37",
+      7
+    ],
+    [
+      "habitante_brumaluz_38",
+      7
+    ]
+  ],
+  "reversals": [
+    [
+      "habitante_brumaluz_23",
+      5
+    ],
+    [
+      "vecino_pozo_2",
+      3
+    ],
+    [
+      "vecino_pozo_1",
+      2
+    ],
+    [
+      "vecino_jardin_3",
+      2
+    ],
+    [
+      "habitante_brumaluz_26",
+      1
+    ],
+    [
+      "habitante_brumaluz_24",
+      1
+    ],
+    [
+      "habitante_brumaluz_28",
+      1
+    ]
+  ]
+}

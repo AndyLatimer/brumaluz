@@ -1,0 +1,723 @@
+{
+  "version": 2,
+  "pack": "brumaluz-lagto",
+  "title": "Cumbres de Cobre · Pueblo Lagto'",
+  "author": "Brumaluz",
+  "description": "Cantería, cobre trabajado, cedro, cuero y lana de las Cumbres de Cobre del pueblo Lagto'. Cincuenta modelos con superficies PBR, texturas CC0 y geometría revisada. Powered by Poly Haven.",
+  "units": "meters",
+  "up_axis_blender": "Z",
+  "up_axis_glb": "Y",
+  "front_axis_blender": "-Y",
+  "front_axis_glb": "+Z",
+  "count": 50,
+  "atlas": "textures/lagto-atlas.png",
+  "blend": "brumaluz-lagto.blend",
+  "assets": [
+    {
+      "name": "house_copper_bastion",
+      "label": "Bastión de Sillar y Cobre",
+      "category": "Edificios",
+      "description": "Vivienda fortificada de las Cumbres con muros de sillar escalonado, alero de cobre martillado y aspilleras enrejadas.",
+      "triangles": 16824,
+      "parts": 309,
+      "dimensions_m": {
+        "width": 4.95,
+        "depth": 6.47,
+        "height": 7.46
+      },
+      "glb": "objects/house_copper_bastion.glb"
+    },
+    {
+      "name": "forge_cobre_foundry",
+      "label": "Gran Fundición de las Cumbres",
+      "category": "Edificios",
+      "description": "Taller de fundición monumental con hornos gemelos de cobre, chimenea de tiraje, depósito de mineral y solera de colada.",
+      "triangles": 12956,
+      "parts": 216,
+      "dimensions_m": {
+        "width": 7.04,
+        "depth": 6.4,
+        "height": 7.495
+      },
+      "glb": "objects/forge_cobre_foundry.glb"
+    },
+    {
+      "name": "tower_drake_watch",
+      "label": "Torreón Vigía de Roca",
+      "category": "Edificios",
+      "description": "Atalaya de sillería octogonal con aspilleras reforzadas, matacanes de cobre martillado y pebetero cenital de señales.",
+      "triangles": 8142,
+      "parts": 194,
+      "dimensions_m": {
+        "width": 7.447,
+        "depth": 7.447,
+        "height": 11.68
+      },
+      "glb": "objects/tower_drake_watch.glb"
+    },
+    {
+      "name": "cavern_terrace_shelter",
+      "label": "Refugio de Risco y Caverna",
+      "category": "Edificios",
+      "description": "Refugio integrado en la roca viva con arriostramientos de cedro, marquesina de cobre, portón reforzado y terraza superior.",
+      "triangles": 7112,
+      "parts": 133,
+      "dimensions_m": {
+        "width": 5.5,
+        "depth": 4.872,
+        "height": 5.775
+      },
+      "glb": "objects/cavern_terrace_shelter.glb"
+    },
+    {
+      "name": "shrine_scale_ancestor",
+      "label": "Santuario de los Ancestros de Roca",
+      "category": "Edificios",
+      "description": "Templo ceremonial de sillería escalonada con pilares esculpidos en escama, entablamento de cobre y pebetero sacrificial con llama eterna.",
+      "triangles": 9526,
+      "parts": 128,
+      "dimensions_m": {
+        "width": 5.8,
+        "depth": 5.8,
+        "height": 6.92
+      },
+      "glb": "objects/shrine_scale_ancestor.glb"
+    },
+    {
+      "name": "hall_stone_council",
+      "label": "Cámara del Consejo de las Cumbres",
+      "category": "Edificios",
+      "description": "Gran sala consistorial con columnata de sillar fajada en cobre, frontón escalonado y medallón del clan de los Lagto'.",
+      "triangles": 12548,
+      "parts": 182,
+      "dimensions_m": {
+        "width": 7.2,
+        "depth": 8.188,
+        "height": 6.94
+      },
+      "glb": "objects/hall_stone_council.glb"
+    },
+    {
+      "name": "gatehouse_copper_rampart",
+      "label": "Puerta Fortificada de las Cumbres",
+      "category": "Edificios",
+      "description": "Bastión de paso fortificado con torres gemelas, rastrillo de rejas de cobre, matacanes y adarve almenado.",
+      "triangles": 4880,
+      "parts": 116,
+      "dimensions_m": {
+        "width": 7.08,
+        "depth": 4.012,
+        "height": 4.91
+      },
+      "glb": "objects/gatehouse_copper_rampart.glb"
+    },
+    {
+      "name": "mine_shaft_headframe",
+      "label": "Bocamina y Castañete de Extracción",
+      "category": "Edificios",
+      "description": "Castañete de extracción minera con castillete de cedro, ruedas de polea gemelas de cobre, tolva de descarga y bocamina en sillería.",
+      "triangles": 3688,
+      "parts": 62,
+      "dimensions_m": {
+        "width": 3.32,
+        "depth": 4.601,
+        "height": 5.935
+      },
+      "glb": "objects/mine_shaft_headframe.glb"
+    },
+    {
+      "name": "bridge_copper_arch",
+      "label": "Puente de Cantería y Cobre",
+      "category": "Edificios",
+      "description": "Puente monumental de arco escarzano en sillería de granito, calzada empedrada, pretiles de cobre remachados y pilones con faroles.",
+      "triangles": 4632,
+      "parts": 150,
+      "dimensions_m": {
+        "width": 4.14,
+        "depth": 7.48,
+        "height": 3.315
+      },
+      "glb": "objects/bridge_copper_arch.glb"
+    },
+    {
+      "name": "granary_silo_stone",
+      "label": "Silo y Granero de Roca",
+      "category": "Edificios",
+      "description": "Depósito cilíndrico de sillar con zunchos de refuerzo de cobre, ranuras de ventilación y cubierta cónica de cobre con veleta.",
+      "triangles": 5972,
+      "parts": 76,
+      "dimensions_m": {
+        "width": 4.7,
+        "depth": 4.835,
+        "height": 8.05
+      },
+      "glb": "objects/granary_silo_stone.glb"
+    },
+    {
+      "name": "barracks_drake_guard",
+      "label": "Cuartel de la Guardia de Escama",
+      "category": "Edificios",
+      "description": "Cuartel defensivo de infantería sauria con pórtico de sillar, cubierta de cobre alistonada, escudos de armas y armeros exteriores.",
+      "triangles": 5960,
+      "parts": 116,
+      "dimensions_m": {
+        "width": 7.44,
+        "depth": 5.05,
+        "height": 5.53
+      },
+      "glb": "objects/barracks_drake_guard.glb"
+    },
+    {
+      "name": "market_stall_ore_smith",
+      "label": "Puesto de Comercio Minero y Cobre",
+      "category": "Edificios",
+      "description": "Puesto de tasación y venta de mineral con mostrador de granito, balanza de cobre, toldo de cuero rojo y lingotes expuestos.",
+      "triangles": 3524,
+      "parts": 60,
+      "dimensions_m": {
+        "width": 3.6,
+        "depth": 2.8,
+        "height": 3.185
+      },
+      "glb": "objects/market_stall_ore_smith.glb"
+    },
+    {
+      "name": "throne_basalt_copper",
+      "label": "Trono de Basalto y Cobre",
+      "category": "Mobiliario",
+      "description": "Asiento ceremonial tallado en roca oscura de las Cumbres con apoyabrazos de cobre martillado y respaldo con cresta de escamas.",
+      "triangles": 2276,
+      "parts": 38,
+      "dimensions_m": {
+        "width": 1.68,
+        "depth": 1.6,
+        "height": 2.43
+      },
+      "glb": "objects/throne_basalt_copper.glb"
+    },
+    {
+      "name": "table_stone_refectory",
+      "label": "Mesa de Cantero Reforzada",
+      "category": "Mobiliario",
+      "description": "Mesa comunal de losa de pizarra pulida sobre pedestales de piedra escuadrada, traviesa de cedro y cantoneras de cobre remachadas.",
+      "triangles": 2712,
+      "parts": 53,
+      "dimensions_m": {
+        "width": 2.524,
+        "depth": 1.274,
+        "height": 1.385
+      },
+      "glb": "objects/table_stone_refectory.glb"
+    },
+    {
+      "name": "bench_quarry_slab",
+      "label": "Banco Corrido de Roca y Cuero",
+      "category": "Mobiliario",
+      "description": "Banco corrido de sillar de granito con colchoneta de cuero atada por cinchas con hebillas de cobre.",
+      "triangles": 708,
+      "parts": 27,
+      "dimensions_m": {
+        "width": 2.1,
+        "depth": 0.58,
+        "height": 0.588
+      },
+      "glb": "objects/bench_quarry_slab.glb"
+    },
+    {
+      "name": "chair_high_carved",
+      "label": "Silla Alta de las Cumbres",
+      "category": "Mobiliario",
+      "description": "Silla de cedro oscuro y respaldo alto con placa de pizarra esculpida en motivos geométricos y clavazón de cobre.",
+      "triangles": 1608,
+      "parts": 27,
+      "dimensions_m": {
+        "width": 0.655,
+        "depth": 0.631,
+        "height": 1.48
+      },
+      "glb": "objects/chair_high_carved.glb"
+    },
+    {
+      "name": "bed_cavern_hearth",
+      "label": "Cama Térmica de Piedra y Pieles",
+      "category": "Mobiliario",
+      "description": "Cama de sillería con base de canales térmicos para el frío de las cumbres, manta de piel de borrego y faroles de cobre.",
+      "triangles": 6084,
+      "parts": 62,
+      "dimensions_m": {
+        "width": 2.66,
+        "depth": 2.555,
+        "height": 1.866
+      },
+      "glb": "objects/bed_cavern_hearth.glb"
+    },
+    {
+      "name": "cabinet_vaulted_copper",
+      "label": "Alacena Acorazada de Cobre",
+      "category": "Mobiliario",
+      "description": "Armario de cedro oscuro con puertas paneladas en chapa de cobre martillado, cerrojo pasador y herrajes forjados.",
+      "triangles": 2124,
+      "parts": 50,
+      "dimensions_m": {
+        "width": 1.5,
+        "depth": 0.92,
+        "height": 2.29
+      },
+      "glb": "objects/cabinet_vaulted_copper.glb"
+    },
+    {
+      "name": "chest_ore_strongbox",
+      "label": "Arcón Blindado de Mineral",
+      "category": "Mobiliario",
+      "description": "Arcón de madera férrea y sillar con tapa abovedada, zunchos de cobre remachados y candado macizo de fundición.",
+      "triangles": 4040,
+      "parts": 80,
+      "dimensions_m": {
+        "width": 1.362,
+        "depth": 0.97,
+        "height": 1.03
+      },
+      "glb": "objects/chest_ore_strongbox.glb"
+    },
+    {
+      "name": "shelf_mason_tools",
+      "label": "Estantería de Cantería y Menas",
+      "category": "Mobiliario",
+      "description": "Armazón de cedro y repisas de pizarra con cajones de menas, cinceles de cantero y probetas de cobre.",
+      "triangles": 2156,
+      "parts": 41,
+      "dimensions_m": {
+        "width": 1.54,
+        "depth": 0.605,
+        "height": 2.3
+      },
+      "glb": "objects/shelf_mason_tools.glb"
+    },
+    {
+      "name": "desk_cartographer_copper",
+      "label": "Mesa de Trazado y Mapas Mineros",
+      "category": "Mobiliario",
+      "description": "Pupitre inclinado de cantero y agrimensor con losa de dibujo, pergamino de galerías, escuadra de bronce y cajonería.",
+      "triangles": 1788,
+      "parts": 27,
+      "dimensions_m": {
+        "width": 1.6,
+        "depth": 0.884,
+        "height": 1.105
+      },
+      "glb": "objects/desk_cartographer_copper.glb"
+    },
+    {
+      "name": "anvil_master_forge",
+      "label": "Gran Yunque de Fundición",
+      "category": "Mobiliario",
+      "description": "Yunque monumental de doble cuerno sobre tajo de roble zunchado en hierro, cubeta de temple y martillos de forja.",
+      "triangles": 1972,
+      "parts": 23,
+      "dimensions_m": {
+        "width": 1.593,
+        "depth": 1.3,
+        "height": 1.13
+      },
+      "glb": "objects/anvil_master_forge.glb"
+    },
+    {
+      "name": "hearth_brazier_hewn",
+      "label": "Hogar de Suelo y Campana de Cobre",
+      "category": "Mobiliario",
+      "description": "Hogar circular exento de cantería con lecho de brasas, parrilla giratoria de hierro y campana suspendida de cobre batido.",
+      "triangles": 2216,
+      "parts": 35,
+      "dimensions_m": {
+        "width": 2.36,
+        "depth": 2.36,
+        "height": 2.955
+      },
+      "glb": "objects/hearth_brazier_hewn.glb"
+    },
+    {
+      "name": "rug_lizard_weave",
+      "label": "Alfombra de Lana y Cuero Lagto'",
+      "category": "Mobiliario",
+      "description": "Tapiz de suelo de lana gruesa y ribetes de cuero trenzado con patrón geométrico de escamas de reptil en rojo y ocre.",
+      "triangles": 764,
+      "parts": 41,
+      "dimensions_m": {
+        "width": 3.05,
+        "depth": 1.98,
+        "height": 0.055
+      },
+      "glb": "objects/rug_lizard_weave.glb"
+    },
+    {
+      "name": "weapon_rack_stone_copper",
+      "label": "Armero de Cantería y Cobre",
+      "category": "Mobiliario",
+      "description": "Armero de suelo con montantes de sillar, traviesas de cedro ranuradas y guarniciones de cobre para alabardas y mandobles.",
+      "triangles": 1340,
+      "parts": 39,
+      "dimensions_m": {
+        "width": 2.06,
+        "depth": 0.7,
+        "height": 2.38
+      },
+      "glb": "objects/weapon_rack_stone_copper.glb"
+    },
+    {
+      "name": "bunk_bed_miner",
+      "label": "Litera Minera de Cedro y Sillar",
+      "category": "Mobiliario",
+      "description": "Litera doble de cuadrantes de cedro anclada a pies de sillar, con jergones de lana, barandilla de cobre y escala lateral.",
+      "triangles": 2936,
+      "parts": 43,
+      "dimensions_m": {
+        "width": 2.02,
+        "depth": 2.62,
+        "height": 2.36
+      },
+      "glb": "objects/bunk_bed_miner.glb"
+    },
+    {
+      "name": "low_table_cushions",
+      "label": "Mesa Baja con Cojines de Suelo",
+      "category": "Mobiliario",
+      "description": "Mesa de tertulia baja de granito pulido rodeada de cuatro pufs de cuero reptiliano con tetera y cuencos de cobre.",
+      "triangles": 3880,
+      "parts": 41,
+      "dimensions_m": {
+        "width": 2.8,
+        "depth": 2.4,
+        "height": 0.76
+      },
+      "glb": "objects/low_table_cushions.glb"
+    },
+    {
+      "name": "bookcase_tablet_vault",
+      "label": "Librería de Tablillas y Cilindros",
+      "category": "Mobiliario",
+      "description": "Estantería de archivo de sillería con alvéolos para tablillas de terracota, mapas de galerías en cilindro y reglas de bronce.",
+      "triangles": 2100,
+      "parts": 35,
+      "dimensions_m": {
+        "width": 1.76,
+        "depth": 0.8,
+        "height": 2.3
+      },
+      "glb": "objects/bookcase_tablet_vault.glb"
+    },
+    {
+      "name": "washing_basin_copper",
+      "label": "Aguamanil y Palancana de Cobre",
+      "category": "Mobiliario",
+      "description": "Lavamanos de pedestal de sillar tallado con palangana de cobre batido, aguamanil de latón y toallero de cedro con paño.",
+      "triangles": 1646,
+      "parts": 14,
+      "dimensions_m": {
+        "width": 0.794,
+        "depth": 0.76,
+        "height": 1.301
+      },
+      "glb": "objects/washing_basin_copper.glb"
+    },
+    {
+      "name": "cauldron_hearth_tripod",
+      "label": "Caldero de Cobre sobre Trípode",
+      "category": "Mobiliario",
+      "description": "Gran marmita de cobre martillado con asa de arco suspendida sobre trípode de forja, bandeja de rescoldo y cucharón de madera.",
+      "triangles": 2418,
+      "parts": 28,
+      "dimensions_m": {
+        "width": 1.27,
+        "depth": 1.2,
+        "height": 1.717
+      },
+      "glb": "objects/cauldron_hearth_tripod.glb"
+    },
+    {
+      "name": "brazier_cobre_tripod",
+      "label": "Pebetero de Cobre de las Cumbres",
+      "category": "Atrezo y decoración",
+      "description": "Pebetero exento sobre trípode de hierro forjado con remates de garra, cuenco de cobre patinado y lecho de ascuas vivas.",
+      "triangles": 1694,
+      "parts": 19,
+      "dimensions_m": {
+        "width": 1.037,
+        "depth": 1.037,
+        "height": 1.102
+      },
+      "glb": "objects/brazier_cobre_tripod.glb"
+    },
+    {
+      "name": "lamp_copper_pendant",
+      "label": "Farol de Pared de Cobre y Soporte",
+      "category": "Atrezo y decoración",
+      "description": "Soporte mural de hierro forjado con brazo de pescante, farol ochavado de cobre con cristales ámbar y argolla de suspensión.",
+      "triangles": 1092,
+      "parts": 21,
+      "dimensions_m": {
+        "width": 0.306,
+        "depth": 0.833,
+        "height": 0.84
+      },
+      "glb": "objects/lamp_copper_pendant.glb"
+    },
+    {
+      "name": "cart_mine_ore",
+      "label": "Vagoneta Minera de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Vagoneta de tolva de madera férrea y chapas de cobre remachadas sobre cuatro ruedas de fundición con carga de mena en bruto.",
+      "triangles": 2040,
+      "parts": 38,
+      "dimensions_m": {
+        "width": 1,
+        "depth": 1.74,
+        "height": 0.94
+      },
+      "glb": "objects/cart_mine_ore.glb"
+    },
+    {
+      "name": "mine_track_segment",
+      "label": "Tramo de Raíles de Mina",
+      "category": "Atrezo y decoración",
+      "description": "Segmento de vía minera de 3 metros con traviesas de cedro, carriles de fundición y placas de fijación claveteadas.",
+      "triangles": 892,
+      "parts": 41,
+      "dimensions_m": {
+        "width": 1.1,
+        "depth": 3,
+        "height": 0.225
+      },
+      "glb": "objects/mine_track_segment.glb"
+    },
+    {
+      "name": "ore_pile_copper",
+      "label": "Montón de Menas de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Cúmulo de roca viva excavada con vetas cristalinas de malaquita y fragmentos de cobre nativo metálico.",
+      "triangles": 280,
+      "parts": 14,
+      "dimensions_m": {
+        "width": 1.887,
+        "depth": 1.913,
+        "height": 1.07
+      },
+      "glb": "objects/ore_pile_copper.glb"
+    },
+    {
+      "name": "bellows_forge_pedestal",
+      "label": "Fuelle Gigante de Fundición",
+      "category": "Atrezo y decoración",
+      "description": "Fuelle industrial de doble cámara con armazón de cedro y cuero claveteado, pedestal de sillería y tobera de cobre.",
+      "triangles": 988,
+      "parts": 22,
+      "dimensions_m": {
+        "width": 1.1,
+        "depth": 2.45,
+        "height": 2.01
+      },
+      "glb": "objects/bellows_forge_pedestal.glb"
+    },
+    {
+      "name": "banner_lagto_clan",
+      "label": "Estandarte de Guerra Lagto'",
+      "category": "Atrezo y decoración",
+      "description": "Mástil ceremonial sobre peana tallada con punta de lanza en garra de cobre, pendón de lana roja y lingotes de contrapeso.",
+      "triangles": 2320,
+      "parts": 19,
+      "dimensions_m": {
+        "width": 1.465,
+        "depth": 0.9,
+        "height": 5.575
+      },
+      "glb": "objects/banner_lagto_clan.glb"
+    },
+    {
+      "name": "barrier_spiked_stone",
+      "label": "Parapeto Defensivo de Sillar y Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Muro parapeto de granito con albardilla de chapa de cobre martillado y tres puas defensivas de hierro forjado.",
+      "triangles": 768,
+      "parts": 24,
+      "dimensions_m": {
+        "width": 2.4,
+        "depth": 1.31,
+        "height": 1.169
+      },
+      "glb": "objects/barrier_spiked_stone.glb"
+    },
+    {
+      "name": "gate_quarry_post",
+      "label": "Poste de Portal con Cadenas",
+      "category": "Atrezo y decoración",
+      "description": "Monolito de portal escuadrado con collarín de cobre, argollas de anclaje y cadenas pesadas de suspensión.",
+      "triangles": 1056,
+      "parts": 21,
+      "dimensions_m": {
+        "width": 1.722,
+        "depth": 1.64,
+        "height": 3.59
+      },
+      "glb": "objects/gate_quarry_post.glb"
+    },
+    {
+      "name": "crucible_molten_copper",
+      "label": "Crisol con Cobre Fundido",
+      "category": "Atrezo y decoración",
+      "description": "Recipiente refractario cerámico sostenido por tenazas de colada con baño de cobre líquido incandescente.",
+      "triangles": 904,
+      "parts": 8,
+      "dimensions_m": {
+        "width": 2.4,
+        "depth": 1.1,
+        "height": 0.82
+      },
+      "glb": "objects/crucible_molten_copper.glb"
+    },
+    {
+      "name": "quarry_crane_derrick",
+      "label": "Grúa de Cantera y Cabestrante",
+      "category": "Atrezo y decoración",
+      "description": "Cabria de cantera en caballete de cedro con tambor de torno, poleas de cobre y tenaza de elevación de sillares.",
+      "triangles": 1304,
+      "parts": 19,
+      "dimensions_m": {
+        "width": 1.92,
+        "depth": 2.475,
+        "height": 3.618
+      },
+      "glb": "objects/quarry_crane_derrick.glb"
+    },
+    {
+      "name": "water_cistern_copper",
+      "label": "Cisterna de Roca y Filtro de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Aljibe de sillería de montaña con rejilla de filtración de cobre, grifo de bronce y cubo de servicio zunchado.",
+      "triangles": 912,
+      "parts": 14,
+      "dimensions_m": {
+        "width": 1.8,
+        "depth": 1.84,
+        "height": 1.41
+      },
+      "glb": "objects/water_cistern_copper.glb"
+    },
+    {
+      "name": "mine_cart_turnout",
+      "label": "Desvío y Aguja de Vía Minera",
+      "category": "Atrezo y decoración",
+      "description": "Aguja de desvío ferroviario con corazón de vía en fundición, palanca manual de contrapeso y placa de cobre.",
+      "triangles": 1188,
+      "parts": 20,
+      "dimensions_m": {
+        "width": 2.644,
+        "depth": 3.693,
+        "height": 0.84
+      },
+      "glb": "objects/mine_cart_turnout.glb"
+    },
+    {
+      "name": "crusher_ore_stamp",
+      "label": "Molino Triturador de Mineral",
+      "category": "Atrezo y decoración",
+      "description": "Mortero de trituración de sillar con dos mazas verticales de cedro calzadas en bronce, árbol de levas y tolva de descarga.",
+      "triangles": 1392,
+      "parts": 15,
+      "dimensions_m": {
+        "width": 2.2,
+        "depth": 1.305,
+        "height": 3.2
+      },
+      "glb": "objects/crusher_ore_stamp.glb"
+    },
+    {
+      "name": "ingot_stack_copper",
+      "label": "Pila de Lingotes de Cobre",
+      "category": "Atrezo y decoración",
+      "description": "Estiba de lingotes de cobre de fundición con marcas de ceca sobre palé de cedro y precinto de fleje de hierro.",
+      "triangles": 1044,
+      "parts": 19,
+      "dimensions_m": {
+        "width": 1.1,
+        "depth": 1.2,
+        "height": 0.465
+      },
+      "glb": "objects/ingot_stack_copper.glb"
+    },
+    {
+      "name": "ventilation_windlass_shaft",
+      "label": "Pozo de Ventilación Minero",
+      "category": "Atrezo y decoración",
+      "description": "Chimenea de ventilación de pozo minero en sillería con caperuza giratoria de cobre, veleta y rejilla de seguridad.",
+      "triangles": 380,
+      "parts": 9,
+      "dimensions_m": {
+        "width": 1.6,
+        "depth": 1.6,
+        "height": 2.9
+      },
+      "glb": "objects/ventilation_windlass_shaft.glb"
+    },
+    {
+      "name": "warning_beacon_totem",
+      "label": "Tótem Almenara de las Cumbres",
+      "category": "Atrezo y decoración",
+      "description": "Columna monolítica tallada con cabeza de saurio en altorrelieve que sostiene en sus fauces un pebetero de señales de cobre.",
+      "triangles": 1370,
+      "parts": 27,
+      "dimensions_m": {
+        "width": 1.1,
+        "depth": 1.786,
+        "height": 3.177
+      },
+      "glb": "objects/warning_beacon_totem.glb"
+    },
+    {
+      "name": "cavern_crystal_geode",
+      "label": "Geoda Gigante de Malaquita y Azurita",
+      "category": "Atrezo y decoración",
+      "description": "Bloque de roca hendida de las cumbres que revela una cavidad interior tapizada de cristales de malaquita verde y azurita.",
+      "triangles": 240,
+      "parts": 10,
+      "dimensions_m": {
+        "width": 1.791,
+        "depth": 1.136,
+        "height": 1.1
+      },
+      "glb": "objects/cavern_crystal_geode.glb"
+    },
+    {
+      "name": "water_flume_sluice",
+      "label": "Canaleta de Lavado de Mineral",
+      "category": "Atrezo y decoración",
+      "description": "Canaleta inclinada de lavado de oro y cobre sobre caballetes de cedro con deflectores de cobre para decantación de arenas.",
+      "triangles": 852,
+      "parts": 15,
+      "dimensions_m": {
+        "width": 0.895,
+        "depth": 2.585,
+        "height": 1.195
+      },
+      "glb": "objects/water_flume_sluice.glb"
+    },
+    {
+      "name": "tent_miner_outpost",
+      "label": "Tienda de Campaña Minera",
+      "category": "Atrezo y decoración",
+      "description": "Pabellón de campaña para prospección en cumbres con cubiertas de lona y piel encerada, mástiles de cedro y farol de interior.",
+      "triangles": 1064,
+      "parts": 23,
+      "dimensions_m": {
+        "width": 2.854,
+        "depth": 2.6,
+        "height": 2.21
+      },
+      "glb": "objects/tent_miner_outpost.glb"
+    }
+  ],
+  "textures": [
+    "textures/lagto-atlas.png",
+    "textures/lagto-orm.png",
+    "textures/lagto-normal.png",
+    "textures/lagto-emissive.png"
+  ]
+}

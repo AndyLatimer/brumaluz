@@ -8,6 +8,8 @@ import { enterPlay } from './playSession';
 import { holder, playerVel, marker, camera, renderer, scene, stage } from './stage';
 import { session, play, view } from './state';
 import { remotePlayers } from './worldClient';
+import { recolorCacheStats } from '../character/character';
+import { openBugReportModal, openBugReviewModal } from '../dev/bugReporter';
 
 /** Expone `window.brumaluz` para las pruebas y la consola. */
 export function installDebugHook() {
@@ -33,8 +35,11 @@ export function installDebugHook() {
     camera: () => camera,
     city: () => play.city,
     /** Para medir el rendimiento desde las pruebas. */
-    debug: () => ({ renderer, scene, stage, camera }),
+    debug: () => ({ renderer, scene, stage, camera, recolorCache:recolorCacheStats() }),
     players: () => remotePlayers.list(),
+    connection: () => session.worldConnection?.diagnostics() ?? null,
+    report: () => openBugReportModal(),
+    reports: () => openBugReviewModal(),
     time() { const t0 = performance.now(); rebuildNow(); return performance.now() - t0; },
   };
 }

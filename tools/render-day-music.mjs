@@ -1,5 +1,5 @@
 // Render the original game score to stereo WAV previews using the same sampled voices.
-// npm run music:render [-- --full] — no external service, assets or audio codecs needed.
+// npm run music:render [-- --full] [-- --creator] — no external service or audio codecs needed.
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -22,11 +22,12 @@ try{
   await page.route(`${url}/__music-preview`,route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Brumaluz · Música</title>'}));
   await page.goto(`${url}/__music-preview`);
   const directory=join('art','music');await mkdir(directory,{recursive:true});
-  for(const phase of ['dawn','day','dusk','night']){
+  for(const phase of process.argv.includes('--creator')?['creator']:['dawn','day','dusk','night']){
     const result=await page.evaluate(async({phase,full})=>{
       const {MUSIC_PROFILES,musicBar}=await import('/src/world/dayMusicScore.ts');
+      const {CREATOR_MUSIC,creatorMusicBar}=await import('/src/ui/creatorMusicScore.ts');
       const {renderNote,primeMusicVoices}=await import('/src/world/dayMusicVoice.ts');
-      const profile=MUSIC_PROFILES[phase],beat=60/profile.bpm,bars=full?profile.bars:8;
+      const profile=phase==='creator'?CREATOR_MUSIC:MUSIC_PROFILES[phase],beat=60/profile.bpm,bars=full?profile.bars:8;
       const seconds=bars*profile.beatsPerBar*beat+5,rate=24000;
       const audio=new OfflineAudioContext(2,Math.ceil(seconds*rate),rate);
       const dry=audio.createGain(),master=audio.createGain(),filter=audio.createBiquadFilter(),room=audio.createConvolver(),wet=audio.createGain();
@@ -37,7 +38,7 @@ try{
       room.buffer=impulse;dry.connect(filter);dry.connect(room).connect(wet).connect(filter);filter.connect(compressor).connect(master).connect(audio.destination);
       const fade=audio.createGain();fade.gain.setValueAtTime(0,0);fade.gain.linearRampToValueAtTime(1,1.2);fade.gain.setValueAtTime(1,seconds-4);fade.gain.linearRampToValueAtTime(0,seconds-.05);fade.connect(dry);
       await primeMusicVoices(audio);
-      for(let bar=0;bar<bars;bar++)for(const note of musicBar(phase,bar))renderNote(audio,fade,note,.1+(bar*profile.beatsPerBar+note.beat)*beat,note.duration*beat);
+      for(let bar=0;bar<bars;bar++)for(const note of phase==='creator'?creatorMusicBar(bar):musicBar(phase,bar))renderNote(audio,fade,note,.1+(bar*profile.beatsPerBar+note.beat)*beat,note.duration*beat);
       const buffer=await audio.startRendering(),samples=buffer.length,channels=2;
       const wav=new ArrayBuffer(44+samples*channels*2),view=new DataView(wav);
       const label=(offset,text)=>{for(let i=0;i<text.length;i++)view.setUint8(offset+i,text.charCodeAt(i));};

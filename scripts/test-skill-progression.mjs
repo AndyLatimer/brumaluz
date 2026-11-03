@@ -12,27 +12,37 @@ const game = await import(`data:text/javascript;base64,${Buffer.from(bundle.outp
 const modulePath = process.env.PGLITE_TEST_MODULE ?? join(tmpdir(),'brumaluz-combat-sql-tools/node_modules/@electric-sql/pglite/dist/index.js');
 let sqlAvailable = true; try { await access(modulePath); } catch { sqlAvailable = false; }
 
-test('all classes can improve once per level, finish at five and retain existing ranks and spare points',()=>{
+test('all twenty class skills unlock and improve independently with one point per rank',()=>{
   for (let level=1;level<=50;level++) assert.equal(game.skillPointsAllowed(level),level-1);
   assert.equal(game.skillPointsAllowed(99),49);
   for (const [cls,kit] of Object.entries(game.COMBAT_KITS)) {
-    const data={cls,level:1,skillRanks:{}};
-    assert.throws(()=>game.upgradeSkill(data,kit.skill.id,1),/nivel/);
-    for(let rank=1;rank<5;rank++) {
-      data.level=rank+1;
-      assert.equal(game.skillRankLevel(rank+1),data.level);
-      assert.equal(game.unspentSkillPoints(data),1);
-      game.upgradeSkill(data,kit.skill.id,rank);
-      assert.equal(game.skillRank(data),rank+1);
-      assert.equal(game.unspentSkillPoints(data),0);
-      assert.throws(()=>game.upgradeSkill(data,kit.skill.id,rank),/cambiado/);
-      if(rank<4) assert.throws(()=>game.upgradeSkill(data,kit.skill.id,rank+1),/nivel/);
+    for (const skill of kit.skills) {
+      if(skill.unlockLevel>1) {
+        const locked={cls,level:skill.unlockLevel-1,skillRanks:{}};
+        assert.equal(game.skillUnlocked(locked,skill.id),false);
+        assert.throws(()=>game.upgradeSkill(locked,skill.id,1),/habilidad/);
+      }
+      const data={cls,level:skill.unlockLevel,skillRanks:{}};
+      assert.equal(game.skillUnlocked(data,skill.id),true);
+      assert.equal(game.skillRank(data,skill.id),1);
+      for(let rank=1;rank<5;rank++) {
+        data.level=skill.unlockLevel+rank-1;
+        assert.throws(()=>game.upgradeSkill(data,skill.id,rank),/nivel/);
+        data.level++;
+        assert.equal(game.skillRankLevel(rank+1,skill.id),data.level);
+        const points=game.unspentSkillPoints(data);
+        assert.ok(points>0);
+        game.upgradeSkill(data,skill.id,rank);
+        assert.equal(game.skillRank(data,skill.id),rank+1);
+        assert.equal(game.unspentSkillPoints(data),points-1);
+        assert.throws(()=>game.upgradeSkill(data,skill.id,rank),/cambiado/);
+        if(rank<4) assert.throws(()=>game.upgradeSkill(data,skill.id,rank+1),/nivel/);
+      }
+      assert.throws(()=>game.upgradeSkill(data,skill.id,5),/máximo/);
+      assert.equal(game.skillRank({...data,level:2},skill.id),Math.min(2,skill.unlockLevel>2?1:2));
+      assert.equal(game.skillRank({...data,level:50},skill.id),5);
+      assert.equal(game.unspentSkillPoints({...data,level:50}),45);
     }
-    assert.throws(()=>game.upgradeSkill(data,kit.skill.id,5),/máximo/);
-    assert.equal(game.unspentSkillPoints({...data,level:50}),45);
-    assert.equal(game.skillRank({...data,level:2}),2);
-    assert.equal(game.skillRank({...data,level:8}),5);
-    assert.equal(game.unspentSkillPoints({...data,level:8}),3);
   }
 });
 
@@ -49,29 +59,34 @@ test('authoritative SQL agrees with client progression and rejects stale or inva
     await db.exec(`create table public.characters(id uuid primary key,data jsonb);
       create function public.game_lock_character(cid uuid) returns public.characters language sql as $$ select * from public.characters where id=cid for update $$;
       create function public.game_store(cid uuid,d jsonb) returns jsonb language plpgsql as $$ begin update public.characters set data=d where id=cid;return d;end $$;`);
-    for(const name of ['game_level','game_skill_id','game_skill_rank']) await db.exec(definition(formulas,name));
+    for(const name of ['game_level','game_skill_data','game_skill_rank','game_skill_points_spent']) await db.exec(definition(formulas,name));
     await db.exec(definition(actions,'upgrade_skill'));
     const seed=d=>db.query('insert into public.characters values($1,$2) on conflict(id) do update set data=excluded.data',[id,d]);
     const upgrade=(skill,rank)=>db.query('select public.upgrade_skill($1,$2,$3) value',[id,skill,rank]);
     for(const [cls,kit] of Object.entries(game.COMBAT_KITS)) {
-      const data={cls,level:1,skillRanks:{}};
-      await seed(data);
-      await assert.rejects(upgrade(kit.skill.id,1),/SKILL_LEVEL_REQUIRED/);
-      await assert.rejects(upgrade(cls==='clerigo'?'heavy_strike':'healing',1),/SKILL_INVALID/);
-      for(let rank=1;rank<5;rank++) {
-        data.level=rank+1;await seed(data);
-        const result=(await upgrade(kit.skill.id,rank)).rows[0].value;
-        game.upgradeSkill(data,kit.skill.id,rank);
-        assert.deepEqual(result,data);
-        await assert.rejects(upgrade(kit.skill.id,rank),/SKILL_CHANGED/);
-        if(rank<4) await assert.rejects(upgrade(kit.skill.id,rank+1),/SKILL_LEVEL_REQUIRED/);
+      for(const skill of kit.skills) {
+        const data={cls,level:skill.unlockLevel-1,skillRanks:{}};
+        await seed(data);
+        await assert.rejects(upgrade(skill.id,1),/SKILL_LEVEL_REQUIRED/);
+        await assert.rejects(upgrade(Object.values(game.COMBAT_KITS).flatMap(value=>value.skills).find(other=>!kit.skills.includes(other)).id,1),/SKILL_INVALID/);
+        for(let rank=1;rank<5;rank++) {
+          data.level=skill.unlockLevel+rank;await seed(data);
+          const result=(await upgrade(skill.id,rank)).rows[0].value;
+          game.upgradeSkill(data,skill.id,rank);
+          assert.deepEqual(result,data);
+          await assert.rejects(upgrade(skill.id,rank),/SKILL_CHANGED/);
+          if(rank<4) await assert.rejects(upgrade(skill.id,rank+1),/SKILL_LEVEL_REQUIRED/);
+        }
+        await assert.rejects(upgrade(skill.id,5),/SKILL_MAX_RANK/);
+        for(const level of [1,skill.unlockLevel,skill.unlockLevel+4,50]) {
+          const d={...data,level};
+          const sql=(await db.query('select public.game_skill_rank($1,$2) rank',[d,skill.id])).rows[0].rank;
+          assert.equal(sql,game.skillRank(d,skill.id));
+        }
       }
-      await assert.rejects(upgrade(kit.skill.id,5),/SKILL_MAX_RANK/);
-      for(const level of [1,2,3,4,5,8,50]) {
-        const d={...data,level};
-        const sql=(await db.query('select public.game_skill_rank($1) rank',[d])).rows[0].rank;
-        assert.equal(sql,game.skillRank(d));
-      }
+      const full={cls,level:50,skillRanks:Object.fromEntries(kit.skills.map(skill=>[skill.id,5]))};
+      const spent=(await db.query('select public.game_skill_points_spent($1) spent',[full])).rows[0].spent;
+      assert.equal(spent,49-game.unspentSkillPoints(full));
     }
   } finally { await db.close(); }
 });

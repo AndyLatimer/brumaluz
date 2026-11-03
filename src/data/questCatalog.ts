@@ -4,25 +4,35 @@ export type QuestPhase = 'offer' | 'active' | 'ready' | 'completed';
 export interface QuestChoice { text: string; next: string; action: QuestAction }
 export interface QuestNode { id: string; speaker: string; text: string; choices: QuestChoice[] }
 export interface QuestObjective {
-  id: string; type: 'fetch' | 'kill' | 'talk'; target: string; count: number;
+  id: string; type: 'fetch' | 'kill' | 'talk' | 'visit' | 'craft'; target: string; count: number;
   description: string; map: string; consume: boolean;
 }
 export interface QuestDefinition {
   id: string; title: string; summary: string; notes: string;
   giver: string; receiver: string; minLevel: number; prerequisites: string[];
+  objectiveOrder?: 'any' | 'sequence';
+  category?: 'side' | 'story' | 'profession';
   objectives: QuestObjective[];
   rewards: { experience: number; pelines: number; items: { item: string; count: number }[] };
   dialogue: { entries: Record<QuestPhase, string>; nodes: QuestNode[] };
 }
 export interface QuestCatalog { version: 1; quests: QuestDefinition[] }
-export interface QuestReferences { npcs: { id: string; name: string }[]; items: { id: string; name: string }[]; enemies: { id: string; name: string }[]; maps: { id: string; name: string }[] }
+export interface QuestReferences { npcs: { id: string; name: string }[]; items: { id: string; name: string }[]; enemies: { id: string; name: string }[]; maps: { id: string; name: string }[]; craftables: {id: string; name: string}[] }
+export const OBJECTIVE_TYPES: {id: QuestObjective['type']; name: string; targetLabel: string; eventLabel: string; kind: keyof QuestReferences; single: boolean}[] = [
+  {id:'fetch',name:'Recoger objetos',targetLabel:'Objeto que debe conseguir',eventLabel:'Recoger 1 objeto',kind:'items',single:false},
+  {id:'kill',name:'Derrotar enemigos',targetLabel:'Enemigo que debe derrotar',eventLabel:'Derrotar 1 enemigo',kind:'enemies',single:false},
+  {id:'talk',name:'Hablar con alguien',targetLabel:'Persona con la que debe hablar',eventLabel:'Hablar con este personaje',kind:'npcs',single:true},
+  {id:'visit',name:'Visitar un lugar',targetLabel:'Mapa que debe visitar',eventLabel:'Visitar este lugar',kind:'maps',single:true},
+  {id:'craft',name:'Fabricar objetos',targetLabel:'Objeto que debe fabricar',eventLabel:'Fabricar 1 objeto',kind:'craftables',single:false},
+];
+export const objectiveType = (type: QuestObjective['type']) => OBJECTIVE_TYPES.find(t => t.id === type)!;
 const ID = /^[a-z][a-z0-9_-]{0,63}$/;
 const phases: QuestPhase[] = ['offer', 'active', 'ready', 'completed'];
 function fail(message: string): never { throw new Error(message); }
-function obj(value: unknown, keys: string[], where: string): Record<string, any> {
+function obj(value: unknown, keys: string[], where: string, optional: string[] = []): Record<string, any> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`${where}: se esperaba un objeto.`);
   const record = value as Record<string, any>;
-  if (Object.keys(record).some(key => !keys.includes(key)) || keys.some(key => !Object.hasOwn(record, key))) fail(`${where}: campos desconocidos o incompletos.`);
+  if (Object.keys(record).some(key => !keys.includes(key) && !optional.includes(key)) || keys.some(key => !Object.hasOwn(record, key))) fail(`${where}: campos desconocidos o incompletos.`);
   return record;
 }
 function str(value: unknown, where: string, max = 4000, empty = false): string {
@@ -38,7 +48,9 @@ function array(value: unknown, where: string, max: number): any[] { if (!Array.i
 function unique(ids: string[], where: string) { if (new Set(ids).size !== ids.length) fail(`${where}: IDs repetidos.`); }
 
 export function validateQuest(value: unknown): QuestDefinition {
-  const q = obj(value, ['id','title','summary','notes','giver','receiver','minLevel','prerequisites','objectives','rewards','dialogue'], 'Misión');
+  const q = obj(value, ['id','title','summary','notes','giver','receiver','minLevel','prerequisites','objectives','rewards','dialogue'], 'Misión', ['objectiveOrder','category']);
+  if (q.objectiveOrder !== undefined && !['any','sequence'].includes(q.objectiveOrder)) fail('Orden de objetivos no válido.');
+  if (q.category !== undefined && !['side','story','profession'].includes(q.category)) fail('Categoría de misión no válida.');
   id(q.id, 'Misión'); str(q.title, 'Título', 120); str(q.summary, 'Descripción'); str(q.notes, 'Notas', 8000, true);
   id(q.giver, 'NPC inicial'); id(q.receiver, 'NPC de entrega'); num(q.minLevel, 'Nivel mínimo', 1, 10000);
   array(q.prerequisites, 'Requisitos', 50).forEach(v => id(v, 'Misión previa')); unique(q.prerequisites, 'Requisitos');
@@ -47,11 +59,13 @@ export function validateQuest(value: unknown): QuestDefinition {
   for (const value of objectives) {
     const o = obj(value, ['id','type','target','count','description','map','consume'], 'Objetivo');
     id(o.id, 'Objetivo'); id(o.target, 'Destino del objetivo'); str(o.description, 'Descripción del objetivo', 500);
-    if (!['fetch','kill','talk'].includes(o.type)) fail('Tipo de objetivo no válido.');
+    if (!OBJECTIVE_TYPES.some(t => t.id === o.type)) fail('Tipo de objetivo no válido.');
     num(o.count, 'Cantidad del objetivo', 1, 9999); if (o.map !== '') id(o.map, 'Mapa');
     if (o.type === 'fetch' && o.map !== '') fail('Los objetos se comprueban en la mochila; no tienen filtro de mapa.');
+    if (o.type === 'visit' && o.map !== '') fail('La visita ya indica el mapa de destino; no necesita otro filtro.');
     if (typeof o.consume !== 'boolean' || (o.type !== 'fetch' && o.consume)) fail('Solo los objetivos de objetos pueden consumir materiales.');
     if (o.type === 'talk' && o.count !== 1) fail('Hablar requiere una única conversación.');
+    if (o.type === 'visit' && o.count !== 1) fail('Visitar requiere una única llegada.');
   }
   unique(objectives.map(o => o.id), 'Objetivos');
   // Two fetch rows for one item would make turn-in consumption ambiguous.
@@ -105,7 +119,7 @@ export function validateQuestCatalog(value: unknown, refs?: QuestReferences): Qu
     const check = (kind: keyof QuestReferences, target: string) => { if (!refs[kind].some(r => r.id === target)) fail(`Referencia inexistente en ${kind}: ${target}.`); };
     for (const q of quests) {
       check('npcs', q.giver); check('npcs', q.receiver);
-      for (const o of q.objectives) { check(o.type === 'fetch' ? 'items' : o.type === 'kill' ? 'enemies' : 'npcs', o.target); if (o.map) check('maps', o.map); }
+      for (const o of q.objectives) { check(objectiveType(o.type).kind, o.target); if (o.map) check('maps', o.map); }
       q.rewards.items.forEach(r => check('items', r.item)); q.dialogue.nodes.forEach(n => { if (n.speaker) check('npcs', n.speaker); });
     }
   }
@@ -130,13 +144,19 @@ export function newQuest(id = 'nueva_mision', giver = 'gnomi'): QuestDefinition 
 export interface QuestRehearsal { accepted: boolean; completed: boolean; inventory: Record<string, number>; progress: Record<string, number>; experience: number; pelines: number }
 export const newRehearsal = (): QuestRehearsal => ({ accepted: false, completed: false, inventory: {}, progress: {}, experience: 0, pelines: 0 });
 export function objectiveProgress(o: QuestObjective, state: QuestRehearsal) { return Math.min(o.count, o.type === 'fetch' ? state.inventory[o.target] ?? 0 : state.progress[o.id] ?? 0); }
+export function objectiveUnlocked(q: QuestDefinition, state: QuestRehearsal, index: number) {
+  return state.accepted && !state.completed && (q.objectiveOrder !== 'sequence' || q.objectives.slice(0,index).every(o => objectiveProgress(o,state) >= o.count));
+}
 export function questPhase(q: QuestDefinition, state: QuestRehearsal): QuestPhase {
   return state.completed ? 'completed' : !state.accepted ? 'offer' : q.objectives.every(o => objectiveProgress(o, state) >= o.count) ? 'ready' : 'active';
 }
 export function rehearseEvent(q: QuestDefinition, state: QuestRehearsal, type: QuestObjective['type'], target: string, map = '', amount = 1) {
   if (!Number.isSafeInteger(amount) || amount < 1 || !state.accepted || state.completed) return;
   if (type === 'fetch') { state.inventory[target] = (state.inventory[target] ?? 0) + amount; return; }
-  for (const o of q.objectives) if (o.type === type && o.target === target && (!o.map || o.map === map)) state.progress[o.id] = Math.min(o.count, (state.progress[o.id] ?? 0) + amount);
+  // Snapshot the current stage: one event cannot complete consecutive identical actions.
+  const activeIndex = q.objectives.findIndex(o => objectiveProgress(o,state) < o.count);
+  if (type === 'craft') state.inventory[target] = (state.inventory[target] ?? 0) + amount;
+  for (const [index,o] of q.objectives.entries()) if ((q.objectiveOrder !== 'sequence' || index === activeIndex) && o.type === type && o.target === target && (!o.map || o.map === map)) state.progress[o.id] = Math.min(o.count, (state.progress[o.id] ?? 0) + amount);
 }
 export function rehearseAction(q: QuestDefinition, state: QuestRehearsal, action: QuestAction, context: { level: number; completed: string[] }) {
   if (action === 'none') return true;

@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-28T16:09:37.458Z",
+  "scope": "PostgreSQL execution + planning; synthetic characters; transaction rolled back; excludes HTTP/rendering",
+  "parity": true,
+  "metadataChecked": 937,
+  "results": [
+    {
+      "label": "novice:world_sync",
+      "coldMs": 364.82599999999996,
+      "medianMs": 325.15,
+      "maxMs": 362.642,
+      "afterColdMs": 6.202999999999999,
+      "afterMedianMs": 4.351999999999999,
+      "afterMaxMs": 4.561,
+      "speedup": 74.7
+    },
+    {
+      "label": "equipped:world_sync",
+      "coldMs": 388.757,
+      "medianMs": 396.815,
+      "maxMs": 421.999,
+      "afterColdMs": 6.994,
+      "afterMedianMs": 5.566999999999999,
+      "afterMaxMs": 5.675,
+      "speedup": 71.3
+    },
+    {
+      "label": "full_bag:world_sync",
+      "coldMs": 352.228,
+      "medianMs": 360.89599999999996,
+      "maxMs": 361.113,
+      "afterColdMs": 4.389,
+      "afterMedianMs": 4.526,
+      "afterMaxMs": 4.81,
+      "speedup": 79.7
+    },
+    {
+      "label": "accept_quest",
+      "coldMs": 442.682,
+      "medianMs": 443.907,
+      "maxMs": 444.319,
+      "afterColdMs": 4.611,
+      "afterMedianMs": 4.597,
+      "afterMaxMs": 4.771,
+      "speedup": 96.6
+    }
+  ],
+  "profileBefore": [
+    {
+      "funcname": "game_rpg_catalog",
+      "calls": 394,
+      "total_time": 5758.657789,
+      "self_time": 5758.657789
+    },
+    {
+      "funcname": "game_equipment_item",
+      "calls": 2992,
+      "total_time": 3871.412369,
+      "self_time": 3871.412369
+    },
+    {
+      "funcname": "game_max_health",
+      "calls": 252,
+      "total_time": 6529.126133,
+      "self_time": 147.747266
+    },
+    {
+      "funcname": "game_equipment_stat",
+      "calls": 392,
+      "total_time": 3969.174321,
+      "self_time": 97.761952
+    },
+    {
+      "funcname": "game_rpg_resource_max",
+      "calls": 140,
+      "total_time": 3645.592779,
+      "self_time": 93.741661
+    },
+    {
+      "funcname": "game_rpg_food_bonus",
+      "calls": 392,
+      "total_time": 5819.602144,
+      "self_time": 93.455549
+    },
+    {
+      "funcname": "game_set_bonuses",
+      "calls": 395,
+      "total_time": 61.576594,
+      "self_time": 43.359783
+    },
+    {
+      "funcname": "game_attr_total",
+      "calls": 672,
+      "total_time": 68.981906,
+      "self_time": 34.556576
+    },
+    {
+      "funcname": "game_race_bonus",
+      "calls": 672,
+      "total_time": 34.42533,
+      "self_time": 34.42533
+    },
+    {
+      "funcname": "game_item",
+      "calls": 32,
+      "total_time": 22.178983,
+      "self_time": 22.178983
+    }
+  ]
+}

@@ -2,6 +2,40 @@
 
 27 de octubre de 2026. El usuario pide una misión tutorial con elección de profesión y el recorrido completo del juego normal. Confirma que **Gnomi la ofrece después del regreso a casa de Isberto**, con elección de oficio. Se usa el sistema existente de oferta, aceptación explícita, diario, seguimiento, marcadores y entrega.
 
+**Revisión guiada del 31 de octubre:** el usuario confirma **100 Pelines por el
+recado inicial de Gnomi, una sola vez**, manteniendo los 20 de la herramienta
+básica y los 50 de la primera receta. Se mantiene la compra y aprendizaje normales,
+sin regalar herramientas, materiales o pergaminos. Los nuevos encargos y sus pagos
+están definidos en [Encargos diarios](DAILY-ORDERS.md). Para **Minero, Leñador y
+Recolector se mantiene la práctica única de extracción y entrega de materiales**,
+como excepción de aprendizaje separada de los encargos diarios. No exige fabricar
+una herramienta en Herrería para cerrar la lección. Conserva las cantidades de
+práctica, sus 50 Pelines por una única entrega y los 40 XP de personaje al cerrar,
+sin gastar cupo diario ni permitir un segundo pago. La extracción debe ser personal.
+Los comerciantes dejan de comprar materias primas: la guía debe orientar al
+recado de Gnomi y a las otras fuentes válidas de dinero, sin recomendar esa venta.
+Estas decisiones están aplicadas y probadas localmente desde el 2 de noviembre;
+estado y comprobaciones en [Aplicación de la revisión cozy](COZY-IMPLEMENTATION-2026-11-02.md).
+
+**Guía actual:** el objetivo de materiales indica las cantidades concretas que
+deben estar en la mochila para la práctica. Tras la extracción personal deja de
+pedir otra y conserva la lista hasta reunir los materiales pendientes. Cuando
+hay que salir a recolectar, el marcador señala la salida del taller. El diálogo,
+el diario, el seguimiento y el mapa muestran instrucciones coherentes en
+español e inglés; no cambian los requisitos ni las recompensas.
+
+**Implementación local anterior del 30 de octubre:** la petición de un inicio artesanal tranquilo
+incorpora una **entrega de práctica única**, desde Mi iniciación al oficio, con
+los mismos objetos y pago del suministro, independiente del cupo diario. Permite
+terminar con el cupo agotado sin conceder entregas diarias adicionales. El recado
+de Gnomi paga 20 Pelines por consultar al maestro de Leñadores y volver; financia
+la primera herramienta mediante una actividad normal. Se conservan precios,
+pergaminos, materiales, fabricación y progreso previo. La entrega diaria anterior
+todavía puede completar ese paso y, si ya lo hizo, la entrega de práctica se
+rechaza para evitar pagar dos veces. El SQL está preparado localmente; los
+apartados siguientes conservan el historial del 27. Detalles y comprobaciones
+en [Viviendas y vida cotidiana](HOMES-AND-COZY-LIFE.md).
+
 ## Recorrido implementado
 
 Gnomi espera en la plaza del pozo tras el regreso de Isberto. Ofrece conocer los talleres; el jugador elige fabricación o recolección y después uno de los doce oficios. La tarjeta detalla el recorrido y su recompensa. Mirarla o cerrarla no acepta la misión. La elección solo determina esta iniciación: todos los oficios siguen disponibles y no se elige una especialización permanente.

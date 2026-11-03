@@ -13,7 +13,7 @@ export interface Settings {
   nameplates: boolean;
 }
 
-const DEFAULTS: Settings = { masterVolume: 80, ambientVolume: 80, musicVolume:55,musicEnabled:true,nameplates: true };
+const DEFAULTS: Settings = { masterVolume: 100, ambientVolume: 100, musicVolume:55,musicEnabled:true,nameplates: true };
 const clamp = (v: unknown, fallback: number) => (typeof v === 'number' && isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : fallback);
 
 export function loadSettings(): Settings {

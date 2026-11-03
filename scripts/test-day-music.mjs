@@ -332,6 +332,125 @@ test('a rejected browser audio resume never escapes into gameplay and disposes c
   } finally { await context.close(); }
 });
 
+test('the creator theme renders a complete, audible stereo loop with headroom and no long gaps', { timeout: 60000 }, async t => {
+  const { context, page, errors } = await openMusicPage();
+  try {
+    const result = await page.evaluate(async () => {
+      const { CREATOR_MUSIC: profile, creatorMusicBar } = await import('/src/ui/creatorMusicScore.ts');
+      const { renderNote, primeMusicVoices } = await import('/src/world/dayMusicVoice.ts');
+      const beat = 60 / profile.bpm, seconds = profile.bars * profile.beatsPerBar * beat;
+      // Include the following bar to exercise the actual loop boundary.
+      const audio = new OfflineAudioContext(2, Math.ceil((seconds + 4) * 24000), 24000);
+      await primeMusicVoices(audio);
+      for (let bar = 0; bar <= profile.bars; bar++) {
+        for (const note of creatorMusicBar(bar)) {
+          renderNote(audio, audio.destination, note, .05 + (bar * profile.beatsPerBar + note.beat) * beat, note.duration * beat);
+        }
+      }
+      const buffer = await audio.startRendering(), left = buffer.getChannelData(0), right = buffer.getChannelData(1);
+      let peak = 0, energy = 0, stereoEnergy = 0, finite = true;
+      const windows = [];
+      for (let offset = 0; offset < seconds * 24000; offset += 24000) {
+        let windowEnergy = 0;
+        for (let i = offset; i < offset + 24000; i++) {
+          finite &&= Number.isFinite(left[i]) && Number.isFinite(right[i]);
+          peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+          windowEnergy += left[i] ** 2 + right[i] ** 2;
+          stereoEnergy += (left[i] - right[i]) ** 2;
+        }
+        windows.push(Math.sqrt(windowEnergy / 48000)); energy += windowEnergy;
+      }
+      return { seconds, peak, finite, rms: Math.sqrt(energy / (seconds * 48000)),
+        stereo: Math.sqrt(stereoEnergy / (seconds * 24000)), quietestSecond: Math.min(...windows) };
+    });
+    t.diagnostic(JSON.stringify(result));
+    assert.equal(result.finite, true);
+    assert.ok(result.seconds >= 60, 'A full theme must leave time to enjoy character creation');
+    assert.ok(result.peak < .85, 'The complete arrangement must leave mixing headroom');
+    assert.ok(result.rms > .001 && result.stereo > .0001, 'Both the instruments and stereo placement must be audible');
+    assert.ok(result.quietestSecond > .0001, 'Phrase endings must keep the accompaniment moving');
+    assert.deepEqual(errors, []);
+  } finally { await context.close(); }
+});
+
+test('the actual creator plays its own music, keeps an accessible mute, and hands off to menus and the world', { timeout: 120000 }, async () => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage(), errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(trackAudioContexts);
+  await page.addInitScript(() => {
+    localStorage.setItem('brumaluz-ambient', 'off');
+    localStorage.setItem('brumaluz-language', 'es');
+  });
+  const playing = () => page.waitForFunction(async () => (await import('/src/game/audio.ts')).menuMusic.diagnostics.playing);
+  const diagnostics = () => page.evaluate(async () => (await import('/src/game/audio.ts')).menuMusic.diagnostics);
+  try {
+    await page.goto(`${url}/?test&graphics=compatible`);
+    await page.waitForFunction(() => !!window.brumaluz, undefined, { timeout: 60000 });
+    await page.locator('#loading.hide').waitFor({ state: 'attached' });
+    assert.equal(await page.evaluate(() => window.__musicContexts.length), 0, 'Do not autoplay before a real gesture');
+    await page.locator('#tabs [data-tab="rostro"]').click();
+    await playing(); await page.waitForTimeout(1200);
+    assert.equal((await diagnostics()).creator, true);
+    assert.ok(await sampleOutput(page) > .0001, 'Editing a character must produce actual music');
+    const music = page.locator('#menu-music');
+    for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 360, height: 640 }]) {
+      await page.setViewportSize(viewport);
+      const box = await music.boundingBox();
+      assert.ok(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height);
+      assert.equal(await music.evaluate(el => {
+        const box = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      }), true, 'The music control must remain reachable on small screens');
+    }
+    await music.click();
+    assert.equal(await sampleOutput(page), 0, 'Creator mute must silence the real destination');
+    await page.reload();
+    await page.waitForFunction(() => !!window.brumaluz, undefined, { timeout: 60000 });
+    await page.locator('#loading.hide').waitFor({ state: 'attached' });
+    await page.locator('#tabs [data-tab="rostro"]').click();
+    assert.equal(await music.getAttribute('aria-pressed'), 'false', 'Mute must survive reload and editing');
+    assert.equal((await diagnostics()).contextState, 'uncreated', 'Muted creator music must not allocate an audio context');
+    await music.click(); await music.click(); await music.click();
+    await playing(); await page.waitForTimeout(1200);
+    assert.ok(await sampleOutput(page) > .0001, 'Rapid toggles must restore the creator theme');
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    assert.equal(await sampleOutput(page), 0);
+    assert.equal((await diagnostics()).voices, 0, 'Hiding the tab must release scheduled notes');
+    await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
+    await playing();
+    await page.evaluate(async () => {
+      const { menuMusic } = await import('/src/game/audio.ts');
+      document.body.classList.toggle('daytime'); menuMusic.sync();
+    });
+    assert.equal((await diagnostics()).creator, true, 'Local time must not replace the creator theme');
+    await page.evaluate(async () => (await import('/src/ui/characterSelect.ts')).showCharacterScreen());
+    await playing();
+    assert.equal((await diagnostics()).creator, false, 'Selection must restore its own arrangement');
+    await page.evaluate(async () => (await import('/src/ui/characterSelect.ts')).showEditor());
+    await playing();
+    assert.equal(await page.evaluate(() => window.__musicContexts.filter(audio => audio.brumaluzAudio === 'menu-music').length), 1,
+      'Menu and creator must reuse the same audio context');
+    await page.evaluate(() => window.brumaluz.play());
+    assert.equal((await diagnostics()).playing, false);
+    assert.equal((await diagnostics()).voices, 0);
+    assert.equal(await sampleOutput(page, 'menu-music'), 0, 'Entering the world must stop creator music before world audio starts');
+    await page.keyboard.press('KeyO');
+    await page.locator('[data-tab="sound"]').click();
+    await page.locator('#opt-master-volume').fill('0');
+    await page.evaluate(async () => {
+      (await import('/src/game/playSession.ts')).exitPlay();
+      (await import('/src/ui/characterSelect.ts')).showEditor();
+    });
+    assert.equal((await diagnostics()).playing, false, 'Creator must respect the saved general volume');
+    assert.equal(await sampleOutput(page), 0);
+    assert.deepEqual(errors, []);
+  } finally { await context.close(); }
+});
+
 test('the actual game uses the world clock and keeps music options independent, audible and persistent', { timeout: 90000 }, async t => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage(), errors = [];

@@ -162,79 +162,79 @@
       "family": "wood",
       "tier": 0,
       "depleted": false,
-      "triangles": 732
+      "triangles": 772
     },
     {
       "family": "wood",
       "tier": 0,
       "depleted": true,
-      "triangles": 500
+      "triangles": 520
     },
     {
       "family": "wood",
       "tier": 1,
       "depleted": false,
-      "triangles": 732
+      "triangles": 772
     },
     {
       "family": "wood",
       "tier": 1,
       "depleted": true,
-      "triangles": 500
+      "triangles": 520
     },
     {
       "family": "wood",
       "tier": 2,
       "depleted": false,
-      "triangles": 780
+      "triangles": 820
     },
     {
       "family": "wood",
       "tier": 2,
       "depleted": true,
-      "triangles": 500
+      "triangles": 520
     },
     {
       "family": "wood",
       "tier": 3,
       "depleted": false,
-      "triangles": 732
+      "triangles": 772
     },
     {
       "family": "wood",
       "tier": 3,
       "depleted": true,
-      "triangles": 500
+      "triangles": 520
     },
     {
       "family": "wood",
       "tier": 4,
       "depleted": false,
-      "triangles": 720
+      "triangles": 760
     },
     {
       "family": "wood",
       "tier": 4,
       "depleted": true,
-      "triangles": 500
+      "triangles": 520
     },
     {
       "family": "wood",
       "tier": 5,
       "depleted": false,
-      "triangles": 780
+      "triangles": 824
     },
     {
       "family": "wood",
       "tier": 5,
       "depleted": true,
-      "triangles": 500
+      "triangles": 520
     },
     {
       "family": "herb",
       "tier": 0,
       "depleted": false,
-      "triangles": 2780
+      "triangles": 4988
     },
     {
       "family": "herb",
@@ -246,7 +246,7 @@
       "family": "herb",
       "tier": 1,
       "depleted": false,
-      "triangles": 2780
+      "triangles": 4988
     },
     {
       "family": "herb",
@@ -258,7 +258,7 @@
       "family": "herb",
       "tier": 2,
       "depleted": false,
-      "triangles": 2780
+      "triangles": 4988
     },
     {
       "family": "herb",
@@ -270,7 +270,7 @@
       "family": "herb",
       "tier": 3,
       "depleted": false,
-      "triangles": 2780
+      "triangles": 4988
     },
     {
       "family": "herb",
@@ -282,7 +282,7 @@
       "family": "herb",
       "tier": 4,
       "depleted": false,
-      "triangles": 2780
+      "triangles": 4988
     },
     {
       "family": "herb",
@@ -294,7 +294,7 @@
       "family": "herb",
       "tier": 5,
       "depleted": false,
-      "triangles": 2780
+      "triangles": 4988
     },
     {
       "family": "herb",
@@ -306,7 +306,7 @@
       "family": "fiber",
       "tier": 0,
       "depleted": false,
-      "triangles": 1376
+      "triangles": 2376
     },
     {
       "family": "fiber",
@@ -318,7 +318,7 @@
       "family": "fiber",
       "tier": 1,
       "depleted": false,
-      "triangles": 1376
+      "triangles": 2376
     },
     {
       "family": "fiber",
@@ -330,7 +330,7 @@
       "family": "fiber",
       "tier": 2,
       "depleted": false,
-      "triangles": 1376
+      "triangles": 2376
     },
     {
       "family": "fiber",
@@ -342,7 +342,7 @@
       "family": "fiber",
       "tier": 3,
       "depleted": false,
-      "triangles": 1376
+      "triangles": 2376
     },
     {
       "family": "fiber",
@@ -354,7 +354,7 @@
       "family": "fiber",
       "tier": 4,
       "depleted": false,
-      "triangles": 1376
+      "triangles": 2376
     },
     {
       "family": "fiber",
@@ -366,7 +366,7 @@
       "family": "fiber",
       "tier": 5,
       "depleted": false,
-      "triangles": 1376
+      "triangles": 2376
     },
     {
       "family": "fiber",
@@ -378,151 +378,151 @@
       "family": "fruit",
       "tier": 0,
       "depleted": false,
-      "triangles": 1332
+      "triangles": 2244
     },
     {
       "family": "fruit",
       "tier": 0,
       "depleted": true,
-      "triangles": 228
+      "triangles": 244
     },
     {
       "family": "fruit",
       "tier": 1,
       "depleted": false,
-      "triangles": 1332
+      "triangles": 2244
     },
     {
       "family": "fruit",
       "tier": 1,
       "depleted": true,
-      "triangles": 228
+      "triangles": 244
     },
     {
       "family": "fruit",
       "tier": 2,
       "depleted": false,
-      "triangles": 1332
+      "triangles": 2244
     },
     {
       "family": "fruit",
       "tier": 2,
       "depleted": true,
-      "triangles": 228
+      "triangles": 244
     },
     {
       "family": "fruit",
       "tier": 3,
       "depleted": false,
-      "triangles": 1332
+      "triangles": 2244
     },
     {
       "family": "fruit",
       "tier": 3,
       "depleted": true,
-      "triangles": 228
+      "triangles": 244
     },
     {
       "family": "fruit",
       "tier": 4,
       "depleted": false,
-      "triangles": 1332
+      "triangles": 2244
     },
     {
       "family": "fruit",
       "tier": 4,
       "depleted": true,
-      "triangles": 228
+      "triangles": 244
     },
     {
       "family": "fruit",
       "tier": 5,
       "depleted": false,
-      "triangles": 1332
+      "triangles": 2244
     },
     {
       "family": "fruit",
       "tier": 5,
       "depleted": true,
-      "triangles": 228
+      "triangles": 244
     },
     {
       "family": "mushroom",
       "tier": 0,
       "depleted": false,
-      "triangles": 1739
+      "triangles": 2603
     },
     {
       "family": "mushroom",
       "tier": 0,
       "depleted": true,
-      "triangles": 144
+      "triangles": 148
     },
     {
       "family": "mushroom",
       "tier": 1,
       "depleted": false,
-      "triangles": 1739
+      "triangles": 2603
     },
     {
       "family": "mushroom",
       "tier": 1,
       "depleted": true,
-      "triangles": 144
+      "triangles": 148
     },
     {
       "family": "mushroom",
       "tier": 2,
       "depleted": false,
-      "triangles": 1739
+      "triangles": 2603
     },
     {
       "family": "mushroom",
       "tier": 2,
       "depleted": true,
-      "triangles": 144
+      "triangles": 148
     },
     {
       "family": "mushroom",
       "tier": 3,
       "depleted": false,
-      "triangles": 1739
+      "triangles": 2603
     },
     {
       "family": "mushroom",
       "tier": 3,
       "depleted": true,
-      "triangles": 144
+      "triangles": 148
     },
     {
       "family": "mushroom",
       "tier": 4,
       "depleted": false,
-      "triangles": 1739
+      "triangles": 2603
     },
     {
       "family": "mushroom",
       "tier": 4,
       "depleted": true,
-      "triangles": 144
+      "triangles": 148
     },
     {
       "family": "mushroom",
       "tier": 5,
       "depleted": false,
-      "triangles": 1739
+      "triangles": 2603
     },
     {
       "family": "mushroom",
       "tier": 5,
       "depleted": true,
-      "triangles": 144
+      "triangles": 148
     },
     {
       "family": "grain",
       "tier": 0,
       "depleted": false,
-      "triangles": 1880
+      "triangles": 2024
     },
     {
       "family": "grain",
@@ -534,7 +534,7 @@
       "family": "grain",
       "tier": 1,
       "depleted": false,
-      "triangles": 1880
+      "triangles": 2024
     },
     {
       "family": "grain",
@@ -546,7 +546,7 @@
       "family": "grain",
       "tier": 2,
       "depleted": false,
-      "triangles": 1880
+      "triangles": 2024
     },
     {
       "family": "grain",
@@ -558,7 +558,7 @@
       "family": "grain",
       "tier": 3,
       "depleted": false,
-      "triangles": 1880
+      "triangles": 2024
     },
     {
       "family": "grain",
@@ -570,7 +570,7 @@
       "family": "grain",
       "tier": 4,
       "depleted": false,
-      "triangles": 1880
+      "triangles": 2024
     },
     {
       "family": "grain",
@@ -582,7 +582,7 @@
       "family": "grain",
       "tier": 5,
       "depleted": false,
-      "triangles": 1880
+      "triangles": 2024
     },
     {
       "family": "grain",

@@ -4,13 +4,16 @@ create or replace function public.upgrade_skill(p_character_id uuid,p_skill_id t
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   c public.characters := public.game_lock_character(p_character_id);
-  current_rank int := public.game_skill_rank(c.data);
+  definition jsonb := public.game_skill_data(p_skill_id);
+  current_rank int;
 begin
-  if p_skill_id is distinct from public.game_skill_id(c.data->>'cls') then raise exception 'SKILL_INVALID'; end if;
+  if definition is null or definition->>'class' is distinct from c.data->>'cls' then raise exception 'SKILL_INVALID'; end if;
+  if public.game_level(c.data)<(definition->>'unlockLevel')::int then raise exception 'SKILL_LEVEL_REQUIRED'; end if;
+  current_rank:=public.game_skill_rank(c.data,p_skill_id);
   if p_expected_rank is distinct from current_rank then raise exception 'SKILL_CHANGED'; end if;
   if current_rank>=5 then raise exception 'SKILL_MAX_RANK'; end if;
-  if public.game_level(c.data)<current_rank+1 then raise exception 'SKILL_LEVEL_REQUIRED'; end if;
-  if public.game_level(c.data)-1-(current_rank-1)<1 then raise exception 'SKILL_NO_POINTS'; end if;
+  if public.game_level(c.data)<(definition->>'unlockLevel')::int+current_rank then raise exception 'SKILL_LEVEL_REQUIRED'; end if;
+  if public.game_level(c.data)-1-public.game_skill_points_spent(c.data)<1 then raise exception 'SKILL_NO_POINTS'; end if;
   return public.game_store(c.id,c.data||jsonb_build_object('skillRanks',
     coalesce(c.data->'skillRanks','{}'::jsonb)||jsonb_build_object(p_skill_id,current_rank+1)));
 end;
@@ -87,6 +90,12 @@ begin
     d := d || jsonb_build_object(k, p_data -> k);
   end loop;
   if (p_data ->> 'sex')::numeric not in (0, 1) then raise exception 'INVALID_CHARACTER'; end if;
+  -- The three walking variants are cosmetic; old clients keep variant A.
+  if p_data ? 'walkStyle' and (jsonb_typeof(p_data->'walkStyle') is distinct from 'number'
+    or (p_data->>'walkStyle')::numeric not in (0, 1, 2)) then
+    raise exception 'INVALID_CHARACTER';
+  end if;
+  d := d || jsonb_build_object('walkStyle', coalesce(p_data->'walkStyle', '0'::jsonb));
 
   insert into public.characters (user_id, name, data) values (uid, cname, d) returning id into new_id;
   return new_id;

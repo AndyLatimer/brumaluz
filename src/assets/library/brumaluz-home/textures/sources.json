@@ -1,0 +1,42 @@
+{
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "credit": "Powered by Poly Haven",
+  "authors": {
+    "wood_table_001": [
+      "Dimitrios Savva",
+      "Rico Cilliers"
+    ],
+    "rough_linen": [
+      "colormass",
+      "Rico Cilliers"
+    ]
+  },
+  "processing": "Grayscale wood/linen for vertex tinting; original rug design; padded 512px atlas tiles; packed AO/roughness/metalness. No runtime external requests.",
+  "sources": [
+    {
+      "asset": "wood_table_001",
+      "map": "Diffuse",
+      "url": "https://polyhaven.com/a/wood_table_001",
+      "sha256": "460dd08d240f4a1f02982415048c3c5c200f385db212da18dc7e2df68bf4d0be"
+    },
+    {
+      "asset": "rough_linen",
+      "map": "Diffuse",
+      "url": "https://polyhaven.com/a/rough_linen",
+      "sha256": "04897d7611d7390ddf5b2c6f7273f448dfc48341fdbd1f4f207fa30b331d7f57"
+    },
+    {
+      "asset": "wood_table_001",
+      "map": "Rough",
+      "url": "https://polyhaven.com/a/wood_table_001",
+      "sha256": "a2ca9ae89dfe7b8e2e5e92f0aa43467845417de8a50205b5852ef0d57c7624f9"
+    },
+    {
+      "asset": "rough_linen",
+      "map": "Rough",
+      "url": "https://polyhaven.com/a/rough_linen",
+      "sha256": "734ad6718841a6e296aacaa6e9ee2e1686eed5f62bb8d71c915c5605e162bcb4"
+    }
+  ]
+}

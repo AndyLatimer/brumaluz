@@ -1,0 +1,153 @@
+{
+  "starter": "lucero",
+  "homes": {
+    "lucero": {
+      "id": "lucero",
+      "label": "Mi habitación del Lucero del Alba",
+      "location": "habitacion_posada_lucero_del_alba",
+      "description": "Tu primer hogar en Brumaluz. Una habitación para descansar y hacer tuya con lo que fabriques.",
+      "limit": 30,
+      "bounds": {
+        "minX": -2.4,
+        "maxX": 1.65,
+        "minZ": -1.65,
+        "maxZ": 2.15
+      },
+      "reserved": [
+        {
+          "minX": -2.4,
+          "maxX": -0.6,
+          "minZ": -1.6,
+          "maxZ": 0.5
+        },
+        {
+          "minX": -2.4,
+          "maxX": -1.25,
+          "minZ": 0.95,
+          "maxZ": 2.15
+        },
+        {
+          "minX": 0.35,
+          "maxX": 1.65,
+          "minZ": 1.4,
+          "maxZ": 2.15
+        },
+        {
+          "minX": 1.42,
+          "maxX": 1.65,
+          "minZ": 0.65,
+          "maxZ": 1.35
+        },
+        {
+          "minX": -0.3,
+          "maxX": 1.65,
+          "minZ": -1.65,
+          "maxZ": -1.44
+        },
+        {
+          "minX": 0.95,
+          "maxX": 1.55,
+          "minZ": -0.3,
+          "maxZ": 0.3
+        },
+        {
+          "minX": 0.92,
+          "maxX": 1.58,
+          "minZ": 0.42,
+          "maxZ": 1.08
+        }
+      ],
+      "bed": {
+        "x": -1.8,
+        "z": -0.6,
+        "radius": 2.2
+      },
+      "chest": {
+        "x": -1.9,
+        "z": 1.5,
+        "radius": 2.2
+      },
+      "entrance": {
+        "location": "posada_lucero_del_alba",
+        "x": -7,
+        "z": 6,
+        "radius": 2.5
+      },
+      "cityEntrance": {
+        "location": "brumaluz",
+        "x": -78,
+        "z": 54.5
+      },
+      "exit": {
+        "x": 1,
+        "z": 2,
+        "targetX": -5.5,
+        "targetZ": 6
+      }
+    },
+    "olmo": {
+      "id": "olmo",
+      "label": "Casa del Olmo",
+      "location": "casa_del_olmo",
+      "description": "Una casa del Barrio del Olmo con espacio para tu rincón de descanso, una mesa y tus proyectos de taller.",
+      "limit": 40,
+      "bounds": {
+        "minX": -3.4,
+        "maxX": 3.4,
+        "minZ": -3.4,
+        "maxZ": 3.4
+      },
+      "reserved": [
+        {
+          "minX": -3.4,
+          "maxX": -1.2,
+          "minZ": -3.4,
+          "maxZ": -0.8
+        },
+        {
+          "minX": 1.8,
+          "maxX": 3.4,
+          "minZ": 1.8,
+          "maxZ": 3.4
+        },
+        {
+          "minX": -0.85,
+          "maxX": 0.85,
+          "minZ": 1.9,
+          "maxZ": 3.4
+        }
+      ],
+      "bed": {
+        "x": -2.4,
+        "z": -2.1,
+        "radius": 2.2
+      },
+      "chest": {
+        "x": 2.6,
+        "z": 2.6,
+        "radius": 2.2
+      },
+      "entrance": {
+        "location": "brumaluz",
+        "x": -94.277,
+        "z": 66.294,
+        "radius": 2.5
+      },
+      "cityEntrance": {
+        "location": "brumaluz",
+        "x": -94.277,
+        "z": 66.294
+      },
+      "exit": {
+        "x": 0,
+        "z": 3,
+        "targetX": -94.977,
+        "targetZ": 67.506
+      },
+      "purchase": {
+        "price": 3500,
+        "projects": []
+      }
+    }
+  }
+}

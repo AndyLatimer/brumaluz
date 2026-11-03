@@ -1,0 +1,18 @@
+const wood='#aa8156',line='stroke="#5c4531" stroke-width=".85" stroke-linejoin="round"';
+const pictures={
+ butaca:`<path d="M5 5q7-5 14 0v12H5Z" fill="#a76854" ${line}/><path d="M3 12h18v8H3Z" fill="#bd8564" ${line}/><path d="M4 11v9m16-9v9M6 20v3m12-3v3" ${line}/><path d="m9 10 7-1 1 7-7 1Z" fill="#8fa27b" ${line}/><path d="M6 14v7" stroke="#e6d6b0" stroke-width="3"/>`,
+ aparador:`<path d="M3 8h18v13H3Z" fill="${wood}" ${line}/><path d="M4 11h16M12 11v10M7 16h2m6 0h2M5 21v2m14-2v2" ${line}/><path d="M2 8h20" stroke="#d9b87d" stroke-width="2"/><circle cx="7" cy="4" r="3" fill="#e8dbc0" ${line}/><circle cx="15" cy="4" r="3" fill="#ced6b6" ${line}/><circle cx="7" cy="4" r="1.3" fill="#839a84"/>`,
+ escritorio:`<path d="M2 10h20v3H2Zm3 3v10m14-10v10M4 5h17v5H4Z" fill="${wood}" ${line}/><path d="M10 5v5m6-5v5" ${line}/><path d="m6 11 6-1 3 3-7 1Z" fill="#efddba" ${line}/><path d="m18 11 2-8" stroke="#dfcda5" stroke-width="1.6"/>`,
+ perchero:`<path d="M12 3v18m0-14L5 4m7 4 7-4m-7 16-7 3m7-3 7 3" fill="none" stroke="${wood}" stroke-width="2.4" stroke-linecap="round"/><path d="m8 9 3-1 2 12H4Z" fill="#829475" ${line}/><path d="M13 6q5-6 9-2l-1 3Z" fill="#b67f64" ${line}/>`,
+ costurero:`<path d="M4 11h16l-2 11H6Z" fill="#c6a16b" ${line}/><path d="M5 14h14M6 18h12m-9-7 1 10m4-10-1 10" stroke="#9c784c"/><circle cx="8" cy="10" r="4" fill="#b67666" ${line}/><circle cx="15" cy="10" r="4" fill="#819575" ${line}/><path d="m8 9 2 2m5-4 2 3M12 8l5-7M15 9l5-6" stroke="#ebd9ab" stroke-width="1.2"/>`,
+ jardinera:`<path d="M2 13h20v7H2Zm3 7v3m14-3v3" fill="${wood}" ${line}/><path d="M6 14V5m6 9V3m6 11V6" stroke="#6b8655" stroke-width="1.2"/><path d="M6 8Q0 7 3 3q4 0 3 5Zm6-1Q7 5 9 1q4 0 3 6Zm6 4q-2-7 3-7 3 3-3 7Z" fill="#92aa70"/><path d="M7 14q5-8 8 0" fill="none" stroke="#d6cba1"/>`,
+ silla:`<path d="M7 4h10v10H7Z" fill="${wood}" ${line}/><path d="M8 6h8m-8 3h8" stroke="#d6c59b" stroke-width="1.6"/><path d="m5 13 14 0 1 4H4Z" fill="#bc996d" ${line}/><path d="M6 17v5m12-5v5" ${line}/>`,
+ banco:`<path d="m2 10 19-2 1 6-20 1Z" fill="#a6a183" ${line}/><path d="M4 15v6m15-7v6m-14-2 14-1" ${line}/><path d="m5 11 13-1" stroke="#d4c6a3"/>`,
+ mesita:`<ellipse cx="12" cy="8" rx="9" ry="4" fill="${wood}" ${line}/><path d="M5 10v11m14-11v11m-7-9v8" ${line}/><path d="M5 8h14" stroke="#ddbf86"/>`,
+ arcon:`<path d="M3 8h18v13H3Z" fill="${wood}" ${line}/><path d="M3 8q9-10 18 0v3H3Z" fill="#bf9c6a" ${line}/><path d="M7 6v15m10-15v15" stroke="#737b73" stroke-width="1.8"/><path d="M10 10h4v5h-4Z" fill="#d8b66d" ${line}/>`,
+ alfombra:`<path d="m3 5 17 2 1 13-18-2Z" fill="#8c8e71" ${line}/><path d="m5 7 13 2 1 9-14-1Z" fill="#b58c6f"/><path d="m9 10 5 3-5 2 3-3Z" fill="#ddcba2"/><path d="M2 6 0 6m2 3H0m2 3H0m2 3H0m20-4h2m-2 3h2m-2 3h2" stroke="#cbb995"/>`,
+ farol:`<path d="m7 9 10 0 1 11H6Z" fill="#efd59a" ${line}/><path d="m4 9 8-6 8 6Z" fill="${wood}" ${line}/><path d="M7 9v11m10-11v11M5 21h14" stroke="#68736b" stroke-width="1.5"/><circle cx="12" cy="3" r="2" fill="none" ${line}/>`,
+ macetero:`<path d="m5 14 14 0-2 8H7Z" fill="#bd8260" ${line}/><path d="M12 15V5m0 7L6 8m6 2 6-5" stroke="#718253" stroke-width="1.5"/><ellipse cx="6" cy="7" rx="4" ry="2.5" fill="#8ba76d"/><ellipse cx="17" cy="5" rx="4" ry="2.5" fill="#a1b781"/><ellipse cx="11" cy="3" rx="2.5" ry="3" fill="#809b67"/>`,
+ biombo:`<path d="M2 4h6v17H2Zm7 0h6v17H9Zm7 0h6v17h-6Z" fill="#d2c09a" ${line}/><path d="M4 6v12m8-12v12m8-12v12" stroke="#8fa084"/><path d="M2 22v-2m6 2v-2m1 2v-2m6 2v-2m1 2v-2m6 2v-2" ${line}/>`
+};
+export const homeItemIcon=kind=>pictures[kind]?`<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${pictures[kind]}</svg>`:null;

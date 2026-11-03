@@ -1,0 +1,208 @@
+create or replace function public.game_home_catalog() returns jsonb language sql immutable set search_path='' as $$select '__HOMES__'::jsonb$$;
+create or replace function public.game_home_furnishings() returns jsonb language sql immutable set search_path='' as $$select '__FURNISHINGS__'::jsonb$$;
+create or replace function public.game_neighborhood_plans() returns jsonb language sql immutable set search_path='' as $$select '__PLANS__'::jsonb$$;
+create or replace function public.game_home_at(loc text) returns jsonb language sql immutable set search_path='' as $$
+ select value from jsonb_each(public.game_home_catalog()->'homes') where value->>'location'=loc
+$$;
+create or replace function public.game_home_owned(d jsonb,hid text) returns boolean language sql immutable set search_path='' as $$
+ select hid='lucero' or coalesce(d->'rpg'->'homes'->'owned' ? hid,false)
+$$;
+revoke all on function public.game_home_catalog(),public.game_home_furnishings(),public.game_neighborhood_plans(),public.game_home_at(text),public.game_home_owned(jsonb,text) from public,anon,authenticated;
+
+-- Neighbourhood deliveries accept only unbound materials, as shown by the UI.
+create or replace function public.game_cozy_consume(d jsonb,item_id text,quantity int) returns jsonb language plpgsql immutable set search_path='' as $$
+declare inv jsonb:=public.game_inventory(d);stack jsonb;remaining int:=quantity;used int;slot int;
+begin
+ for slot in 0..24 loop
+  stack:=inv->slot;if stack->>'id' is distinct from item_id or coalesce((stack->>'bound')::boolean,false) then continue;end if;
+  used:=least(remaining,(stack->>'count')::int);remaining:=remaining-used;
+  inv:=jsonb_set(inv,array[slot::text],case when used=(stack->>'count')::int then 'null'::jsonb else stack||jsonb_build_object('count',(stack->>'count')::int-used) end);
+  exit when remaining=0;
+ end loop;
+ if remaining>0 then raise exception 'Faltan materiales sin vincular para este proyecto.';end if;
+ return d||jsonb_build_object('inventory',inv);
+end $$;
+revoke all on function public.game_cozy_consume(jsonb,text,int) from public,anon,authenticated;
+
+create table if not exists public.cozy_projects(
+ id uuid primary key default gen_random_uuid(),scope text not null unique,
+ ingredients jsonb not null default '{}',contributors jsonb not null default '[]',claimed jsonb not null default '[]'
+);
+alter table public.cozy_projects enable row level security;
+revoke all on table public.cozy_projects from public,anon,authenticated;
+
+create or replace function public.game_home_can_visit(visitor uuid,host uuid) returns boolean language sql stable security definer set search_path='' as $$
+ select visitor=host or exists(select 1 from public.characters c where c.id=host and c.data->'rpg'->'homes'->>'access'='party'
+ and exists(select 1 from public.party_members a join public.party_members b on a.party_id=b.party_id where a.character_id=visitor and b.character_id=host))
+$$;
+revoke all on function public.game_home_can_visit(uuid,uuid) from public,anon,authenticated;
+
+create or replace function public.game_home_owner(cid uuid,d jsonb) returns uuid language plpgsql stable security definer set search_path='' as $$
+declare host uuid;home jsonb:=public.game_home_at(d->>'location');
+begin
+ if home is null then return null;end if;
+ begin host:=nullif(d->'rpg'->'homes'->>'visit','')::uuid;exception when invalid_text_representation then host:=null;end;
+ if host is not null and coalesce(d->'rpg'->'homes'->>'visitHome','lucero')=home->>'id' and public.game_home_can_visit(cid,host)
+  and exists(select 1 from public.characters c where c.id=host and public.game_home_owned(c.data,home->>'id')) then return host;end if;
+ return cid;
+end $$;
+revoke all on function public.game_home_owner(uuid,jsonb) from public,anon,authenticated;
+
+-- Curated room contents only. No inventory, wallet or other private character data.
+create or replace function public.cozy_view(p_character_id uuid) returns jsonb language plpgsql volatile security definer set search_path='' as $$
+declare c public.characters;host public.characters;owner_id uuid;allowed boolean;home jsonb;definition jsonb;projects jsonb;scope_id text;party uuid;leader uuid;
+begin
+ perform pg_catalog.pg_advisory_xact_lock(731029,3);
+ c:=public.game_lock_character(p_character_id);
+ perform public.game_meals_tick(extract(epoch from clock_timestamp()),c.id);
+ c.data:=public.game_meal_mail(c.id,c.data);
+ c.data:=public.game_store(c.id,c.data);
+ if c.id is null or not exists(select 1 from public.world_players where character_id=c.id and user_id=auth.uid() and seen_at>now()-interval '15 seconds') then raise exception 'Entra en el mundo para consultar tu hogar.';end if;
+ definition:=public.game_home_at(c.data->>'location');
+ if definition is not null then
+  owner_id:=coalesce(nullif(c.data->'rpg'->'homes'->>'visit','')::uuid,c.id);allowed:=public.game_home_can_visit(c.id,owner_id);
+  if allowed then select * into host from public.characters where id=owner_id;end if;
+  allowed:=allowed and public.game_home_owned(host.data,definition->>'id') and (owner_id=c.id or coalesce(c.data->'rpg'->'homes'->>'visitHome','lucero')=definition->>'id');
+  home:=jsonb_build_object('owner',owner_id,'name',coalesce(to_jsonb(host)->>'name',host.data->>'name','Mi habitación'),'guest',owner_id<>c.id,'allowed',allowed,'access',coalesce(host.data->'rpg'->'homes'->>'access','private'),'furniture',
+   case when allowed then (select coalesce(jsonb_agg(jsonb_build_object('id',f->>'id','item',jsonb_build_object('id',f->'item'->>'id','count',1),'location',f->>'location','x',f->'x','z',f->'z','yaw',f->'yaw','job',f->'job','lit',f->'lit')),'[]'::jsonb)
+    from jsonb_array_elements(coalesce(host.data->'rpg'->'furniture','[]')) f where f->>'location'=definition->>'location') else '[]'::jsonb end);
+ end if;
+ select party_id into party from public.party_members where character_id=c.id;
+ select character_id into leader from public.party_members where party_id=party order by entry_order limit 1;
+ scope_id:=coalesce('party:'||party::text,'character:'||c.id::text);
+ projects:=public.game_meal_view(c.id,extract(epoch from clock_timestamp()));
+ return jsonb_build_object('home',home,'projects',projects,'menu',public.game_meal_menu(c.id,c.data,extract(epoch from clock_timestamp())),'leader',leader is null or leader=c.id,'quota',c.data->'rpg'->'mealQuota');
+end $$;
+revoke all on function public.cozy_view(uuid) from public,anon;
+grant execute on function public.cozy_view(uuid) to authenticated;
+
+-- Reuses the caller's character lock, revision and request receipt in rpg_action.
+create or replace function public.game_cozy_action(cid uuid,d jsonb,action text,args jsonb,pos jsonb,stamp numeric) returns jsonb language plpgsql volatile security definer set search_path='' as $$
+<<cozy>>
+declare s jsonb:=d->'rpg';h jsonb:=coalesce(d->'rpg'->'homes','{"owned":["lucero"],"primary":"lucero","access":"private"}');
+ home jsonb:=public.game_home_at(d->>'location');defs jsonb:=public.game_home_furnishings();catalog jsonb:=public.game_rpg_catalog();
+ piece jsonb;item jsonb;meta jsonb;target jsonb;q jsonb;cfg jsonb;needs jsonb;inv jsonb;f jsonb;other jsonb;result jsonb;
+ id text:=args->>'id';kind text;job text;host uuid;party uuid;scope_id text;project public.cozy_projects;
+ px numeric;pz numeric;yaw numeric;hx numeric;hz numeric;ohx numeric;ohz numeric;ox numeric;oz numeric;ow numeric;
+ entry record;idx int;amount int;n int;slot int;reward int;cx numeric;cz numeric;passable boolean;
+begin
+ if action='home_access' then
+  if args->>'access' not in ('private','party') or args->>'access' is null then raise exception 'Elige quién puede visitarte.';end if;
+  h:=h||jsonb_build_object('access',args->>'access');
+ elsif action='home_primary' then
+  if not(public.game_home_catalog()->'homes' ? id) or not public.game_home_owned(d,id) then raise exception 'Esta vivienda no te pertenece.';end if;h:=h||jsonb_build_object('primary',id);
+ elsif action='home_buy' then
+  home:=public.game_home_catalog()->'homes'->id;cfg:=home->'purchase';q:=coalesce(s->'neighborhood','{}');
+  if cfg is null or public.game_home_owned(d,id) then raise exception 'Esta vivienda ya es tuya o no está en venta.';end if;
+  if args->'price' is distinct from cfg->'price' then raise exception 'El precio ha cambiado. Revisa la vivienda.';end if;
+  target:=home->'entrance';
+  if d->>'location' is distinct from target->>'location' or sqrt(power((pos->>'x')::numeric-(target->>'x')::numeric,2)+power((pos->>'z')::numeric-(target->>'z')::numeric,2))>(target->>'radius')::numeric then raise exception 'Acércate a la entrada de la casa para comprarla.';end if;
+  if public.game_pelines(d)<(cfg->>'price')::int then raise exception 'No tienes suficiente moneda.';end if;
+  d:=public.game_set_pelines(d,public.game_pelines(d)-(cfg->>'price')::int);
+  h:=h||jsonb_build_object('owned',coalesce(h->'owned','["lucero"]')||jsonb_build_array(id),'primary',id);
+ elsif action='home_leave_visit' then
+  h:=h-'visit'-'visitHome';
+  if home is not null and not public.game_home_owned(d,home->>'id') then
+   target:=jsonb_build_object('x',home->'exit'->'targetX','z',home->'exit'->'targetZ','yaw',0);
+   d:=d||jsonb_build_object('location',home->'entrance'->>'location','position',target);
+   update public.world_players set position=target,movement_credit=3,jump=0,seen_at=now(),saved_at=now() where character_id=cid;
+  end if;
+ elsif action='home_visit' then
+  home:=public.game_home_catalog()->'homes'->coalesce(args->>'home','lucero');
+  if home is null then raise exception 'Esta vivienda no está disponible.';end if;
+  target:=home->'entrance';
+  if d->>'location' is distinct from target->>'location' or sqrt(power((pos->>'x')::numeric-(target->>'x')::numeric,2)+power((pos->>'z')::numeric-(target->>'z')::numeric,2))>(target->>'radius')::numeric then raise exception 'Acércate a la puerta de las habitaciones en la posada.';end if;
+  host:=(args->>'owner')::uuid;
+  if host is null or host=cid or not public.game_home_can_visit(cid,host) or not exists(select 1 from public.characters c where c.id=host and public.game_home_owned(c.data,home->>'id')) then raise exception 'Esta persona no permite visitas de tu grupo.';end if;
+  h:=h||jsonb_build_object('visit',host,'visitHome',home->>'id');
+ elsif action in ('home_place','home_move','home_pickup','home_toggle','home_rest') then
+  if home is null or not public.game_home_owned(d,home->>'id') or nullif(h->>'visit','') is not null then raise exception 'Entra en tu propia habitación para realizar esta acción.';end if;
+  if action='home_rest' then
+   if sqrt(power((pos->>'x')::numeric-(home->'bed'->>'x')::numeric,2)+power((pos->>'z')::numeric-(home->'bed'->>'z')::numeric,2))>2.2 then raise exception 'Acércate a tu cama.';end if;
+   return d||jsonb_build_object('health',-1,'resource',-1,'health_regen',0,'resource_regen',0);
+  end if;
+  if action='home_place' then slot:=(args->>'slot')::int;item:=public.game_inventory(d)->slot;
+  else select value into piece from jsonb_array_elements(s->'furniture') where value->>'id'=id and value->>'location'=home->>'location';item:=piece->'item';end if;
+  kind:=catalog->'items'->(item->>'id')->>'furniture';meta:=defs->kind;
+  if meta is null or item->>'instanceId' is null or item->>'instanceId' is distinct from args->>'instanceId' then raise exception 'Ese mueble ha cambiado. Vuelve a seleccionarlo.';end if;
+  if action='home_pickup' then
+   d:=public.game_rpg_give(d,item,false);
+   select coalesce(jsonb_agg(value),'[]') into result from jsonb_array_elements(s->'furniture') where value->>'id'<>id;s:=jsonb_set(s,'{furniture}',result);
+  elsif action='home_toggle' then
+   if not coalesce((meta->>'light')::boolean,false) then raise exception 'Este mueble no tiene luz.';end if;
+   select jsonb_agg(case when value->>'id'=id then value||jsonb_build_object('lit',not coalesce((value->>'lit')::boolean,true)) else value end) into result from jsonb_array_elements(s->'furniture');s:=jsonb_set(s,'{furniture}',result);
+  else
+   px:=(args->>'x')::numeric;pz:=(args->>'z')::numeric;yaw:=(args->>'yaw')::numeric;
+   if px is null or pz is null or yaw is null or px not between -100 and 100 or pz not between -100 and 100 or yaw not between -100 and 100 then raise exception 'Elige una posición válida.';end if;
+   hx:=(abs(cos(yaw))*(meta->>'width')::numeric+abs(sin(yaw))*(meta->>'depth')::numeric)/2;
+   hz:=(abs(sin(yaw))*(meta->>'width')::numeric+abs(cos(yaw))*(meta->>'depth')::numeric)/2;
+   target:=home->'bounds';passable:=coalesce((meta->>'passable')::boolean,false);
+   if px-hx<(target->>'minX')::numeric or px+hx>(target->>'maxX')::numeric or pz-hz<(target->>'minZ')::numeric or pz+hz>(target->>'maxZ')::numeric then raise exception 'El mueble debe quedar dentro de la habitación.';end if;
+   for f in select value from jsonb_array_elements(home->'reserved') loop
+    if px-hx<(f->>'maxX')::numeric-.015 and px+hx>(f->>'minX')::numeric+.015 and pz-hz<(f->>'maxZ')::numeric-.015 and pz+hz>(f->>'minZ')::numeric+.015 then raise exception 'Deja libres la puerta, la cama y el cofre.';end if;
+   end loop;
+   if not passable and abs((pos->>'x')::numeric-px)<hx+.25 and abs((pos->>'z')::numeric-pz)<hz+.25 then raise exception 'Deja libre el lugar donde estás de pie.';end if;
+   for f in select value from jsonb_array_elements(s->'furniture') where value->>'location'=home->>'location' and (action='home_place' or value->>'id'<>id) loop
+    other:=defs->(catalog->'items'->(f->'item'->>'id')->>'furniture');
+    if coalesce((other->>'passable')::boolean,false)<>passable then continue;end if;
+    ox:=(f->>'x')::numeric;oz:=(f->>'z')::numeric;ow:=(f->>'yaw')::numeric;
+    ohx:=(abs(cos(ow))*coalesce((other->>'width')::numeric,1.6)+abs(sin(ow))*coalesce((other->>'depth')::numeric,.8))/2;
+    ohz:=(abs(sin(ow))*coalesce((other->>'width')::numeric,1.6)+abs(cos(ow))*coalesce((other->>'depth')::numeric,.8))/2;
+    if abs(px-ox)<hx+ohx-.015 and abs(pz-oz)<hz+ohz-.015 then raise exception 'Ese espacio ya está ocupado.';end if;
+   end loop;
+   if not public.game_rpg_sight(home->>'location',px-hx,pz-hz,px+hx,pz-hz) or not public.game_rpg_sight(home->>'location',px-hx,pz+hz,px+hx,pz+hz) or not public.game_rpg_sight(home->>'location',px-hx,pz-hz,px-hx,pz+hz) or not public.game_rpg_sight(home->>'location',px+hx,pz-hz,px+hx,pz+hz) then raise exception 'El mueble toca una pared u otro objeto de la habitación.';end if;
+   if action='home_place' then
+    if (select count(*) from jsonb_array_elements(s->'furniture') value where value->>'location'=home->>'location')>=(home->>'limit')::int then raise exception 'Has alcanzado el límite de muebles de esta vivienda.';end if;
+    job:=args->>'job';if kind='estacion' and not(catalog->'professions' ? job) then raise exception 'Selecciona el oficio de la estación.';end if;
+    result:=jsonb_build_object('id',gen_random_uuid(),'item',item,'location',home->>'location','x',px,'z',pz,'yaw',yaw,'job',case when kind='estacion' then job else null end);
+    s:=jsonb_set(s,'{furniture}',s->'furniture'||jsonb_build_array(result));d:=public.game_remove_item(d,slot);
+    if home->>'id'='lucero' then h:=h||'{"settled":true}';end if;
+   else
+    select jsonb_agg(case when value->>'id'=id then value||jsonb_build_object('x',px,'z',pz,'yaw',yaw) else value end) into result from jsonb_array_elements(s->'furniture');s:=jsonb_set(s,'{furniture}',result);
+   end if;
+  end if;
+ elsif action='neighbor_prepare' then
+  return public.game_neighborhood_action(cid,d,args,pos,stamp);
+ elsif action in ('neighbor_accept','neighbor_visit','neighbor_report') then
+  q:=coalesce(s->'neighborhood','{}');
+  if action='neighbor_visit' then target:=catalog->'teachers'->'lenador';
+  else
+   if jsonb_typeof(d->'welcome')='object' and d->>'shadowQuest' is distinct from 'returned' then raise exception 'Termina primero la bienvenida y el regreso con Isberto.';end if;
+   target:=case when d->>'shadowQuest'='returned' then catalog->'professionTutorial'->'mentor' else catalog->'professionTutorial'->'legacyMentor' end;target:=target||'{"id":"gnomi"}';
+  end if;
+  if args->>'master' is distinct from target->>'id' or d->>'location' is distinct from target->>'location' or sqrt(power((pos->>'x')::numeric-(target->>'x')::numeric,2)+power((pos->>'z')::numeric-(target->>'z')::numeric,2))>coalesce((target->>'radius')::numeric,3) then raise exception 'Acércate al interlocutor del recado.';end if;
+  if action='neighbor_accept' then if q ? 'errand' then raise exception 'Ya has empezado este recado.';end if;q:=q||'{"errand":"accepted"}';
+  elsif action='neighbor_visit' then if q->>'errand' is distinct from 'accepted' then raise exception 'Acepta primero el recado de Gnomi.';end if;q:=q||'{"errand":"visited"}';
+  else if q->>'errand' is distinct from 'visited' then raise exception 'Visita primero al maestro de Leñadores.';end if;q:=q||'{"errand":"completed"}';d:=public.game_set_pelines(d,public.game_pelines(d)+100);end if;
+  s:=jsonb_set(s,'{neighborhood}',q);
+ elsif action='tutorial_supply' then
+  q:=s->'tutorial';cfg:=catalog->'professionTutorial'->'jobs'->(q->>'job');
+  if q->>'status' is distinct from 'active' or coalesce((q->>'delivered')::boolean,false) or not coalesce((q->>'visited')::boolean,false) or coalesce((q->>'gathered')::int,0)<1 or cfg is null or cfg->>'recipe' is not null and coalesce((q->>'collected')::int,0)<2 then raise exception 'Completa la práctica antes de entregar el suministro.';end if;
+  target:=catalog->'teachers'->(q->>'job');needs:=catalog->'dailyOrders'->'orders'->(cfg->>'order');
+  if args->>'master' is distinct from target->>'id' or d->>'location' is distinct from target->>'location' or sqrt(power((pos->>'x')::numeric-(target->>'x')::numeric,2)+power((pos->>'z')::numeric-(target->>'z')::numeric,2))>3 then raise exception 'Habla con el maestro de tu práctica.';end if;
+  inv:=public.game_inventory(d);
+  for entry in select * from jsonb_each_text(needs->'ingredients') loop
+   if (select coalesce(sum((value->>'count')::int),0) from jsonb_array_elements(inv) where value->>'id'=entry.key and not coalesce((value->>'bound')::boolean,false))<entry.value::int then raise exception 'Faltan los materiales o componentes sin vincular del encargo.';end if;
+   amount:=entry.value::int;
+   for idx in 0..24 loop item:=inv->idx;if item->>'id' is distinct from entry.key or coalesce((item->>'bound')::boolean,false) then continue;end if;n:=least(amount,(item->>'count')::int);amount:=amount-n;inv:=jsonb_set(inv,array[idx::text],case when n=(item->>'count')::int then 'null'::jsonb else item||jsonb_build_object('count',(item->>'count')::int-n) end);exit when amount=0;end loop;
+  end loop;
+  d:=public.game_set_pelines(d||jsonb_build_object('inventory',inv),public.game_pelines(d)+(needs->>'reward')::int);s:=jsonb_set(s,'{tutorial}',q||'{"delivered":true}');
+ elsif action in ('neighbor_contribute','neighbor_claim','meal_start','meal_contribute','meal_claim','meal_cancel') then
+  return public.game_meal_action(cid,d,action,args,pos,stamp);
+ else raise exception 'Acción de vida cotidiana no válida.';end if;
+ -- Give/consume may have changed deliveries, so preserve those fields as well.
+ s:=s||jsonb_build_object('homes',h);
+ return d||jsonb_build_object('rpg',s);
+end $$;
+revoke all on function public.game_cozy_action(uuid,jsonb,text,jsonb,jsonb,numeric) from public,anon,authenticated;
+
+-- A predefined room is instanced by its owner, including visitors with permission.
+create or replace function public.game_world_snapshot(p_user_id uuid) returns jsonb language sql stable security definer set search_path='' as $$
+ select coalesce(jsonb_agg(jsonb_build_object('id',w.character_id,'userId',w.user_id,'username',p.username,
+ 'vitals',public.game_public_vitals(public.game_food_data(c.id,public.game_party_data(c.id,c.data))),
+ 'data',public.game_public_character(c.data)||jsonb_build_object('name',c.name),'position',w.position,'facing',w.facing,'jump',w.jump,'wave',w.wave,'dead',public.game_health(c.data)=0) order by w.character_id),'[]')
+ from public.world_players w join public.characters c on c.id=w.character_id join public.profiles p on p.user_id=w.user_id
+ join public.world_players mine on mine.user_id=p_user_id join public.characters me on me.id=mine.character_id
+ where w.user_id<>p_user_id and w.seen_at>now()-interval '15 seconds' and coalesce(c.data->>'location','brumaluz')=coalesce(me.data->>'location','brumaluz')
+ and public.game_home_owner(c.id,c.data) is not distinct from public.game_home_owner(me.id,me.data)
+$$;

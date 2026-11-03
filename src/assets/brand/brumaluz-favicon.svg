@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#faebb9"/>
+      <stop offset=".35" stop-color="#c89643"/>
+      <stop offset=".68" stop-color="#f3d180"/>
+      <stop offset="1" stop-color="#8c5c25"/>
+    </linearGradient>
+    <linearGradient id="enamel" x1="16" y1="10" x2="48" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3c544c"/>
+      <stop offset=".55" stop-color="#223733"/>
+      <stop offset="1" stop-color="#13211f"/>
+    </linearGradient>
+    <radialGradient id="halo" cx=".5" cy=".56" r=".48">
+      <stop stop-color="#ffdc85" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#ffdc85" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="light" cx=".5" cy=".45" r=".6">
+      <stop stop-color="#fffbe4"/>
+      <stop offset=".52" stop-color="#ffe094"/>
+      <stop offset="1" stop-color="#cf8b2e"/>
+    </radialGradient>
+  </defs>
+  <!-- Ramas laterales de los jardines de Brumaluz -->
+  <path d="M12.5 52C5.2 44.5 4.5 34.5 8.5 25.5m39 26.5c7.3-7.5 8-17.5 4-26.5" stroke="#8f6732" stroke-width="1.3" stroke-linecap="round"/>
+  <g fill="url(#gold)" stroke="#4f3315" stroke-width="1.1" stroke-linejoin="round">
+    <path d="M8.5 44C3.5 42 2 37.5 3.2 33.5c4.2 1.2 6.2 5 5.3 10.5Zm-.3-9.5c-4.2-2.6-4.5-6.5-2.5-9.5 3.8 1.8 4.6 5.5 2.5 9.5Zm2.3 17c-5 0-8.2-2.5-9-6 4.2-.8 7.5 1.8 9 6Zm45-7.5c5-2 6.5-6.5 5.3-10.5-4.2 1.2-6.2 5-5.3 10.5Zm.3-9.5c4.2-2.6 4.5-6.5 2.5-9.5-3.8 1.8-4.6 5.5-2.5 9.5Zm-2.3 17c5 0 8.2-2.5 9-6-4.2-.8-7.5 1.8-9 6Z"/>
+  </g>
+  <!-- Arco ojival dorado de bienvenida y remate superior -->
+  <path d="M32 3.2C23.5 11 7.5 14 7.5 31.2v14.3C7.5 54.5 17 59.2 32 61.5c15-2.3 24.5-7 24.5-16V31.2C56.5 14 40.5 11 32 3.2Z" fill="url(#gold)" stroke="#4a2f13" stroke-width="2" stroke-linejoin="round"/>
+  <path d="m32 .6 1.8 3.1L32 6.8l-1.8-3.1L32 .6Z" fill="url(#gold)" stroke="#4a2f13" stroke-width=".9" stroke-linejoin="round"/>
+  <!-- Interior de esmalte oscuro -->
+  <path d="M32 8.2C24.8 15 12.2 17.5 12.2 31.5V45c0 7.2 7.5 11.2 19.8 13.4C44.3 56.2 51.8 52.2 51.8 45V31.5C51.8 17.5 39.2 15 32 8.2Z" fill="url(#enamel)" stroke="#f6d993" stroke-width="1.1"/>
+  <circle cx="32" cy="37" r="17" fill="url(#halo)"/>
+  <!-- Cadena y argolla del farol -->
+  <path d="M32 12v5.2m-4 4.5v-1.8a4 4 0 0 1 8 0v1.8" stroke="url(#gold)" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Rayos de luz del farol -->
+  <path d="M15.5 35.5 18.5 37m30-1.5L45.5 37M18 24.5l2.5 2m25.5-2-2.5 2" stroke="#f5d487" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- Tejado y base del farol -->
+  <path d="M18.5 27.5 32 18.2l13.5 9.3-2.8 3H21.3l-2.8-3Z" fill="url(#gold)" stroke="#593a18" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="m21.5 30.5 2.8 17h15.4l2.8-17H21.5Z" fill="url(#light)" stroke="#a87932" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="m27.2 31.2 1 15.8m8.6-15.8-1 15.8" stroke="#785222" stroke-width="1.3"/>
+  <!-- Llama interior viva -->
+  <path d="M32 33.2c-1.4 4.6-5.2 6.4-4.2 10 1 3.8 7.4 3.8 8.4 0 1-3.6-2.8-5.4-4.2-10Z" fill="#fffdf2" stroke="#e89a25" stroke-width=".9"/>
+  <path d="M23.2 47.5h17.6l2 3.2H21.2l2-3.2Z" fill="url(#gold)" stroke="#593a18" stroke-width="1" stroke-linejoin="round"/>
+  <!-- Libro abierto de las Crónicas de Brumaluz -->
+  <path d="M32 53.5c-6.2-4-12.5-4.2-19.5-3.2l1.8 7.8c6.2-.8 12.2.8 17.7 4.2 5.5-3.4 11.5-5 17.7-4.2l1.8-7.8c-7-1-13.3-.8-19.5 3.2Z" fill="#5e3e1c" stroke="#3b250e" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M32 51.8c-5.4-3.6-11-4.2-17.8-3.3l1.6 7c5.4-.7 10.8.8 16.2 4 5.4-3.2 10.8-4.7 16.2-4l1.6-7c-6.8-.9-12.4-.3-17.8 3.3Z" fill="#fbf0ce" stroke="#a67c38" stroke-width="1.1" stroke-linejoin="round"/>
+  <path d="M32 51.8v7.5m-12.5-7.6c3.5 0 6.2.8 9.2 2.4m15.8-2.4c-3.5 0-6.2.8-9.2 2.4" stroke="#9e783c" stroke-width="1.1" stroke-linecap="round"/>
+</svg>
+

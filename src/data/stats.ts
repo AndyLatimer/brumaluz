@@ -5,6 +5,8 @@ import { CharData, ClassId, AttributeId, RACES, ATTRIBUTE_BASE_VALUE } from './d
 import { foodEffect } from './food';
 import { equipmentVitalBonus } from './accessories';
 import { setBonuses } from './sets';
+import { XP_CURVE, experienceToNextLevel } from './leveling';
+export { XP_CURVE, experienceToNextLevel };
 
 export type ResourceKind = 'mana' | 'stamina';
 
@@ -31,7 +33,7 @@ export const MAX_RESOURCE: Record<ResourceKind, StatFormula> = {
 };
 
 /** Experiencia para pasar del nivel L al L+1: round(base × L ^ exponent). */
-export const XP_CURVE = { base: 100, exponent: 1.5 };
+// XP_CURVE importada de ./leveling
 
 /** Valor total de un atributo: base + bonificación racial + puntos asignados. */
 export const attributeTotal = (d: CharData, id: AttributeId) =>
@@ -47,7 +49,7 @@ export function evaluate(formula: StatFormula, d: CharData) {
 export const OVERHEAL = { maxFraction: 0.3, decayPerSecond: 1 };
 export const maxOverhealOf = (d: CharData) => Math.floor(maxHealthOf(d) * OVERHEAL.maxFraction);
 
-export const experienceToNextLevel = (level: number) => Math.round(XP_CURVE.base * Math.pow(Math.max(level, 1), XP_CURVE.exponent));
+// experienceToNextLevel importada de ./leveling
 export const resourceKindOf = (cls: ClassId): ResourceKind => CLASS_RESOURCE[cls];
 const withPartyBonus = (value: number, d: CharData) =>
   Math.floor(value * (1000 + Math.min(Math.max(d.partyPeers ?? 0, 0), 3) * 15) / 1000);

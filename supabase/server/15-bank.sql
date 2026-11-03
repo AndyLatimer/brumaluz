@@ -22,6 +22,8 @@ $$;
 create or replace function public.game_bank_spot(p_location text)
 returns jsonb language sql immutable set search_path='' as $$
   select case p_location
+    when 'habitacion_posada_lucero_del_alba' then '{"x":-1.9,"z":1.5,"radius":2.2}'::jsonb
+    when 'casa_del_olmo' then '{"x":2.6,"z":2.6,"radius":2.2}'::jsonb
     when 'casa_de_isberto_interior' then '{"x":2.25,"z":3.25,"radius":3}'::jsonb
   end
 $$;
@@ -104,6 +106,7 @@ begin
   select position into pos from public.world_players where character_id=c.id and user_id=c.user_id
     and seen_at>now()-interval '15 seconds';
   spot:=public.game_bank_spot(coalesce(d->>'location','brumaluz'));
+  if d->>'location' in ('habitacion_posada_lucero_del_alba','casa_del_olmo') and (nullif(d->'rpg'->'homes'->>'visit','') is not null or d->>'location'='casa_del_olmo' and not coalesce(d->'rpg'->'homes'->'owned' ? 'olmo',false)) then raise exception 'Abre el cofre desde tu propia vivienda.';end if;
   if pos is null or spot is null then raise exception 'BANK_NOT_PLAYING'; end if;
   if power((pos->>'x')::numeric-(spot->>'x')::numeric,2)+power((pos->>'z')::numeric-(spot->>'z')::numeric,2)
     >power((spot->>'radius')::numeric,2) then raise exception 'BANK_TOO_FAR'; end if;

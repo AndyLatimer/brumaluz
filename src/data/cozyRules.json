@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "furnitureMinutes": [[2,6],[6,16],[20,40],[60,120],[120,240],[240,480]],
+  "equipmentMinutes": [[1,3],[3,8],[10,20],[30,60],[60,120],[120,240]],
+  "componentSeconds": [30,60,120,180,240,300],
+  "offlineRate": 0.3333333333333333,
+  "queueLimit": 5,
+  "orderLimit": 3,
+  "activeOrderLimit": 3,
+  "orderRewards": [50,150,450,1350,4050,12150],
+  "orderExperience": [5,15,45,135,405,1215],
+  "componentFactor": 0.8,
+  "neighborhoodLimit": 2,
+  "mealLimit": 2,
+  "activeMealLimit": 3,
+  "mealTimeoutSeconds": 1800,
+  "mealRewardLifetimeSeconds": 604800
+}

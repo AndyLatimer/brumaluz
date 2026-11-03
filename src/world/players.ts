@@ -5,6 +5,7 @@ import { TITLES, isReservedTitle, PHOENIX_ICON } from '../data/titles';
 import { t } from '../ui/i18n';
 import type { WorldPlayer } from '../services/multiplayer';
 import { castShadows } from './render';
+import {characterModelsReady,loadCharacterModels} from '../character/equipmentModels';
 
 interface Actor {
   combatAt?:number;
@@ -23,6 +24,11 @@ interface Actor {
 
 export class RemotePlayers {
   private actors = new Map<string, Actor>();
+  private latest:WorldPlayer[]=[];
+  private generation=0;
+  private loading=new Set<string>();
+  private retryAt=new Map<string,number>();
+  count(){return this.latest.length;}
   constructor(
     private scene: THREE.Scene,
     private groundY: (x: number, z: number) => number,
@@ -32,13 +38,25 @@ export class RemotePlayers {
   ) {}
 
   receive(players: WorldPlayer[]) {
+    this.latest=players;
     const ids = new Set(players.map((p) => p.id));
+    for(const id of this.retryAt.keys())if(!ids.has(id))this.retryAt.delete(id);
     for (const [id, actor] of this.actors) {
       if (!ids.has(id)) { this.remove(actor); this.actors.delete(id); }
     }
     const now = performance.now();
     for (const player of players) {
-      const appearance = JSON.stringify({...player.data,combatVisual:undefined});
+      if(!characterModelsReady(player.data)){
+        if(!this.loading.has(player.id)&&now>=(this.retryAt.get(player.id)??0)){
+          this.loading.add(player.id);const generation=this.generation;
+          void loadCharacterModels(player.data).then(()=>{
+            if(generation!==this.generation)return;
+            this.loading.delete(player.id);this.retryAt.delete(player.id);this.receive(this.latest);
+          }).catch(error=>{if(generation===this.generation){this.loading.delete(player.id);if(this.latest.some(p=>p.id===player.id)){this.retryAt.set(player.id,performance.now()+5000);console.error('No se pudo cargar el equipo de un jugador.',error);}}});
+        }
+        continue;
+      }
+      const appearance = JSON.stringify({...player.data,combatVisual:undefined,name:undefined,title:undefined,level:undefined});
       let actor = this.actors.get(player.id);
       if (actor && actor.appearance !== appearance) {
         this.remove(actor);
@@ -77,9 +95,18 @@ export class RemotePlayers {
         actor = { player, character, appearance, plate, bubble, speakingUntil: 0, anchor: new THREE.Vector3(), from: target.clone(), target, receivedAt: now, duration: 250 };
         this.actors.set(player.id, actor);
       } else {
+        if(actor.player.data.name!==player.data.name)actor.plate.querySelector('strong')!.textContent=player.data.name;
+        if(actor.player.data.title!==player.data.title){
+          const title=actor.plate.querySelector('span')!;
+          title.replaceChildren();title.hidden=player.data.title==='none';
+          title.classList.toggle('staff-title',isReservedTitle(player.data.title));
+          if(isReservedTitle(player.data.title))title.innerHTML=PHOENIX_ICON;
+          title.append(t(TITLES[player.data.title].label));
+        }
         const seconds = Math.max((now - actor.receivedAt) / 1000, 0.01);
         const speed = Math.hypot(target.x - actor.target.x, target.z - actor.target.z) / seconds;
         actor.character.setGait(player.dead || speed < 0.35 ? 'idle' : speed > 4 ? 'run' : 'walk');
+        actor.character.setLocomotionSpeed(player.dead ? 0 : speed);
         actor.character.setSwimming(!!water?.deep && !player.dead);
         this.waterFx?.track(player.id, target, water, speed, seconds);
         if (player.wave !== actor.player.wave) actor.character.wave();
@@ -90,6 +117,7 @@ export class RemotePlayers {
         actor.duration = Math.min(500, Math.max(150, now - actor.receivedAt));
         actor.receivedAt = now;
         actor.player = player;
+        actor.character.d = player.data;
       }
       if (player.dead) actor.character.die(); else actor.character.revive();
       const combat=player.data.combatVisual;
@@ -113,9 +141,9 @@ export class RemotePlayers {
       const x = (actor.anchor.x * 0.5 + 0.5) * innerWidth;
       const y = (-actor.anchor.y * 0.5 + 0.5) * innerHeight;
       actor.plate.hidden = !inView || !nameplates;
-      actor.plate.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+      if(inView&&nameplates)actor.plate.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
       actor.bubble.hidden = !inView || now > actor.speakingUntil || actor.player.dead;
-      actor.bubble.style.transform = `translate(${x}px, ${y - (nameplates ? actor.plate.offsetHeight + 8 : 6)}px) translate(-50%, -100%)`;
+      if(!actor.bubble.hidden)actor.bubble.style.transform = `translate(${x}px, ${y - (nameplates ? actor.plate.offsetHeight + 8 : 6)}px) translate(-50%, -100%)`;
     }
   }
 
@@ -147,6 +175,7 @@ export class RemotePlayers {
   }
 
   clear() {
+    this.generation++;this.latest=[];this.loading.clear();this.retryAt.clear();
     for (const actor of this.actors.values()) this.remove(actor);
     this.actors.clear();
   }

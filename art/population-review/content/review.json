@@ -1,0 +1,426 @@
+{
+  "editor": [],
+  "game": [],
+  "errors": [],
+  "chatter": {
+    "checks": [
+      {
+        "state": "dead",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "mapTravelling",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "actionBusy",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "gameMenuOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "playerMenuOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "worldMenuOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "optionsOpen",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "openWindow",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "cinematic",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "background",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "dialogue",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "wall",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "hidden",
+        "lines": 0,
+        "cooldown": false
+      },
+      {
+        "state": "debug",
+        "lines": 0,
+        "cooldown": false
+      }
+    ],
+    "audible": 1,
+    "immediateRepeat": 1
+  },
+  "maps": {
+    "residents": 0,
+    "debug": true
+  },
+  "residentContent": {
+    "subtitles": [
+      "Habitante de Brumaluz"
+    ],
+    "english": "Brumaluz resident",
+    "greetings": [
+      "Buenas.",
+      "Si buscas el centro, sigue esta calle.",
+      "Hola.",
+      "La plaza del Levante queda al este, por esta calle.",
+      "Buenas. Puedes descansar un rato en el jardín.",
+      "Hola."
+    ],
+    "scenes": [
+      {
+        "id": "levante_salida",
+        "lines": [
+          [
+            "¿Por dónde se sale a Pompelín?",
+            "Which way leads out to Pompelín?"
+          ],
+          [
+            "Por la puerta del Este, al final de esta calle.",
+            "Through the East Gate, at the end of this street."
+          ]
+        ],
+        "near": {
+          "position": [
+            172,
+            0
+          ],
+          "radius": 28
+        }
+      },
+      {
+        "id": "levante_saludo",
+        "lines": [
+          [
+            "Buenas, ¿qué tal?",
+            "Hello. How are you?"
+          ],
+          [
+            "Bien. He salido a estirar las piernas.",
+            "Well. I came out to stretch my legs."
+          ]
+        ]
+      },
+      {
+        "id": "pozo_levante",
+        "lines": [
+          [
+            "¿Cómo se llega a la plaza del Levante?",
+            "How do you get to Levante Square?"
+          ],
+          [
+            "Sigue esta calle hacia el este.",
+            "Follow this street east."
+          ]
+        ],
+        "near": {
+          "position": [
+            0,
+            0
+          ],
+          "radius": 14
+        }
+      },
+      {
+        "id": "pozo_pausa",
+        "lines": [
+          [
+            "¿Llevas mucho aquí?",
+            "Have you been here long?"
+          ],
+          [
+            "No, acabo de parar.",
+            "No, I only just stopped."
+          ]
+        ]
+      },
+      {
+        "id": "jardin_descanso",
+        "lines": [
+          [
+            "Me duelen un poco los pies.",
+            "My feet are a bit sore."
+          ],
+          [
+            "Quédate aquí un rato.",
+            "Stay here for a while."
+          ]
+        ],
+        "near": {
+          "position": [
+            36,
+            34.641
+          ],
+          "radius": 12
+        }
+      },
+      {
+        "id": "jardin_saludo",
+        "lines": [
+          [
+            "¿Qué tal estás?",
+            "How are you?"
+          ],
+          [
+            "Bien, ¿y tú?",
+            "Well. And you?"
+          ],
+          [
+            "Bien, gracias.",
+            "Well, thanks."
+          ]
+        ]
+      },
+      {
+        "id": "artesanos_muebles",
+        "lines": [
+          [
+            "¿En qué taller hacen muebles?",
+            "Which workshop makes furniture?"
+          ],
+          [
+            "En Ebanistería.",
+            "The furniture workshop."
+          ]
+        ]
+      },
+      {
+        "id": "artesanos_reparacion",
+        "lines": [
+          [
+            "¿También reparan herramientas en Herrería?",
+            "Does the smith repair tools too?"
+          ],
+          [
+            "Sí, hacen reparaciones.",
+            "Yes, they do repairs."
+          ]
+        ]
+      },
+      {
+        "id": "huertas_centro",
+        "lines": [
+          [
+            "¿Por dónde se vuelve al centro?",
+            "Which way goes back to the centre?"
+          ],
+          [
+            "Hacia el norte, hasta la plaza del pozo.",
+            "North, as far as Well Square."
+          ]
+        ]
+      },
+      {
+        "id": "huertas_apetito",
+        "lines": [
+          [
+            "Me apetece algo de comer.",
+            "I feel like something to eat."
+          ],
+          [
+            "¿Dulce o salado?",
+            "Sweet or savoury?"
+          ],
+          [
+            "Salado.",
+            "Savoury."
+          ]
+        ]
+      },
+      {
+        "id": "lonja_joyeria",
+        "lines": [
+          [
+            "¿También hacen colgantes en Joyería?",
+            "Does the jeweller make pendants too?"
+          ],
+          [
+            "Sí, y anillos.",
+            "Yes, and rings."
+          ]
+        ]
+      },
+      {
+        "id": "lonja_saludo",
+        "lines": [
+          [
+            "Me alegra verte.",
+            "Good to see you."
+          ],
+          [
+            "Igualmente.",
+            "You too."
+          ]
+        ]
+      },
+      {
+        "id": "telares_plaza",
+        "lines": [
+          [
+            "¿Por aquí se vuelve a la plaza?",
+            "Does this way lead back to the square?"
+          ],
+          [
+            "Sí, por esta misma calle.",
+            "Yes, along this street."
+          ]
+        ],
+        "near": {
+          "position": [
+            86,
+            148.956
+          ],
+          "radius": 28
+        }
+      },
+      {
+        "id": "telares_pausa",
+        "lines": [
+          [
+            "Voy a parar un momento.",
+            "I’m stopping for a moment."
+          ],
+          [
+            "Me viene bien descansar a mí también.",
+            "I could do with a rest too."
+          ]
+        ]
+      },
+      {
+        "id": "olmo_barrio",
+        "lines": [
+          [
+            "Me gusta esta parte de Brumaluz.",
+            "I like this part of Brumaluz."
+          ],
+          [
+            "Está bien, aunque queda un poco lejos del centro.",
+            "It’s nice, though it’s a bit far from the centre."
+          ]
+        ],
+        "near": {
+          "position": [
+            -72,
+            124
+          ],
+          "radius": 30
+        }
+      },
+      {
+        "id": "olmo_saludo",
+        "lines": [
+          [
+            "Buenas.",
+            "Hello."
+          ],
+          [
+            "Hola. ¿Qué tal?",
+            "Hello. How are you?"
+          ],
+          [
+            "Todo bien.",
+            "All well."
+          ]
+        ]
+      },
+      {
+        "id": "ronda_salida",
+        "lines": [
+          [
+            "¿Por aquí también se sale a Pompelín?",
+            "Does this gate lead out to Pompelín too?"
+          ],
+          [
+            "Sí, esta es otra de las puertas.",
+            "Yes, this is another of the gates."
+          ]
+        ],
+        "near": {
+          "position": [
+            -86,
+            -148.956
+          ],
+          "radius": 28
+        }
+      },
+      {
+        "id": "ronda_descanso",
+        "lines": [
+          [
+            "¿Te encuentras bien?",
+            "Are you all right?"
+          ],
+          [
+            "Sí, solo estoy descansando.",
+            "Yes, I’m just resting."
+          ]
+        ]
+      }
+    ]
+  },
+  "desktopFraming": {
+    "ready": true,
+    "subjects": [
+      {
+        "x": 952.5178763417292,
+        "y": 366.7719955993535,
+        "visible": true
+      },
+      {
+        "x": 458.6442384014883,
+        "y": 412.5795086903187,
+        "visible": true
+      }
+    ],
+    "dialogTop": 800.359375
+  },
+  "conversationCamera": {
+    "queries": 16,
+    "hidden": 0,
+    "maxNpcObstacles": 7
+  },
+  "mobileFraming": {
+    "ready": true,
+    "subjects": [
+      {
+        "x": 290.50927021486274,
+        "y": 322.04802192685224,
+        "visible": true
+      },
+      {
+        "x": 92.59482292530183,
+        "y": 344.0708562186932,
+        "visible": true
+      }
+    ],
+    "dialogTop": 671.859375
+  }
+}

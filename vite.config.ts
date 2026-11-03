@@ -4,6 +4,9 @@ import { npcWorkshopPlugin } from './tools/npc-workshop-plugin.mjs';
 import { mapEditorPlugin } from './tools/map-editor-plugin.mjs';
 import { questEditorPlugin } from './tools/quest-editor-plugin.mjs';
 import { itemEditorPlugin } from './tools/item-editor-plugin.mjs';
+import { recipeEditorPlugin } from './tools/recipe-editor-plugin.mjs';
+import { shopEditorPlugin } from './tools/shop-editor-plugin.mjs';
+import { reportEditorPlugin } from './tools/report-editor-plugin.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -26,7 +29,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      entries: ['index.html', 'maps.html', 'npcs.html', 'quests.html', 'items.html', 'wardrobe.html', 'equipment.html'],
+      entries: ['index.html', 'maps.html', 'npcs.html', 'quests.html', 'items.html', 'recipes.html', 'shops.html', 'wardrobe.html', 'equipment.html', 'reports.html'],
       include: [
         '@supabase/supabase-js',
         'three',
@@ -46,7 +49,7 @@ export default defineConfig(({ mode }) => {
         'three/examples/jsm/utils/SkeletonUtils.js',
       ],
     },
-    plugins: [...(standalone ? [viteSingleFile()] : []), npcWorkshopPlugin(), mapEditorPlugin(), questEditorPlugin(), itemEditorPlugin()],
+    plugins: [...(standalone ? [viteSingleFile()] : []), npcWorkshopPlugin(), mapEditorPlugin(), questEditorPlugin(), itemEditorPlugin(), recipeEditorPlugin(), shopEditorPlugin(), reportEditorPlugin()],
     define: {
       'import.meta.env.NPC_RANGER': JSON.stringify(uses('Ranger')),
       'import.meta.env.NPC_ROGUE_HOODED': JSON.stringify(uses('Rogue_Hooded')),

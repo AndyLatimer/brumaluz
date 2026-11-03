@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>Crónicas de Brumaluz</title>
+  <link rel="icon" type="image/svg+xml" href="./src/assets/brand/brumaluz-favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" sizes="any" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
@@ -12,7 +14,10 @@
 <body class="auth-visible">
   <canvas id="scene"></canvas>
 
-  <div id="loading"><div class="crest">✦</div><p>Encendiendo los faroles de Brumaluz…</p></div>
+  <div id="loading" role="status" aria-live="polite">
+    <div class="crest" aria-hidden="true">✦</div>
+    <p>Encendiendo los faroles de Brumaluz…</p>
+  </div>
 
   <div id="access-settings">
     <span id="menu-music-message" role="status"></span>
@@ -31,14 +36,21 @@
   </section>
 
   <div id="account-backdrop" aria-hidden="true">
+    <span class="account-stars"></span>
     <span class="account-moon"></span>
+    <span class="account-mountains-far"></span>
     <span class="account-mountains"></span>
+    <span class="account-mist"></span>
     <span class="account-town">
-      <i class="account-tower"></i>
+      <i class="account-wall"></i>
+      <i class="account-tower account-citadel"></i>
       <i class="account-house account-house-one"></i>
       <i class="account-house account-house-two"></i>
       <i class="account-house account-house-three"></i>
+      <i class="account-house account-house-four"></i>
+      <i class="account-gate-spire"></i>
     </span>
+    <span class="account-mist-fore"></span>
   </div>
   <div id="account-language-switch" class="language-switch" aria-label="Idioma">
     <button type="button" data-language="es" aria-label="Español">
@@ -69,14 +81,15 @@
   <main id="account-gate" aria-live="polite">
     <section id="auth-screen" class="account-card frame">
       <div class="account-brand auth-brand">
-        <span class="account-crest" aria-hidden="true">✦</span>
-        <span>Crónicas de Brumaluz</span>
+        <img class="account-logo-emblem" src="./src/assets/brand/brumaluz-emblem.svg" alt="" aria-hidden="true" />
+        <span class="account-logo-wordmark"><span class="account-logo-kicker">Crónicas de</span><span class="account-logo-name">Brumaluz</span></span>
       </div>
       <aside class="auth-story-panel">
         <div class="auth-scene-frame">
-          <img class="auth-scene-image" src="./src/assets/brand/brumaluz-login.svg" alt="Vista ilustrada de Brumaluz bajo la luna" />
+          <img class="auth-scene-image auth-scene-day" src="./src/assets/brand/brumaluz-login-day.svg" alt="Vista ilustrada de Brumaluz bajo el sol" />
+          <img class="auth-scene-image auth-scene-sunset" src="./src/assets/brand/brumaluz-login-sunset.svg" alt="Vista ilustrada de Brumaluz al atardecer" />
+          <img class="auth-scene-image auth-scene-night" src="./src/assets/brand/brumaluz-login.svg" alt="Vista ilustrada de Brumaluz bajo la luna" />
         </div>
-        <span class="auth-scene-index">Crónica I <i></i> Brumaluz</span>
         <p class="auth-world-motto"><span aria-hidden="true">✦</span> Explora <i></i> Lucha <i></i> Deja tu huella</p>
       </aside>
       <div class="auth-form-panel">
@@ -133,7 +146,8 @@
     </section>
     <section id="character-screen" class="account-card frame" hidden>
       <div class="account-brand">
-        <span class="account-crest">✦</span><span>Crónicas de Brumaluz</span>
+        <img class="account-logo-emblem" src="./src/assets/brand/brumaluz-emblem.svg" alt="" aria-hidden="true" />
+        <span class="account-logo-wordmark"><span class="account-logo-kicker">Crónicas de</span><span class="account-logo-name">Brumaluz</span></span>
       </div>
       <div class="account-heading">
         <div>
@@ -189,61 +203,101 @@
         <h3>Cuerpo</h3>
         <label class="slider"><span>Altura</span><input type="range" id="height" min="0" max="1" step="0.01" /></label>
         <label class="slider"><span>Complexión</span><input type="range" id="build" min="0" max="1" step="0.01" /></label>
+        <div class="creator-field">
+          <h3>Forma de andar</h3>
+          <div class="stepper" data-key="walkStyle"></div>
+          <button id="creator-walk-preview" type="button" class="studio-button" aria-pressed="false">Ver andando</button>
+        </div>
         <h3>Atributos</h3>
         <p id="attributePointsLeft" class="attribute-points-left" aria-live="polite"></p>
         <div id="raceStats" class="race-stats"></div>
       </section>
       <section data-page="rostro">
-        <h3>Tono de piel</h3>
-        <div class="swatches" id="skin"></div>
-        <h3>Cara</h3>
-        <div class="stepper" data-key="face"></div>
-        <h3>Ojos</h3>
-        <div class="stepper" data-key="eyeShape"></div>
-        <div class="swatches small" id="eyeColor"></div>
-        <h3>Cejas</h3>
-        <div class="stepper" data-key="brows"></div>
-        <div id="noseBox">
+        <div class="creator-field">
+          <h3>Tono de piel</h3>
+          <div class="swatches" id="skin"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Forma del rostro</h3>
+          <div class="stepper" data-key="face"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Forma de los ojos</h3>
+          <div class="stepper" data-key="eyeShape"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Color de ojos</h3>
+          <div class="swatches small" id="eyeColor"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Cejas</h3>
+          <div class="stepper" data-key="brows"></div>
+        </div>
+        <div class="creator-field" id="noseBox">
           <h3>Nariz</h3>
           <div class="stepper" data-key="nose"></div>
         </div>
-        <h3>Boca</h3>
-        <div class="stepper" data-key="mouth"></div>
-        <h3>Barba</h3>
-        <div class="stepper" data-key="beard"></div>
-        <div id="traitBox">
+        <div class="creator-field">
+          <h3>Boca</h3>
+          <div class="stepper" data-key="mouth"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Barba</h3>
+          <div class="stepper" data-key="beard"></div>
+        </div>
+        <div class="creator-field" id="traitBox">
           <h3 id="traitLabel">Orejas</h3>
           <div class="stepper" data-key="trait"></div>
         </div>
-        <h3>Maquillaje</h3>
-        <div class="stepper" data-key="makeup"></div>
-        <div id="makeupColorBox" hidden>
+        <div class="creator-field">
+          <h3>Maquillaje</h3>
+          <div class="stepper" data-key="makeup"></div>
+        </div>
+        <div class="creator-field" id="makeupColorBox" hidden>
           <h3>Color del maquillaje</h3>
           <div class="swatches small" id="makeupColor"></div>
         </div>
-        <h3>Detalles</h3>
-        <div class="stepper" data-key="detail"></div>
+        <div class="creator-field">
+          <h3>Conjunto de marcas</h3>
+          <div class="stepper" data-key="detail"></div>
+        </div>
       </section>
       <section data-page="cabello">
-        <h3>Peinado</h3>
-        <div class="stepper" data-key="hair"></div>
-        <h3>Color de pelo</h3>
-        <div class="swatches" id="hairColor"></div>
-        <h3>Adorno</h3>
-        <div class="stepper" data-key="hairAcc"></div>
-        <h3>Color del adorno</h3>
-        <div class="swatches small" id="hairAccColor"></div>
+        <div class="creator-field">
+          <h3>Peinado</h3>
+          <div class="stepper" data-key="hair"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Color de pelo</h3>
+          <div class="swatches" id="hairColor"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Adorno</h3>
+          <div class="stepper" data-key="hairAcc"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Color del adorno</h3>
+          <div class="swatches small" id="hairAccColor"></div>
+        </div>
         <p class="desc" id="hairNote"></p>
       </section>
       <section data-page="ropa">
-        <h3>Color principal</h3>
-        <div class="swatches" id="clothA"></div>
-        <h3>Color secundario</h3>
-        <div class="swatches" id="clothB"></div>
-        <h3>Complementos</h3>
-        <div class="stepper" data-key="acc"></div>
-        <h3>Color de complementos</h3>
-        <div class="swatches small" id="accColor"></div>
+        <div class="creator-field">
+          <h3>Color principal</h3>
+          <div class="swatches" id="clothA"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Color secundario</h3>
+          <div class="swatches" id="clothB"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Conjunto de complementos</h3>
+          <div class="stepper" data-key="acc"></div>
+        </div>
+        <div class="creator-field">
+          <h3>Color de complementos</h3>
+          <div class="swatches small" id="accColor"></div>
+        </div>
         <p class="desc">Este color se aplica a los complementos de ropa.</p>
       </section>
       <section data-page="clase">
@@ -251,10 +305,6 @@
         <div class="cards" id="classes"></div>
         <p class="desc" id="classDesc"></p>
         <p class="desc">Comenzarás con el equipo básico de tu clase. Tu túnica de diario conserva sus colores y se muestra al quitarte el equipo.</p>
-        <h3>Color principal</h3>
-        <div class="swatches" id="primary"></div>
-        <h3>Color secundario</h3>
-        <div class="swatches" id="secondary"></div>
       </section>
     </div>
   </aside>
@@ -368,6 +418,8 @@
     <section id="game-menu-panel" class="game-menu-panel frame" aria-labelledby="game-menu-title" hidden>
       <h2 id="game-menu-title">Menú</h2>
       <button id="game-menu-options" class="btn ghost" type="button">Opciones</button>
+      <button id="game-menu-bug-report" class="btn ghost" type="button">Reportar problema (F8)</button>
+      <button id="game-menu-bug-review" class="btn ghost" type="button">Revisar reportes</button>
       <button class="btn ghost soon" type="button" aria-disabled="true" title="Próximamente">Ayuda</button>
       <button id="game-menu-characters" class="btn ghost" type="button">Selección de personaje</button>
       <button id="game-menu-logout" class="btn ghost" type="button">Salir del juego</button>
@@ -397,6 +449,7 @@
     </button>
     <section id="world-menu-panel" class="game-menu-panel frame" aria-labelledby="world-menu-title" hidden>
       <h2 id="world-menu-title">Mundo</h2>
+      <button id="world-menu-homes" class="btn ghost" type="button" data-window="homes">Mis viviendas<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m3 15 13-11 13 11M7 13v15h18V13M13 28V18h6v10" fill="#c9a777" stroke="#493322" stroke-width="2" stroke-linejoin="round"/><path d="M22 5v5" stroke="#765b3c" stroke-width="3"/></svg></button>
       <button id="world-menu-map" class="btn ghost" type="button" data-window="map" aria-keyshortcuts="M">Mapa<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#352315" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6.5 8.5-3 9 3 8.5-3V25l-8.5 3-9-3-8.5 3Z" fill="url(#pm-parch)"/><path d="m11.5 3.5 9 3V28l-9-3Z" fill="#dfbe82" opacity=".45" stroke="none"/><path d="M5 18.5c3-2 5.5 2 8.5 0s5-4 8.5-2v8.2l-1.5.5-9-3-6.5 2.3Z" fill="url(#pm-azure)" opacity=".55" stroke="none"/><path d="m6 14 2.5-4 2.5 4M14 12.5l2.8-4.5 2.7 4.5" fill="url(#pm-sage)"/><path d="M11.5 3.5V25M20.5 6.5V28" stroke="#8a6334" stroke-width="1"/><path d="M6.5 20.5q4-4.5 8.5-2t8.5-6" stroke="#b84a39" stroke-width="1.5" stroke-dasharray="2.2 1.8"/><path d="m21.5 10 3.5 3.5m0-3.5L21.5 13.5" stroke="url(#pm-crimson)" stroke-width="1.8"/><circle cx="24" cy="23" r="5" fill="url(#pm-gold)"/><circle cx="24" cy="23" r="3.6" fill="url(#pm-parch)" stroke="#694321" stroke-width=".8"/><path d="m24 19.8 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1Z" fill="url(#pm-crimson)" stroke="#352315" stroke-width=".7"/></g></svg></button>
       <button id="world-menu-collections" class="btn ghost" type="button" data-window="collections">Colecciones<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#352315" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 14h23v12.5a2 2 0 0 1-2 2h-19a2 2 0 0 1-2-2Z" fill="url(#pm-wood)"/><path d="M4.5 14V9.5c0-3.5 5-5.5 11.5-5.5s11.5 2 11.5 5.5V14Z" fill="url(#pm-leather)"/><path d="M6 15.5h20l-2-4H8Z" fill="url(#pm-crimson)"/><circle cx="11.5" cy="14" r="2.6" fill="url(#pm-gold)"/><circle cx="20.5" cy="14" r="2.6" fill="url(#pm-gold)"/><path d="m16 9.5 3.2 3.5-3.2 4-3.2-4Z" fill="url(#pm-azure)"/><path d="m16 9.5 1.5 3.5-1.5 4" stroke="#fff7de" stroke-width=".7" opacity=".75"/><path d="M4.5 15.5h23v2.5h-23Z" fill="url(#pm-gold)"/><path d="M8.5 5.2v23.3M23.5 5.2v23.3" stroke="url(#pm-gold)" stroke-width="2.2"/><path d="M8.5 5.2v23.3M23.5 5.2v23.3" stroke="#352315" stroke-width=".7"/><rect x="13.5" y="14.5" width="5" height="6" rx="1.2" fill="url(#pm-gold)"/><circle cx="16" cy="17" r="1" fill="#352315" stroke="none"/><path d="M16 17.5v2" stroke="#352315" stroke-width="1.2"/><path class="menu-icon-shine" d="m26 2 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z" stroke="#694321" stroke-width=".8"/></g></svg></button>
       <button id="world-menu-professions" class="btn ghost" type="button" data-window="professions" aria-keyshortcuts="P">Profesiones<svg class="menu-option-icon" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#352315" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 26 24 6.5l2.2 2L9.7 28Z" fill="url(#pm-wood)"/><path d="M16.5 4.5c4.5-1.5 9.5.5 12 4.8-3.8-.8-6.8-.2-9.5 1.8l-2.5-2.2c1.8-1.5 2.2-2.6 0-4.4Z" fill="url(#pm-steel)"/><path d="M24.5 26 8 6.5l-2.2 2L22.3 28Z" fill="url(#pm-leather)"/><path d="m4.5 9.5 5.5-5 4 4.2-5.5 5Z" fill="url(#pm-steel)"/><rect x="13.8" y="14" width="4.4" height="4.4" rx="1" transform="rotate(45 16 16.2)" fill="url(#pm-gold)"/><path d="M8.5 28.5h15l-1.5-3h-12Z" fill="url(#pm-steel)"/><path d="M6.5 22.5h19c-.5 2.2-2.8 3.5-5.5 3.5H12c-2.7 0-5-1.3-5.5-3.5Z" fill="url(#pm-steel)"/><path d="m16 18.5 2.8 3.5L16 25.5 13.2 22Z" fill="url(#pm-azure)"/><path class="menu-icon-shine" d="m16 2 1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1Z" stroke="#694321" stroke-width=".8"/></g></svg></button>
@@ -490,6 +543,141 @@
       </div>
     </section>
   </div>
+
+  <div id="bug-report-backdrop" class="dialog-backdrop" hidden>
+    <section class="bug-dialog frame" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
+      <div class="bug-header">
+        <div class="bug-title-group">
+          <span class="bug-icon" aria-hidden="true">🪲</span>
+          <h2 id="bug-report-title">Reportar problema o mejora</h2>
+        </div>
+        <kbd class="bug-shortcut-hint" title="Atajo para abrir este diálogo">F8</kbd>
+      </div>
+
+      <div class="bug-body">
+        <div class="bug-media-preview">
+          <div class="bug-annotation-wrapper">
+            <div class="bug-canvas-container">
+              <canvas id="bug-annotation-canvas" title="Dibuja sobre la captura para señalar el problema"></canvas>
+              <span class="bug-capture-badge">📸 Captura lista para anotar</span>
+            </div>
+            <div class="bug-annotation-toolbar" role="toolbar" aria-label="Herramientas de anotación">
+              <div class="annot-tools-group">
+                <button type="button" class="annot-tool-btn active" data-tool="pen" title="Lápiz libre (dibujar círculo o detalle)">✏️ Trazo</button>
+                <button type="button" class="annot-tool-btn" data-tool="rect" title="Rectángulo (enmarcar zona del error)">🔲 Cuadro</button>
+                <button type="button" class="annot-tool-btn" data-tool="arrow" title="Flecha (señalar elemento)">➡️ Flecha</button>
+              </div>
+              <div class="annot-color-palette" aria-label="Color del trazo">
+                <button type="button" class="annot-color-btn active" data-color="#e74c3c" style="background:#e74c3c" title="Rojo"></button>
+                <button type="button" class="annot-color-btn" data-color="#f1c40f" style="background:#f1c40f" title="Amarillo"></button>
+                <button type="button" class="annot-color-btn" data-color="#2ecc71" style="background:#2ecc71" title="Verde"></button>
+                <button type="button" class="annot-color-btn" data-color="#3498db" style="background:#3498db" title="Azul"></button>
+              </div>
+              <div class="annot-actions-group">
+                <button type="button" class="annot-btn-action" id="annot-undo-btn" title="Deshacer último trazo">↩️ Deshacer</button>
+                <button type="button" class="annot-btn-action" id="annot-clear-btn" title="Borrar anotaciones">🧹 Limpiar</button>
+              </div>
+            </div>
+          </div>
+          <div id="bug-meta-pills" class="bug-meta-pills"></div>
+        </div>
+
+        <form id="bug-report-form" class="bug-form" onsubmit="return false;">
+          <div class="bug-form-row">
+            <label class="bug-label">Categoría</label>
+            <div id="bug-category-chips" class="bug-category-grid" role="radiogroup" aria-label="Categoría del reporte">
+              <button type="button" class="bug-cat-chip active" data-category="bug" role="radio" aria-checked="true">🐛 Bug / Error</button>
+              <button type="button" class="bug-cat-chip" data-category="visual" role="radio" aria-checked="false">🎨 Visual / Gráficos</button>
+              <button type="button" class="bug-cat-chip" data-category="suggestion" role="radio" aria-checked="false">💡 Sugerencia</button>
+              <button type="button" class="bug-cat-chip" data-category="combat" role="radio" aria-checked="false">⚔️ Combate</button>
+              <button type="button" class="bug-cat-chip" data-category="quest" role="radio" aria-checked="false">📜 Misión</button>
+              <button type="button" class="bug-cat-chip" data-category="performance" role="radio" aria-checked="false">⚡ Rendimiento</button>
+            </div>
+          </div>
+
+          <div class="bug-form-row">
+            <label class="bug-label" for="bug-title-input">Título o resumen</label>
+            <input id="bug-title-input" class="bug-input" type="text" placeholder="Ej: Objeto flotando en la plaza o colisión rota" maxlength="120" />
+          </div>
+
+          <div class="bug-form-row">
+            <label class="bug-label" for="bug-desc-input">Explicación del problema o mejora <span class="required">*</span></label>
+            <textarea id="bug-desc-input" class="bug-textarea" rows="4" placeholder="Explica qué ha ocurrido, qué esperabas que pasara o cómo te gustaría mejorarlo..." required></textarea>
+          </div>
+
+          <div class="bug-form-row bug-row-inline">
+            <label class="bug-label" for="bug-severity-select">Severidad:</label>
+            <select id="bug-severity-select" class="bug-select">
+              <option value="low">Baja (cosmético, texto, detalle menor)</option>
+              <option value="normal" selected>Normal (molestia que no bloquea)</option>
+              <option value="high">Alta (mecánica rota o obstáculo serio)</option>
+              <option value="blocker">Bloqueante (impide avanzar o congela el juego)</option>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      <div class="bug-actions">
+        <button id="bug-btn-view-all" type="button" class="btn ghost bug-btn-review">Revisar reportes guardados</button>
+        <div class="bug-actions-right">
+          <button id="bug-btn-cancel" type="button" class="btn ghost">Cancelar</button>
+          <button id="bug-btn-submit" type="button" class="btn gold">Guardar reporte</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="bug-review-backdrop" class="dialog-backdrop" hidden>
+    <section class="bug-dialog bug-review-dialog frame" role="dialog" aria-modal="true" aria-labelledby="bug-review-title">
+      <div class="bug-header">
+        <div class="bug-title-group">
+          <span class="bug-icon" aria-hidden="true">📋</span>
+          <h2 id="bug-review-title">Revisión de reportes de bugs y mejoras</h2>
+        </div>
+        <div class="bug-header-actions">
+          <button id="bug-review-export-btn" type="button" class="btn ghost" title="Descargar todos los reportes en JSON">Exportar JSON</button>
+          <button id="bug-review-import-btn" type="button" class="btn ghost" title="Importar reportes desde archivo JSON">Importar JSON</button>
+          <input type="file" id="bug-review-file-input" accept=".json" hidden />
+        </div>
+      </div>
+
+      <div class="bug-review-toolbar">
+        <div class="bug-filter-status" role="tablist" aria-label="Filtrar por estado">
+          <button type="button" class="bug-status-tab active" data-status="all">Todos (<span id="count-all">0</span>)</button>
+          <button type="button" class="bug-status-tab" data-status="pending">Pendientes (<span id="count-pending">0</span>)</button>
+          <button type="button" class="bug-status-tab" data-status="in_progress">En curso (<span id="count-progress">0</span>)</button>
+          <button type="button" class="bug-status-tab" data-status="resolved">Resueltos (<span id="count-resolved">0</span>)</button>
+        </div>
+        <div class="bug-search-wrap">
+          <input id="bug-search-input" type="search" class="bug-input" placeholder="Buscar por texto, zona o autor..." />
+        </div>
+      </div>
+
+      <div class="bug-review-content">
+        <div id="bug-reports-list" class="bug-reports-list" role="list"></div>
+        <div id="bug-report-detail" class="bug-report-detail">
+          <div class="bug-detail-placeholder">
+            <p>Selecciona un reporte de la lista para ver su captura, coordenadas y opciones de resolución.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bug-actions">
+        <button id="bug-review-new-btn" type="button" class="btn ghost">+ Nuevo reporte</button>
+        <button id="bug-review-close-btn" type="button" class="btn ghost">Cerrar</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="bug-lightbox" class="bug-lightbox" hidden aria-hidden="true">
+    <img id="bug-lightbox-img" alt="Captura ampliada" />
+  </div>
+
+  <button id="quick-bug-btn" class="quick-bug-btn" type="button" title="Reportar bug o mejora (F8)" aria-label="Reportar bug o mejora (F8)">
+    <span class="quick-bug-icon">🪲</span>
+    <span class="quick-bug-label">F8</span>
+  </button>
+  <div id="camera-shutter-flash" class="camera-shutter-flash" hidden aria-hidden="true"></div>
 
   <div id="hint">Arrastra para girar · Rueda para acercar</div>
   <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>

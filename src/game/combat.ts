@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { renderActionBar, explainAction } from '../ui/actionBar';
 import { fight, session, play, vitals, ui } from './state';
 import { updateShadowEnemy, buildShadowEnemy, playShadowEnemyAction, resetShadowEnemy } from '../world/shadowEnemy';
-import { COMBAT_KITS, resolveCombat, skillRank, skillCost, attackInterval } from '../data/combat';
+import { COMBAT_KITS, resolveCombat, skillRank, skillCost, attackInterval, skillFor, type SkillId } from '../data/combat';
 import { absorbBarrier } from '../data/enchantments';
 import { combatFloat, combatImpact, combatProjectile, combatSlash, combatCharge, combatReward, combatLevelUp, tickCombatFeedback } from './combatFeedback';
 import { vitalsOf } from '../data/stats';
@@ -32,7 +32,7 @@ import { remotePlayers } from './worldClient';
 import { acceptSnapshot } from './snapshotOrder';
 import combatTiming from '../data/combatTiming.json';
 import combatDuration from '../data/combatDuration.json';
-import { predictSkillCooldown,finishSkillCooldown,cancelSkillCooldown,syncSkillCooldown,cooldownSample,releasePendingSkillCooldown } from './skillCooldown';
+import { predictSkillCooldown,finishSkillCooldown,cancelSkillCooldown,syncSkillCooldown,cooldownSample,releasePendingSkillCooldown,skillCooldownRemaining } from './skillCooldown';
 import { serverNow } from '../data/worldClock';
 import { combatAudio } from './audio';
 import { combatSoundAt } from './combatSound';
@@ -41,6 +41,7 @@ import { tickCombatTutorial, noteTutorialAction, resetCombatTutorial } from './c
 
 const retiredExpeditions=new Set<string>();
 let pendingSkillUntil=0,actionRecoveryUntil=0;
+let pendingSkillId:SkillId='heavy_strike';
 let lastAction:'attack'|'skill'='attack';
 let actionSerial=0;
 let castingSkill:{started:number;impactAt:number}|null=null;
@@ -55,7 +56,7 @@ export function getCombatActionFeedback(){
  if(now<actionRecoveryUntil)return{state:'recovering' as const,remaining:(actionRecoveryUntil-now)/1000,duration:recoveryDuration,interruptible:lastAction==='attack'};
  return{state:'idle' as const,remaining:0,duration:0};
 }
-export function resetCombatActions(){actionSerial++;combatGeneration++;requests.attack?.abort();requests.skill?.abort();requests.attack=requests.skill=null;releasePendingSkillCooldown();attackRequestAfter=0;pendingSkillUntil=0;actionRecoveryUntil=0;castingSkill=null;preparingAction=false;lastAction='attack';fight.facingUntil=0;fight.nextCombatAttack=0;fight.combatBusy=false;fight.pendingCombatSkill=false;resetCombatTutorial();}
+export function resetCombatActions(){actionSerial++;combatGeneration++;requests.attack?.abort();requests.skill?.abort();requests.attack=requests.skill=null;releasePendingSkillCooldown();attackRequestAfter=0;pendingSkillUntil=0;pendingSkillId='heavy_strike';actionRecoveryUntil=0;castingSkill=null;preparingAction=false;lastAction='attack';fight.facingUntil=0;fight.nextCombatAttack=0;fight.combatBusy=false;fight.pendingCombatSkill=false;resetCombatTutorial();}
 export function cycleCombatTarget(reverse=false){
  if(play.dead||play.mode!=='play')return;
  const origin=holder.position.clone();origin.y+=1.2;
@@ -86,7 +87,7 @@ export function tickWorldCombat(time:number,dt:number) {
   if(fight.pendingCombatSkill&&performance.now()>pendingSkillUntil){fight.pendingCombatSkill=false;explainAction(t('No has llegado a tiempo. Acércate y vuelve a usar la habilidad.'));}
   if(fight.pendingCombatSkill&&!fight.combatBusy&&performance.now()>=actionRecoveryUntil&&fight.lockedEnemy&&distance<=kit.range){
     fight.pendingCombatSkill=false;play.moveTarget=null;
-    useWorldCombatSkill();return;
+    useWorldCombatSkill(pendingSkillId);return;
   }
   const wallTime=performance.now()/1000;
   if(TEST&&!session.activeCharacterId&&fight.localCombatState&&fight.localCombatState.health>0&&wallTime>=fight.nextLocalEnemyAttack){
@@ -120,17 +121,20 @@ export function tickWorldCombat(time:number,dt:number) {
   if(time<fight.nextCombatAttack)return;
   void performWorldCombatAction('attack');
 }
-export function useWorldCombatSkill() {
+export function useWorldCombatSkill(id:SkillId=COMBAT_KITS[session.state.cls].skill.id) {
   if (play.mode !== 'play' || play.dead) return;
   const now=performance.now();
-  if (now < vitals.skillReadyAt) {explainAction(t('Recuperándose: {n} s',{n:((vitals.skillReadyAt-now)/1000).toFixed(1)}));return;}
-  const kit = COMBAT_KITS[session.state.cls];
+  const kit = COMBAT_KITS[session.state.cls], skill = skillFor(session.state.cls,id);
+  if (!skill) return;
+  const cooldown = skillCooldownRemaining(id);
+  if (cooldown > 0) {explainAction(t('Recuperándose: {n} s',{n:cooldown.toFixed(1)}));return;}
   if (!hasCombatWeapon(session.state)) { explainAction(t('Equipa un arma de tu clase.')); return; }
-  if (vitalsOf(session.state).resource < skillCost(session.state)) { explainAction(t('Recurso insuficiente: {current} / {cost}.',{current:Math.floor(vitalsOf(session.state).resource),cost:Math.ceil(skillCost(session.state))})); return; }
-  if(kit.skill.healing&&!fight.healTarget){const v=vitalsOf(session.state);if(v.health>=v.maxHealth){explainAction(t('Ya tienes la vida completa.'));return;}}
-  if (!kit.skill.healing && fight.combatEncounter?.status !== 'active') {
+  const cost = skillCost(session.state,id);
+  if (vitalsOf(session.state).resource < cost) { explainAction(t('Recurso insuficiente: {current} / {cost}.',{current:Math.floor(vitalsOf(session.state).resource),cost:Math.ceil(cost)})); return; }
+  if(skill.healing&&!fight.healTarget){const v=vitalsOf(session.state);if(v.health>=v.maxHealth){explainAction(t('Ya tienes la vida completa.'));return;}}
+  if (!skill.healing && fight.combatEncounter?.status !== 'active') {
     const target=ui.targetFrame.current()?.id;
-    if(target?.startsWith('wild:')){void beginWilderness(target.slice(5)).then(success=>{if(success)useWorldCombatSkill();});return;}
+    if(target?.startsWith('wild:')){void beginWilderness(target.slice(5)).then(success=>{if(success)useWorldCombatSkill(id);});return;}
     explainAction(t('Haz clic en un enemigo para usar tu habilidad.')); return;
   }
   // A valid deliberate skill takes priority over an automatic swing that has
@@ -140,19 +144,19 @@ export function useWorldCombatSkill() {
   }
   if(fight.combatBusy||requests.skill)return;
   if(lastAction==='skill'&&now<actionRecoveryUntil){explainAction(t('Terminando la habilidad: {n} s',{n:((actionRecoveryUntil-now)/1000).toFixed(1)}));return;}
-  if(!kit.skill.healing&&!fight.lockedEnemy)lockCombatTarget(true);
-  if(session.state.cls!=='clerigo'&&fight.combatTargetRoot){
+  if(!skill.healing&&!fight.lockedEnemy)lockCombatTarget(true);
+  if(!skill.healing&&fight.combatTargetRoot){
     const range=COMBAT_KITS[session.state.cls].range;
     const distance=Math.hypot(fight.combatTargetRoot.position.x-holder.position.x,fight.combatTargetRoot.position.z-holder.position.z);
     if(distance>range){
-      fight.pendingCombatSkill=true;pendingSkillUntil=performance.now()+10000;fight.combatAuto=true;fight.combatApproach=true;
+      pendingSkillId=id;fight.pendingCombatSkill=true;pendingSkillUntil=performance.now()+10000;fight.combatAuto=true;fight.combatApproach=true;
       play.moveTarget=null;marker.visible=false;
       return;
     }
   }
   fight.pendingCombatSkill=false;
   if(lastAction==='attack')actionRecoveryUntil=0;
-  void performWorldCombatAction('skill');
+  void performWorldCombatAction(id);
 }
 export function releaseCombatTarget() {
   // Cancel a preparation that has not reached the server yet.
@@ -360,11 +364,14 @@ export async function beginIsbertoEncounter() {
 }
 /** Animation and input run on the local clock. At most one request per action
  * type travels to the server; a delayed basic swing never locks a skill. */
-export async function performWorldCombatAction(action:'attack'|'skill') {
-  const now=performance.now(),skill=action==='skill';
+export async function performWorldCombatAction(action:'attack'|SkillId) {
+  const now=performance.now(),skillId=action==='attack'?undefined:action;
+  const cls=session.state.cls,definition=skillId?skillFor(cls,skillId):undefined;
+  if(skillId&&!definition)return;
+  const skill=skillId!==undefined;
   if(play.mode!=='play'||play.dead||fight.combatBusy||now<actionRecoveryUntil)return;
-  if(skill&&(requests.skill||now<vitals.skillReadyAt||vitalsOf(session.state).resource<skillCost(session.state)))return;
-  const cls=session.state.cls,healing=skill&&cls==='clerigo';
+  if(skill&&(requests.skill||skillCooldownRemaining(skillId!)>0||vitalsOf(session.state).resource<skillCost(session.state,skillId)))return;
+  const healing=definition?.mode==='healing';
   if(!hasCombatWeapon(session.state))return;
   const encounter=fight.combatEncounter,root=fight.combatTargetRoot;
   if(!healing&&(!fight.lockedEnemy||encounter?.status!=='active'||!root))return;
@@ -379,7 +386,7 @@ export async function performWorldCombatAction(action:'attack'|'skill') {
   const targetKind=encounter?.kind,ally=fight.healTarget,characterId=session.activeCharacterId;
   const serial=++actionSerial,started=clock.getElapsedTime();
   const timing=combatTiming[cls][skill?'skill':'basic'];
-  lastAction=action;recoveryDuration=combatDuration[cls][skill?'skill':'basic'];
+  lastAction=skill?'skill':'attack';recoveryDuration=combatDuration[cls][skill?'skill':'basic'];
   actionRecoveryUntil=now+recoveryDuration*1000;fight.facingUntil=actionRecoveryUntil;
   castingSkill=skill?{started:now,impactAt:now+timing*1000}:null;
   preparingAction=true;fight.combatBusy=true;
@@ -399,26 +406,26 @@ export async function performWorldCombatAction(action:'attack'|'skill') {
   // Never accumulate a backlog of basic requests during a slow connection.
   // The visible swing keeps its rhythm; confirmed damage stays server-owned.
   if(!skill&&(requests.attack||releasedAt<attackRequestAfter))return;
-  const cooldown=skill?predictSkillCooldown(COMBAT_KITS[cls].skill.cooldown):null;
+  const cooldown=skill?predictSkillCooldown(definition!.cooldown,skillId):null;
   if(!characterId&&TEST){
     if(flight)await new Promise<void>(resolve=>setTimeout(resolve,flight*1000));
     if(!valid()||!healing&&fight.combatEncounter?.instanceId!==targetInstance){if(cooldown)cancelSkillCooldown(cooldown);return;}
     try{
       const current=vitalsOf(session.state);
-      const before={health:current.health,maxHealth:current.maxHealth,resource:current.resource,enemyHealth:fight.combatEncounter?.health??0,nextAttack:fight.localCombatState?.nextAttack??0,nextSkill:fight.localCombatState?.nextSkill??0};
+      const before={health:current.health,maxHealth:current.maxHealth,resource:current.resource,enemyHealth:fight.combatEncounter?.health??0,nextAttack:fight.localCombatState?.nextAttack??0,nextSkill:fight.localCombatState?.nextSkill??0,skillReadyAt:fight.localCombatState?.skillReadyAt};
       const distance=root?Math.hypot(root.position.x-holder.position.x,root.position.z-holder.position.z):0;
       const result=resolveCombat(cls,before,action,releasedAt/1000,distance,session.state.level,skillRank(session.state),session.state.equipment,session.state);
       fight.localCombatState=result.state;
-      if(cooldown)finishSkillCooldown(cooldown,{remaining:Math.max(0,result.state.nextSkill-performance.now()/1000)});
+      if(cooldown&&skillId)finishSkillCooldown(cooldown,{remaining:Math.max(0,(result.state.skillReadyAt?.[skillId]??result.state.nextSkill)-performance.now()/1000)});
       applyCombatResult({predictedAction:true,predictedContact:!healing,
         ...(fight.combatEncounter?{encounter:{...fight.combatEncounter,engaged:fight.combatEncounter.engaged||result.damage.some(amount=>amount>0),health:result.state.enemyHealth,status:result.state.enemyHealth===0?'defeated':'active',...(result.state.enemyHealth===0?{loot:[{id:'esencia_sombria',count:1,bound:true}],looted:false}:{})},quest:result.state.enemyHealth===0?'defeated':'active'}:{}),
         vitals:{health:result.state.health,maxHealth:result.state.maxHealth,overheal:0,resource:result.state.resource,maxResource:vitalsOf(session.state).maxResource,resourceKind:vitalsOf(session.state).resourceKind},
-        damage:result.damage.reduce((sum,hit)=>sum+hit,0),healing:result.healing,action});
+        damage:result.damage.reduce((sum,hit)=>sum+hit,0),healing:result.healing,action:skill?'skill':'attack'});
     }catch(error){if(cooldown)cancelSkillCooldown(cooldown);console.debug('[combat]',errorMessage(error));}
     return;
   }
   if(!characterId){if(cooldown)cancelSkillCooldown(cooldown);return;}
-  const controller=new AbortController();requests[action]=controller;
+  const requestKey=skill?'skill':'attack',controller=new AbortController();requests[requestKey]=controller;
   const timeout=window.setTimeout(()=>controller.abort(),4000),requestStarted=performance.now();
   try{
     // A first click can be approaching while its selection is being accepted.
@@ -428,9 +435,9 @@ export async function performWorldCombatAction(action:'attack'|'skill') {
     const result=healing&&ally?await healAlly(characterId,ally,controller.signal)
       :targetKind==='wilderness'?await wildernessAction(characterId,action,targetInstance??null,undefined,controller.signal)
       :targetKind==='expedition'?await expeditionAction(characterId,action,undefined,controller.signal)
-      :await combatAction(characterId,skill?COMBAT_KITS[cls].skill.id:'attack',controller.signal);
+      :await combatAction(characterId,action,controller.signal);
     if(!valid()||controller.signal.aborted)return;
-    if(cooldown)finishSkillCooldown(cooldown,cooldownSample(result),requestStarted);
+    if(cooldown&&skillId)finishSkillCooldown(cooldown,cooldownSample(result,skillId),requestStarted);
     // Do not restart a complete cadence when a delayed acknowledgement arrives.
     if(!skill&&typeof result.attackCooldown==='number'){
       const elapsed=performance.now()-requestStarted;
@@ -439,7 +446,7 @@ export async function performWorldCombatAction(action:'attack'|'skill') {
     if(flight)await new Promise<void>(resolve=>setTimeout(resolve,Math.max(0,flight*1000-(performance.now()-releasedAt))));
     if(!valid()||controller.signal.aborted)return;
     const preserveTarget=fight.combatEncounter?.instanceId!==targetInstance;
-    applyCombatResult({...result,predictedAction:true,predictedContact:!healing,preserveTarget,action,
+    applyCombatResult({...result,predictedAction:true,predictedContact:!healing,preserveTarget,action:skill?'skill':'attack',
       ...(!result.impact&&impact?{impact:{x:impact.x,z:impact.z,label:encounter?.label}}:{})});
   }catch(error){
     if(!valid())return;
@@ -451,7 +458,7 @@ export async function performWorldCombatAction(action:'attack'|'skill') {
     if(!controller.signal.aborted)console.debug('[combat]',errorMessage(error));
   }finally{
     clearTimeout(timeout);
-    if(requests[action]===controller)requests[action]=null;
+    if(requests[requestKey]===controller)requests[requestKey]=null;
     if(cooldown&&valid())cancelSkillCooldown(cooldown);
   }
 }

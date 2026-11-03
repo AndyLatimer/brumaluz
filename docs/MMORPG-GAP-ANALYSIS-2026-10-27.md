@@ -2,6 +2,11 @@
 
 Revisión del 27 de octubre de 2026. **Diagnóstico y propuestas; no modifica decisiones aprobadas, canon, contenido jugable ni servidor.**
 
+**Dirección reafirmada el 28 de octubre:** el juego se centra en cozy crafting
+and building, con combate. La [revisión de experiencia cozy](COZY-EXPERIENCE-REVIEW-2026-10-28.md)
+actualiza las prioridades propuestas desde ese criterio e incorpora los oficios,
+la iniciación y la población añadidos después de este diagnóstico.
+
 **Seguimiento del mismo día:** el paso de historia sigue aplazado por decisión del usuario. La fase de obtención ya añade las dos fuentes de cuero superior y comprueba ingredientes para las 441 recetas; véase [Obtención](OBTAINABILITY.md). Una decisión posterior sustituye las propuestas de recetas garantizadas o de descubrimiento ordinario: compra exclusivamente al maestro, precios elevados y solo Gran maestro mediante botín excepcional; véase [Recetas y maestros](RECIPE-TRAINING.md). Las cifras y observaciones del diagnóstico original que siguen son una fotografía anterior a esos cambios.
 
 ## Diagnóstico

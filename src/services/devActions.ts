@@ -77,7 +77,7 @@ export function simulateSpend(d: CharData, points: Partial<Record<AttributeId, n
 export function addItem(d: CharData, id: string) {
   const stack = itemStack(id);
   const bound = ITEMS[id]?.bound === true;
-  const slot = d.inventory.findIndex((s) => s && s.id === id && !!s.bound === bound && s.count < stack);
+  const slot = d.inventory.findIndex((s) => s && s.id === id && !!s.bound === bound && !s.craftedBy && !s.used && s.count < stack);
   if (slot >= 0) { d.inventory[slot]!.count++; return; }
   const free = d.inventory.findIndex((s, i) => !s && i < INVENTORY_UNLOCKED);
   if (free < 0) throw new Error('Tu mochila está llena.');

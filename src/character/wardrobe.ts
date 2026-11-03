@@ -101,16 +101,17 @@ export function wardrobeSource(id: WardrobeId = 'helpers') {
   return asset;
 }
 
-export async function loadWardrobe() {
-  const files = import.meta.glob<string>('../assets/models/wardrobe/classes/*.glb', { eager: true, query: '?url', import: 'default' });
-  const [helpers, medieval] = await Promise.all([
-    loadGLB(helpersUrl),
-    loadGLB(medievalUrl),
-  ]);
-  assets.set('helpers', helpers);
-  assets.set('medieval', medieval);
-  await Promise.all(Object.entries(files).map(async ([file, url]) => {
-    assets.set(file.split('/').at(-1)!.replace('.glb', '') as WardrobeId, shareWardrobeTextures(await loadGLB(url)));
+const wardrobeFiles = import.meta.glob<string>('../assets/models/wardrobe/classes/*.glb', { eager: true, query: '?url', import: 'default' });
+const wardrobeUrls:Record<string,string>={helpers:helpersUrl,medieval:medievalUrl,...Object.fromEntries(Object.entries(wardrobeFiles).map(([file,url])=>[file.split('/').at(-1)!.replace('.glb',''),url]))};
+const pendingWardrobes=new Map<string,Promise<void>>();
+export function wardrobeModelsReady(ids:readonly WardrobeId[]){return ids.every(id=>assets.has(id));}
+export async function loadWardrobe(ids:readonly WardrobeId[]=Object.keys(wardrobeUrls) as WardrobeId[]) {
+  await Promise.all(ids.map(id=>{
+    if(assets.has(id))return;
+    if(!Object.hasOwn(wardrobeUrls,id))throw Error(`Falta el vestuario ${id}.`);
+    let request=pendingWardrobes.get(id);
+    if(!request){request=loadGLB(wardrobeUrls[id]).then(asset=>{assets.set(id,shareWardrobeTextures(asset));}).finally(()=>pendingWardrobes.delete(id));pendingWardrobes.set(id,request);}
+    return request;
   }));
 }
 

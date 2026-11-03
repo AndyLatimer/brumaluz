@@ -140,7 +140,10 @@ test('world transitions show delayed loading, clear on success and errors, and l
     await page.locator('.character-card .btn.gold').first().click();
     const loading = page.locator('#transition-loading');
     await loading.waitFor({ state: 'visible' });
-    assert.equal(await loading.textContent(), 'Entrando en Brumaluz…');
+    assert.equal(await loading.locator('.loading-status').textContent(), 'Entrando en el mundo…');
+    assert.equal(await loading.locator('.loading-title').textContent(), 'Brumaluz');
+    assert.equal(await loading.getAttribute('data-art'), 'city');
+    assert.equal(await loading.getAttribute('data-phase'), 'enter');
     assert.equal(await page.locator('#scene').getAttribute('aria-busy'), 'true');
     assert.equal(await loading.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
     await page.waitForFunction(() => document.querySelector('#transition-loading')?.classList.contains('slow'));
@@ -151,7 +154,9 @@ test('world transitions show delayed loading, clear on success and errors, and l
     await page.locator('#game-menu-toggle').click();
     await page.locator('#game-menu-characters').click();
     await loading.waitFor({ state: 'visible' });
-    assert.equal(await loading.textContent(), 'Volviendo a tus personajes…');
+    assert.equal(await loading.locator('.loading-status').textContent(), 'Volviendo a tus personajes…');
+    assert.equal(await loading.getAttribute('data-art'), 'book');
+    assert.equal(await loading.getAttribute('data-phase'), 'return');
     await page.locator('.character-card .btn.gold').first().waitFor({ state: 'visible' });
     await loading.waitFor({ state: 'hidden' });
     await page.route('**/rest/v1/rpc/character_enter', async route => {

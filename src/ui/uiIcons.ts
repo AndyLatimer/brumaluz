@@ -43,6 +43,7 @@ const ART = {
   professions: toolsProfessions,
   encyclopedia: compendiumEncyclopedia,
   settings:`<path d="m12 2 8 0 1 5 5-1 4 7-4 3 3 4-4 7-5-1-1 5h-8l-1-5-5 1-4-7 4-3-3-4 4-7 5 1Z" fill="${bronze}"/><path d="m13 4 6 0 1 5 5-1 2 4-4 4 4 4-2 4-5-1-1 5h-6l-1-5-5 1-2-4 4-4-4-4 2-4 5 1Z" fill="${gold}"/><circle cx="16" cy="16" r="7" fill="${steel}"/><circle cx="16" cy="16" r="3.5" fill="${ink}"/><path d="M11 12a6 6 0 0 1 8-1" fill="none" stroke="${silver}"/>`,
+  bug:`<ellipse cx="16" cy="18" rx="7.5" ry="9" fill="${red}" stroke="${ink}" stroke-width="1.2"/><path d="M16 9v18" stroke="${ink}" stroke-width="1.2"/><path d="M12 9c0-3 2-5 4-5s4 2 4 5Z" fill="${bronze}" stroke="${ink}" stroke-width="1.1"/><circle cx="14" cy="6.5" r="1" fill="${light}"/><circle cx="18" cy="6.5" r="1" fill="${light}"/><path d="M8 14l-4-2m4 4l-5 1m5 5l-4 4m16-12l4-2m-4 4l5 1m-5 5l4 4" stroke="${wood}" stroke-width="1.6" stroke-linecap="round"/>`,
   menu:`<path d="M5 2h22v28H5Z" fill="${wood}"/><path d="M8 5h16v22H8Z" fill="${paper}"/><path d="M11 10h10m-10 6h10m-10 6h10" stroke="${bronze}" stroke-width="2"/><path d="M4 7h3m-3 9h3m-3 9h3" stroke="${gold}" stroke-width="2.5"/>`,
   logout:`<path d="M5 30V3h16v27Z" fill="${wood}"/><path d="M8 6h10v23H8Z" fill="${slate}"/><path d="M3 29h21v3H3Z" fill="${gold}"/><path d="m17 13 7-6 7 8-6-1v7h-8Z" fill="${gold}"/><path d="m22 11 2-2 4 5" fill="none" stroke="${light}"/>`,
   help:`<path d="M5 4h24v24H5c-4 0-4 4 0 4h23" fill="${wood}"/><path d="M7 2h21v26H7Z" fill="${paper}"/><path d="M12 11c0-8 14-8 10 0-1 3-6 3-6 7" fill="none" stroke="${bronze}" stroke-width="2.8"/><circle cx="16" cy="23" r="1.4" fill="${bronze}"/>`,
@@ -94,6 +95,8 @@ export function installUiIcons() {
   replace('#world-menu-professions','professions','menu-option-icon');
   replace('#world-menu-panel .soon','encyclopedia','menu-option-icon');
   replace('#game-menu-options','settings','menu-option-icon');
+  replace('#game-menu-bug-report','bug','menu-option-icon');
+  replace('#game-menu-bug-review','quests','menu-option-icon');
   replace('#game-menu-characters','sheet','menu-option-icon');
   replace('#game-menu-logout','logout','menu-option-icon');
   replace('#game-menu-panel .soon','help','menu-option-icon');

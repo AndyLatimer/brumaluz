@@ -9,7 +9,7 @@ const catalog=JSON.parse(await readFile('src/data/generated/rpg-catalog.json','u
 const bundle=await build({stdin:{contents:"export {defaultChar} from './src/data/data';export {professionAction,professionState} from './src/data/professions';",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'esm',platform:'node'});
 const client=await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].contents).toString('base64')}`);
 const buy=(f,id,request)=>f.action('buy_recipe',{id,master:catalog.teachers[catalog.recipes[id].job].id,price:catalog.recipes[id].price},request);
-const use=async(f,slot,request)=>{const d=await f.action('state'),item=d.inventory[slot];return f.action('use_recipe',{slot,id:item?.id,instanceId:item?.instanceId},request);};
+const use=async(f,slot,request)=>{let d=await f.data();if(d.inventory[slot]&&!d.inventory[slot].instanceId)d=await f.action('state');const item=d.inventory[slot];return f.action('use_recipe',{slot,id:item?.id,instanceId:item?.instanceId},request);};
 
 test('every recipe has a usable single-slot consumable, including Aprendiz and leather processing',()=>{
  for(const r of Object.values(catalog.recipes)){
@@ -75,7 +75,7 @@ test('the migration preserves player knowledge, daily orders and unrelated serve
   const installed=(await f.db.query("select pg_get_functiondef(oid) definition from pg_proc where proname='rpg_action'")).rows[0].definition;
   await f.db.exec(recipeScrollPatch(extended,installed));assert.deepEqual(await f.data(),before);
   const after=(await f.db.query("select prosrc from pg_proc where proname='rpg_action'")).rows[0].prosrc;
-  assert.equal(cleanRecipeSql(withoutRecipeBranch(after)),cleanRecipeSql(withoutRecipeBranch(row.prosrc)));assert.ok(after.includes("elsif p_action='daily_order' then"));
+  assert.equal(cleanRecipeSql(withoutRecipeBranch(after)),cleanRecipeSql(withoutRecipeBranch(row.prosrc)));assert.ok(after.includes('public.game_order_action'));
   assert.deepEqual((await f.db.query('select game_rpg_catalog() c')).rows[0].c,extended);
   assert.equal((await f.db.query("select has_function_privilege('anon','public.rpg_action(uuid,text,jsonb,uuid,bigint)','EXECUTE') allowed")).rows[0].allowed,false);
  }finally{await f.db.close();}

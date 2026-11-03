@@ -2,6 +2,24 @@
 
 MMO de navegador cozy en una ciudad medieval, con estilo pintado a mano.
 
+La dirección principal es **cozy crafting and building**, con artesanía,
+construcción y vida de barrio. La [revisión de experiencia cozy del 28 de octubre](docs/COZY-EXPERIENCE-REVIEW-2026-10-28.md)
+contrasta la documentación con los sistemas existentes y propone el siguiente
+recorrido de hogar, fabricación y juego compartido.
+
+## Viviendas y vida de barrio
+
+El [sistema de viviendas y vida cotidiana](docs/HOMES-AND-COZY-LIFE.md) añade
+**Mundo → Mis viviendas**, con la habitación de la posada como primera casa,
+decoración de espacios fijos y visitas del grupo. Incluye ocho modelos nuevos
+de mobiliario, un recado de Gnomi para financiar la herramienta, entrega de
+práctica independiente del cupo diario y una merienda cooperativa en Cocina.
+El siguiente recorrido permite comprar **Casa del Olmo** por 3.500 Pelines, con
+dos proyectos de vecinos, regalo decorativo y gestión separada de ambas viviendas.
+Las reglas SQL y el cliente están preparados localmente; el documento distingue
+comprobaciones y publicación. `npm run test:homes` y `npm run review:homes`
+reproducen las pruebas y la revisión visual.
+
 ## Equipo modular y trajes de clase
 
 El diseño de atributos, encantamientos y bonificaciones se acuerda por pasos en
@@ -40,6 +58,9 @@ con 1.021 GLB: objetos, bosque, mazmorras, edificios medievales, terreno hexagon
 mobiliario, herramientas, cocina, personajes y animaciones.
 Restaurant incluye solo 68 recursos aptos para fantasia medieval. Las nuevas
 bibliotecas conservan 173 clips para rigs Medium y Large, disponibles en el visor.
+El [inventario de rigs y animaciones](./docs/ANIMATIONS.md) enumera todos los
+clips, archivos y duraciones, los personajes compatibles y su estado de
+integración para reutilizarlos al implementar cada sistema.
 Con `npm run dev`, abrir `/assets.html`. El visor no modifica el juego.
 Una selección de ocho objetos detalla los servicios y jardines de la ciudad;
 los personajes tienen variaciones de reposo e impactos y gestos al recoger
@@ -61,6 +82,10 @@ por unidad. Los edificios son exteriores decorativos.
 
 `npm run art:hamlet` reconstruye las fuentes, los GLB y el catálogo;
 `npm run test:hamlet` comprueba los modelos y su integración en el editor.
+
+## Material promocional y banners
+
+El documento [Material promocional y banners](docs/PROMOTIONAL-ART.md) define el sistema de capturas cinematográficas y banners publicitarios adornados a 1080p, basados exclusivamente en el motor 3D del juego real (sin arte por IA). Incluye los seis banners generados en `art/promocional/` con marco heráldico, tipografía oficial y sellos regionales. Comandos: `npm run art:promo:banners` y `npm run art:promo:shots`.
 
 ## Creador de NPCs (desarrollo)
 
@@ -394,8 +419,8 @@ El lore acordado y las decisiones narrativas pendientes se mantienen en
 - «Recuérdame» en el inicio de sesión guarda únicamente el correo en este navegador y lo rellena al volver. Desmarcarlo elimina el correo recordado; no cambia la duración de la sesión de Supabase ni guarda la contraseña.
 - Al registrarse, cada usuario elige un nombre de usuario único (3-20 letras ASCII, números o guion bajo). El acceso sigue usando correo y contraseña; el nombre de usuario identifica al jugador, aparece en la selección de personajes y es visible para otros usuarios autenticados.
 - La interfaz está disponible en español e inglés; el idioma se cambia con las banderas de acceso y del menú del juego y queda guardado en el navegador.
-- El acceso y la selección de personajes comparten música cozy original, sintetizada localmente sin descargas: una melodía más alegre y animada de día (06:00–18:00, hora local) y la melodía suave original de noche. Cambia automáticamente junto al fondo, también si la pantalla sigue abierta al cambiar la franja horaria. El botón «Música» junto a «Gráficos» permite silenciarla y recuerda la preferencia en el navegador, independientemente del ambiente del mundo.
-  Empieza tras la primera interacción (por las restricciones de audio del navegador), respeta el volumen general y se detiene al ocultar la pestaña, abrir el creador o entrar al mundo.
+- El acceso y la selección de personajes comparten música cozy original, sintetizada localmente sin descargas: una melodía más alegre de día y atardecer (07:00–20:00, hora local) y una melodía suave de noche. Cambia automáticamente junto al fondo. El creador tiene su propia composición; el botón «Música» junto a «Gráficos» permite silenciarlas y recuerda la preferencia en el navegador.
+  La música empieza tras la primera interacción (por las restricciones del navegador), respeta los volúmenes general y de música y se detiene al ocultar la pestaña. Durante las cargas continúa la música activa del menú, el creador o el mundo, según corresponda.
 - El acceso permite solicitar un correo de recuperación y cambiar la contraseña desde el enlace enviado por Supabase Auth.
 - Los personajes se guardan en `public.characters`, protegidos por políticas RLS para que cada cuenta solo acceda a los suyos.
 - Tras iniciar sesión aparece la selección de personajes. Desde ahí se puede jugar con uno existente o crear otro. Cada cuenta puede tener un máximo de cinco personajes; para crear más, primero hay que borrar uno. El creador guarda el personaje al pulsar «Guardar y entrar».
@@ -492,7 +517,7 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
   descargan pistas externas.
 - Modo exploración: WASD se mueve respecto a la cámara (W hacia donde miras, A/D a los lados, S hacia ti) con aceleración y frenada suaves; el personaje se orienta hacia donde va. Arrastrar con el ratón orbita la cámara libremente (el vertical se mantiene), rueda para acercar con zoom suave, clic para moverse, Mayús alterna correr/caminar,
   espacio para saltar y E para saludar.
-- Opciones (menú del juego): Vídeo (idioma), Sonido (sonido ambiental, volumen ambiental y volumen general; se guardan en el navegador) y Controles (teclado ilustrado).
+- Opciones (menú del juego): Vídeo (idioma), Sonido (interruptores de ambiente y música del mundo, volúmenes de ambiente, música y general; se guardan en el navegador) y Controles (teclado ilustrado).
   **Cada vez que se añada o cambie un control hay que reflejarlo en `CONTROLS` de `src/ui/controls.ts`**; la ventana se genera a partir de esa lista. No hay reasignación de teclas.
 - Interacción (`E`; saludar es `<`): `City.interactables` define puntos interactivos (pozo, NPCs). Los diálogos usan `src/ui/dialog.ts`: `openDialog` (líneas simples) y `openConversation` (árbol de nodos con respuestas del jugador; siempre se añade «[Salir de la conversación]» salvo `noExit`; las opciones admiten `when` y `action` para flags de misión). Los NPCs se declaran en `NPCS` de `src/main.ts` (nombre, aspecto, conversación) y su posición en `City.npcSites`; muestran placa verde (no hostiles). el NPC de prueba «Testículos, the Debugger» está junto a la casa más cercana al spawn. Los títulos de personaje están en `src/data/titles.ts`.
 - Niveles y atributos: nivel máximo 50 (`MAX_LEVEL`). Se gana 1 punto de atributo cada 3 niveles (3, 6 … 48; `attributePointsAllowed` en `src/data/data.ts`), que se suma a los 2 de la creación (18 en total; tope 15 por atributo). Los puntos pendientes se calculan (permitidos − gastados) y se reparten con «+» en la ficha de personaje; el botón del menú de personaje muestra un «!» mientras haya puntos.
@@ -515,7 +540,7 @@ Para regenerar los modelos optimizados: `node tools/prepare-models.mjs <carpeta 
   `src/data/stats.ts` y están documentadas en [docs/STATS.md](docs/STATS.md).
 - Minimapa (abajo a la izquierda, `src/ui/minimap.ts`): la ciudad se captura una sola vez desde arriba (`src/world/mapCapture.ts`) y el mapa no gira (norte arriba). Muestra tu personaje con una flecha y cono de visión, los NPC (punto verde, flecha en el borde si quedan fuera), brújula N/E/S/O, lugar y reloj con la hora del mundo. Zoom con +/− o la rueda; `º` lo oculta.
 - Ciclo de día y noche (`src/world/dayNight.ts`): cada 10 minutos reales pasa una hora del mundo (un día dura 4 horas reales). La hora la marca el servidor (`public.world_clock()` y `server_config.world_clock` en `supabase/server/`) y llega con cada sincronización del mundo, así que todos ven la misma; `src/data/worldClock.ts` la deja correr entre respuestas y, sin conexión, la calcula con la misma fórmula. El cielo mezcla los HDRI de noche, alba, amanecer y día de `@pmndrs/assets` (solo su parte de cielo, girada con el sol); el sol sale a las 6:00 por el este y se pone a las 20:00 por el oeste, y de noche la luna da la luz y las sombras. Luces, niebla, exposición y reflejos (el propio cielo, prefiltrado cada pocos minutos del mundo) siguen a la hora; faroles y luciérnagas brillan de noche (las luciérnagas solo salen de noche, alrededor del jugador) y los pájaros se recogen; de día revolotean mariposas cerca del jugador. Los menús y los interiores usan siempre la luz del atardecer dorado (18:30). Para cambiar el ritmo o la hora de inicio, edita `world_clock` en la base de datos (y `SECONDS_PER_WORLD_HOUR`, `EPOCH` y `START_HOUR` para el modo sin conexión). Pruebas: `npm run test:daynight`.
-- Habla: al enviar un mensaje público (General/Zona) sale un bocadillo con tu nombre sobre tu personaje y mueve la boca; los NPC (diálogos y comentarios) solo mueven la boca, sin bocadillo. La boca se anima en `src/character/head.ts` (`mouth`) y `Character.speak()`.
+- Habla: los mensajes públicos (General/Zona) aparecen sobre el jugador. Los comentarios de todos los NPC que llegan al canal NPC también muestran un bocadillo sobre su cabeza y mueven la boca; los diálogos de interacción conservan su ventana. Los habitantes ambientales no tienen marcadores de mapa o minimapa. Nombres, recorridos y frecuencia en [Población de las ciudades](docs/CITY-POPULATION.md). La boca se anima en `src/character/head.ts` (`mouth`) y `Character.speak()`.
 - Chat (esquina inferior derecha, `src/ui/chatWindow.ts`): ventana redimensionable (asa arriba-izquierda, se recuerda el tamaño) y minimizable, con filtros General (todo el servidor) / Zona (tu mapa) / Susurros / Sistema / NPC; el botón junto al campo de texto (o /g, /z) elige el canal de escritura. `Enter` escribe, `Esc` sale. Comandos: `/w ~cuenta mensaje` (susurro a una CUENTA; el `~` distingue el nombre de cuenta del de personaje), `/r` (responder), `/ignore` y `/unignore ~cuenta`, `/clear`, `/ayuda`. Clic en un nombre para susurrar a su cuenta. Solo los comentarios espontáneos cercanos de los NPC (`barks` en `NpcDef`) salen en el canal NPC; los diálogos de interacción y las respuestas del jugador no se registran en el chat. El servidor valida y reparte los mensajes (`chat_send`, tablas `chat_messages` y `chat_mutes` en `supabase/server/`; límite 200 caracteres y 5 mensajes/10 s). Para silenciar a alguien: `insert into chat_mutes (user_id, until) values ('<uuid>', now() + interval '1 day')`. Requiere ejecutar `supabase/server/` y tener Realtime activo en la tabla `chat_messages`.
 - Cada entrada al mundo inicia un chat limpio: se reciben mensajes nuevos por Realtime, sin cargar mensajes anteriores ni los enviados mientras estabas fuera. Al salir se borran mensajes, borradores y destinatario de respuesta. Se conservan las preferencias del chat y las cuentas silenciadas; los avisos de sistema de la nueva conexión siguen mostrándose.
 - El interruptor ambiental reanuda el contexto de audio del navegador y cancela activaciones anteriores al cambiar rápidamente. Al apagarlo fija la ganancia a cero y desconecta la salida de los altavoces, sin cola ambiental residual. En desarrollo se cierra el contexto anterior al sustituir el módulo para no acumular ambientes durante recargas en caliente. La suite de navegador exige silencio exacto al desactivar y mide la salida al activar, reanudar un contexto suspendido y cambiar el volumen general.
@@ -541,7 +566,8 @@ tools/             scripts de preparación de modelos
 ```bash
 npm install
 npm run dev     # servidor de desarrollo
-npm run build   # genera dist/index.html (un único archivo)
+npm run build   # genera dist/ con código, mapas y recursos separados y cacheables
+npm run build:standalone # versión portátil incrustada en dist-standalone/index.html
 ```
 
 ### Compatibilidad gráfica
@@ -562,10 +588,10 @@ npm run build   # genera dist/index.html (un único archivo)
 - Los NPC amistosos tienen nombre verde, un título configurable por NPC y un tipo con icono propio en lugar de clase o cuenta; no se muestra la etiqueta «Personaje no jugador». Testículos usa el título «Depuración», con nivel 1, vida 100 y maná 100 definidos en su ficha de NPC. Los tipos de icono disponibles son depuración, comerciante y habitante, independientes del título; asignar un tipo no añade acciones por sí mismo.
 - Una cuenta solo mantiene un personaje conectado al mundo: entrar desde otra pestaña o equipo sustituye la sesión anterior, que vuelve a la selección con un aviso. Una respuesta tardía o la salida de la pestaña antigua no puede expulsar la nueva sesión.
 - [`world_join`, `world_sync` y `world_leave`](./supabase/server/) gestionan una concesión de sesión en `public.world_players`, inaccesible directamente desde el navegador. El servidor fija la identidad y el aspecto a partir del personaje guardado, y solo publica los datos necesarios para dibujarlo, nunca inventario, monedas ni atributos privados.
-- Cada cliente envía una petición secuencial y obtiene la instantánea del mapa; espera 250 ms entre respuestas, sin peticiones de movimiento solapadas. Es una primera implementación para grupos pequeños, **no una infraestructura MMO a gran escala**: aumenta las consultas y escrituras de Supabase con los jugadores conectados y debe migrar a un servidor de simulación/difusión antes de crecer.
+- Cada cliente envía una petición secuencial y obtiene la instantánea del mapa; el presupuesto de 250 ms incluye el tiempo de red, sin peticiones de movimiento solapadas. La [revisión de rendimiento](docs/PERFORMANCE.md) documenta la reducción del coste SQL, la recuperación de conexión y las mediciones. Es una primera implementación para grupos pequeños, **no una infraestructura MMO a gran escala**: aumenta las consultas y escrituras de Supabase con los jugadores conectados y debe migrar a un servidor de simulación/difusión antes de crecer.
 - Una salida normal elimina la presencia y guarda la última posición validada. Si el navegador se cierra, se suspende o pierde la red, los demás dejan de verlo a los 15 s sin latido. La reconexión se reintenta con aviso visible, sin apropiarse automáticamente de una sesión sustituida.
 - Aún no hay PvP ni colisiones entre jugadores. La validación de velocidad y límites del mundo no sustituye las colisiones autoritativas del mapa.
-- Antes de publicar este cliente, aplica la versión actual de [`supabase/server/`](./supabase/server/). `npm run db:apply` ejecuta la actualización completa en una transacción y recarga la API al confirmar; no cambia `debug_actions` si ya estaba configurado.
+- Antes de publicar este cliente, aplica la versión actual de [`supabase/server/`](./supabase/server/). `npm run db:apply` ejecuta la actualización completa en una transacción y recarga la API al confirmar; no cambia `debug_actions` si ya estaba configurado. `npm run db:release` hace lo mismo como ensayo deshecho: comprueba que las funciones instaladas coinciden con el SQL local, que no se expone ninguna función nueva a `anon` y qué personajes cambiarían. Con `-- --apply --backup-dir=<carpeta fuera del repositorio>` guarda antes una copia de funciones, permisos y datos públicos y confirma.
 - Pruebas del navegador: `npm run test:world` usa cuentas ficticias en dos contextos aislados, con una API simulada interceptada (sin acceder a cuentas reales), y comprueba modelos 3D, nombres, movimiento, correcciones, salida, sustitución, reconexión y respuestas tardías. Usa el mismo navegador/configuración que las pruebas gráficas.
 - Las entradas al mundo se serializan y las respuestas de acciones, títulos, puntos, chat y creación se descartan si ya se ha salido o cambiado de personaje/cuenta. Al salir se detiene el movimiento antes de esperar al guardado. Un fallo remoto al cerrar sesión se muestra incluso si Supabase ya ha eliminado la sesión local.
 - Regresiones de cuentas: la suite anterior también comprueba doble entrada, títulos pendientes al cambiar de personaje, creación pendiente al volver a selección, cierre de sesión con fallo de red y datos antiguos de linaje/clase no válidos. El botón de gráficos no debe tapar el de cerrar sesión en la selección.

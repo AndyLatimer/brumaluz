@@ -4,9 +4,46 @@
 
 Actualización del 27 de octubre: [Recetas y maestros](RECIPE-TRAINING.md) mueve la compra a la conversación con el maestro y eleva los precios. Comprar entrega un pergamino consumible en la mochila, que se usa para aprender la receta. Gran maestro exige un pergamino excepcional de botín muy raro, aprendido también desde la mochila.
 
-Los maestros ofrecen también [Encargos diarios](DAILY-ORDERS.md): suministros básicos por Pelines con tres entregas al día compartidas entre todos los talleres. Son independientes de los proyectos de maestría y se entregan hablando con el maestro.
+Los maestros ofrecen también [Encargos diarios](DAILY-ORDERS.md): productos de fabricación propia por Pelines y XP del oficio, con tres entregas al día compartidas entre todos los talleres. Son independientes de los proyectos de maestría y se entregan hablando con el maestro emisor.
 
-Tras aceptar con Gnomi [Manos a la obra](PROFESSION-TUTORIAL.md), el maestro del oficio elegido muestra Mi iniciación al oficio. Guía la práctica y recibe el cierre explícito de la misión después del suministro diario normal. El diario y los marcadores conservan el recorrido y el progreso al reconectar.
+Tras aceptar con Gnomi [Manos a la obra](PROFESSION-TUTORIAL.md), el maestro del oficio elegido muestra Mi iniciación al oficio. Guía la práctica única y recibe el cierre explícito de la misión. Esta práctica no consume encargos diarios. El diario y los marcadores conservan el recorrido y el progreso al reconectar.
+
+## Prácticas opcionales
+
+Después de completar la iniciación, cada maestro ofrece una práctica breve,
+disponible una sola vez por personaje y oficio. El jugador puede aceptar
+prácticas de varios oficios a la vez. Cada una pide una acción normal ya
+existente: fabricar y
+recoger un objeto, o completar una extracción en el caso de Minero, Leñador y
+Recolector. El progreso se registra al terminar la acción, no al iniciarla, y
+se confirma hablando con el maestro correspondiente.
+
+La recompensa es de **10 XP de personaje**, sin Pelines ni objetos. Las
+prácticas son independientes de la iniciación, los encargos diarios y la
+maestría; no requieren nuevos NPCs ni nuevas mecánicas. Se muestran en el
+diario, el seguimiento y los marcadores del mundo. La implementación local está
+preparada y probada; el SQL todavía no se ha aplicado al servidor ni se ha
+publicado el cliente.
+
+## Revisión de fabricación del 31 de octubre
+
+Se confirma que iniciar una fabricación requiere una estación del oficio,
+pública o colocada en casa; no es necesario quedarse junto a ella después.
+Los muebles básicos pasarán a tardar minutos y los avanzados horas, y la
+fabricación normal avanzará sin conexión a un tercio del ritmo conectado: una
+hora de trabajo conectado equivale a tres horas desconectado. Los intervalos
+de muebles conectado quedan fijados: Aprendiz 2–6 min, Iniciado 6–16 min,
+Oficial 20–40 min, Experto 1–2 h, Maestro 2–4 h y Gran maestro 4–8 h, antes de
+bonificaciones vigentes. Tamaño y complejidad sitúan cada modelo dentro del
+intervalo, sin multiplicarlo después por fuera de sus límites. Se confirman cinco trabajos
+por oficio, uno activo y cuatro esperando; no son cinco fabricaciones simultáneas
+ni un cupo diario. Una posible ampliación se revisará en el futuro, sin aprobar
+ahora su forma ni aumentar a diez. Al fabricar en una estación se pueden tomar
+automáticamente materiales de la mochila y del banco personal. Cualquier trabajo
+normal sin terminar, activo o esperando, puede cancelarse con devolución íntegra
+de los materiales; no se aplica la prohibición de cancelación manual de meriendas.
+Aplicado y probado localmente el 2 de noviembre, junto con los tiempos aprobados
+para equipo, pergaminos y componentes; véase [Implementación de oficios](RPG-IMPLEMENTATION.md).
 
 ## Acceso y uso
 
@@ -35,9 +72,13 @@ El **banco** se usa con E y abre las recetas o recursos de ese oficio. Minero, L
 
 ## Libro de oficios
 
-Al elegir un oficio se abre **Guía**, con una secuencia breve: aprender o equiparse, reunir materiales, fabricar o recolectar y recoger resultados o revisar el equipo. Distingue las tareas del maestro, del banco y del campo. En Brumaluz, **Localizar taller** marca su puerta en el mapa.
+Al elegir un oficio se abre **Guía**, con tres pasos y accesos a sus recetas o recursos, trabajos o herramienta, progreso y taller. El resumen muestra las recetas aprendidas y los trabajos listos o, para recolección, la herramienta equipada. Distingue las tareas del maestro, de la estación y del campo. En Brumaluz, **Localizar taller** marca su puerta en el mapa.
 
-Las pestañas dependen del oficio: Guía / Recetas / Trabajos / Maestría para fabricación temporal; Guía / Recetas / Maestría para Cocina y Alquimia; Guía / Recursos / Herramienta / Maestría para recolección. Los controles de cantidades, materiales, colas, maestría y utilidades se conservan. La navegación a una herramienta desde su maestro mantiene el oficio elegido.
+Las pestañas son Guía / Recetas / Trabajos / Maestría para todos los oficios de fabricación y Guía / Recursos / Herramienta / Maestría para recolección. Cocina y Alquimia también muestran Trabajos: la comida y las pociones son instantáneas, pero algunos componentes usan la cola. Los controles de cantidades, materiales, colas, maestría y utilidades se conservan. La navegación a una herramienta desde su maestro mantiene el oficio elegido.
+
+El buscador de recetas admite tanto el nombre mostrado en el idioma actual como el nombre original del catálogo.
+
+Las recetas cuentan materiales de la mochila y del banco personal; los proyectos de maestría y los núcleos de restauración requieren los objetos en la mochila. Los recursos del cuaderno de campo muestran únicamente lo que se lleva encima. Una estación doméstica sirve para su propio oficio; la estación pública de Herrería también atiende las operaciones de recolección que la requieren.
 
 ## Mapas editables y mantenimiento
 
@@ -62,6 +103,6 @@ El servidor configurado recibió una actualización limitada a los doce mapas, v
 - Validación de los doce documentos, llegadas recíprocas y coincidencia entre borradores y publicaciones.
 - PostgreSQL/WASM aislado: veinticuatro portales, proximidad de cada banco, rechazo fuera del taller y conservación de estaciones domésticas y mapas anteriores.
 
-Reproducir con `npm run review:workshops` y `npm run test:workshops`. La prueba SQL usa PGlite con la instalación temporal compartida de combate o `PGLITE_TEST_MODULE`; sin ese módulo se omite. `scripts/apply-workshop-patch.mjs` prepara por defecto un parche sin modificar el servidor; `--apply` aplica únicamente los talleres y las estaciones. Compilar conservando el contenido actual con `npm --ignore-scripts run build`.
+Reproducir con `npm run review:workshops` y `npm run test:workshops`. `node --test scripts\test-profession-ui.mjs` comprueba el libro y sus diálogos en una partida local aislada, en escritorio y móvil. La prueba SQL usa PGlite con la instalación temporal compartida de combate o `PGLITE_TEST_MODULE`; sin ese módulo se omite. `scripts/apply-workshop-patch.mjs` prepara por defecto un parche sin modificar el servidor; `--apply` aplica únicamente los talleres y las estaciones. Compilar conservando el contenido actual con `npm --ignore-scripts run build`.
 
-La revisión de juego usa acciones locales de prueba; no modifica personajes reales. Las capturas y el informe están en `art/workshops-review/`. Esta etapa deja preparados los lugares y maestros del sistema; futuras misiones de aprendizaje, nombres propios, historias y una revisión amplia de progresión continúan pendientes de diseño.
+La revisión de juego usa acciones locales de prueba; no modifica personajes reales. Las capturas y el informe están en `art/workshops-review/`. Los lugares, maestros y prácticas opcionales están definidos; los nombres propios, las historias y una revisión amplia de progresión continúan pendientes de diseño.

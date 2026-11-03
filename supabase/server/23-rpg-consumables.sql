@@ -5,7 +5,7 @@ declare
   stamp numeric := extract(epoch from now());
   remaining numeric;
 begin
-  if public.game_item(d->'foodBuff'->>'itemId')->>'food_seconds' is not null then
+  if d->'foodBuff'->>'itemId'='pan_duro' or public.game_rpg_food_effects() ? (d->'foodBuff'->>'itemId') then
     if to_regclass('public.world_players') is not null then
       select seen_at into seen from public.world_players where character_id=p_id;
     end if;

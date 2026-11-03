@@ -14,13 +14,120 @@ contenido del juego relacionado.
 - La identidad principal de Brumaluz es la acogida: vecinos de distintos
   pueblos, oficios y vida de barrio. Los faroles y la bruma, los jardines y
   los talleres complementan esa identidad, sin desplazarla.
+- El 28 de octubre el usuario reafirma la dirección principal del juego como
+  **cozy crafting and building**: artesanía, construcción y vida acogedora,
+  con combate dentro de esa experiencia. Esta dirección guía las prioridades;
+  las reglas concretas de cada sistema se documentan por separado. La
+  [revisión de experiencia cozy](COZY-EXPERIENCE-REVIEW-2026-10-28.md) distingue
+  la base existente de las próximas entregas propuestas.
+- El usuario concreta después que la **habitación de la posada Lucero del Alba**
+  es la primera vivienda del jugador y que habrá un menú para consultar y gestionar
+  las casas que tiene. Las viviendas tienen **espacio predefinido**: se amueblan
+  y decoran, sin construcción libre ni ampliaciones modulares. También pide ampliar
+  los modelos de mobiliario, mejorar el inicio artesanal y desarrollar la vida
+  de barrio y la cooperación cotidiana. Alcance y estado en
+  [Viviendas y vida cotidiana](HOMES-AND-COZY-LIFE.md).
+- El 30 de octubre el usuario aprueba continuar con la siguiente vivienda como
+  meta artesanal, acompañada de vecinos y proyectos pequeños. La entrega añade
+  **Casa del Olmo**, en un edificio existente del Barrio del Olmo, conservando
+  la habitación inicial. Su compra y preparativos no tienen plazos; las cifras
+  iniciales de equilibrio y el estado local se detallan en Viviendas y vida cotidiana.
+- En la revisión guiada posterior, el usuario fija que comprar la primera casa
+  después de la habitación de la posada será **una meta de ahorro al ritmo de
+  cada jugador**, disfrutando mientras del alojamiento inicial. Se descarta fijar
+  horas o un número de sesiones: dependerá de cuánto juegue, las actividades
+  elegidas y las misiones y enemigos disponibles. Estas decisiones del 31 de octubre
+  sustituyen el objetivo previo de conseguirla durante la primera sesión.
+  Economía, encargos y requisitos se revisan ahora **por bloques de preguntas**,
+  a petición posterior del usuario para avanzar más rápido. Las cifras de la
+  implementación anterior quedan como provisionales,
+  sin fijar todavía una duración en minutos. Después elige la **compra con Pelines**,
+  ahorrando y decidiendo cuándo comprar, sin exigir encargos, proyectos ni un
+  primer mueble como requisitos de adquisición. El 31 de octubre fija el precio
+  en **3.500 Pelines**. Se revisará el equilibrio del conjunto de ingresos con
+  el contenido del juego, sin modificar automáticamente las demás
+  recompensas. Se mantienen los proyectos opcionales de vecinos con un cupo
+  propio de **dos proyectos por personaje y día**, y cada proyecto se completa
+  **una sola vez por personaje**: Banco pide dos componentes propios de Ebanistería por
+  75 Pelines; Plantas, dos componentes propios de Alquimia por 25 Pelines y un
+  macetero, que es un regalo único. No condicionan la compra de la casa.
+  La merienda social usa ingredientes para cocinar juntos, con **recetas
+  aleatorias diferentes cada día: tres opciones por personaje, solo de su rango
+  actual de Cocina**. No hace falta conocerlas: el maestro dirige la actividad,
+  que no enseña permanentemente recetas. En grupo solo el líder elige, usando
+  su menú; pueden ayudar y recibir recompensa integrantes de cualquier rango.
+  Se ampliarán tanto los platos de Cocina normal como los exclusivos de meriendas;
+  el menú se selecciona entre ambos tipos sin proporción fija.
+  Cada
+  contribuyente que aporte cualquier ingrediente recibe la recompensa completa:
+  una ración del plato, 10, 20 o 30 Pelines y 5, 10 o 15 XP de Cocina según su
+  dificultad, dentro de un cupo independiente de **dos recompensas recogidas
+  por personaje y día**. El cupo se gasta al recoger, aunque la preparación haya
+  terminado otro día, y cambiar de grupo no recupera usos. Se puede repetir la
+  misma receta en preparaciones distintas. Las recompensas terminadas sin recoger
+  caducan a los siete días. Puede haber hasta tres preparaciones incompletas por
+  personaje, que guardan receta, recompensa y aportaciones mientras estén activas.
+  Nadie puede cancelarlas manualmente: se cancelan automáticamente tras **30
+  minutos desde la última aportación**, devolviendo los ingredientes a cada
+  participante. Cada ingrediente añadido reinicia el plazo. El temporizador se
+  pausa cuando no queda ningún participante conectado y se reanuda al volver
+  alguno con el tiempo restante; a solas, se pausa al desconectarse.
+  Si el grupo se disuelve, sus preparaciones incompletas también se cancelan y
+  devuelven los ingredientes. Esto sustituye la conservación indefinida anterior.
+  Se puede seguir ayudando tras agotar las recompensas, con aviso previo y sin
+  pagos, comida ni XP adicionales.
+  Estos dos cupos no se confunden con las tres entregas diarias de maestros.
+  Detalles y puntos pendientes en [Meriendas compartidas](SHARED-MEALS.md).
+- En la revisión de fabricación normal del 31 de octubre se aprueba que **los
+  muebles básicos tarden minutos y los avanzados horas**: Aprendiz 2–6 min,
+  Iniciado 6–16 min, Oficial 20–40 min, Experto 1–2 h, Maestro 2–4 h y Gran maestro
+  4–8 h conectado, antes de bonificaciones vigentes. Tamaño y complejidad determinan
+  el tiempo dentro de cada intervalo, sin sobrepasarlo con otro multiplicador.
+  El 2 de noviembre se aprueba equipo y herramientas a la mitad de los intervalos
+  de muebles, pergaminos de encantamiento al doble del equipo y componentes entre
+  30 segundos y cinco minutos. Comida y pociones conservan su fabricación
+  instantánea. La fabricación seguirá
+  avanzando sin conexión **a un tercio de la velocidad normal**: una hora de
+  trabajo conectado equivale a tres horas desconectado. Esta precisión sustituye
+  el 50 % propuesto en la pregunta.
+  Iniciarla requiere una estación del oficio pública o doméstica; no obliga a
+  permanecer allí durante el trabajo. Se mantienen **cinco trabajos por oficio,
+  uno activo y cuatro esperando**, sin límite diario de fabricación. Una posible
+  ampliación queda para el futuro, sin aprobar aún su forma ni requisitos.
+  Al fabricar en una estación se pueden usar materiales de la mochila y del banco
+  personal automáticamente. Cualquier trabajo de fabricación normal sin terminar,
+  activo o esperando, se puede cancelar con devolución íntegra de materiales.
+  Esto no cambia las reglas de cancelación de meriendas. Estado y tabla en
+  [Implementación de oficios](RPG-IMPLEMENTATION.md). Los cambios aprobados se
+  aplican y prueban localmente el 2 de noviembre, con autorización del usuario;
+  alcance y estado de publicación en [Aplicación de la revisión cozy](COZY-IMPLEMENTATION-2026-11-02.md).
+- El 28 de octubre se pide población ambiental para las ciudades, empezando
+  por Brumaluz: habitantes que pasean, se sientan y conversan entre ellos,
+  preparados para participar en misiones futuras. La primera implementación
+  y sus límites están en [Población de las ciudades](CITY-POPULATION.md).
+  El ajuste posterior pide nombres personales compartidos con el generador
+  del creador, subtítulos más naturales, habitantes sin marcadores de mapa,
+  bocadillos para los comentarios de todos los NPC, charlas menos frecuentes
+  y paseos más repartidos. Sus conversaciones no atribuyen objetos que no
+  llevan y no fijan biografías nuevas.
+- El 30 de octubre el usuario pide simplificar esa presentación: los 54
+  habitantes comparten el subtítulo **Habitante de Brumaluz**. Se retiran las
+  etiquetas individuales sobre aficiones o temperamento. Sus charlas deben
+  sonar cotidianas, responder a una situación reconocible y recordar lo ya
+  oído; los nombres personales se conservan. Los títulos funcionales de Gnomi,
+  Isberto y los maestros siguen identificando sus papeles.
+- La ampliación posterior de población lleva Brumaluz de 18 a 54 habitantes
+  manteniendo los recorridos repartidos, los nombres y el tono anteriores.
+  Se limita el trabajo de los habitantes lejanos para cuidar el rendimiento;
+  los números y presupuestos son valores de implementación revisables en
+  [Población de las ciudades](CITY-POPULATION.md).
 - La magia existe, pero es discreta: la mayoría de las cosas se hacen a mano.
 - Al recoger **polvo de hada por primera vez**, se inicia una misión para
   preguntarle a **Gnomi** por el hallazgo. Gnomi orienta al jugador hacia
   **La Arboleda** para averiguar más. La continuación se implementará después:
   no se han definido el origen ni el uso del polvo, nuevos interlocutores,
   recompensas ni un acceso a la futura ciudad por esta misión.
-- Las colecciones artísticas de Rusty Hearts (`brumaluz-hamlet`) y La Arboleda (`brumaluz-arboleda`) se reservan para sus respectivas ciudades; los interiores de los talleres de Brumaluz usan las otras bibliotecas.
+- Las colecciones artísticas de Rusty Hearts (`brumaluz-hamlet`), La Arboleda (`brumaluz-arboleda`) y las Cumbres de Cobre (`brumaluz-lagto`) se reservan para sus respectivas regiones y ciudades; los interiores de los talleres de Brumaluz usan las otras bibliotecas.
 - En el mapa exterior de Pompelín, las cinco puertas de Brumaluz se muestran
   cerradas. Acercarse a ellas sigue trasladando al jugador al mapa de la ciudad.
 - **La Arboleda** se representa en el continente como un bosque frondoso.
@@ -31,6 +138,9 @@ contenido del juego relacionado.
   conducta y personalidad, conservando el combate habitual con experiencia
   y botín, sin convertir cada enemigo o grupo en una misión.
 - La bienvenida tiene un tono acogedor y cotidiano, sin amenaza inicial.
+- Al terminar la creación, el personaje celebra con `Cheering` antes de continuar
+  la llegada y las cinemáticas existentes. La forma de andar A/B/C elegida en
+  el creador es cosmética y no altera la velocidad ni las reglas de bienvenida.
 - El comienzo debe distinguirse según la raza. A largo plazo, cada raza
   empezará en su propia región; durante esta etapa todas comienzan en Brumaluz.
   Se elige entre tres motivos de comienzo por raza, incluida la posibilidad
@@ -91,8 +201,101 @@ contenido del juego relacionado.
 - El 27 de octubre se prioriza cerrar la obtención de materiales, dejando la continuación después de Isberto para más adelante. Los cueros superiores tendrán dos vías: criaturas de dificultad progresiva y transformación en Peletería que exija más trabajo. Reglas iniciales y estado de implementación en [Obtención](OBTAINABILITY.md).
 - Las recetas se compran hablando con los maestros de oficio, fuera del menú de profesiones, y deben costar mucho más que antes. Las mejores se reservan a botín muy raro. La implementación usa Gran maestro/naranja para esa excepción y precios iniciales por rango; detalles y comprobaciones en [Recetas y maestros](RECIPE-TRAINING.md). Se conserva el aprendizaje previo de los personajes.
 - El usuario concreta que las recetas vendidas por los maestros son **objetos consumibles**: comprar coloca el pergamino en la mochila y usarlo lo consume para aprender la receta. Los pergaminos excepcionales de botín se aprenden de la misma forma, conservando su exclusividad de botín.
-- El usuario pide una misión de iniciación que recorra el ciclo normal del oficio elegido y confirma que Gnomi la ofrece tras el regreso a casa de Isberto. Se elige un oficio para el tutorial, sin limitar el aprendizaje de los demás. La práctica usa herramientas, pergaminos consumibles, materiales, trabajos y encargos diarios normales; su implementación y valores iniciales están en [Iniciación a un oficio](PROFESSION-TUTORIAL.md). Esto concreta la orientación a los talleres; no continúa el misterio de la criatura ni el del polvo de hada.
-- Los maestros ofrecen encargos diarios sencillos para obtener Pelines entregando materiales básicos o piezas fabricadas. Deben tener límites diarios y ser distintos de los proyectos de maestría. La primera implementación usa tres entregas por personaje entre todos los maestros, con cantidades de Aprendiz; reglas y valores iniciales en [Encargos diarios](DAILY-ORDERS.md).
+- El usuario pide una misión de iniciación que recorra el ciclo normal del oficio
+  elegido y confirma que Gnomi la ofrece tras el regreso a casa de Isberto. Se
+  elige un oficio para el tutorial, sin limitar el aprendizaje de los demás.
+  Usa herramientas, pergaminos consumibles, materiales y trabajos normales.
+  En la revisión del 31 de octubre, **Minero, Leñador y Recolector conservan una
+  práctica única de extracción y entrega de materiales**, como excepción de
+  aprendizaje fuera de los encargos diarios; no exige fabricar en Herrería.
+  Conserva sus 50 Pelines de práctica y los 40 XP de personaje al cerrar, sin
+  consumir cupo diario ni repetir el pago. Detalles en
+  [Iniciación a un oficio](PROFESSION-TUTORIAL.md). Esto concreta la orientación
+  a los talleres; no continúa el misterio de la criatura ni el del polvo de hada.
+- Después de completar la iniciación, cada uno de los doce maestros ofrece una
+  práctica opcional y única para su oficio. Pide una acción normal de fabricación
+  o recolección, permite mantener varias prácticas activas y concede 10 XP de
+  personaje al cerrarla; no da Pelines ni objetos y no consume encargos diarios.
+  Es contenido separado de la iniciación y no implica especialización ni nuevas
+  mecánicas.
+- El recado inicial de Gnomi pagará **100 Pelines una sola vez**, según la revisión
+  del 31 de octubre. Se gana completando el recado, sin aumentar automáticamente
+  el saldo inicial ni regalar herramientas, materiales o recetas. Se mantienen
+  los precios de recetas de Aprendiz a Maestro: **50, 250, 1.250, 6.250 y 25.000
+  Pelines**; las excepcionales siguen siendo de botín.
+- Los maestros ofrecen encargos diarios sencillos para obtener Pelines. En la
+  revisión guiada del 30 de octubre, el usuario concreta que pedirán **objetos ya
+  fabricados, no materias primas**, sustituyendo la decisión anterior que admitía
+  suministros de recolección. Mantienen el criterio de límites diarios y deben
+  ser distintos de los proyectos de maestría.
+  Se admiten **componentes intermedios fabricados**, con **un pago menor** que
+  los productos terminados de igual rango: **el 80 % de la tarifa en Pelines**.
+  Se añadirá
+  solo el contenido imprescindible y se permitirán pedidos repetidos si hay
+  poca variedad, sin exigir tres productos diferentes por maestro y rango.
+  Participan **los doce maestros**: Minero, Leñador y Recolector pedirán picos,
+  hachas y hoces fabricados por el personaje. Se conserva su fabricación en Herrería.
+  **Las herramientas pedidas deben estar nuevas y sin usar**; reparar o restaurar
+  una usada no la convierte en nueva para estos encargos.
+  El 31 de octubre el usuario elige que puedan pedir objetos de **cualquier
+  receta del rango actual de oficio del personaje, aunque todavía deba comprarla y
+  aprenderla**. No se conceden recetas gratuitas ni se cambia su origen por ello.
+  **Los productos de recetas excepcionales de botín podrán aparecer, pero muy
+  raramente**: un **0,5 % de probabilidad por maestro y día de incluir como máximo
+  un encargo excepcional entre las tres ofertas**, si hay recetas elegibles.
+  Esta probabilidad es independiente de la del botín de pergaminos.
+  Al ascender, **solo se ofrecen encargos del rango actual**, sin incluir rangos
+  inferiores; las recetas anteriores siguen siendo fabricables.
+  **Gran maestro es la excepción**: normalmente ofrece encargos de Maestro y,
+  excepcionalmente, de Gran maestro, con el rango y pago propios de cada encargo.
+  Las recetas excepcionales existentes siguen siendo de botín.
+  **Los encargos aceptados conservan sus requisitos y pago al ascender**,
+  hasta entregarlos, cancelarlos o caducar al finalizar el día.
+  Cada maestro ofrecerá **3 encargos aleatorios**, que se podrán **aceptar a la
+  vez**, hacer por separado y **entregar juntos una vez completados**. Cada uno
+  se entrega **al maestro que lo pidió**; se permite entregar juntos sus pedidos
+  completados, sin recibir los de otros maestros. Cada uno
+  cuenta por separado para el cupo diario. Habrá **un máximo de 3 encargos
+  aceptados y pendientes en total por personaje**, repartidos entre todos los
+  maestros; aceptar no consume una entrega diaria. **Los encargos aceptados
+  se podrán cancelar gratis**, liberando el hueco, conservando los productos
+  y sin gastar cupo ni renovar las ofertas diarias. **Los encargos aceptados
+  caducarán al terminar el día**, con el mismo cambio de día del cupo diario.
+  **Las tres ofertas quedan fijas durante el día y se vuelven a sortear al día
+  siguiente**, sin renovación manual ni cambios al aceptar, entregar o reconectar.
+  **Los jugadores del mismo rango de un oficio verán los mismos tres encargos
+  de ese maestro cada día**; cada personaje conserva su propia aceptación,
+  productos y entregas, sin agotar las ofertas de otros. Los productos concretos
+  siguen en revisión. El usuario confirma **un
+  único cupo diario por personaje compartido entre todos los maestros**, y después
+  fija su tamaño en **3 encargos completados en total al día**, no tres por maestro
+  ni por oficio. Los encargos tendrán **pago fijo por rango**, igual para los
+  distintos productos terminados de ese rango, con tarifa menor para componentes.
+  **Las cantidades solicitadas se ajustarán al
+  tipo de objeto**: **1 equipo, mueble, herramienta o encantamiento; 3 comidas o
+  pociones; 2 componentes**. Se fija **50 Pelines por encargo de Aprendiz de
+  productos terminados**, multiplicando ×3 por cada rango hasta **12.150 en un
+  encargo excepcional de Gran maestro**. Los componentes cobran el 80 %; el pago
+  corresponde al pedido completo. **Entregar también dará XP adicional del oficio
+  del maestro**: **5, 15, 45, 135, 405 y 1.215 XP** de Aprendiz a Gran maestro
+  excepcional, con el **80 % para componentes**. Los pedidos habituales de
+  Gran maestro usan el rango Maestro. Fabricar conserva su XP habitual
+  y se mantienen los requisitos de maestría. **Los productos debe fabricarlos el personaje que
+  entrega el encargo**; los fabricados por otros personajes no sirven aunque
+  se compren o intercambien. **Sirven los productos de fabricación propia que
+  ya tenía hechos**, siempre que coincidan con el encargo; no se exige producirlos
+  después de aceptarlo. **Se puede repetir el mismo tipo de encargo en un día**;
+  cada entrega consume sus productos y una de las tres entregas del cupo
+  compartido. La implementación
+  anterior y las decisiones vigentes se distinguen en
+  [Encargos diarios](DAILY-ORDERS.md).
+- Los ingresos del jugador pueden proceder de **ventas, combate y misiones que
+  den dinero**, junto a los encargos opcionales de oficio. No se exige una de
+  estas actividades como única vía para comprar la primera casa. Las cantidades
+  y el equilibrio entre fuentes se revisan paso a paso.
+  **Los comerciantes no comprarán materias primas**, que se reservan para
+  fabricación o comercio entre jugadores. Para otras ventas válidas se conserva
+  el precio actual del 50 % del valor base, con el redondeo y mínimo existentes.
 - La introducción al combate será un **pequeño incidente con una criatura
   fuera de la ciudad**. Gnomi acompañará y comentará, pero no combatirá.
   Enseñará paso a paso a seleccionar objetivo, atacar, usar una habilidad
@@ -142,6 +345,13 @@ contenido del juego relacionado.
     por estamina). Tendrá una rama de arco.
   Las ramas alternativas se desbloquearán más adelante; sus reglas,
   habilidades y requisitos no están definidos ni se implementan todavía.
+- El kit principal de cada clase tiene cuatro habilidades activas, con
+  desbloqueo automático en los niveles 1, 5, 12 y 20. Sus rangos se mejoran
+  con los puntos existentes: cada nuevo rango requiere un nivel más y un punto,
+  hasta rango 5. La barra admite recargas independientes por habilidad.
+  La implementación inicial y sus valores de prueba se documentan en
+  [COMBAT-BALANCE.md](COMBAT-BALANCE.md); no constituye aún equilibrio validado
+  en partidas. Las ramas alternativas siguen pendientes.
 - El combate es **en tiempo real con los personajes 3D**, no por turnos ni
   basado en texto. Hay recuperación gradual de vida y recurso incluso en
   combate, con recuperación de vida más lenta durante la pelea. Las tasas

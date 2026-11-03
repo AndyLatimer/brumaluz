@@ -168,7 +168,7 @@ function render() {
       const question = !!node?.quest && !!c.choice?.next && !c.choice.action;
       b.className = 'dialog-choice' + (c.exit ? ' exit' : '') + (question ? ' question' : '') + (i === selected ? ' selected' : '');
       b.disabled = busy;
-      const label = t(c.exit && node?.quest ? 'Cerrar' : c.text);
+      const label = t(c.exit && node?.quest ? 'Cerrar' : c.choice?.text ?? c.text);
       const marker = document.createElement('span');
       marker.className = 'dialog-choice-mark';
       marker.setAttribute('aria-hidden', 'true');

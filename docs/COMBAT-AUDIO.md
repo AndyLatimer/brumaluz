@@ -9,7 +9,7 @@ Decisión del 26 de octubre de 2026: el combate tiene sonidos de acciones e impa
 - Enemigos: preparación, ataque y caída. El jabalí usa aire grave y cuerpo; el brote y la sombra, una disipación mágica. No hay fanfarria al derrotar un enemigo normal.
 - El contacto cercano suena con su efecto visual. Los proyectiles suenan al llegar; la confirmación del servidor no repite ese impacto. Estos sonidos cosméticos no conceden daño.
 - Los sonidos del mundo se atenúan desde 4 m y desaparecen a 24 m. La posición estéreo sigue la cámara. Los avisos y muertes se disparan al cambiar de estado, sin repetirse con cada fotograma o snapshot idéntico; entrar ante un cadáver existente no reproduce su muerte.
-- Siguen el volumen general, requieren un gesto del jugador y se silencian al ocultar la pestaña. El ruido se prepara una vez, hay hasta 24 efectos simultáneos, variación ligera entre golpes y compresión de mezcla. Los nodos se liberan al terminar.
+- Siguen el volumen general, requieren un gesto del jugador y se silencian al ocultar la pestaña. La salida está recalibrada para que los efectos sean más audibles sin cambiar el volumen guardado. El ruido se prepara una vez, hay hasta 24 efectos simultáneos, variación ligera entre golpes y compresión con margen para la música y el ambiente. Los nodos se liberan al terminar.
 
 `src/world/combatAudio.ts` sintetiza los instrumentos con Web Audio, sin descargas ni servicios externos; `src/game/combatSound.ts` sitúa los sonidos en el mundo.
 
@@ -20,6 +20,7 @@ Los humanoides usan dos párpados en reposo, distintos de los arcos de alegría.
 ## Comprobación
 
 - `npm run test:combat:feedback`: render de audio real, niveles y colas, desbloqueo, silencio, límite de voces, liberación de nodos, cuatro rostros, ambas familias del bosque, sombra y reaparición. Incluye una sesión local del juego con respuesta retrasada, un solo impacto por golpe y llegada de proyectil.
+- `npm run test:audio`: niveles y margen de la mezcla de efectos con el volumen general, además de música, ambiente y cargas.
 - `node --test scripts/test-character-actions.mjs scripts/test-intro-combat.mjs`: regresión de animaciones y combate de introducción.
 - `npm --ignore-scripts run build`: tipos y distribución sin regenerar el catálogo ni las posiciones del mundo.
 

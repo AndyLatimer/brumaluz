@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { mkdtemp, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { request as httpRequest } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
@@ -14,28 +14,61 @@ let server, browser, directory, catalogPath, schema;
 const url = 'http://127.0.0.1:4183';
 const empty = () => ({ version: 1, npcs: [] });
 const json = value => JSON.stringify(value, null, 2) + '\n';
+const normalize = path => process.platform === 'win32' ? resolve(path).toLowerCase() : resolve(path);
 const get = () => fetch(`${url}/__dev/npcs`);
 const put = (value, revision, headers = {}) => fetch(`${url}/__dev/npcs`, {
   method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': revision, ...headers }, body: JSON.stringify(value),
 });
+function waitForCatalogChange() {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      server.watcher.off('change', changed);
+      reject(new Error('El vigilante no detectó el cambio del catálogo aislado de NPCs.'));
+    }, 15000);
+    function changed(file) {
+      if (normalize(file) !== normalize(catalogPath)) return;
+      clearTimeout(timer);
+      server.watcher.off('change', changed);
+      resolve();
+    }
+    server.watcher.on('change', changed);
+  });
+}
 before(async () => {
   directory = await mkdtemp(join(tmpdir(), 'brumaluz-npcs-'));
   catalogPath = join(directory, 'npcs.json');
   await writeFile(catalogPath, json(empty()));
+  const projectRoot = normalize(process.cwd()), watchedCatalog = normalize(catalogPath);
   server = await createServer({
-    configFile: false, logLevel: 'error', plugins: [
+    configFile: false, logLevel: 'error', cacheDir: join(directory, 'vite-cache'),
+    optimizeDeps: { entries: [], include: [], noDiscovery: true }, plugins: [
       {
         name: 'isolated-world-npc-catalog',
         enforce: 'pre',
         resolveId(id, importer) {
+          if (id === '/__test/three') return '\0npc-test-three';
           if (id === './npcs.json' && importer?.replaceAll('\\', '/').endsWith('/src/data/worldNpcs.ts')) return catalogPath;
         },
+        load(id) { if (id === '\0npc-test-three') return 'export * from "three";'; },
       },
       npcWorkshopPlugin({ catalogPath }),
     ], assetsInclude: ['**/*.glb'],
-    server: { host: '127.0.0.1', port: 4183, strictPort: true, fs: { allow: [process.cwd(), directory] } },
+    server: {
+      host: '127.0.0.1', port: 4183, strictPort: true, fs: { allow: [process.cwd(), directory] },
+      watch: { ignored: file => {
+        const path = normalize(file);
+        return path !== projectRoot && path !== watchedCatalog && !watchedCatalog.startsWith(`${path}${sep}`);
+      } },
+    },
   });
   await server.listen();
+  server.watcher.add(catalogPath);
+  const deadline = Date.now() + 10000;
+  while (!Object.entries(server.watcher.getWatched()).some(([parent, names]) =>
+    names.some(name => normalize(join(parent, name)) === watchedCatalog))) {
+    if (Date.now() >= deadline) throw new Error('No se pudo vigilar el catálogo aislado de NPCs.');
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
   assert.equal((await get()).status, 200);
   schema = await server.ssrLoadModule('/src/data/npcs.ts');
   browser = await chromium.launch({
@@ -52,6 +85,7 @@ after(async () => {
 
 test('NPC schema strictly validates complete appearances, independent stats and reusable render options', async () => {
   const { RACES, CLASSES, ATTRIBUTES } = await server.ssrLoadModule('/src/data/data.ts');
+  const { HAIR_STYLES } = await server.ssrLoadModule('/src/character/head.ts');
   const { attributeTotal } = await server.ssrLoadModule('/src/data/stats.ts');
   for (const race of Object.keys(RACES)) for (const cls of Object.keys(CLASSES)) {
     const npc = schema.newNpc('npc_prueba'); npc.appearance.race = race; npc.appearance.cls = cls;
@@ -66,7 +100,7 @@ test('NPC schema strictly validates complete appearances, independent stats and 
     const copy = schema.validateNpc(npc); copy.stats.health = 0; assert.equal(npc.stats.health, 888888);
   }
   const wrong = [
-    npc => { npc.id = '../outside'; }, npc => { npc.name = ' '; }, npc => { npc.appearance.hair = 16; },
+    npc => { npc.id = '../outside'; }, npc => { npc.name = ' '; }, npc => { npc.appearance.hair = HAIR_STYLES.length; },
     npc => { npc.appearance.skin = 999; }, npc => { npc.appearance.hairAcc = 5; },
     npc => { npc.appearance.face = 4; }, npc => { npc.appearance.unknown = 1; },
     npc => { npc.stats.health = 101; }, npc => { npc.stats.maxHealth = 0; }, npc => { npc.stats.level = 1.5; },
@@ -259,8 +293,9 @@ test('browser NPC workshop persists full appearance/stats, duplicates, imports, 
     assert.equal(await page.locator('#clothing-torso').inputValue(), 'Mage.torso');
     assert.equal(await page.locator('#clothing-leftArm').inputValue(), 'Ranger.leftArm');
     assert.match(await page.locator('#preview-stats').textContent(), /45678 \/ 90000/);
-    assert.equal(await page.locator('#animation option').count(), 142);
-    const animationValues = await page.locator('#animation option').evaluateAll(nodes => nodes.slice(3).map(node => node.value));
+    assert.equal(await page.locator('#animation option').count(), 143);
+    await page.locator('#animation').selectOption('seat');
+    const animationValues = await page.locator('#animation option').evaluateAll(nodes => nodes.filter(node => node.value.includes(':')).map(node => node.value));
     for (const value of animationValues) {
       await page.locator('#animation').selectOption(value);
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -355,11 +390,12 @@ test('saved edits to all three existing NPCs reach their actual world actors and
         await editor.locator('#npc-health').fill('123');
       }
       if (id === 'gnomi') await editor.locator('#render-scale').fill('0.55');
-      await editor.locator('#save').click();
+      await Promise.all([waitForCatalogChange(), editor.locator('#save').click()]);
       await editor.waitForFunction(name => document.querySelector('#status').textContent.startsWith(`Guardado en el proyecto: ${name}`), name);
       assert.equal(await editor.locator('#npc-id').inputValue(), id);
       assert.equal(await editor.locator('#badge-preview').getAttribute('data-badge-status'), 'pending');
     }
+    await new Promise(resolve => setTimeout(resolve, 250));
     assert.equal(editorReloads, 0);
     assert.equal(JSON.parse(await readFile(catalogPath, 'utf8')).npcs.length, value.npcs.length);
     await game.reload();
@@ -439,7 +475,7 @@ test('NPC renderer preserves defaults while supporting every outfit, cape, hat, 
       const { newNpc, npcCharacter } = await import('/src/data/npcs.ts');
       const { RACES, CLASSES, CLOTH } = await import('/src/data/data.ts');
       const { NPC_CLOTHING, NPC_CLOTHING_SLOTS } = await import('/src/data/npcClothing.ts');
-      const THREE = await import('/node_modules/.vite/deps/three.js');
+      const THREE = await import('/__test/three');
       const failures = [], check = (value, label) => { if (!value) failures.push(label); };
       const names = actor => { const result = []; actor.root.traverse(node => result.push(node.name)); return result; };
       let count = 0;
@@ -447,13 +483,21 @@ test('NPC renderer preserves defaults while supporting every outfit, cape, hat, 
         const npc = newNpc(); npc.appearance.race = race; npc.appearance.cls = cls;
         const plain = new Character(npcCharacter(npc), { outfit: false });
         const created = await createNpc(npc);
-        check(JSON.stringify(names(plain).sort()) === JSON.stringify(names(created).sort()), `${race}/${cls}: changed default geometry`);
+        // Player daily clothing is medieval; NPCs retain their explicit registered outfit.
+        check(names(plain).includes('medieval-tunic'), `${race}/${cls}: lost player daily clothing`);
+        const registeredNames = names(created);
+        for (const selection of Object.values(npc.render.clothing)) {
+          if (!selection.piece) continue;
+          const definition = NPC_CLOTHING.find(piece => piece.id === selection.piece);
+          for (const node of definition.nodes) check(registeredNames.includes(node), `${race}/${cls}: lost default NPC clothing ${node}`);
+        }
         plain.dispose(); created.dispose();
       }
       async function checkClothing(npc) {
         npc.render = { ...npc.render, scale: 1.8, width: 1.2, height: .8, weapon: 'espada_inicial', offhand: 'escudo_inicial' };
         const actor = await createNpc(npc), children = names(actor);
-        check(children.includes('1H_Sword') && children.includes('Badge_Shield'), 'missing explicit equipment');
+        check((children.includes('espada_inicial') || children.includes('1H_Sword'))
+          && (children.includes('escudo_inicial') || children.includes('Badge_Shield')), 'missing explicit equipment');
         for (const selection of Object.values(npc.render.clothing)) {
           if (!selection.piece) continue;
           const definition = NPC_CLOTHING.find(piece => piece.id === selection.piece);

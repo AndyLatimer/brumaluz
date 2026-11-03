@@ -1,46 +1,32 @@
 import {t} from '../ui/i18n';
-import {DAILY_ORDERS,dailyOrderStatus,orderItemCount,hasOrderItems} from '../data/dailyOrders';
+import {acceptedCommissions,commissionOffers,commissionCount,canDeliverCommission,dailyOrderStatus,type Commission} from '../data/dailyOrders';
 import {RPG_CATALOG} from '../data/professions';
 import type {CharData} from '../data/data';
 import type {DialogNode,DialogChoice} from '../ui/dialog';
 
-const WORKSHOP_REQUESTS: Record<string, string> = {
-  "herreria": "Me vendrían bien componentes de Aprendiz para la forja. Si tienes algunos hechos, puedo pagártelos.",
-  "peleteria": "Necesito componentes de Aprendiz para trabajar el cuero. Mira las cantidades; puedo comprarte una entrega.",
-  "sastreria": "Estoy reuniendo componentes de Aprendiz para el taller. ¿Tienes algunos que puedas venderme?",
-  "carpinteria": "Si te han sobrado componentes de Aprendiz al trabajar la madera, me sirven aquí. Te pago por traerlos.",
-  "ebanisteria": "Quiero dejar preparados componentes de Aprendiz para los muebles. Puedo pagarte los que indica el encargo.",
-  "joyeria": "Necesito componentes de Aprendiz para las piezas del taller. Comprueba qué te pido antes de ponerte a fabricarlos.",
-  "alquimia": "Para estas preparaciones me faltan componentes de Aprendiz. Si los traes, te los compro; no necesito que hagas una poción entera.",
-  "encantamiento": "Puedo comprarte componentes de Aprendiz para los encantamientos. Con eso basta para este encargo; no me traigas un pergamino terminado.",
-  "cocina": "Me hacen falta componentes de Aprendiz para cocinar. Mira lo que falta y, si puedes prepararlo, te pago la entrega.",
-  "minero": "Necesito mineral y gemas básicos para el taller. No hace falta que sean de un yacimiento difícil: mira cuáles te pido.",
-  "lenador": "Me vendría bien una reserva de roble. Si vas a salir a talar, mira cuánto te puedo comprar.",
-  "recolector": "Estoy reuniendo hierbas, cereal y fruta de los más básicos. ¿Tienes algo de la lista? Puedo comprártelo."
-};
-
-export interface DailyOrderService {getState:()=>CharData;deliver:(id:string)=>Promise<boolean>}
+export interface DailyOrderService {getState:()=>CharData;act:(action:string,args:Record<string,unknown>)=>Promise<boolean>}
 export function addDailyOrders(nodes:Record<string,DialogNode>,job:string,service:DailyOrderService):DialogChoice{
- const orders=Object.values(DAILY_ORDERS.orders).filter(order=>order.job===job);
- const choices:DialogChoice[]=orders.map(order=>({text:`${order.label} · ${order.reward} Pelines`,next:`daily_${order.id}`}));
  const back:DialogChoice={text:'Volver a mis preguntas',next:'intro'};
- nodes.daily_orders={get text(){
-  const status=dailyOrderStatus(service.getState().rpg);
-  return `${t(WORKSHOP_REQUESTS[job])}\n\n${t('Te quedan {remaining} de {limit} encargos diarios. El límite se comparte entre todos los maestros y se renueva a las 00:00 UTC.', {remaining:status.remaining,limit:DAILY_ORDERS.limit})}\n\n${t('Son independientes de los proyectos de maestría: no ascienden tu rango ni enseñan recetas.')}`;
- },choices:[...choices,back]};
- for(const order of orders){
-  const detail=`daily_${order.id}`,receipt=`daily_paid_${order.id}`;
-  nodes[detail]={get text(){
-   const data=service.getState(),status=dailyOrderStatus(data.rpg);
-   const needs=Object.entries(order.ingredients).map(([id,n])=>`• ${RPG_CATALOG.items[id]?.label??id}: ${orderItemCount(data,id)} / ${n}`).join('\n');
-   return `${order.label}\n\n${needs}\n\nRecompensa: ${order.reward} Pelines.\nEntregar consume las cantidades indicadas de tu mochila. Los objetos vinculados no se aceptan.\n\nEncargos disponibles hoy: ${status.remaining} / ${DAILY_ORDERS.limit}.`;
-  },choices:[
-   {text:`Entregar y cobrar ${order.reward} Pelines`,next:receipt,when:()=>dailyOrderStatus(service.getState().rpg).remaining>0&&hasOrderItems(service.getState(),order),action:()=>service.deliver(order.id)},
-   {text:'¿Cómo consigo lo que pides?',next:'daily_help'},
-   {text:'Volver a los encargos diarios',next:'daily_orders'},
-  ]};
-  nodes[receipt]={get text(){return `Entrega recibida. Has cobrado ${order.reward} Pelines.\n\nTe quedan ${dailyOrderStatus(service.getState().rpg).remaining} encargos para hoy entre todos los maestros.`;},choices:[{text:'Ver encargos diarios',next:'daily_orders'},back]};
+ const perform=(action:string,args:Record<string,unknown>)=>()=>service.act(action,args);
+ function detail(order:Commission,accepted=false){
+  const key=`daily_${accepted?order.acceptedId:order.id}`;
+  nodes[key]={get text(){
+   const d=service.getState(),needs=Object.entries(order.ingredients).map(([id,n])=>`• ${RPG_CATALOG.items[id]?.label??id}: ${commissionCount(d,id)} / ${n}`).join('\n');
+   return `${order.label}\n\n${needs}\n\n${order.reward} Pelines + ${order.xp} XP de ${RPG_CATALOG.professions[job]}.\nSolo productos fabricados por este personaje, nuevos y sin usar. Sirven existencias anteriores a la aceptación.\n\n${accepted?'Aceptado: conserva esta recompensa y caduca al terminar el día.':'No necesitas conocer aún la receta para aceptar. Aprenderla requiere su pergamino.'}`;
+  },get choices(){return accepted?[
+   {text:'Entregar y cobrar',next:'daily_orders',when:()=>dailyOrderStatus(service.getState().rpg).remaining>0&&canDeliverCommission(service.getState(),order),action:perform('order_claim',{id:order.acceptedId})},
+   {text:'Cancelar encargo gratis',next:'daily_orders',action:perform('order_cancel',{id:order.acceptedId})},
+   {text:'Volver a los encargos diarios',next:'daily_orders'}
+  ]:[
+   {text:'Aceptar encargo',next:'daily_orders',when:()=>acceptedCommissions(service.getState()).length<3,action:perform('order_accept',{id:order.id,job,recipe:order.recipe,reward:order.reward})},
+   {text:'Volver a los encargos diarios',next:'daily_orders'}
+  ];}};
+  return{text:`${accepted?'Aceptado · ':''}${order.label} · ${order.reward} Pelines`,next:key};
  }
- nodes.daily_help={text:'Los materiales básicos se reúnen en Pompelín. Los componentes de Aprendiz se fabrican con la receta que vende el maestro del oficio. Puedes traer también materiales o componentes obtenidos mediante comercio.\n\nNo necesitas entregar equipo de calidad superior ni completar un proyecto de maestría.',choices:[{text:'Volver a los encargos diarios',next:'daily_orders'},back]};
- return{text:'Encargos diarios',next:'daily_orders'};
+ nodes.daily_orders={get text(){const d=service.getState(),status=dailyOrderStatus(d.rpg);return t('Elige entre los tres encargos de hoy. Se mantienen hasta las 00:00 UTC. Puedes repetir sus tipos y tener tres aceptados en total entre los maestros.')+`\n\n${status.remaining} / 3 entregas restantes hoy · ${acceptedCommissions(d).length} / 3 aceptados.\n\n`+t('Los encargos pagan productos fabricados por ti. No compramos materias primas. La práctica de iniciación se entrega por separado.');},get choices(){
+  const d=service.getState(),pending=acceptedCommissions(d).filter(o=>o.job===job),offers=commissionOffers(d,job);
+  return [...offers.map(o=>detail(o)),...pending.map(o=>detail(o,true)),
+   {text:'Entregar juntos los completados de este maestro',next:'daily_orders',when:()=>dailyOrderStatus(service.getState().rpg).remaining>0&&acceptedCommissions(service.getState()).some(o=>o.job===job&&canDeliverCommission(service.getState(),o)),action:perform('order_claim_all',{job})},back];
+ }};
+ return{text:'Encargos diarios',next:'daily_orders',action:perform('order_view',{job})};
 }

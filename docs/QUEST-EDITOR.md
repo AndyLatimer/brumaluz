@@ -11,6 +11,11 @@ pasos, con explicaciones y ejemplos junto a los campos. Los identificadores y
 las conexiones técnicas quedan en opciones avanzadas. Se conserva el formato
 de las fichas existentes y no se cambia su alcance de publicación.
 
+Ampliación posterior solicitada el 28 de octubre: más posibilidades de autoría
+y prueba sin volver al formulario técnico como vista principal. Añade visitas,
+fabricación, etapas, cadenas de misiones, historial de edición y diagnóstico
+de conversaciones. No publica automáticamente las fichas ni altera el canon.
+
 ## Uso
 
 Ejecutar `npm run dev` y abrir `/quests.html`. Hay accesos desde los creadores
@@ -31,8 +36,8 @@ avanzar con Siguiente/Anterior o pulsar directamente cualquiera de los pasos:
    automáticamente al cambiar el objetivo o la cantidad. Si se personaliza en
    «Ajustar texto o lugar», se conserva al cambiar la cantidad. La casilla de
    entrega explica si se retiran los objetos de la mochila. Se pueden añadir
-   hasta veinte objetivos mediante botones específicos. Todos son obligatorios,
-   en cualquier orden. **No hay que añadir un objetivo para volver:** el regreso
+   hasta veinte objetivos mediante botones específicos. Todos son obligatorios;
+   pueden hacerse en cualquier orden o por etapas. **No hay que añadir un objetivo para volver:** el regreso
    ya forma parte de la entrega. Los filtros por mapa y el orden visual de los
    objetivos se ajustan dentro de sus opciones adicionales.
 3. **Conversaciones.** Elegir el momento: al ofrecerla, mientras está pendiente,
@@ -62,8 +67,75 @@ importar y exportar están en **Gestionar biblioteca**. El ID guardado es
 estable; duplicar genera otro. El navegador conserva el borrador, el paso y el
 momento de la conversación que se estaba editando.
 
-Importar JSON prepara una sustitución completa de la biblioteca como borrador;
-solo Guardar escribe en disco. Se pueden exportar borradores incompletos para
+## Más posibilidades de autoría
+
+- **Visitar un lugar:** exige una llegada al mapa elegido después de aceptar.
+  No añade un portal ni coloca un marcador. Los destinos son mapas del editor;
+  su disponibilidad en el mundo se comprobará al integrar/publicar la misión.
+- **Fabricar objetos:** selecciona productos de las recetas del catálogo real,
+  no objetos arbitrarios. Cuenta unidades producidas, no trabajos iniciados;
+  comprar o recoger ese objeto no sustituye la fabricación. Se puede añadir un
+  objetivo de objetos para exigir también conservar y entregar esas piezas.
+  El ensayo añade los productos a su mochila local; no ejecuta trabajos reales,
+  ni consume ingredientes, tiempo o energía.
+- **Por etapas:** una acción de combate, conversación, visita o fabricación
+  solo avanza el objetivo activo. Un mismo evento no completa dos etapas
+  consecutivas. Los objetos de entrega siguen siendo una comprobación de
+  mochila y pueden existir antes de llegar a su etapa. Perderlos vuelve a
+  bloquear la entrega, aunque ya se hayan registrado acciones posteriores.
+- **Copiar objetivo:** duplica sus ajustes y genera otra referencia. Al copiar
+  un objetivo de objetos, deja el destino vacío para elegir otro material y
+  evitar pedir dos veces el mismo objeto de forma ambigua.
+- **Cadenas:** «Organizar y enlazar misiones» muestra anteriores y siguientes;
+  «Crear continuación» parte de una misión guardada y prepara otra que exige
+  completarla. Hereda el contacto de entrega como nuevo contacto inicial y su
+  categoría. No copia la historia ni decide su recompensa. Los descendientes
+  no pueden seleccionarse como requisitos de su propia misión anterior.
+- **Organización:** categorías de encargo secundario, historia y oficio. Son
+  etiquetas de autoría, no aprobación narrativa ni condiciones de acceso. La
+  biblioteca filtra por categoría y busca por nombre, descripción o contacto.
+- **Deshacer/Rehacer:** conserva hasta sesenta estados por ficha en la sesión.
+  Agrupa la escritura seguida en el mismo campo, pero mantiene separadas las
+  operaciones de añadir, borrar y reordenar. Guardar o cambiar de ficha inicia
+  un historial nuevo. Ctrl+S guarda; Ctrl+Z/Ctrl+Y fuera de campos recorren el
+  historial. Dentro de los campos se conserva la edición nativa del navegador.
+- **Recorrido del diálogo:** una vista de conexiones permite saltar al texto
+  de una intervención y revisar sus respuestas, destinos y acciones. Avisa de
+  conversaciones inaccesibles, textos de plantilla y acciones accesibles desde
+  fases incorrectas. Los avisos no impiden guardar; los errores de formato o
+  referencias sí. Los bucles intencionados de pregunta/regreso están permitidos.
+- **Diario:** la revisión incluye una vista de lectura del encargo, contacto,
+  pasos y recompensa. Las tarjetas de conversación numeran los objetivos cuando
+  son por etapas, tanto en el editor como con el renderizador del juego.
+
+## Biblioteca y pruebas ampliadas
+
+«Actualizar NPCs y recursos» recarga las referencias sin descartar el borrador.
+Exportar solo una misión incluye sus requisitos anteriores, para obtener un
+JSON que pueda recuperarse de forma independiente. Se pueden exportar borradores
+incompletos, pero deben validarse para importarlos o guardarlos.
+
+Importar permite sustituir la biblioteca o **añadir sin sustituir** las misiones
+existentes. En este segundo modo se comprueban los requisitos contra la biblioteca
+combinada. Una referencia ya existente con contenido diferente produce un error;
+no sobrescribe ninguna ficha. La importación sigue siendo un borrador hasta
+guardar. Las bibliotecas de versión 1 anteriores continúan siendo válidas:
+`objectiveOrder` y `category` son opcionales y su ausencia significa cualquier
+orden y encargo secundario, respectivamente.
+
+El personaje de prueba puede comenzar con los objetos de entrega en la mochila,
+además de su nivel y requisitos anteriores. Los objetivos muestran progreso,
+etapas bloqueadas y botones para simular una acción o todas las que faltan.
+Cuando hay filtro de mapa, se puede elegir otro lugar para probar el rechazo.
+Las acciones que no corresponden a su etapa tampoco avanzan el progreso.
+
+El registro conserva hasta doscientos eventos con su fase y resultado. Se puede
+exportar junto con la ficha probada, contexto y estado final; se exporta la versión
+con la que comenzó la prueba aunque después se edite el borrador. Reiniciar limpia
+el estado y el registro. Ninguna de estas acciones escribe progreso de personajes.
+
+Importar JSON prepara una sustitución o una incorporación de fichas como borrador,
+según el modo elegido; solo Guardar escribe en disco. Se pueden exportar borradores incompletos para
 recuperar trabajo, aunque deberán pasar la validación antes de importarse o
 guardarse. El navegador conserva el borrador y la revisión del archivo.
 
@@ -107,7 +179,10 @@ No se aplican cambios a Supabase ni se activa contenido al guardar.
 
 ## Comprobaciones
 
-- `npm run test:quests`: formato y referencias; requisitos y ciclos; ensayo
+- `npm run test:quests`: formato y referencias; productos fabricables reales;
+  objetivos por etapas y aislamiento de eventos; historial agrupado y ramificado;
+  cadenas y bloqueo de requisitos circulares; importación combinada y conflictos;
+  exportación individual con requisitos y registro de prueba; requisitos y ciclos; ensayo
   completo con filtros de mapa, consumo y pago único; API local y conflictos
   de escritura; creación guiada, búsqueda por nombre, errores junto al campo,
   conservación del texto personalizado, preguntas con regreso automático,

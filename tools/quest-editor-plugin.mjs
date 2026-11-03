@@ -35,10 +35,11 @@ export function questEditorPlugin({ catalogPath } = {}) {
             send(403, { error: 'El registro de misiones solo admite solicitudes locales del propio taller.' }); return;
           }
           const references = async () => {
-            const [{ ITEMS }, { WILDERNESS }, npcText, maps] = await Promise.all([
+            const [{ ITEMS }, { WILDERNESS }, npcText, maps, rpgText] = await Promise.all([
               server.ssrLoadModule('/src/data/items.ts'), server.ssrLoadModule('/src/data/wilderness.ts'),
               readFile(resolve(server.config.root, 'src/data/npcs.json'), 'utf8'),
               readdir(resolve(server.config.root, 'src/data/maps')),
+              readFile(resolve(server.config.root, 'src/data/generated/rpg-catalog.json'), 'utf8'),
             ]);
             const mapEntries = await Promise.all(maps.filter(name => name.endsWith('.json')).map(async name => {
               const map = JSON.parse(await readFile(resolve(server.config.root, 'src/data/maps', name), 'utf8'));
@@ -49,6 +50,8 @@ export function questEditorPlugin({ catalogPath } = {}) {
               items: Object.values(ITEMS).map(item => ({ id: item.id, name: item.label })),
               enemies: Object.entries(WILDERNESS.enemies).map(([id, enemy]) => ({ id, name: enemy.label })),
               maps: mapEntries,
+              craftables: [...new Set(Object.values(JSON.parse(rpgText).recipes).map(recipe => recipe.output))]
+                .filter(id => ITEMS[id]).map(id => ({ id, name: ITEMS[id].label })),
             };
           };
           if (request.url === '/references' && request.method === 'GET') { send(200, await references()); return; }

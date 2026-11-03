@@ -22,6 +22,7 @@ export function updatePlay(dt: number) {
     const position = play.pendingTalk === 'gnomi' && story.welcomeWorld.root.visible ? story.welcomeWorld.root.position : npc?.character.root.position;
     if (!position || !play.moveTarget || play.dead) play.pendingTalk = null;
     else if (Math.hypot(position.x - holder.position.x, position.z - holder.position.z) <= TALK_RANGE) talkTo(play.pendingTalk);
+    else play.moveTarget.copy(position); // Residents can keep walking while the player approaches.
   }
   const input = new THREE.Vector2(
     (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0),

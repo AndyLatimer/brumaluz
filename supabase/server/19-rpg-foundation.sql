@@ -1,11 +1,14 @@
 -- RPG rules: all helpers private; player mutations go through locked authenticated RPCs.
 create or replace function public.game_set_bonuses(d jsonb) returns jsonb language plpgsql immutable set search_path='' as $$
-declare result jsonb:='{"power":0,"healing":0,"guard":0,"maxHealth":0,"maxResource":0,"skillPower":0,"skillCost":0}'; fam int; tiers int[]; item jsonb; meta jsonb; two int; four int; stat text; v numeric; slot text;
+declare result jsonb:='{"power":0,"healing":0,"guard":0,"maxHealth":0,"maxResource":0,"skillPower":0,"skillCost":0}'; fam int; tiers int[]; item jsonb; meta jsonb; two int; four int; stat text; v numeric; slot text; sets jsonb;
 begin
  for fam in 0..1 loop
   tiers:='{}';
   foreach slot in array array['head','chest','hands','legs'] loop
-   item:=d->'equipment'->slot; meta:=public.game_rpg_catalog()->'sets'->(item->>'id');
+   item:=d->'equipment'->slot;
+   if item->>'count' is distinct from '1' then continue;end if;
+   if sets is null then sets:=public.game_rpg_sets();end if;
+   meta:=sets->(item->>'id');
    if item->>'count'='1' and meta->>'cls'=d->>'cls' and meta->>'slot'=slot and (meta->>'family')::int=fam then tiers:=array_append(tiers,(meta->>'tier')::int);end if;
   end loop;
   select array_agg(t order by t desc) into tiers from unnest(tiers) t;
@@ -40,7 +43,7 @@ create or replace function public.game_weapon_tempo(d jsonb) returns numeric lan
  select case when d->'equipment'->'weapon'->>'id' ~ 'sable|daga_luna|daga_espina' then .85 when d->'equipment'->'weapon'->>'id' ~ 'meteoro|forja|solar' then 1.15 else 1 end
 $$;
 create or replace function public.game_rpg_food_bonus(d jsonb,stat text) returns int language sql immutable set search_path='' as $$
- select case when coalesce((d->'foodBuff'->>'remaining')::numeric,0)<=0 then 0 when d->'foodBuff'->>'itemId'='pan_duro' then case when stat='maxHealth' then 5 else 3 end else coalesce((public.game_rpg_catalog()->'items'->(d->'foodBuff'->>'itemId')->'foodEffect'->>stat)::int,0) end
+ select case when coalesce((d->'foodBuff'->>'remaining')::numeric,0)<=0 then 0 when d->'foodBuff'->>'itemId'='pan_duro' then case when stat='maxHealth' then 5 else 3 end else coalesce((public.game_rpg_food_effects()->(d->'foodBuff'->>'itemId')->>stat)::int,0) end
 $$;
 create or replace function public.game_max_health(d jsonb) returns int language sql immutable set search_path='' as $$
  select floor((60+(public.game_level(d)-1)*12+public.game_equipment_stat(d,'maxHealth'))*(1+.02*public.game_attr_total(d,'corpulencia'))*(1+(public.game_set_bonuses(d)->>'maxHealth')::numeric)*(1+least(greatest(coalesce((d->>'partyPeers')::int,0),0),3)*.015))::int
@@ -50,8 +53,16 @@ create or replace function public.game_rpg_resource_max(d jsonb) returns int lan
  select floor(((public.game_level(d)-1)*6+case when d->>'cls' in('mago','clerigo') then 25+public.game_attr_total(d,'intelecto')*7 else 45+public.game_attr_total(d,'agilidad')*3+public.game_attr_total(d,'corpulencia')*3 end+public.game_attr_total(d,'presencia')+public.game_equipment_stat(d,'maxResource'))*(1+(public.game_set_bonuses(d)->>'maxResource')::numeric)*(1+least(greatest(coalesce((d->>'partyPeers')::int,0),0),3)*.015))::int
  +public.game_rpg_food_bonus(d,'maxResource')
 $$;
-create or replace function public.game_public_vitals(d jsonb) returns jsonb language sql stable set search_path='' as $$
- select jsonb_build_object('serverRevision',coalesce((d->>'serverRevision')::bigint,0),'health',case when coalesce((d->>'health')::numeric,-1)<0 then public.game_max_health(d) else least((d->>'health')::numeric,public.game_max_health(d)) end,'maxHealth',public.game_max_health(d),'resourceKind',case when d->>'cls' in('mago','clerigo') then 'mana' else 'stamina' end,'resource',case when coalesce((d->>'resource')::numeric,-1)<0 then public.game_rpg_resource_max(d) else least(greatest((d->>'resource')::numeric,0),public.game_rpg_resource_max(d)) end,'maxResource',public.game_rpg_resource_max(d),'overheal',public.game_overheal_now(d),'barrier',case when (d->'enchantState'->>'barrierUntil')::numeric>extract(epoch from now()) then coalesce((d->'enchantState'->>'barrier')::numeric,0) else 0 end)
+create or replace function public.game_public_vitals(d jsonb) returns jsonb language plpgsql stable set search_path='' as $$
+declare hp int:=public.game_max_health(d); resource_max int:=public.game_rpg_resource_max(d);
+begin
+ return jsonb_build_object('serverRevision',coalesce((d->>'serverRevision')::bigint,0),
+  'health',case when coalesce((d->>'health')::numeric,-1)<0 then hp else least((d->>'health')::numeric,hp) end,'maxHealth',hp,
+  'resourceKind',case when d->>'cls' in('mago','clerigo') then 'mana' else 'stamina' end,
+  'resource',case when coalesce((d->>'resource')::numeric,-1)<0 then resource_max else least(greatest((d->>'resource')::numeric,0),resource_max) end,'maxResource',resource_max,
+  'overheal',greatest(0,least(coalesce((d->>'overheal')::int,0)-floor(greatest(extract(epoch from now())-coalesce((d->>'overheal_at')::numeric,extract(epoch from now())),0))::int,floor(hp*.3)::int)),
+  'barrier',case when (d->'enchantState'->>'barrierUntil')::numeric>extract(epoch from now()) then coalesce((d->'enchantState'->>'barrier')::numeric,0) else 0 end);
+end
 $$;
 
 create or replace function public.game_rpg_new_item(p_id text,p_count int default 1) returns jsonb language plpgsql volatile set search_path='' as $$
@@ -118,10 +129,12 @@ create or replace function public.game_rpg_settle(d jsonb,stamp numeric) returns
 declare s jsonb:=coalesce(d->'rpg','{}'); jobs jsonb:='[]';task jsonb;job text; slot text;item jsonb;inv jsonb;eq jsonb;extras jsonb:='[]';copy jsonb;
 begin
  s:='{"version":1,"energy":100,"xp":{},"mastery":{},"learned":[],"tools":{},"jobs":[],"deliveries":[],"nodes":{},"gathering":null,"crafts":{},"projects":{},"furniture":[]}'::jsonb||s;
+ s:=public.game_craft_clock(s,stamp);
+ if s->'dailyOrders'->>'day' is distinct from to_char(to_timestamp(stamp) at time zone 'UTC','YYYY-MM-DD') then s:=s||jsonb_build_object('dailyOrders',jsonb_build_object('day',to_char(to_timestamp(stamp) at time zone 'UTC','YYYY-MM-DD'),'completed',0,'accepted','[]'::jsonb));end if;
  s:=s||jsonb_build_object('energy',least(100,coalesce((s->>'energy')::numeric,100)+greatest(0,stamp-coalesce((s->>'at')::numeric,stamp))*100/16560),'at',stamp);
  for task in select value from jsonb_array_elements(s->'jobs') order by (value->>'end')::numeric loop
   if not coalesce((task->>'done')::boolean,false) and (task->>'end')::numeric<=stamp then
-   job:=task->>'job';task:=task||'{"done":true}'::jsonb;
+   job:=task->>'job';task:=task||jsonb_build_object('done',true,'output',task->'output'||jsonb_build_object('craftedBy',s->>'owner'));
    s:=jsonb_set(s,array['xp',job],to_jsonb(coalesce((s->'xp'->>job)::int,0)+public.game_rpg_recipe_xp(s,public.game_rpg_catalog()->'recipes'->(task->>'recipe'))));
    s:=jsonb_set(s,array['crafts',job],to_jsonb(coalesce((s->'crafts'->>job)::int,0)+1));
   end if;jobs:=jobs||jsonb_build_array(task);
@@ -130,7 +143,7 @@ begin
  inv:=public.game_inventory(d);eq:=coalesce(d->'equipment','{}');
  for i in 0..24 loop
   item:=inv->i;
-  if jsonb_typeof(item)='object' and (public.game_equipment_item(item->>'id') is not null or public.game_rpg_catalog()->'items'->(item->>'id')->>'stack'='1') then
+  if jsonb_typeof(item)='object' and (public.game_equipment_item(item->>'id') is not null or public.game_rpg_stack_limits()->>(item->>'id')='1') then
    for j in 2..greatest(1,coalesce((item->>'count')::int,1)) loop
     extras:=extras||jsonb_build_array(public.game_rpg_new_item(item->>'id',1)||(item-'instanceId')||jsonb_build_object('count',1));
    end loop;

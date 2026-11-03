@@ -180,13 +180,58 @@ returns text language sql immutable set search_path = '' as $$
     when 'picaro' then 'double_slash' when 'clerigo' then 'healing' when 'explorador' then 'precise_shot' end
 $$;
 
-create or replace function public.game_skill_rank(d jsonb)
-returns int language sql immutable set search_path = '' as $$
-  select greatest(1,least(5,public.game_level(d),
-    coalesce((d->'skillRanks'->>public.game_skill_id(d->>'cls'))::int,1)))
+create or replace function public.game_skill_data(skill_id text)
+returns jsonb language sql immutable set search_path = '' as $$
+  select case skill_id
+    when 'heavy_strike' then '{"class":"guerrero","unlockLevel":1,"mode":"damage","baseDamage":18,"hits":1,"rankBonus":2,"cost":15,"cooldown":6}'::jsonb
+    when 'shield_rush' then '{"class":"guerrero","unlockLevel":5,"mode":"damage","baseDamage":13,"hits":1,"rankBonus":1.5,"cost":12,"cooldown":5}'::jsonb
+    when 'sweeping_edge' then '{"class":"guerrero","unlockLevel":12,"mode":"damage","baseDamage":6,"hits":3,"rankBonus":0.67,"cost":18,"cooldown":8}'::jsonb
+    when 'mountain_breaker' then '{"class":"guerrero","unlockLevel":20,"mode":"damage","baseDamage":25,"hits":1,"rankBonus":2,"cost":26,"cooldown":10}'::jsonb
+    when 'arcane_discharge' then '{"class":"mago","unlockLevel":1,"mode":"damage","baseDamage":18,"hits":1,"rankBonus":2,"cost":20,"cooldown":7}'::jsonb
+    when 'firefly_burst' then '{"class":"mago","unlockLevel":5,"mode":"damage","baseDamage":6,"hits":3,"rankBonus":0.67,"cost":15,"cooldown":5}'::jsonb
+    when 'frost_lance' then '{"class":"mago","unlockLevel":12,"mode":"damage","baseDamage":23,"hits":1,"rankBonus":2,"cost":24,"cooldown":9}'::jsonb
+    when 'starfall' then '{"class":"mago","unlockLevel":20,"mode":"damage","baseDamage":31,"hits":1,"rankBonus":2,"cost":30,"cooldown":12}'::jsonb
+    when 'double_slash' then '{"class":"picaro","unlockLevel":1,"mode":"damage","baseDamage":8,"hits":2,"rankBonus":1,"cost":15,"cooldown":4.5}'::jsonb
+    when 'swift_flurry' then '{"class":"picaro","unlockLevel":5,"mode":"damage","baseDamage":4,"hits":4,"rankBonus":0.25,"cost":13,"cooldown":4}'::jsonb
+    when 'opportunist_strike' then '{"class":"picaro","unlockLevel":12,"mode":"damage","baseDamage":15,"hits":1,"rankBonus":1,"cost":18,"cooldown":6.5}'::jsonb
+    when 'shadow_combo' then '{"class":"picaro","unlockLevel":20,"mode":"damage","baseDamage":6,"hits":3,"rankBonus":0.34,"cost":24,"cooldown":9}'::jsonb
+    when 'healing' then '{"class":"clerigo","unlockLevel":1,"mode":"healing","baseDamage":0,"baseHealing":32,"hits":1,"rankBonus":4,"cost":12,"cooldown":6,"power":1}'::jsonb
+    when 'radiant_bolt' then '{"class":"clerigo","unlockLevel":5,"mode":"damage","baseDamage":14,"hits":1,"rankBonus":2,"cost":12,"cooldown":5}'::jsonb
+    when 'sanctified_bolt' then '{"class":"clerigo","unlockLevel":12,"mode":"damage","baseDamage":20,"hits":1,"rankBonus":2,"cost":18,"cooldown":7}'::jsonb
+    when 'dawn_strike' then '{"class":"clerigo","unlockLevel":20,"mode":"damage","baseDamage":29,"hits":1,"rankBonus":2,"cost":26,"cooldown":11}'::jsonb
+    when 'precise_shot' then '{"class":"explorador","unlockLevel":1,"mode":"damage","baseDamage":19,"hits":1,"rankBonus":2,"cost":15,"cooldown":6}'::jsonb
+    when 'quick_volley' then '{"class":"explorador","unlockLevel":5,"mode":"damage","baseDamage":6,"hits":3,"rankBonus":0.67,"cost":15,"cooldown":5}'::jsonb
+    when 'piercing_bolt' then '{"class":"explorador","unlockLevel":12,"mode":"damage","baseDamage":22,"hits":1,"rankBonus":2,"cost":21,"cooldown":8}'::jsonb
+    when 'horizon_shot' then '{"class":"explorador","unlockLevel":20,"mode":"damage","baseDamage":30,"hits":1,"rankBonus":2,"cost":27,"cooldown":11}'::jsonb
+  end
 $$;
 
-revoke all on function public.game_skill_id(text),public.game_skill_rank(jsonb) from public,anon,authenticated;
+create or replace function public.game_skill_rank(d jsonb, skill_id text)
+returns int language sql immutable set search_path = '' as $$
+  select case
+    when public.game_skill_data(skill_id)->>'class' is distinct from d->>'cls'
+      or public.game_level(d)<(public.game_skill_data(skill_id)->>'unlockLevel')::int then 1
+    else greatest(1,least(5,
+      public.game_level(d)-(public.game_skill_data(skill_id)->>'unlockLevel')::int+1,
+      case when coalesce(d->'skillRanks'->>skill_id,'') ~ '^[0-9]+$'
+        then (d->'skillRanks'->>skill_id)::int else 1 end))
+  end
+$$;
+
+create or replace function public.game_skill_rank(d jsonb)
+returns int language sql immutable set search_path = '' as $$
+  select public.game_skill_rank(d,public.game_skill_id(d->>'cls'))
+$$;
+
+create or replace function public.game_skill_points_spent(d jsonb)
+returns int language sql immutable set search_path = '' as $$
+  select coalesce(sum(public.game_skill_rank(d,key)-1),0)::int
+  from jsonb_each(coalesce(d->'skillRanks','{}'::jsonb))
+  where public.game_skill_data(key)->>'class'=d->>'cls'
+    and public.game_level(d)>=(public.game_skill_data(key)->>'unlockLevel')::int
+$$;
+
+revoke all on function public.game_skill_id(text),public.game_skill_data(text),public.game_skill_rank(jsonb),public.game_skill_rank(jsonb,text),public.game_skill_points_spent(jsonb) from public,anon,authenticated;
 
 create or replace function public.game_lock_character(p_id uuid)
 returns public.characters
@@ -255,4 +300,3 @@ begin
   return public.game_party_data(p_id,result);
 end;
 $$;
-

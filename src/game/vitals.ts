@@ -110,7 +110,7 @@ export async function respawn() {
   if (!play.dead || play.mapTravelling) return;
   play.mapTravelling = true;
   const connection = session.worldConnection;
-  const finish = beginMapTransition({ name: locationName('brumaluz'), region: 'Pompelín', loadingTip: 'Al caer, vuelves a la capital.' });
+  const finish = beginMapTransition({ id: 'brumaluz', name: locationName('brumaluz'), kind: 'city', region: 'Pompelín', loadingTip: 'Al caer, vuelves a la capital.' }, { recovery: true });
   try {
   await connection?.suspend();
   await gameCity('brumaluz');

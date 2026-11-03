@@ -18,6 +18,8 @@ import { chatSystem } from '../ui/chatWindow';
 import { LOCAL_COMBAT_SITE, TEST, scene, renderer, graphics, lowEnd, marker, keys, playerVel, env, holder, camTarget } from './stage';
 import { groundPoint, facingTo, cinematic, restoreStoryFog, removeMonsterPreview, doorLocked } from '../story/scenes';
 import { isbertoVisible } from '../story/quests';
+import {homeAt,homeState,setHomeView} from '../data/homes';
+import {performProfession} from './professions';
 import { setWindow } from '../ui/menus';
 import { endIsbertoArrival } from '../story/isbertoArrival';
 import { remotePlayers, receiveWorld } from './worldClient';
@@ -25,10 +27,14 @@ import { setCombatEncounter } from './combat';
 import { toast } from '../ui/toast';
 import { updateHud } from './hud';
 import { buildProfessionWorld } from '../world/professionWorld';
+import { prepareFurnitureMaterials } from '../world/homeFurnitureMaterial';
 import { errorMessage } from './server';
 import { returnToCharacters } from '../ui/characterSelect';
 import { storyLock } from './conversation';
 import { tradeWindow } from '../ui/gameInterface';
+import { CityPopulation, populationSites } from '../world/population';
+import { isAmbientResident } from '../data/cityPopulation';
+import { t } from '../ui/i18n';
 
 export const portalWarnings = new Set<string>();
 export function testCity(): City {
@@ -45,11 +51,15 @@ export const loadedCities = new Map<string, City>();
 export async function gameCity(id: string): Promise<City> {
   const cached = loadedCities.get(id);
   if (cached) return cached;
+  await prepareFurnitureMaterials();
   const result = TEST && !new URLSearchParams(location.search).has('welcome') ? testCity() : publishedMaps()[id]
     ? (await loadPublishedMap(id, scene)).city
     : id === 'brumaluz' ? await buildCity()
       : (() => { throw new Error(`El mapa «${id}» no está incluido en esta versión del juego.`); })();
   buildProfessionWorld(result);
+  if (!TEST || new URLSearchParams(location.search).has('welcome')) {
+    for (const site of populationSites(result)) if (!result.npcSites.some(existing => existing.id === site.id)) result.npcSites.push(site);
+  }
   // Interior masters are built only when their workshop is visited.
   await Promise.all(result.npcSites.map(async site=>{
     if(!isWorldNpcId(site.id))return;
@@ -67,6 +77,7 @@ export function refreshCityMinimap() {
   }
 }
 export const npcActors: { id: WorldNpcId; character: Character; plate: HTMLElement; anchor: THREE.Vector3 }[] = [];
+export let cityPopulation: CityPopulation | null = null;
 /** NPC del mapa actual; en su casa, también Isberto (el mapa del interior no lo incluye). */
 export function npcSitesHere() {
   if (play.city.locationId !== ISBERTO_HOUSE || play.city.npcSites.some(site => site.id === 'isberto')) return play.city.npcSites;
@@ -75,6 +86,8 @@ export function npcSitesHere() {
   return [...play.city.npcSites, { id: 'isberto', position, yaw: door ? facingTo(position, door.position) : Math.PI }];
 }
 export function placeCityNpcs() {
+cityPopulation?.dispose();
+cityPopulation = null;
 for (const npc of npcActors.splice(0)) {
   npc.character.root.removeFromParent();
   npc.plate.remove();
@@ -88,6 +101,7 @@ for (const site of npcSitesHere()) {
   const character = session.worldCharacters[site.id];
   if(!character)throw new Error(`Falta cargar el personaje ${site.id}.`);
   character.root.name = `npc:${site.id}`;
+  character.stand(); character.setGait('idle'); character.setLocomotionSpeed(0);
   character.root.position.copy(site.position);
   character.root.rotation.y = site.yaw;
   character.root.visible = site.id !== 'isberto' || isbertoVisible();
@@ -100,10 +114,15 @@ for (const site of npcSitesHere()) {
   plate.setAttribute('aria-hidden', 'true');
   plate.innerHTML = '<strong></strong>';
   plate.querySelector('strong')!.textContent = def.name;
+  if (isAmbientResident(site.id)) {
+    const subtitle = document.createElement('span');
+    subtitle.className = 'npc-subtitle'; subtitle.textContent = t(def.title); plate.appendChild(subtitle);
+  }
   document.body.appendChild(plate);
   npcActors.push({ id: site.id, character, plate, anchor: new THREE.Vector3() });
   play.city.interactables.push({ id: `npc:${site.id}`, position: character.root.position, radius: 2.6, label: 'Hablar' });
 }
+cityPopulation = new CityPopulation(play.city, new Map(npcActors.map(npc => [npc.id, npc.character])));
 }
 export async function switchGameMap(id: string) {
   if (play.city.locationId === id) return;
@@ -139,7 +158,7 @@ export function placeAfterTravel(position: { x: number; z: number; yaw: number }
   camTarget.copy(holder.position).add(new THREE.Vector3(0, 1.3, 0));
   play.portalsArmed = false;
 }
-export async function travelPortal(portal: CityPortal) {
+export async function travelPortal(portal: CityPortal,visitingHome=false) {
   if (play.mapTravelling || play.dead) return;
   if (doorLocked(portal)) { toast('Casa de Isberto', 'La casa está cerrada. Isberto te invitará cuando hayas registrado los restos de la criatura.', true); return; }
   if (isInCombat(fight.combatEncounter)) {
@@ -148,6 +167,12 @@ export async function travelPortal(portal: CityPortal) {
   }
   if (!portal.target) { toast('Camino cerrado', 'Este portal todavía no tiene un destino.', false); return; }
   const target = portal.target;
+  const targetHome=homeAt(target.map),homes=homeState(session.state.rpg?.homes);
+  if(targetHome&&!visitingHome&&!homes.owned.includes(targetHome.id)){setWindow('homes');return;}
+  if(!visitingHome&&homes.visit&&!homeAt(play.city.locationId)&&targetHome){
+    if(!await performProfession('home_leave_visit'))return;
+  }
+  setHomeView(null);
   if (target.map !== 'brumaluz' && !publishedMaps()[target.map]) {
     toast('Camino cerrado', 'El mapa de destino todavía no está publicado.', true);
     return;
@@ -160,10 +185,7 @@ export async function travelPortal(portal: CityPortal) {
   let finish = () => {};
   let serverMoved = false;
   try {
-    const module = entry ? await entry.load() : null;
-    const preview = module && typeof module.map === 'object' && module.map && 'preview' in module.map && typeof module.map.preview === 'string'
-      ? module.map.preview : undefined;
-    finish = beginMapTransition({ name: locationName(target.map), region: entry?.region, loadingTip: entry?.loadingTip, preview });
+    finish = beginMapTransition({ id: target.map, name: locationName(target.map), kind: entry?.kind, region: entry?.region, loadingTip: entry?.loadingTip });
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     // Carga antes de pedir el viaje: un recurso defectuoso nunca deja al jugador en un mapa que no puede ver.
     const destination = await gameCity(target.map);
@@ -185,6 +207,7 @@ export async function travelPortal(portal: CityPortal) {
       receiveWorld(result);
       placeAfterTravel(result.position);
     }
+    if(!visitingHome&&session.state.rpg?.homes){session.state.rpg.homes.visit=null;delete session.state.rpg.homes.visitHome;}
     updateHud();
     chatSystem(`Has llegado a ${locationName(session.state.location)}.`);
   } catch (error) {

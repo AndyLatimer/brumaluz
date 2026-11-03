@@ -1,6 +1,8 @@
 export type CombatCue = 'swing' | 'skill' | 'release' | 'impact' | 'incoming' | 'healing' | 'warning' | 'enemy' | 'death' | 'mining' | 'chopping' | 'harvesting' | 'crafted';
 export interface CombatSoundOptions { strong?: boolean; gain?: number; pan?: number }
 
+const OUTPUT_GAIN=1.4,LIMITER_HEADROOM=.7;
+
 /** Shared noise is prepared once on gesture, never during a hit or a render frame. */
 export function combatNoise(ctx: BaseAudioContext) {
  const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.7),ctx.sampleRate),data=buffer.getChannelData(0);
@@ -73,9 +75,11 @@ export class CombatAudio {
   if(this.level<=0||typeof AudioContext==='undefined')return;
   try{
    if(!this.context){
-    const ctx=this.context=new AudioContext();this.master=ctx.createGain();this.master.gain.value=this.level*.65;
-    const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-10;limiter.knee.value=8;limiter.ratio.value=8;limiter.attack.value=.003;limiter.release.value=.12;
-    this.master.connect(limiter);limiter.connect(ctx.destination);this.noise=combatNoise(ctx);
+    const ctx=this.context=new AudioContext();this.master=ctx.createGain();this.master.gain.value=this.level*OUTPUT_GAIN;
+    const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-12;limiter.knee.value=0;limiter.ratio.value=20;limiter.attack.value=0;limiter.release.value=.12;
+    // Compressor makeup gain needs headroom for the other audio contexts.
+    const output=ctx.createGain();output.gain.value=LIMITER_HEADROOM;
+    this.master.connect(limiter);limiter.connect(output).connect(ctx.destination);this.noise=combatNoise(ctx);
    }
    if(this.context.state==='suspended')void this.context.resume().catch(()=>{});
   }catch{/* Audio must never interrupt gameplay. */}
@@ -83,7 +87,7 @@ export class CombatAudio {
  private visibility=()=>{if(document.hidden)this.silence();};
  constructor(){window.addEventListener('pointerdown',this.unlock,{capture:true});window.addEventListener('keydown',this.unlock,{capture:true});document.addEventListener('visibilitychange',this.visibility);}
  private silence(){for(const output of this.outputs)output.disconnect();this.outputs.clear();this.voices=[];this.last.clear();}
- setLevel(level:number){this.level=Number.isFinite(level)?Math.max(0,Math.min(1,level)):0;if(this.master&&this.context)this.master.gain.setTargetAtTime(this.level*.65,this.context.currentTime,.015);if(!this.level)this.silence();}
+ setLevel(level:number){this.level=Number.isFinite(level)?Math.max(0,Math.min(1,level)):0;if(this.master&&this.context)this.master.gain.setTargetAtTime(this.level*OUTPUT_GAIN,this.context.currentTime,.015);if(!this.level)this.silence();}
  play(cue:CombatCue,voice='guerrero',options:CombatSoundOptions={}){
   const ctx=this.context,master=this.master,noise=this.noise;
   if(!ctx||!master||!noise||ctx.state!=='running'||this.level<=0||document.hidden)return;

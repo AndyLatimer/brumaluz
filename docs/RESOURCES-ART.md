@@ -1,5 +1,12 @@
 # Recursos y fabricación
 
+Ampliación local del 30 de octubre: [Viviendas y vida cotidiana](HOMES-AND-COZY-LIFE.md)
+incorpora ocho modelos domésticos nuevos, sus iconos y 48 recetas de seis rangos,
+además de los cuatro tipos de mueble anteriores. Los modelos nativos se exportan
+también como GLB para los editores. La colocación en la habitación de la posada
+incluye previsualización, movimiento y giro; se conserva el mobiliario anterior
+de Isberto.
+
 Revisión del 26 de octubre de 2026. El acabado mantiene la fantasía cotidiana de Pompelín: madera, piedra, metal y vegetación reconocibles, colores cálidos y magia discreta.
 
 ## Identidad visual
@@ -28,6 +35,18 @@ Revisión del 27 de octubre: los 48 recursos usan retratos de inventario propios
 ### Retratos pintados del inventario
 
 La segunda revisión del 27 de octubre sustituye los retratos vectoriales por ilustraciones pintadas, con transparencia y texturas de corteza, mineral, hojas, metal y cuero. `src/assets/icons/inventory-painted/` contiene 48 recursos, nueve ilustraciones de ranura de equipo y tres herramientas. Las ranuras vacías de equipo y los iconos provisionales de armaduras y accesorios usan las nuevas ilustraciones; los retratos específicos de modelos de equipo se conservan para mantener su identidad.
+
+Revisión del 31 de octubre: los componentes de fabricación de los nueve oficios (`componente_herreria_0`, `componente_sastreria_0`, `componente_peleteria_0`, `componente_carpinteria_0`, `componente_ebanisteria_0`, `componente_joyeria_0`, `componente_alquimia_0`, `componente_encantamiento_0`, `componente_cocina_0`) y el cuero curtible (`cuero_0` a `cuero_5`) se actualizan al mismo estilo pictórico 2D de alta fidelidad que los minerales y maderas de referencia (`ore-0.webp` y `wood-0.webp`). Cuentan con perspectiva isométrica 3/4, volumen táctil, sombras suaves de contacto, iluminación cálida de fantasía medieval y transparencia alfa limpia a 256×256 px. `src/art/inventoryPaintings.ts` y `src/data/craftingArt.ts` resuelven automáticamente estos ficheros WebP tanto en la mochila (inventario) como en las recetas y detalles del panel de profesiones.
+
+Asimismo, las 18 pociones del juego (las tres familias: Salud/Vida, Maná y Estamina/Vigor, en sus seis rangos desde Minúscula hasta Gran maestro) reciben ilustraciones pintadas 2D propias con frascos de cristal diferenciados por silueta (esférico para vida, facetado en lágrima para maná y boticario hexagonal para estamina), líquido luminiscente con caústicas, burbujas interiores, tapones de corcho sellados con cera y detalles de encuadernación en relieve, resueltas por `potionPainting()` y enmarcadas en `weaponIconFrame` con el color de rareza de su rango.
+
+En la misma línea, los 25 pergaminos de encantamiento (`pergamino_fire_1..5`, `pergamino_frost_1..5`, `pergamino_lightning_1..5`, `pergamino_vampirism_1..5`, `pergamino_dark_1..5`) adoptan el estilo pictórico 2D sobre lienzo vellum envejecido. Cada senda arcana cuenta con su mandala rúnico concéntrico, glifo elemental identificativo (fuego, flor de hielo, relámpago bifurcado, ala/gota vampírica y ojo del vacío), vara de nogal con remates torneados, cinta de terciopelo y medallón de lacre con el tono de su elemento. Conforme progresa el rango (de Iniciado a Gran maestro), las runas intensifican su luminiscencia mágica y saturación arcana. `src/art/inventoryPaintings.ts` exporta `scrollPainting()` y `src/data/items.ts` las resuelve automáticamente tanto en la mochila de inventario como en las recetas y detalles de Encantamiento.
+
+Por su parte, los 72 muebles de Ebanistería (las 12 piezas domésticas: `taburete`, `mesa`, `biblioteca`, `estacion`, `silla`, `banco`, `mesita`, `arcon`, `alfombra`, `farol`, `macetero` y `biombo` a lo largo de sus seis rangos de calidad) se han modelado y renderizado con perspectiva isométrica 3/4 en Blender 5.2 Cycles sobre fondo transparente con sombra de contacto suave. Cuentan con materiales de madera pulida con veteado procedural, herrajes de bronce y hierro forjado remachado, lino y lanas tejidas, terracota vidriada y cristales de iluminación cálida. Cada rango de calidad refleja la progresión de las maderas nobles (pino común, roble miel, abedul satinado, nogal oscuro, ébano regio y madera ancestral mística). La resolución la realiza `furniturePainting()` en `src/art/inventoryPaintings.ts`, presentándose enmarcados por `weaponIconFrame` con el color de rareza correspondiente tanto en la mochila como en el taller de Ebanistería.
+
+Para el oficio de Cocina, toda la progresión de provisiones y raciones (`pan_duro`, `comida_1`, `comida_2`, `comida_3`, `comida_4` y `comida_5`) y el componente de cocina (`componente_cocina_0`) se unifican bajo el mismo estilo pictórico 2D de fantasía medieval acogedora. Cada modelo se ha esculpido y compuesto en Blender 5.2 Cycles con sombreado pictórico, materiales procedurales (pan de masa madre con greñado crujiente y miga celular, maderas nobles con veteado suave, aros de latón y oro bruñido, embutidos asados con corteza caramelizada, muslos de ave con nudillo de hueso marfil expuesto, empanadas hojaldradas con repulgue esférico artesanal, quesos curados con corteza, frutos y bayas silvestres de recolección y bayas estelares con halo místico) y sombra de contacto suave (Shadow Catcher con oclusión ambiental) sobre fondo transparente a 256×256 px WebP. La resolución de iconos la realiza `foodPainting()` en `src/art/inventoryPaintings.ts` y `src/data/items.ts`, mostrándose tanto en la mochila como en el recetario de Cocina con el marco `weaponIconFrame` del color de rareza de su rango (de T0 Aprendiz a T5 Gran maestro).
+
+
 
 La lámina original se guarda en `art/resources-review/painted-inventory-atlas.png`. `tools/prepare-painted-inventory-icons.mjs` separa sus veinte dibujos por los espacios transparentes, preserva la proporción y prepara WebP individuales de 256 px. Las variantes mantienen las paletas de rango, las hojas verdes y las ataduras naturales. `src/art/inventoryPaintings.ts` resuelve estos recursos para inventario, banco, recetas y botín. No se añaden llamadas de generación de imágenes al juego.
 

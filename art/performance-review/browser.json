@@ -1,0 +1,16 @@
+{
+  "acceptanceMs": 902.7896000000001,
+  "injectedLatencyMs": 600,
+  "acceptRequests": 2,
+  "diagnostics": {
+    "requests": 11,
+    "failedRequests": 0,
+    "consecutiveFailures": 0,
+    "lastSuccessAgoMs": 1,
+    "rttP50Ms": 65,
+    "rttP95Ms": 4001,
+    "retrying": false,
+    "lastError": null
+  },
+  "errors": []
+}

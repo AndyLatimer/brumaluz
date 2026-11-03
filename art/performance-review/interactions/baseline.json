@@ -1,0 +1,8 @@
+{
+  "label": "baseline",
+  "queries": 1000,
+  "ms": 100.19550000000004,
+  "heightCalls": 216000,
+  "candidates": 216000,
+  "totalResources": 216
+}

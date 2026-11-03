@@ -21,7 +21,10 @@ import { acceptSnapshot } from './snapshotOrder';
 import { combatFloat,clearCombatFeedback } from './combatFeedback';
 import { receiveWilderness } from './wilderness';
 import { syncSkillCooldown, resetSkillCooldown } from './skillCooldown';
+import { parseSkillCooldowns } from '../data/skills';
+import { COMBAT_KITS } from '../data/combat';
 import { combatAudio } from './audio';
+import {loadCharacterModels} from '../character/equipmentModels';
 
 /** Pide al servidor los datos vigentes del personaje antes de entrar al mundo. */
 export async function loadWorldState() {
@@ -34,6 +37,8 @@ export async function loadWorldState() {
     const data = await enterCharacter(characterId);
     if (!stillCurrent()) return false;
     Object.assign(session.state, sanitize(data));
+    await loadCharacterModels(session.state);
+    if(!stillCurrent())return false;
     await switchGameMap(session.state.location);
     if (!stillCurrent()) return false;
     resetFoodTimer(typeof data.food_at === 'number' ? data.food_at : 0);
@@ -42,7 +47,11 @@ export async function loadWorldState() {
     if (!stillCurrent()) return false;
     setGrantedTitles(titles);
     await prepareMultiplayer();
-    syncSkillCooldown({deadline:Number(data.combatNextSkill??0),revision:typeof data.serverRevision==='number'?data.serverRevision:undefined});
+    syncSkillCooldown({
+      deadline:Number(data.combatNextSkill??0),
+      deadlines:parseSkillCooldowns(data.combatSkillReadyAt),
+      revision:typeof data.serverRevision==='number'?data.serverRevision:undefined,
+    },COMBAT_KITS[session.state.cls].skill.id);
     return stillCurrent();
   } catch (error) {
     if (!stillCurrent()) return false;
@@ -53,7 +62,7 @@ export async function loadWorldState() {
 }
 export const remotePlayers = new RemotePlayers(scene, (x, z) => play.city.groundY(x, z), (x, z) => play.city.platformY(x, z), (x, z) => play.city.waterAt?.(x, z) ?? null, waterFx);
 export function refreshWorldStatus() {
-  setMapPlayerCount(session.worldRetrying ? null : remotePlayers.list().length + 1);
+  setMapPlayerCount(session.worldRetrying ? null : remotePlayers.count() + 1);
 }
 export function receiveWorld(value: WorldSnapshot) {
   if(value.wilderness)receiveWilderness({wilderness:value.wilderness,vitals:value.selfVitals});

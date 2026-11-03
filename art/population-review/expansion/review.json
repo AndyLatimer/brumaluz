@@ -1,0 +1,647 @@
+{
+  "editor": [
+    {
+      "id": "vecino_levante_1",
+      "name": "Aldina",
+      "seated": true
+    },
+    {
+      "id": "vecino_levante_2",
+      "name": "Faelion",
+      "seated": true
+    },
+    {
+      "id": "vecino_levante_3",
+      "name": "Ishtar",
+      "seated": true
+    },
+    {
+      "id": "vecino_pozo_1",
+      "name": "Lumiro",
+      "seated": true
+    },
+    {
+      "id": "habitante_brumaluz_19",
+      "name": "Islina",
+      "seated": true
+    }
+  ],
+  "game": [
+    {
+      "district": "levante",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_levante_1",
+          "activity": "walking",
+          "position": [
+            129.5566266933086,
+            1.4576667925579154,
+            0.9032048613473851
+          ]
+        },
+        {
+          "id": "vecino_levante_2",
+          "activity": "idle",
+          "position": [
+            131.99814334009656,
+            1.5501525476598759,
+            -0.022644146047412758
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_19",
+          "activity": "walking",
+          "position": [
+            150.49943369019323,
+            2.109923057793849,
+            -0.9974397207656837
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_20",
+          "activity": "walking",
+          "position": [
+            147.83999999999924,
+            2.025199975967384,
+            0
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_21",
+          "activity": "walking",
+          "position": [
+            119.01388785049728,
+            1.130409725590805,
+            0.0003476523213145864
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_22",
+          "activity": "walking",
+          "position": [
+            141.68599253911768,
+            1.858212621269646,
+            -0.3816414543203701
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "pozo",
+      "speech": [
+        {
+          "id": "habitante_brumaluz_25",
+          "line": "Pensaba que ya te habías ido."
+        },
+        {
+          "id": "vecino_levante_3",
+          "line": "Casi. Me he parado a saludarte."
+        },
+        {
+          "id": "habitante_brumaluz_25",
+          "line": "Pues me alegro de haberte alcanzado."
+        }
+      ],
+      "residents": [
+        {
+          "id": "vecino_levante_3",
+          "activity": "idle",
+          "position": [
+            1.7763386526167848,
+            0.14000000059604645,
+            1.3779490470274307
+          ]
+        },
+        {
+          "id": "vecino_pozo_1",
+          "activity": "walking",
+          "position": [
+            7.907528884011432,
+            0.25815056852930524,
+            1.2466082721803478
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_23",
+          "activity": "walking",
+          "position": [
+            5.843292023551982,
+            0.2168658399327834,
+            -1.919347843904562
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_24",
+          "activity": "walking",
+          "position": [
+            -16.531372820019687,
+            0.3200043284554056,
+            0.8021047024364368
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_25",
+          "activity": "idle",
+          "position": [
+            5.121213976352718,
+            0.20242428200154253,
+            -0.5994134986751231
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_26",
+          "activity": "walking",
+          "position": [
+            3.839787581910207,
+            0.15879113479821477,
+            2.0744665033556036
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "jardin",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_pozo_2",
+          "activity": "idle",
+          "position": [
+            20.026744465297252,
+            0.2336690454262409,
+            34.633095524701034
+          ]
+        },
+        {
+          "id": "vecino_pozo_3",
+          "activity": "walking",
+          "position": [
+            33.53111192376901,
+            0.16408524990817253,
+            35.386304336901176
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_27",
+          "activity": "walking",
+          "position": [
+            38.54369010817324,
+            0.22355224490864323,
+            31.931543461415494
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_28",
+          "activity": "idle",
+          "position": [
+            37.22380910689948,
+            0.15599796232703522,
+            34.200101746578774
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_29",
+          "activity": "walking",
+          "position": [
+            22.1983909242892,
+            0.22886692854177615,
+            34.50783269380065
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_30",
+          "activity": "walking",
+          "position": [
+            28.12748084224448,
+            0.2484061188107792,
+            32.01703972770274
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "artesanos",
+      "speech": [
+        {
+          "id": "habitante_brumaluz_33",
+          "line": "¿Ya has decidido qué te gustaría aprender?"
+        }
+      ],
+      "residents": [
+        {
+          "id": "vecino_jardin_1",
+          "activity": "talking",
+          "position": [
+            -149.96073874435288,
+            1.5725841343767615,
+            0.6238073261226564
+          ],
+          "partner": "habitante_brumaluz_33"
+        },
+        {
+          "id": "vecino_jardin_2",
+          "activity": "walking",
+          "position": [
+            -127.08802995627318,
+            0.686355061916703,
+            -0.6251958707912718
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_31",
+          "activity": "walking",
+          "position": [
+            -133.52069037060164,
+            0.946547061263032,
+            0.42805626836890115
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_32",
+          "activity": "walking",
+          "position": [
+            -147.73824323389042,
+            1.508450003818641,
+            0.1079717478416177
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_33",
+          "activity": "talking",
+          "position": [
+            -149.40164126999676,
+            1.5934247150696206,
+            -0.9814895614026613
+          ],
+          "partner": "vecino_jardin_1"
+        },
+        {
+          "id": "habitante_brumaluz_34",
+          "activity": "walking",
+          "position": [
+            -116.9624225977135,
+            0.2791867804381266,
+            -0.006188999196595774
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "huertas",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_jardin_3",
+          "activity": "walking",
+          "position": [
+            -0.7812851495470466,
+            0.21315654213518342,
+            80.52754063707334
+          ]
+        },
+        {
+          "id": "vecino_artesanos_1",
+          "activity": "idle",
+          "position": [
+            20,
+            -0.2220999999344347,
+            76.21
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_35",
+          "activity": "walking",
+          "position": [
+            -27.699903590210013,
+            0.4520869524745652,
+            76.20869601661485
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_36",
+          "activity": "walking",
+          "position": [
+            -3.0236943660098943,
+            0.20047389020156947,
+            79.68960548782742
+          ],
+          "seat": "map-object-urbe_02nd-0"
+        },
+        {
+          "id": "habitante_brumaluz_37",
+          "activity": "walking",
+          "position": [
+            17.290288919295488,
+            -0.169024240331157,
+            76.32184620727378
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_38",
+          "activity": "seated",
+          "position": [
+            16.277704828470554,
+            0.08624650252123166,
+            82.67704444005508
+          ],
+          "seat": "map-object-urbe_02o8-0"
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "lonja",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_artesanos_2",
+          "activity": "talking",
+          "position": [
+            72.1971747798174,
+            1.7619608657664636,
+            -123.60057938589658
+          ],
+          "partner": "habitante_brumaluz_39"
+        },
+        {
+          "id": "vecino_artesanos_3",
+          "activity": "walking",
+          "position": [
+            67.97758235615775,
+            1.470762326141648,
+            -118.03043685904764
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_39",
+          "activity": "talking",
+          "position": [
+            70.23053437107596,
+            1.6328687454579376,
+            -121.15791951475056
+          ],
+          "partner": "vecino_artesanos_2"
+        },
+        {
+          "id": "habitante_brumaluz_40",
+          "activity": "walking",
+          "position": [
+            70.54107298417233,
+            1.7257100497950137,
+            -123.8296188982281
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_41",
+          "activity": "walking",
+          "position": [
+            64.3141367729653,
+            1.0654722911144694,
+            -109.5349389726475
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_42",
+          "activity": "walking",
+          "position": [
+            64.78224987838863,
+            1.1888881908649276,
+            -112.63551740447193
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "telares",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_huertas_1",
+          "activity": "walking",
+          "position": [
+            61.995730402845986,
+            1.0787133514453586,
+            108.43445804698987
+          ]
+        },
+        {
+          "id": "vecino_huertas_2",
+          "activity": "walking",
+          "position": [
+            74.84494050790707,
+            1.7789252876278066,
+            130.567818316589
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_43",
+          "activity": "walking",
+          "position": [
+            73.56497528885477,
+            1.7061987374784255,
+            127.41373679044855
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_44",
+          "activity": "walking",
+          "position": [
+            79.26221635939376,
+            1.9788869630778776,
+            138.18213078775116
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_45",
+          "activity": "walking",
+          "position": [
+            67.82564065729026,
+            1.3662815597799725,
+            116.98936414621764
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_46",
+          "activity": "walking",
+          "position": [
+            76.0309319157828,
+            1.8159765967744348,
+            131.53579557954578
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "olmo",
+      "speech": [
+        {
+          "id": "habitante_brumaluz_48",
+          "line": "Hacía tiempo que no coincidíamos."
+        }
+      ],
+      "residents": [
+        {
+          "id": "vecino_huertas_3",
+          "activity": "walking",
+          "position": [
+            -64.29247826728808,
+            1.910163169841437,
+            111.35784063883474
+          ]
+        },
+        {
+          "id": "vecino_lonja_1",
+          "activity": "walking",
+          "position": [
+            -68.43533967797337,
+            2.2220057238428033,
+            118.65360795927513
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_47",
+          "activity": "walking",
+          "position": [
+            -82.91672305829657,
+            2.7288323468897837,
+            144.0334903880248
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_48",
+          "activity": "talking",
+          "position": [
+            -77.62136402071063,
+            2.6611178636625925,
+            133.86904984836883
+          ],
+          "partner": "habitante_brumaluz_49"
+        },
+        {
+          "id": "habitante_brumaluz_49",
+          "activity": "talking",
+          "position": [
+            -75.99511774338387,
+            2.6061979182670436,
+            131.62956646776902
+          ],
+          "partner": "habitante_brumaluz_48"
+        },
+        {
+          "id": "habitante_brumaluz_50",
+          "activity": "walking",
+          "position": [
+            -70.02534055648961,
+            2.2729390500807054,
+            119.61383557384866
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    },
+    {
+      "district": "ronda",
+      "speech": [],
+      "residents": [
+        {
+          "id": "vecino_lonja_2",
+          "activity": "walking",
+          "position": [
+            -73.81228020869443,
+            2.767171984016797,
+            -127.04631981097023
+          ]
+        },
+        {
+          "id": "vecino_lonja_3",
+          "activity": "walking",
+          "position": [
+            -79.02743353031464,
+            2.8876768767162773,
+            -136.2597565706649
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_51",
+          "activity": "walking",
+          "position": [
+            -71.04646019017495,
+            2.7220911217219292,
+            -127.55809456512122
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_52",
+          "activity": "walking",
+          "position": [
+            -68.00678286789118,
+            2.550433921079587,
+            -123.02289303362063
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_53",
+          "activity": "walking",
+          "position": [
+            -69.53571375591575,
+            2.5267122451658546,
+            -119.6779127294938
+          ]
+        },
+        {
+          "id": "habitante_brumaluz_54",
+          "activity": "walking",
+          "position": [
+            -73.93562496288583,
+            2.825827071515185,
+            -131.64708942007263
+          ]
+        }
+      ],
+      "loaded": true,
+      "location": "brumaluz"
+    }
+  ],
+  "errors": [],
+  "maps": {
+    "residents": 0,
+    "debug": true
+  },
+  "bench": {
+    "id": "habitante_brumaluz_27",
+    "seat": "map-object-oqj-0",
+    "seatHeight": 0.879,
+    "ground": 0.1506838303756963,
+    "modelSeatHeight": 0.7283161696243037
+  },
+  "speech": {
+    "resident": "vecino_levante_1",
+    "debug": true,
+    "guide": true,
+    "withoutNameplates": true,
+    "smith": true,
+    "master": true
+  },
+  "transitions": {
+    "interior": 0,
+    "interiorResidents": 0,
+    "returned": 54,
+    "plates": 56,
+    "actors": 56
+  }
+}

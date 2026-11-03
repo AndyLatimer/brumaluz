@@ -18,6 +18,7 @@ import { serverNow } from '../data/worldClock';
 import { combatSoundAt } from './combatSound';
 import { combatReward, combatProjectile } from './combatFeedback';
 import { syncSkillCooldown } from './skillCooldown';
+import { COMBAT_KITS } from '../data/combat';
 
 type Actor=Character|ForestActor;
 const actors=new Map<string,{actor:Actor;warning:THREE.Mesh;ring:THREE.Mesh;plate:HTMLElement;meter:HTMLProgressElement;attack:number;prepared:boolean;instance?:string;warnedAt?:number;ambientSeq?:number;shotAt?:number;from:THREE.Vector3;to:THREE.Vector3;sampleAt:number;duration:number;movingUntil:number;speed:number}>();
@@ -53,7 +54,7 @@ export function receiveWilderness(result:Record<string,unknown>){
  if(selection&&(result.encounter as CombatEncounter|undefined)?.instanceId===selection.instance)selection.confirmed=true;
  const revision=Number((result.vitals as {serverRevision?:number}|undefined)?.serverRevision??(result.data as {serverRevision?:number}|undefined)?.serverRevision??0);
  if(revision<claimsRevision)return;
- if(packet.skillReadyAt!==undefined)syncSkillCooldown({deadline:packet.skillReadyAt,serverTime:packet.serverTime,revision});
+ if(packet.skillReadyAt!==undefined||packet.skillCooldowns)syncSkillCooldown({deadline:packet.skillReadyAt,deadlines:packet.skillCooldowns,serverTime:packet.serverTime,revision},COMBAT_KITS[session.state.cls].skill.id);
  claimsRevision=revision;corpses.clear();for(const corpse of packet.corpses)if(corpse.instanceId)corpses.set(corpse.instanceId,corpse);
  const claimKey=session.accountSyncId+':'+session.activeCharacterId;
  if(claimKey!==claimsOwner){claimsOwner=claimKey;announcedClaims.clear();claimsPrimed=false;}

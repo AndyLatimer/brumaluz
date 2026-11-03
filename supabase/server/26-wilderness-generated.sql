@@ -30,7 +30,7 @@ declare
   each_hit numeric;
   total_damage numeric := 0;
   healed numeric := 0;
-  skill_rank int;
+  skill_rank int; skill_data jsonb; skill_deadline numeric; skill_ready jsonb;
   e jsonb; es jsonb; grade int; extra numeric:=0; raw_basic numeric; actual_basic numeric; shield numeric; barrier numeric; recovered numeric:=0; counters int; bonus jsonb; events jsonb:='[]'; packed jsonb; secondary jsonb; nearest numeric; secondary_index int; points numeric; target_index int; enemy_guard numeric;
 begin
   if uid is null then raise exception 'NOT_AUTHENTICATED'; end if;
@@ -44,11 +44,13 @@ begin
   if es->>'weapon' is distinct from coalesce(c.data->'equipment'->'weapon'->>'instanceId',c.data->'equipment'->'weapon'->>'id') or stamp-coalesce((es->>'at')::numeric,0)>6 then es:='{}';end if;
   es:=es||jsonb_build_object('weapon',coalesce(c.data->'equipment'->'weapon'->>'instanceId',c.data->'equipment'->'weapon'->>'id'));
   grade:=least(5,greatest(1,coalesce((e->>'grade')::int,1)));
-  skill_id:=public.game_skill_id(cls);
-  skill_rank:=public.game_skill_rank(c.data);
-  skill:=p_action='skill' or p_action=skill_id;
-  healing:=cls='clerigo' and skill;
-  if p_action is null or (p_action not in ('attack','skill') and p_action is distinct from skill_id) then raise exception 'COMBAT_INVALID_ACTION'; end if;
+  skill_id:=case when p_action='skill' then public.game_skill_id(cls) else p_action end;
+  skill_data:=public.game_skill_data(skill_id);
+  skill:=skill_data is not null and skill_data->>'class'=cls;
+  if p_action is null or (p_action not in ('attack','skill') and not skill) then raise exception 'COMBAT_INVALID_ACTION'; end if;
+  if skill and public.game_level(c.data)<(skill_data->>'unlockLevel')::int then raise exception 'COMBAT_SKILL_LOCKED'; end if;
+  skill_rank:=case when skill then public.game_skill_rank(c.data,skill_id) else 1 end;
+  healing:=skill and skill_data->>'mode'='healing';
   if not coalesce((select (value#>>'{}')::boolean from public.server_config where key='combat_enabled'),false) then
     raise exception 'COMBAT_UNAVAILABLE';
   end if;
@@ -73,7 +75,7 @@ begin
   enemy_hp:=(encounter->>'health')::numeric;
   hp:=public.game_health(c.data);
   if healing then
-    cost:=12;cooldown:=6;
+    cost:=(skill_data->>'cost')::numeric;cooldown:=(skill_data->>'cooldown')::numeric;
     if hp=public.game_max_health(c.data) then raise exception 'COMBAT_HEALTH_FULL'; end if;
   else
     if enemy_hp<=0 then raise exception 'COMBAT_NO_TARGET'; end if;
@@ -82,13 +84,13 @@ begin
     if distance>attack_range+.20 then raise exception 'COMBAT_OUT_OF_RANGE'; end if;
     if not public.game_rpg_sight(c.data->>'location',(w.position->>'x')::numeric,(w.position->>'z')::numeric,(encounter->>'x')::numeric,(encounter->>'z')::numeric) then raise exception 'El objetivo no está en tu línea de visión.';end if;
     if skill then
-      cost:=case cls when 'mago' then 20 else 15 end;
-      cooldown:=case cls when 'guerrero' then 6 when 'mago' then 7 when 'picaro' then 4.5
-        when 'explorador' then 6 else 0 end;
+      cost:=(skill_data->>'cost')::numeric;
+      cooldown:=(skill_data->>'cooldown')::numeric;
     end if;
   end if;
   if skill then
-    if stamp<coalesce((c.data->>'combatNextSkill')::numeric,0) then raise exception 'COMBAT_COOLDOWN'; end if;
+    skill_deadline:=coalesce((c.data->'combatSkillReadyAt'->>skill_id)::numeric,case when skill_id=public.game_skill_id(cls) then coalesce((c.data->>'combatNextSkill')::numeric,0) else 0 end);
+    if stamp<skill_deadline then raise exception 'COMBAT_COOLDOWN'; end if;
   elsif stamp<coalesce((c.data->>'combatNextAttack')::numeric,0) then
     raise exception 'COMBAT_COOLDOWN';
   end if;
@@ -99,7 +101,10 @@ begin
   cost:=cost+coalesce((c.data->>'resourceCostFraction')::numeric,0);
   resource:=resource-floor(cost);
   c.data:=c.data||jsonb_build_object('resourceCostFraction',cost-floor(cost));
-  if skill then c.data:=c.data||jsonb_build_object('combatNextSkill',stamp+cooldown);
+  if skill then
+    skill_ready:=coalesce(c.data->'combatSkillReadyAt','{}')||jsonb_build_object(skill_id,stamp+cooldown);
+    c.data:=c.data||jsonb_build_object('combatSkillReadyAt',skill_ready);
+    if skill_id=public.game_skill_id(cls) then c.data:=c.data||jsonb_build_object('combatNextSkill',stamp+cooldown);end if;
   else c.data:=c.data||jsonb_build_object('combatNextAttack',stamp+cadence);
   end if;
   c.data:=c.data||jsonb_build_object('resource',resource);
@@ -109,20 +114,18 @@ begin
   end if;
 
   if healing then
-    recovered:=(public.game_equipment_stat(c.data,'healing')+4*(skill_rank-1))*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
+    recovered:=(coalesce((skill_data->>'baseHealing')::numeric,0)+public.game_equipment_stat(c.data,'healing')+(skill_rank-1)*(skill_data->>'rankBonus')::numeric)*coalesce((skill_data->>'power')::numeric,1)*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus->>'healing')::numeric)*(1+(bonus->>'skillPower')::numeric)+coalesce((c.data->>'health_regen')::numeric,0);
     healed:=least(floor(recovered),public.game_max_health(c.data)-hp);
     c.data:=c.data||jsonb_build_object('health_regen',case when hp+healed>=public.game_max_health(c.data) then 0 else recovered-floor(recovered) end);
     c.data:=c.data||jsonb_build_object('health',hp+healed);
   else
-    hits:=case when skill and cls='picaro' then 2 else 1 end;
-    each_hit:=case when not skill then damage
-      when cls='guerrero' then 18 when cls='mago' then 18
-      when cls='picaro' then 8 when cls='explorador' then 19 else damage end;
-    if skill then
-      each_hit:=((each_hit+(skill_rank-1)*case when cls='picaro' then 1 else 2 end)
+    hits:=case when skill then (skill_data->>'hits')::int else 1 end;
+    each_hit:=case when not skill then damage else
+      ((skill_data->>'baseDamage')::numeric+(skill_rank-1)*(skill_data->>'rankBonus')::numeric)
         *public.game_equipment_stat(c.data,'power')::numeric
-        /case when cls='picaro' then 8 else 10 end)*public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)*(1+(bonus->>'power')::numeric)*(1+(bonus->>'skillPower')::numeric);
-    end if;
+        /case cls when 'picaro' then 8 when 'clerigo' then 11 else 10 end
+        *public.game_power_multiplier(c.data)*public.game_expertise_power(c.data)
+        *(1+(bonus->>'power')::numeric)*(1+(bonus->>'skillPower')::numeric) end;
     if not skill and e is not null then
       counters:=coalesce((es->>'count')::int,0)+1;
       if e->>'id'='dark' then
@@ -187,7 +190,7 @@ begin
   return jsonb_build_object(
     'encounter',c.data->'combatEncounter','vitals',public.game_public_vitals(c.data),
     'damage',total_damage,'healing',healed,'events',events,'action',case when skill then 'skill' else 'attack' end,'enchantState',c.data->'enchantState',
-    'attackCooldown',greatest(0,coalesce((c.data->>'combatNextAttack')::numeric,0)-stamp),'skillCooldown',greatest(0,coalesce((c.data->>'combatNextSkill')::numeric,0)-stamp),
+    'attackCooldown',greatest(0,coalesce((c.data->>'combatNextAttack')::numeric,0)-stamp),'skillReadyAt',case when skill then coalesce((c.data->'combatSkillReadyAt'->>skill_id)::numeric,0) else null end,'skillCooldowns',coalesce(c.data->'combatSkillReadyAt','{}'),'skillCooldown',case when skill then greatest(0,coalesce((c.data->'combatSkillReadyAt'->>skill_id)::numeric,0)-stamp) else 0 end,
     'quest',c.data->>'shadowQuest'
   );
 end;

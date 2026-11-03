@@ -1,18 +1,20 @@
-import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from '../character/head';
+import { FACE_KITS, HAIR_STYLES, BEARDS, EYE_SHAPES, BROWS, NOSES, MOUTHS, DETAILS } from '../character/head/options';
 import { emptyWallet, sanitizeWallet, type Wallet } from './currency';
 import { DEFAULT_TITLE, isTitleId, type TitleId } from './titles';
 import { emptyEquipment, emptyInventory, sanitizeEquipment, sanitizeInventory, type Equipment, type InventorySlots } from './inventory';
 import { parseFoodBuff, type FoodBuff } from './food';
 import { parseWelcome, parseShadowQuest, parseFairyDustQuest, type FairyDustQuest, type ShadowQuest, type WelcomeProgress } from './quests';
-import { COMBAT_KITS, skillRank, type SkillRanks } from './combat';
+import { CLASS_SKILLS, MAX_SKILL_RANK, skillPointsAllowed, type SkillRanks } from './skills';
 import { isCoinBagId } from './coinBags';
 import { isFairyDustId } from './fairyDust';
 import { ACCESSORIES } from '../character/head/accessoryLayers';
 import { professionState, type RpgState } from './professions';
+import { NAME_PARTS, combineName } from './characterNames';
 // Datos del creador de personaje: linajes, clases, paletas y opciones.
 
 export type Race = 'humano' | 'elfo' | 'lagto' | 'pelso';
 export type ClassId = 'guerrero' | 'mago' | 'picaro' | 'clerigo' | 'explorador';
+export const WALK_STYLES = ['Walking_A', 'Walking_B', 'Walking_C'] as const;
 /** Mapa (lugar de Pompelín) donde está el personaje: ID de un mapa publicado desde el editor. */
 export type LocationId = string;
 /** Nombres de los lugares conocidos; los mapas publicados se añaden al cargar el mundo. */
@@ -89,6 +91,7 @@ export interface CharData {
   sex: 0 | 1; // 0 hombre, 1 mujer: el cuerpo es el mismo; al cambiarlo se ajusta la personalización
   height: number; // 0..1
   build: number; // 0..1
+  walkStyle: number; // 0 A, 1 B, 2 C; solo cambia la animación
   skin: number;
   face: number;
   hair: number;
@@ -157,7 +160,7 @@ export const RACES: Record<Race, RaceDef> = {
     bonuses: { ...noBonuses(), pericia: 3, presencia: 2 },
     skins: HUMAN_SKINS, skinNames: HUMAN_SKIN_NAMES,
     traitLabel: null, traits: [],
-    names: [['Al', 'Ber', 'Cor', 'Dar', 'El', 'Gar', 'Is', 'Mar', 'Rod', 'Tor', 'Ali', 'Ro'], ['ric', 'an', 'ina', 'mundo', 'wen', 'eth', 'iel', 'do', 'berto', 'lia', 'sa']],
+    names: NAME_PARTS.humano,
   },
   elfo: {
     label: 'Elfo',
@@ -167,7 +170,7 @@ export const RACES: Record<Race, RaceDef> = {
     skins: ['#fbe0cc', '#f2cdb0', '#e8c4c8', '#c9b4d8', '#9f8fc6', '#d4bc94', '#b1bea3', '#a6b4cc'],
     skinNames: ['Alba', 'Pétalo', 'Rosa', 'Lavanda', 'Crepúsculo', 'Trigo', 'Liquen', 'Niebla lunar'],
     traitLabel: 'Orejas', traits: ['Largas', 'Cortas', 'Caídas', 'De hoja', 'Horizontales'],
-    names: [['Ae', 'Ela', 'Fae', 'Gal', 'Ith', 'Lae', 'Syl', 'Thal', 'Ny', 'Ara'], ['driel', 'lindra', 'rion', 'wyn', 'thas', 'nora', 'vael', 'neth', 'lia']],
+    names: NAME_PARTS.elfo,
   },
   lagto: {
     label: "Lagto'",
@@ -176,7 +179,7 @@ export const RACES: Record<Race, RaceDef> = {
     skins: ['#7cc06a', '#4fae94', '#a8c25a', '#e0a050', '#5d93c8', '#c86a5a', '#626979', '#b98258'],
     skinNames: ['Junco', 'Laguna', 'Musgo', 'Arena', 'Río', 'Brasa', 'Pizarra', 'Cobre viejo'],
     traitLabel: 'Cresta', traits: ['Púas', 'Cuernos', 'Aleta', 'Ninguna', 'Cuernos cortos', 'Cresta de coral'],
-    names: [["Sss'", 'Ka', 'Zith', 'Ish', 'Tol', 'Xa', 'Rek', 'Ssa'], ["'ra", 'ssik', 'tek', "'li", 'zar', 'ko', 'thiss']],
+    names: NAME_PARTS.lagto,
   },
   pelso: {
     label: 'Pelso',
@@ -185,7 +188,7 @@ export const RACES: Record<Race, RaceDef> = {
     bonuses: { ...noBonuses(), fuerza: 1, corpulencia: 1, agilidad: 2, percepcion: 1 },
     skins: PELSO_COATS.map((c) => c.base), skinNames: PELSO_COATS.map((c) => c.name),
     traitLabel: 'Orejas', traits: ['Puntiagudas', 'Redondas', 'Dobladas', 'De lince', 'Pequeñas'],
-    names: [['Mi', 'Nu', 'Pi', 'Ro', 'Ca', 'Mo', 'Tis', 'Lu', 'Fe'], ['sha', 'ru', 'lo', 'mi', 'ki', 'fu', 'sia', 'nya', 'rra']],
+    names: NAME_PARTS.pelso,
   },
 };
 
@@ -229,7 +232,7 @@ export const ACC_COLOR_NAMES = ['Oro', 'Plata', 'Rosa', 'Rojo', 'Azul', 'Verde',
 
 export function randomName(race: Race, r = Math.random) {
   const [a, b] = RACES[race].names;
-  return a[Math.floor(r() * a.length)] + b[Math.floor(r() * b.length)];
+  return combineName(a[Math.floor(r() * a.length)], b[Math.floor(r() * b.length)]);
 }
 
 export function defaultChar(): CharData {
@@ -237,7 +240,7 @@ export function defaultChar(): CharData {
     introSeen: false, welcome: null, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [], fairyDustQuest: null, rpg: undefined, enchantState: undefined, partyPeers: 0, potionReadyAt: undefined, combatVisual: undefined, wilderness: undefined,
     name: '', title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race: 'humano', attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex: 0, height: 0.5, build: 0.5, skin: 1, face: 3,
     hair: 2, hairColor: 2, beard: 0, eyeShape: 7, eyeColor: 1, brows: 2, nose: 0, mouth: 0, detail: 0,
-    trait: 0, cls: 'guerrero', primary: 0, secondary: 4,
+    trait: 0, walkStyle: 0, cls: 'guerrero', primary: 0, secondary: 4,
     cape: 0, clothA: 7, clothB: 5, hairAcc: 0, hairAccColor: 0, acc: 0, makeup: 0, makeupColor: 2, accColor: 0,
   };
 }
@@ -279,8 +282,21 @@ export function sanitize(d: Record<string, unknown>): CharData {
     : null;
   if (!Object.prototype.hasOwnProperty.call(RACES, out.race)) out.race = 'humano';
   if (!Object.prototype.hasOwnProperty.call(CLASSES, out.cls)) out.cls = 'guerrero';
-  const rank = skillRank(out);
-  out.skillRanks = rank > 1 ? { [COMBAT_KITS[out.cls].skill.id]: rank } : {};
+  const rawSkillRanks = d.skillRanks && typeof d.skillRanks === 'object'
+    ? d.skillRanks as Record<string, unknown> : {};
+  const skillRanks: SkillRanks = {};
+  let skillPoints = skillPointsAllowed(out.level);
+  for (const skill of CLASS_SKILLS[out.cls]) {
+    if (out.level < skill.unlockLevel) continue;
+    const rawRank = rawSkillRanks[skill.id];
+    if (typeof rawRank !== 'number' || !Number.isInteger(rawRank) || rawRank < 2) continue;
+    const rank = Math.min(rawRank, MAX_SKILL_RANK, out.level - skill.unlockLevel + 1, skillPoints + 1);
+    if (rank > 1) {
+      skillRanks[skill.id] = rank;
+      skillPoints -= rank - 1;
+    }
+  }
+  out.skillRanks = skillRanks;
   if (out.sex !== 0 && out.sex !== 1) out.sex = 0;
   const R = RACES[out.race];
   const rawPoints = d.attributePoints && typeof d.attributePoints === 'object'
@@ -302,6 +318,7 @@ export function sanitize(d: Record<string, unknown>): CharData {
   }
   const clamp = (n: unknown, len: number) => Math.min(Math.max((Number(n) | 0), 0), Math.max(len - 1, 0));
   out.skin = clamp(out.skin, R.skins.length);
+  out.walkStyle = Number.isInteger(out.walkStyle) && out.walkStyle >= 0 && out.walkStyle < WALK_STYLES.length ? out.walkStyle : 0;
   out.face = clamp(out.face, FACE_KITS.length);
   out.hair = clamp(out.hair, HAIR_STYLES.length);
   out.beard = clamp(out.beard, BEARDS.length);
@@ -343,7 +360,7 @@ export function randomChar(): CharData {
   return {
     welcome: null, introSeen: false, shadowQuest: null, isbertoPosition: null, skillRanks: {}, coinBags: [], fairyDust: [], fairyDustQuest: null,
     name: randomName(race), title: DEFAULT_TITLE, level: 1, experience: 0, health: -1, overheal: 0, resource: -1, foodBuff: null, foodRevision: 0, wallet: emptyWallet(), inventory: emptyInventory(), equipment: emptyEquipment(), location: 'brumaluz', position: null, race, attributePoints: noBonuses(), creationPoints: ATTRIBUTE_POINTS_AVAILABLE, sex,
-    height: Math.random(), build: Math.random(),
+    height: Math.random(), build: Math.random(), walkStyle: rnd(WALK_STYLES.length),
     skin: rnd(R.skins.length), face: sex ? rnd(3) : [1, 2, 3][rnd(3)],
     hair: rnd(HAIR_STYLES.length), hairColor: rnd(HAIR_COLORS.length),
     beard: sex ? 0 : rnd(BEARDS.length), eyeShape: rnd(EYE_SHAPES.length), eyeColor: rnd(EYE_COLORS.length),

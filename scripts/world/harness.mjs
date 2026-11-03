@@ -8,12 +8,13 @@ import { resolve } from 'node:path';
 import { after, before } from 'node:test';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
+import { readBuildSource } from '../build-output.mjs';
 
 export const port = Number(process.env.TEST_WORLD_PORT || 4175);
 export const url = `http://127.0.0.1:${port}`;
 export const npcDefinitions = JSON.parse(readFileSync(new URL('../../src/data/npcs.json', import.meta.url), 'utf8')).npcs;
 const outputDirectory = resolve(process.env.TEST_WORLD_DIST || 'dist');
-export const project = readFileSync(resolve(outputDirectory, 'index.html'), 'utf8').match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
+export const project = readBuildSource(outputDirectory).match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
 let server;
 export let browser;
 before(async () => {

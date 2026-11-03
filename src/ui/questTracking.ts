@@ -1,6 +1,7 @@
 import type { CharData } from '../data/data';
+import { WORKSHOP_MISSION_JOBS, isWorkshopMissionId, workshopMissionId, type WorkshopMissionJob } from '../data/workshopMissions';
 
-export type QuestId = 'welcome' | 'shadow' | 'profession' | 'fairy-dust';
+export type QuestId = 'welcome' | 'shadow' | 'profession' | 'fairy-dust' | `workshop-${WorkshopMissionJob}`;
 export interface QuestTracking {
   isTracked(id: QuestId): boolean;
   toggle(id: QuestId): void;
@@ -11,6 +12,8 @@ export function currentQuest(data: CharData): QuestId | null {
   if (data.welcome && data.welcome.stage !== 'completed') return 'welcome';
   if (data.shadowQuest !== 'returned' && (data.shadowQuest || data.welcome?.stage === 'completed')) return 'shadow';
   if(data.rpg?.tutorial?.status==='active')return 'profession';
+  const workshopJob=WORKSHOP_MISSION_JOBS.find(job=>data.rpg?.workshopMissions?.[job]?.status==='active');
+  if(workshopJob)return workshopMissionId(workshopJob);
   if (data.fairyDustQuest) return 'fairy-dust';
   return null;
 }
@@ -35,6 +38,12 @@ export function createQuestTracking(storageKey: () => string): QuestTracking {
           preferences[id] = value;
         }
       }
+      for (const id of Object.keys(saved)) {
+        if (!isWorkshopMissionId(id)) continue;
+        const value = Reflect.get(saved, id);
+        if (typeof value !== 'boolean') throw new Error('Invalid quest tracking preference.');
+        preferences[id] = value;
+      }
     } catch (error) {
       console.warn('No se pudo cargar el seguimiento local de misiones.', error);
     }
@@ -52,6 +61,7 @@ export function createQuestTracking(storageKey: () => string): QuestTracking {
       if (data.welcome && data.welcome.stage !== 'completed') candidates.push('welcome');
       if (data.shadowQuest !== 'returned' && (data.shadowQuest || data.welcome?.stage === 'completed')) candidates.push('shadow');
       if(data.rpg?.tutorial?.status==='active')candidates.push('profession');
+      for(const job of WORKSHOP_MISSION_JOBS)if(data.rpg?.workshopMissions?.[job]?.status==='active')candidates.push(workshopMissionId(job));
       if (data.fairyDustQuest) candidates.push('fairy-dust');
       return candidates.find(id => tracking.isTracked(id)) ?? null;
     },

@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor visual de recetas y fabricación · Brumaluz</title>
+    <link rel="icon" type="image/svg+xml" href="./src/assets/brand/brumaluz-favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico" sizes="any">
+  </head>
+  <body>
+    <!-- CABECERA DEL TALLER -->
+    <header class="workshop-header">
+      <div>
+        <span class="eyebrow">Taller de Brumaluz</span>
+        <h1>Editor de recetas y fabricación</h1>
+        <p>Diseña, equilibra y organiza recetas y estaciones de trabajo para el MMORPG sin escribir código.</p>
+      </div>
+      <nav aria-label="Navegación del taller">
+        <a href="./npcs.html">NPCs</a>
+        <a href="./maps.html">Mapas</a>
+        <a href="./quests.html">Misiones</a>
+        <a href="./items.html">Objetos</a>
+        <a href="./recipes.html" class="active">Recetas</a>
+        <a href="./shops.html">Tiendas</a>
+        <a href="./assets.html">Recursos</a>
+        <a href="./reports.html">Reportes</a>
+      </nav>
+    </header>
+
+    <!-- BARRA DE ESTADO GLOBAL -->
+    <div id="status" role="status" aria-live="polite">Cargando catálogo de recetas…</div>
+
+    <!-- WORKSPACE DE 3 PANELES -->
+    <div class="workspace">
+      <!-- PANEL IZQUIERDO: BIBLIOTECA DE RECETAS -->
+      <aside class="library panel" aria-label="Biblioteca de recetas">
+        <div class="library-heading">
+          <span class="eyebrow" style="margin: 0;">Biblioteca</span>
+          <span id="recipes-count-badge" class="pill">Cargando…</span>
+        </div>
+        <h2 style="margin-bottom: 8px;">Catálogo de recetas</h2>
+
+        <!-- CREACIÓN RÁPIDA -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button id="new-recipe-btn" class="primary gold" style="flex: 1; padding: 10px; font-weight: 700;">+ Nueva receta</button>
+        </div>
+
+        <!-- PÍLDORAS DE FILTRADO RÁPIDO -->
+        <div class="quick-filter-pills" id="quick-filter-pills">
+          <button type="button" class="filter-chip-btn active" data-prof="all">Todas</button>
+          <button type="button" class="filter-chip-btn" data-prof="ebanisteria">🪑 Ebanistería<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="herreria">🔨 Herrería<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="encantamiento">✨ Encantamiento<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="cocina">🍲 Cocina<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="alquimia">🧪 Alquimia<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="peleteria">🧤 Peletería<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="carpinteria">🪚 Carpintería<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="sastreria">🧵 Sastrería<span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip-btn" data-prof="joyeria">💍 Joyería<span class="filter-chip-count"></span></button>
+        </div>
+
+        <label style="position: relative;">
+          Buscar en recetas
+          <input id="search-input" type="search" placeholder="Nombre, ID, ingrediente o resultado…">
+          <button id="clear-search-btn" type="button" class="small subtle" style="position: absolute; right: 4px; bottom: 4px; padding: 2px 6px; font-size: 11px;" hidden title="Limpiar búsqueda y filtros">✕ Limpiar</button>
+        </label>
+
+        <div class="filters-grid">
+          <label>
+            Profesión
+            <select id="profession-filter">
+              <option value="all">Todas las profesiones</option>
+            </select>
+          </label>
+          <label>
+            Estación
+            <select id="station-filter">
+              <option value="all">Todas las estaciones</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filters-grid">
+          <label>
+            Categoría / Carpeta
+            <select id="category-filter">
+              <option value="all">Todas las categorías</option>
+            </select>
+          </label>
+          <label>
+            Estado
+            <select id="status-filter">
+              <option value="all">Todos los estados</option>
+              <option value="active">Solo activas</option>
+              <option value="inactive">Solo inactivas</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Ordenar por
+          <select id="sort-select">
+            <option value="label:asc">Nombre (A-Z)</option>
+            <option value="label:desc">Nombre (Z-A)</option>
+            <option value="id:asc">ID técnico (A-Z)</option>
+            <option value="craftingTime:asc">Menor tiempo</option>
+            <option value="craftingTime:desc">Mayor tiempo</option>
+            <option value="profession:asc">Profesión</option>
+            <option value="ingredientsCount:desc">Más ingredientes</option>
+          </select>
+        </label>
+
+        <!-- BARRA DE ACCIONES EN LOTE -->
+        <div id="batch-bar" class="batch-toolbar" hidden>
+          <span id="batch-count" class="pill active">0 seleccionadas</span>
+          <div class="batch-actions">
+            <button id="batch-edit-btn" type="button" class="small">Edición masiva…</button>
+            <button id="batch-clear-btn" type="button" class="small subtle">Deseleccionar</button>
+          </div>
+        </div>
+
+        <!-- LISTA DE RECETAS -->
+        <div id="recipe-list" class="recipe-list" role="region" aria-label="Lista de recetas"></div>
+
+        <!-- PAGINACIÓN -->
+        <div id="pagination" class="pagination">
+          <button id="prev-page-btn" class="small subtle" disabled>← Anterior</button>
+          <span id="page-indicator">Página 1 de 1</span>
+          <button id="next-page-btn" class="small subtle" disabled>Siguiente →</button>
+        </div>
+
+        <!-- CREACIÓN MEDIANTE PLANTILLA -->
+        <label style="margin-top: 14px;">
+          Crear mediante plantilla
+          <select id="template-select">
+            <option value="">Seleccionar una plantilla…</option>
+          </select>
+        </label>
+
+        <!-- GESTIONAR BIBLIOTECA -->
+        <details>
+          <summary>Gestionar biblioteca y estaciones</summary>
+          <div class="details-content" style="margin-top: 8px;">
+            <button id="open-stations-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start;">
+              🛠️ Subeditor de Estaciones de trabajo
+            </button>
+            <button id="sync-rpg-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start; color: #a5d6a7;">
+              🔄 Sincronizar recetas del catálogo RPG
+            </button>
+            <button id="duplicate-active-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start;">
+              📋 Duplicar receta activa
+            </button>
+            <button id="export-all-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start;">
+              ⬇️ Exportar catálogo completo (JSON)
+            </button>
+            <button id="export-single-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start;">
+              ⬇️ Exportar receta activa (JSON)
+            </button>
+            <button id="create-backup-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start;">
+              💾 Guardar copia de seguridad (Backup)
+            </button>
+            <button id="global-audit-btn" type="button" class="subtle" style="width: 100%; justify-content: flex-start;">
+              🔍 Auditoría global de integridad
+            </button>
+
+            <div style="margin-top: 6px; padding-top: 8px; border-top: 1px dashed #283a31;">
+              <label>
+                Modo de importación
+                <select id="import-mode">
+                  <option value="merge">Combinar (añadir y actualizar)</option>
+                  <option value="replace">Reemplazar biblioteca completa</option>
+                </select>
+              </label>
+              <label class="file-button" style="cursor: pointer; margin-bottom: 0;">
+                <input id="import-input" type="file" accept=".json,application/json" style="display: none;">
+                <span class="btn subtle" style="display: block; text-align: center; padding: 7px 10px; background: #1c2b25; border: 1px solid #374e41; border-radius: 6px; font-weight: 600;">
+                  ⬆️ Importar recetas JSON
+                </span>
+              </label>
+            </div>
+          </div>
+        </details>
+      </aside>
+
+      <!-- PANEL CENTRAL: DISEÑADOR VISUAL Y FORMULARIO -->
+      <main class="main-editor panel">
+        <!-- CABECERA DE LA FICHA -->
+        <div class="editor-heading">
+          <div class="editor-heading-info">
+            <span class="eyebrow" id="draft-eyebrow">Ficha de receta</span>
+            <h2 id="draft-title" style="margin: 0;">Nueva receta</h2>
+            <span id="draft-id-pill" style="font-size: 11px; color: var(--text-dim); font-family: monospace;">id: nueva_receta</span>
+          </div>
+          <div class="editor-heading-badges">
+            <label class="check" style="flex-direction: row; align-items: center; gap: 6px; margin: 0; cursor: pointer;">
+              <input id="field-active" type="checkbox" checked>
+              <span style="font-size: 12px;">Activa</span>
+            </label>
+            <span id="dirty-indicator" class="pill clean">Guardado</span>
+          </div>
+        </div>
+
+        <!-- BARRA DE HISTORIAL -->
+        <div class="history-toolbar">
+          <button id="undo-btn" type="button" class="small subtle" disabled title="Deshacer última modificación">↶ Deshacer</button>
+          <button id="redo-btn" type="button" class="small subtle" disabled title="Rehacer modificación">↷ Rehacer</button>
+          <span>Ctrl+S para guardar cambios</span>
+          <button id="toggle-guide-btn" type="button" class="small subtle" style="margin-left: auto;">💡 ¿Cómo funciona?</button>
+        </div>
+
+        <!-- GUÍA RÁPIDA DE FABRICACIÓN -->
+        <div class="quick-guide-banner" id="quick-guide-banner">
+          <div class="guide-steps">
+            <div class="guide-step">
+              <span class="step-num">1</span>
+              <div>
+                <strong>Ingredientes visuales</strong>
+                <p>Haz clic en <em>+ Añadir</em> o en las casillas para elegir materiales del catálogo.</p>
+              </div>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">2</span>
+              <div>
+                <strong>Estación y oficio</strong>
+                <p>Elige el banco de trabajo, profesión y tiempo de elaboración.</p>
+              </div>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">3</span>
+              <div>
+                <strong>Resultado y rentabilidad</strong>
+                <p>Comprueba el margen económico y prueba la simulación de dados en vivo.</p>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="small subtle" id="dismiss-guide-btn" title="Ocultar guía">✕</button>
+        </div>
+
+        <!-- ACCESO RÁPIDO A ARQUETIPOS DE OFICIO -->
+        <div class="quick-archetypes-container" id="quick-archetypes-bar">
+          <span style="font-size: 11px; font-weight: 700; color: var(--gold); align-self: center; margin-right: 4px;">Arquetipos rápidos:</span>
+          <button type="button" class="archetype-btn" data-arch="mueble">🪑 Mueble de madera</button>
+          <button type="button" class="archetype-btn" data-arch="arma">🔨 Arma de forja</button>
+          <button type="button" class="archetype-btn" data-arch="armadura">🛡️ Armadura pesada</button>
+          <button type="button" class="archetype-btn" data-arch="pocion">🧪 Poción de salud</button>
+          <button type="button" class="archetype-btn" data-arch="comida">🍲 Plato cocinado</button>
+          <button type="button" class="archetype-btn" data-arch="pergamino">✨ Pergamino arcano</button>
+        </div>
+
+        <!-- CANVAS GRÁFICO VISUAL: FLUJO INGREDIENTES ➜ ESTACIÓN ➜ RESULTADO -->
+        <div class="visual-craft-canvas" id="visual-canvas">
+          <!-- Columna Izquierda: Ingredientes -->
+          <div class="flow-column">
+            <div class="flow-column-header">
+              <span>Ingredientes necesarios</span>
+              <button id="visual-add-ing-btn" type="button" class="small subtle" title="Añadir ingrediente">+ Añadir</button>
+            </div>
+            <div id="visual-ingredients-slots" class="flow-slots-grid">
+              <!-- Renderizado dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Centro: Estación y Tiempo -->
+          <div class="flow-center-node">
+            <div class="flow-connector-arrow">➔</div>
+            <div id="visual-station-node" class="station-node-icon" title="Haga clic para configurar estación de fabricación">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#d5b075"/></svg>
+            </div>
+            <span id="visual-station-label" style="font-size: 11px; font-weight: 600; color: #dfd8c2; text-align: center; max-width: 110px;">Banco</span>
+            <span id="visual-time-pill" class="flow-time-pill" title="Clic para alternar tiempos rápidos">30 s</span>
+            <div class="flow-connector-arrow">➔</div>
+          </div>
+
+          <!-- Columna Derecha: Resultado -->
+          <div class="flow-column" style="flex: 0 0 auto; align-items: center;">
+            <div class="flow-column-header">
+              <span>Objeto resultante</span>
+            </div>
+            <div id="visual-output-slot" class="item-slot output-slot" title="Haga clic para cambiar objeto resultante">
+              <span class="item-slot-badge" id="visual-output-count">1</span>
+              <div class="item-slot-icon" id="visual-output-icon">
+                <svg viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#354e41"/></svg>
+              </div>
+              <span class="item-slot-name" id="visual-output-label">Resultado</span>
+              <div class="item-slot-stepper" onclick="event.stopPropagation();">
+                <button type="button" id="visual-output-minus" class="slot-minus" title="Restar 1">-</button>
+                <span id="visual-output-stepper-count">1</span>
+                <button type="button" id="visual-output-plus" class="slot-plus" title="Sumar 1">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PESTAÑAS DE EDICIÓN -->
+        <nav class="tabs-nav" aria-label="Secciones de la receta">
+          <button id="tab-btn-general" type="button" class="tab-btn active">General</button>
+          <button id="tab-btn-ingredients" type="button" class="tab-btn">Ingredientes y Resultado</button>
+          <button id="tab-btn-stations" type="button" class="tab-btn">Estación y Oficio</button>
+          <button id="tab-btn-requirements" type="button" class="tab-btn">Tiempo y Requisitos</button>
+        </nav>
+
+        <!-- FORMULARIO PRINCIPAL -->
+        <form id="recipe-form" novalidate onsubmit="return false;">
+          <!-- PESTAÑA 1: GENERAL -->
+          <div id="tab-content-general" class="tab-content">
+            <div class="form-grid-2">
+              <label>
+                Nombre de la receta
+                <input id="field-label" type="text" placeholder="Ej: Mesa de madera, Espada de acero…" required>
+              </label>
+              <label>
+                ID técnico
+                <input id="field-id" type="text" placeholder="ej: mesa_de_madera" required>
+              </label>
+            </div>
+
+            <div class="form-grid-2">
+              <label>
+                Categoría principal
+                <select id="field-category">
+                  <option value="mueble">Muebles y decoración</option>
+                  <option value="arma">Armas y combate</option>
+                  <option value="armadura">Armaduras y prendas</option>
+                  <option value="alimento">Alimentos y cocina</option>
+                  <option value="pocion">Pociones y elixires</option>
+                  <option value="componente">Componentes y piezas</option>
+                  <option value="herramienta">Herramientas de oficio</option>
+                  <option value="pergamino">Pergaminos y magia</option>
+                  <option value="especial">Objetos especiales</option>
+                </select>
+              </label>
+              <label>
+                Carpeta organizativa (opcional)
+                <input id="field-folder" type="text" placeholder="Ej: Mobiliario de roble, Forja intermedia…">
+              </label>
+            </div>
+
+            <label>
+              Descripción de la receta
+              <textarea id="field-description" rows="3" placeholder="Detalles de fabricación, lore o recomendaciones para los artesanos…"></textarea>
+            </label>
+
+            <div class="form-grid-2">
+              <label>
+                Etiquetas (separadas por comas)
+                <input id="field-tags" type="text" placeholder="madera, carpinteria, mesa, interior">
+              </label>
+              <label>
+                Notas internas de diseño (opcional)
+                <input id="field-notes" type="text" placeholder="Notas solo visibles para administradores…">
+              </label>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 2: INGREDIENTES Y RESULTADOS -->
+          <div id="tab-content-ingredients" class="tab-content" hidden>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <span class="eyebrow" style="margin: 0;">Lista de ingredientes</span>
+              <button id="add-ingredient-table-btn" type="button" class="small primary">+ Añadir ingrediente</button>
+            </div>
+
+            <table class="ingredients-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">Icono</th>
+                  <th>Objeto</th>
+                  <th>ID técnico</th>
+                  <th style="width: 140px;">Cantidad</th>
+                  <th style="width: 70px;">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="ingredients-table-body">
+                <!-- Filas renderizadas dinámicamente -->
+              </tbody>
+            </table>
+
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #2a3c33;">
+              <span class="eyebrow">Objeto resultante principal</span>
+              <div class="form-grid-3" style="align-items: flex-end; margin-top: 6px;">
+                <label>
+                  Objeto producido
+                  <div style="display: flex; gap: 6px;">
+                    <input id="field-output-id" type="text" placeholder="ID del objeto resultante" required>
+                    <button id="pick-output-btn" type="button" class="subtle" title="Buscar en catálogo de objetos">🔍 Catálogo</button>
+                  </div>
+                </label>
+                <label>
+                  Cantidad producida
+                  <input id="field-output-count" type="number" min="1" max="999" value="1" required>
+                </label>
+                <label>
+                  Probabilidad de obtención (%)
+                  <input id="field-output-chance" type="number" min="1" max="100" value="100" required>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 3: ESTACIÓN Y PROFESIÓN -->
+          <div id="tab-content-stations" class="tab-content" hidden>
+            <div class="form-grid-2">
+              <label>
+                Profesión requerida
+                <select id="field-profession">
+                  <option value="none">Sin restricción de oficio</option>
+                </select>
+              </label>
+              <label>
+                Rango de oficio requerido
+                <select id="field-rank">
+                  <option value="0">Aprendiz (Nivel 1)</option>
+                  <option value="1">Iniciado</option>
+                  <option value="2">Oficial</option>
+                  <option value="3">Experto</option>
+                  <option value="4">Maestro</option>
+                  <option value="5">Gran maestro</option>
+                </select>
+              </label>
+            </div>
+
+            <div style="margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span class="eyebrow" style="margin: 0;">Estaciones de fabricación admitidas</span>
+                <button id="quick-create-station-btn" type="button" class="small subtle">+ Crear estación nueva</button>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 10px;">
+                Selecciona una o más estaciones donde se puede fabricar esta receta. Si no seleccionas ninguna, podrá fabricarse manualmente.
+              </p>
+              <div id="stations-chips-container" class="stations-chips-grid">
+                <!-- Chips de estaciones renderizados dinámicamente -->
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 4: TIEMPO Y REQUISITOS -->
+          <div id="tab-content-requirements" class="tab-content" hidden>
+            <div class="form-grid-2">
+              <label>
+                Tiempo de fabricación
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input id="field-crafting-time" type="number" min="0" max="86400" value="30" style="width: 100px;">
+                  <span style="font-size: 12px; color: var(--text-muted);">segundos</span>
+                  <span id="time-human-display" class="pill" style="margin-left: auto;">30 s</span>
+                </div>
+                <div class="preset-pills-row">
+                  <button type="button" class="preset-pill-btn time-preset-btn" data-s="5">⚡ 5s (Instantáneo)</button>
+                  <button type="button" class="preset-pill-btn time-preset-btn" data-s="15">⏱️ 15s (Rápido)</button>
+                  <button type="button" class="preset-pill-btn time-preset-btn" data-s="30">⚖️ 30s (Estándar)</button>
+                  <button type="button" class="preset-pill-btn time-preset-btn" data-s="60">⏳ 1 min</button>
+                  <button type="button" class="preset-pill-btn time-preset-btn" data-s="120">⌛ 2 min</button>
+                  <button type="button" class="preset-pill-btn time-preset-btn" data-s="300">🏰 5 min (Maestro)</button>
+                </div>
+              </label>
+              <label>
+                Probabilidad de éxito (%)
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input id="field-success-rate" type="number" min="1" max="100" value="100" style="width: 100px;">
+                  <span style="font-size: 12px; color: var(--text-muted);">%</span>
+                </div>
+                <div class="preset-pills-row">
+                  <button type="button" class="preset-pill-btn rate-preset-btn" data-r="100">100% Garantizado</button>
+                  <button type="button" class="preset-pill-btn rate-preset-btn" data-r="90">90% Habitual</button>
+                  <button type="button" class="preset-pill-btn rate-preset-btn" data-r="75">75% Arriesgado</button>
+                  <button type="button" class="preset-pill-btn rate-preset-btn" data-r="50">50% Incierto</button>
+                </div>
+              </label>
+            </div>
+
+            <div class="form-grid-2" style="margin-top: 8px;">
+              <label>
+                Nivel de personaje mínimo
+                <input id="field-min-level" type="number" min="1" max="1000" placeholder="1 (sin requisito)">
+              </label>
+              <label>
+                Misión previa requerida (opcional)
+                <select id="field-required-quest">
+                  <option value="">Sin misión requerida</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="form-grid-2">
+              <label>
+                Receta previa requerida (opcional)
+                <input id="field-required-recipe" type="text" placeholder="ID de receta previa necesaria…">
+              </label>
+              <label>
+                Nota o método de desbloqueo
+                <input id="field-custom-note" type="text" placeholder="Ej: Se compra al maestro artesano, Pergamino de botín…">
+              </label>
+            </div>
+          </div>
+
+          <!-- FOOTER DE ACCIONES -->
+          <div class="editor-footer">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="delete-recipe-btn" type="button" class="danger">Eliminar receta</button>
+              <button id="open-tree-btn" type="button" class="subtle" title="Ver desglose de sub-recetas y materias primas">🌿 Cadena</button>
+              <button id="open-sim-btn" type="button" class="subtle" title="Simular tiradas de fabricación">🧪 Simular</button>
+              <button id="save-as-template-btn" type="button" class="subtle" title="Guardar como plantilla reutilizable">⭐ Guardar como plantilla</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button id="duplicate-form-btn" type="button" class="subtle">Duplicar</button>
+              <button id="save-recipe-btn" type="button" class="primary gold">Guardar receta (Ctrl+S)</button>
+            </div>
+          </div>
+        </form>
+      </main>
+
+      <!-- PANEL DERECHO: VISTA PREVIA Y AUDITORÍA -->
+      <aside class="context-panel panel" aria-label="Vista previa y auditoría">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span class="eyebrow" style="margin: 0;">Vista previa</span>
+          <span class="pill">MMORPG Preview</span>
+        </div>
+        <h2 style="margin-bottom: 12px;">Ficha en el juego</h2>
+
+        <!-- FICHA REALISTA DE LA RECETA -->
+        <div id="game-recipe-card" class="game-recipe-card">
+          <div class="game-card-header">
+            <div id="game-card-icon" class="game-card-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#d5b075"/></svg>
+            </div>
+            <div>
+              <div id="game-card-title" class="game-card-title">Mesa de madera</div>
+              <div id="game-card-category" class="game-card-sub">Mobiliario de carpintería</div>
+            </div>
+          </div>
+
+          <div id="game-card-desc" class="game-card-desc">
+            Mesa artesanal de madera ensamblada con clavos y tablones.
+          </div>
+
+          <div class="game-card-section-title">Ingredientes necesarios</div>
+          <div id="game-card-ingredients" class="game-card-ingredients-list">
+            <!-- Ingredientes en preview -->
+          </div>
+
+          <div class="game-card-meta-grid">
+            <div class="game-card-meta-item">
+              <span class="game-card-meta-label">Estación</span>
+              <span id="game-card-station" class="game-card-meta-val">Banco de carpintería</span>
+            </div>
+            <div class="game-card-meta-item">
+              <span class="game-card-meta-label">Tiempo</span>
+              <span id="game-card-time" class="game-card-meta-val">30 s</span>
+            </div>
+            <div class="game-card-meta-item">
+              <span class="game-card-meta-label">Oficio</span>
+              <span id="game-card-job" class="game-card-meta-val">Carpintería</span>
+            </div>
+            <div class="game-card-meta-item">
+              <span class="game-card-meta-label">Éxito</span>
+              <span id="game-card-chance" class="game-card-meta-val">100 %</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALCULADORA ECONÓMICA DE BALANCE -->
+        <div style="margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <span class="eyebrow" style="margin: 0;">Economía y balance</span>
+            <span id="econ-margin-badge" class="pill dirty">0% margen</span>
+          </div>
+          <div class="economics-card">
+            <div class="economics-grid">
+              <div class="economics-metric">
+                <span class="economics-metric-label">Coste materiales</span>
+                <span id="econ-cost" class="economics-metric-val">0 Pelines</span>
+              </div>
+              <div class="economics-metric">
+                <span class="economics-metric-label">Valor producto</span>
+                <span id="econ-value" class="economics-metric-val">0 Pelines</span>
+              </div>
+            </div>
+            <div class="economics-grid">
+              <div class="economics-metric">
+                <span class="economics-metric-label">Beneficio neto</span>
+                <span id="econ-profit" class="economics-metric-val profit-positive">+0 Pelines</span>
+              </div>
+              <div class="economics-metric">
+                <span class="economics-metric-label">Rendimiento</span>
+                <span id="econ-rate" class="economics-metric-val">0 Pelines / min</span>
+              </div>
+            </div>
+            <div id="profit-banner" class="profit-banner positive">
+              <span id="profit-banner-text">✓ Receta equilibrada y rentable</span>
+            </div>
+            <div style="margin-top: 8px;">
+              <button id="quick-sim-10-btn" type="button" class="small subtle" style="width: 100%;" title="Simular 10 fabricaciones con los dados del juego">🎲 Simular 10× tiradas rápidas</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUDITORÍA DE INTEGRIDAD EN TIEMPO REAL -->
+        <div style="margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <span class="eyebrow" style="margin: 0;">Auditoría de integridad</span>
+            <span id="audit-badge" class="pill clean">Sin alertas</span>
+          </div>
+          <div id="audit-box" class="audit-box">
+            <div class="audit-item info">Verificando dependencias y referencias de objetos…</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- MODAL 1: SELECTOR DE OBJETOS DEL CATÁLOGO (ITEM PICKER) -->
+    <div id="item-picker-modal" class="modal-overlay" hidden>
+      <div class="modal-dialog" style="max-width: 680px;">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Catálogo de objetos</span>
+            <h3 style="margin: 0;">Seleccionar objeto del MMORPG</h3>
+          </div>
+          <button id="close-item-picker-btn" type="button" class="small subtle">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="item-picker-category-bar" id="item-picker-categories">
+            <button type="button" class="picker-cat-btn active" data-cat="all">Todos</button>
+            <button type="button" class="picker-cat-btn" data-cat="material">🌲 Materiales (570+)</button>
+            <button type="button" class="picker-cat-btn" data-cat="mueble">🪑 Muebles</button>
+            <button type="button" class="picker-cat-btn" data-cat="comida">🍞 Comida</button>
+            <button type="button" class="picker-cat-btn" data-cat="pocion">🧪 Pociones</button>
+            <button type="button" class="picker-cat-btn" data-cat="herramienta">⛏️ Herramientas</button>
+            <button type="button" class="picker-cat-btn" data-cat="equipo">⚔️ Equipamiento</button>
+            <button type="button" class="picker-cat-btn" data-cat="pergamino">📜 Pergaminos</button>
+          </div>
+          <input id="item-picker-search" type="search" placeholder="Filtrar objetos por nombre, ID o categoría…">
+          <div id="item-picker-grid" class="item-picker-grid">
+            <!-- Renderizado dinámicamente -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancel-item-picker-btn" type="button" class="subtle">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: SUBEDITOR DE ESTACIONES DE FABRICACIÓN -->
+    <div id="stations-modal" class="modal-overlay" hidden>
+      <div class="modal-dialog" style="max-width: 820px;">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Subeditor</span>
+            <h3 style="margin: 0;">Estaciones de fabricación</h3>
+          </div>
+          <button id="close-stations-modal-btn" type="button" class="small subtle">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px;">
+            <!-- Lista izquierda de estaciones -->
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="eyebrow" style="margin: 0;">Estaciones definidas</span>
+                <button id="new-station-modal-btn" type="button" class="small primary">+ Nueva</button>
+              </div>
+              <div id="stations-list-modal" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Lista de estaciones -->
+              </div>
+            </div>
+
+            <!-- Formulario derecho de estación activa -->
+            <form id="station-form" style="display: flex; flex-direction: column; gap: 10px;" onsubmit="return false;">
+              <h4 id="station-form-title" style="margin: 0;">Editar estación</h4>
+              <label>
+                Nombre visible
+                <input id="station-label-input" type="text" placeholder="Ej: Forja, Banco de carpintería…" required>
+              </label>
+              <div class="form-grid-2">
+                <label>
+                  ID técnico
+                  <input id="station-id-input" type="text" placeholder="ej: banco_carpinteria" required>
+                </label>
+                <label>
+                  Profesión asociada
+                  <select id="station-job-input">
+                    <option value="">Sin profesión específica</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Descripción
+                <textarea id="station-desc-input" rows="2" placeholder="Uso de la estación…"></textarea>
+              </label>
+              <label>
+                Icono SVG (opcional)
+                <textarea id="station-icon-input" rows="2" placeholder="<svg ...> o trazados SVG..."></textarea>
+              </label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <button id="delete-station-btn" type="button" class="danger small">Eliminar estación</button>
+                <button id="save-station-btn" type="button" class="primary small">Guardar estación</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="done-stations-modal-btn" type="button" class="primary">Listo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 3: EDICIÓN MASIVA (BATCH) -->
+    <div id="batch-modal" class="modal-overlay" hidden>
+      <div class="modal-dialog" style="max-width: 520px;">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Productividad</span>
+            <h3 style="margin: 0;">Edición masiva de recetas</h3>
+          </div>
+          <button id="close-batch-modal-btn" type="button" class="small subtle">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="batch-modal-info" style="font-size: 13px; color: #dfd8c2; margin-bottom: 8px;">
+            Aplica cambios simultáneos a las recetas seleccionadas.
+          </p>
+          <label>
+            Estado activo
+            <select id="batch-active-select">
+              <option value="keep">Conservar estado individual</option>
+              <option value="true">Activar todas las seleccionadas</option>
+              <option value="false">Desactivar todas las seleccionadas</option>
+            </select>
+          </label>
+          <label>
+            Cambiar profesión
+            <select id="batch-profession-select">
+              <option value="keep">Conservar profesión actual</option>
+              <option value="none">Sin profesión</option>
+            </select>
+          </label>
+          <label>
+            Añadir estación
+            <select id="batch-add-station-select">
+              <option value="">No añadir ninguna estación</option>
+            </select>
+          </label>
+          <label>
+            Asignar carpeta organizativa
+            <input id="batch-folder-input" type="text" placeholder="Dejar en blanco para conservar carpeta actual">
+          </label>
+          <div style="padding-top: 10px; border-top: 1px dashed #2d3e35; margin-top: 6px;">
+            <button id="batch-delete-btn" type="button" class="danger" style="width: 100%;">
+              🗑️ Eliminar todas las recetas seleccionadas
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancel-batch-btn" type="button" class="subtle">Cancelar</button>
+          <button id="apply-batch-btn" type="button" class="primary">Aplicar cambios en lote</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: AUDITORÍA GLOBAL -->
+    <div id="audit-modal" class="modal-overlay" hidden>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Diagnóstico del catálogo</span>
+            <h3 style="margin: 0;">Auditoría global de recetas y fabricación</h3>
+          </div>
+          <button id="close-audit-modal-btn" type="button" class="small subtle">✕</button>
+        </div>
+        <div class="modal-body" id="global-audit-content">
+          <!-- Reporte de auditoría generado dinámicamente -->
+        </div>
+        <div class="modal-footer">
+          <button id="done-audit-modal-btn" type="button" class="primary">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 5: SIMULADOR DE FABRICACIÓN EN LOTE -->
+    <div id="simulation-modal" class="modal-overlay" hidden>
+      <div class="modal-dialog" style="max-width: 620px;">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Simulación de balance</span>
+            <h3 style="margin: 0;" id="sim-modal-title">Simular fabricación</h3>
+          </div>
+          <button id="close-sim-modal-btn" type="button" class="small subtle">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="margin: 0; flex: 1;">
+              Intentos de fabricación
+              <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                <input id="sim-attempts-input" type="number" min="1" max="1000" value="50" style="width: 100px;">
+                <button type="button" class="small subtle sim-quick-btn" data-n="10">10×</button>
+                <button type="button" class="small subtle sim-quick-btn" data-n="50">50×</button>
+                <button type="button" class="small subtle sim-quick-btn" data-n="100">100×</button>
+                <button type="button" class="small primary" id="run-sim-btn" style="margin-left: auto;">🎲 Tirar dados</button>
+              </div>
+            </label>
+          </div>
+
+          <div class="sim-progress-bar">
+            <div id="sim-bar-success" class="sim-progress-success" style="width: 100%;"></div>
+            <div id="sim-bar-failure" class="sim-progress-failure" style="width: 0%;"></div>
+          </div>
+
+          <div class="simulation-stats-grid">
+            <div class="sim-metric-box">
+              <div class="label">Éxitos</div>
+              <div class="value profit-positive" id="sim-stat-successes">0</div>
+            </div>
+            <div class="sim-metric-box">
+              <div class="label">Fallos</div>
+              <div class="value profit-negative" id="sim-stat-failures">0</div>
+            </div>
+            <div class="sim-metric-box">
+              <div class="label">Obtenidos</div>
+              <div class="value" id="sim-stat-outputs">0</div>
+            </div>
+            <div class="sim-metric-box">
+              <div class="label">Tiempo total</div>
+              <div class="value" id="sim-stat-time">0 s</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <span class="eyebrow">Materiales consumidos en la simulación</span>
+            <div id="sim-materials-spent" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px; font-size: 12px; color: #cfd8d3;">
+              <!-- Materiales gastados -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="done-sim-modal-btn" type="button" class="primary">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 6: CADENA DE FABRICACIÓN Y MATERIAS PRIMAS -->
+    <div id="production-tree-modal" class="modal-overlay" hidden>
+      <div class="modal-dialog" style="max-width: 680px;">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Desglose artesanal</span>
+            <h3 style="margin: 0;" id="tree-modal-title">Cadena de fabricación</h3>
+          </div>
+          <button id="close-tree-modal-btn" type="button" class="small subtle">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+            Muestra la jerarquía de sub-recetas para crear este objeto a partir de materias primas elementales.
+          </p>
+          <div id="production-tree-content" class="production-tree">
+            <!-- Nodos del árbol renderizados dinámicamente -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="done-tree-modal-btn" type="button" class="primary">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL DEL EDITOR -->
+    <script type="module" src="/src/dev/recipeEditor.ts"></script>
+  </body>
+</html>

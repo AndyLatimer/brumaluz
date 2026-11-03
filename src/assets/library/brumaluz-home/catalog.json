@@ -1,0 +1,538 @@
+{
+  "version": 3,
+  "packs": [
+    {
+      "id": "brumaluz-home",
+      "label": "Brumaluz · Un rincón propio",
+      "author": "Brumaluz",
+      "description": "18 muebles originales con tallas, tejidos bordados, cerámica pintada y detalles cotidianos. Madera y lino CC0. Powered by Poly Haven.",
+      "count": 18,
+      "source": "src/world/homeFurniture.ts",
+      "license": null
+    }
+  ],
+  "assets": [
+    {
+      "id": "brumaluz-home/objects/taburete",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "taburete",
+      "label": "Taburete de taller",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/taburete.glb",
+      "source": "src/world/homeFurniture.ts#taburete",
+      "bytes": 1064104,
+      "sha256": "c7a16d78de401cbd8596060527b34a04c6e7c2d107eda92a3505eb348be997d0",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.2849999964237213,
+          -7.599592066753758e-10,
+          -0.2849999964237213
+        ],
+        "max": [
+          0.2849999964237213,
+          0.5899999737739563,
+          0.2849999964237213
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/mesa",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "mesa",
+      "label": "Mesa de artesano",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/mesa.glb",
+      "source": "src/world/homeFurniture.ts#mesa",
+      "bytes": 1119108,
+      "sha256": "4e301fb1c7f081b9d5204100398bda5d66de58009016a7ac9c6598b9971a196f",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7465000152587891,
+          0,
+          -0.3799999952316284
+        ],
+        "max": [
+          0.7465000152587891,
+          0.8460000157356262,
+          0.3799999952316284
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/biblioteca",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "biblioteca",
+      "label": "Biblioteca tallada",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/biblioteca.glb",
+      "source": "src/world/homeFurniture.ts#biblioteca",
+      "bytes": 1606120,
+      "sha256": "34c25fadf68ae764d4b1da456b3e019e0f115ef362327d45f9743ad6bb45ea54",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7699999809265137,
+          -7.450580707946131e-10,
+          -0.23999999463558197
+        ],
+        "max": [
+          0.7699999809265137,
+          1.8680000305175781,
+          0.23999999463558197
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/estacion",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "estacion",
+      "label": "Banco de trabajo",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/estacion.glb",
+      "source": "src/world/homeFurniture.ts#estacion",
+      "bytes": 1206040,
+      "sha256": "bc8fc989d42a0a6fc28a35494039dd763cb355b7113e7824338208880ab4f57f",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7465000152587891,
+          0,
+          -0.4000000059604645
+        ],
+        "max": [
+          0.7465000152587891,
+          1.149999976158142,
+          0.3400000035762787
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/silla",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "silla",
+      "label": "Silla de respaldo trenzado",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/silla.glb",
+      "source": "src/world/homeFurniture.ts#silla",
+      "bytes": 1028276,
+      "sha256": "4aedd502de9ad649335fd3f886110ac444aa9885421a1bdea5a273add8b14012",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.2370000034570694,
+          0,
+          -0.23000000417232513
+        ],
+        "max": [
+          0.2370000034570694,
+          1.0499999523162842,
+          0.25200000405311584
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/banco",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "banco",
+      "label": "Banco de ventana",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/banco.glb",
+      "source": "src/world/homeFurniture.ts#banco",
+      "bytes": 1040436,
+      "sha256": "8f467a51cd9371f8d24d1cb2668cba3ce98fb4eab274df26100a6d09cb68bc6f",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6129999756813049,
+          0,
+          -0.2199999988079071
+        ],
+        "max": [
+          0.6129999756813049,
+          0.578000009059906,
+          0.2150000035762787
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/mesita",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "mesita",
+      "label": "Mesita de lectura",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/mesita.glb",
+      "source": "src/world/homeFurniture.ts#mesita",
+      "bytes": 994020,
+      "sha256": "608af423da485b6d9ff18487c19bc72b1bf135684931f778d2c4f4ea17d5f28d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.28999999165534973,
+          -4.470348397012103e-11,
+          -0.28999999165534973
+        ],
+        "max": [
+          0.28999999165534973,
+          0.6639999747276306,
+          0.28999999165534973
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/arcon",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "arcon",
+      "label": "Arcón de mantas",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/arcon.glb",
+      "source": "src/world/homeFurniture.ts#arcon",
+      "bytes": 1207840,
+      "sha256": "e234b262893f0036dc8f3ede24347a07071c23e834df7b2618a84cca9ca2e76a",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.48406216502189636,
+          -1.7881393032936899e-9,
+          -0.27649998664855957
+        ],
+        "max": [
+          0.48406216502189636,
+          0.6499999761581421,
+          0.2750000059604645
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/alfombra",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "alfombra",
+      "label": "Alfombra de espigas",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/alfombra.glb",
+      "source": "src/world/homeFurniture.ts#alfombra",
+      "bytes": 1001768,
+      "sha256": "f7a98e12166545706546c070c69871da128cc629885dd18e336a297cd4377248",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.7182817459106445,
+          0.005000000353902578,
+          -0.47999998927116394
+        ],
+        "max": [
+          0.7182817459106445,
+          0.023000000044703484,
+          0.47999998927116394
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/farol",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "farol",
+      "label": "Farol de sobremesa",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/farol.glb",
+      "source": "src/world/homeFurniture.ts#farol",
+      "bytes": 1047992,
+      "sha256": "4411f182c3288c93fa57e1cf22594d610dd517670d94219ee5864aebbca3fd66",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.15000000596046448,
+          0,
+          -0.15000000596046448
+        ],
+        "max": [
+          0.15000000596046448,
+          0.7379999756813049,
+          0.15000000596046448
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/macetero",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "macetero",
+      "label": "Macetero de hojas redondas",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/macetero.glb",
+      "source": "src/world/homeFurniture.ts#macetero",
+      "bytes": 1067952,
+      "sha256": "728ef12bf998fb3906ae3d8d71053a784f5d98754fd07929cc447b0e8b88d433",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.2199878990650177,
+          0,
+          -0.22040602564811707
+        ],
+        "max": [
+          0.23489125072956085,
+          0.8101280331611633,
+          0.2271866500377655
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/biombo",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "biombo",
+      "label": "Biombo de lino",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/biombo.glb",
+      "source": "src/world/homeFurniture.ts#biombo",
+      "bytes": 1093220,
+      "sha256": "b1b28b03245abe28e386569c4710f0185eddc88918b430127ebe3f9a7181289c",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6024189591407776,
+          -1.1920929132713809e-8,
+          -0.0895741879940033
+        ],
+        "max": [
+          0.5889468789100647,
+          1.600000023841858,
+          0.07191955298185349
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/butaca",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "butaca",
+      "label": "Butaca de las tardes",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/butaca.glb",
+      "source": "src/world/homeFurniture.ts#butaca",
+      "bytes": 1107784,
+      "sha256": "ebd0605d41a4ffa3d95b5b53d1066670d0297955917ba50d69c90a90570c52cb",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4650000035762787,
+          0,
+          -0.4034999907016754
+        ],
+        "max": [
+          0.4650000035762787,
+          1.100000023841858,
+          0.38999998569488525
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/aparador",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "aparador",
+      "label": "Aparador de la vajilla",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/aparador.glb",
+      "source": "src/world/homeFurniture.ts#aparador",
+      "bytes": 1264700,
+      "sha256": "c9a69d8fd2ac1df7546812783f97da71a16581c83f8bfc160ac8a84d8d38d6d0",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6349999904632568,
+          0,
+          -0.26533013582229614
+        ],
+        "max": [
+          0.6349999904632568,
+          1.215000033378601,
+          0.26499998569488525
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/escritorio",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "escritorio",
+      "label": "Escritorio de cartas",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/escritorio.glb",
+      "source": "src/world/homeFurniture.ts#escritorio",
+      "bytes": 1132420,
+      "sha256": "ce08f9b67ab1de0154e8f3b8d2ae53c5795f13930c14284039b9571cc5597e26",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.6600000262260437,
+          0,
+          -0.3499999940395355
+        ],
+        "max": [
+          0.6600000262260437,
+          1.065500020980835,
+          0.3449999988079071
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/perchero",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "perchero",
+      "label": "Perchero de bienvenida",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/perchero.glb",
+      "source": "src/world/homeFurniture.ts#perchero",
+      "bytes": 1210716,
+      "sha256": "268bb9e8c5980eaecc8ce901a39295a9d300ddbad6d44a58206a24376528829b",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.343835711479187,
+          -3.7252903539730653e-10,
+          -0.2661665976047516
+        ],
+        "max": [
+          0.30300000309944153,
+          1.690000057220459,
+          0.2661665976047516
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/costurero",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "costurero",
+      "label": "Costurero de los ovillos",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/costurero.glb",
+      "source": "src/world/homeFurniture.ts#costurero",
+      "bytes": 1205004,
+      "sha256": "4bffb64d0f08ad90c0193f3a0682f6ca258de57688e75049fc5ccfdde2a1b27d",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.2549999952316284,
+          0,
+          -0.23999999463558197
+        ],
+        "max": [
+          0.2549999952316284,
+          0.6949999928474426,
+          0.23800000548362732
+        ]
+      }
+    },
+    {
+      "id": "brumaluz-home/objects/jardinera",
+      "pack": "brumaluz-home",
+      "kind": "objects",
+      "name": "jardinera",
+      "label": "Jardinera de aromáticas",
+      "category": "Hogar y decoración",
+      "description": "Mobiliario original con cantos suaves, ensamblajes y materiales PBR de madera, lino y forja.",
+      "path": "brumaluz-home/objects/jardinera.glb",
+      "source": "src/world/homeFurniture.ts#jardinera",
+      "bytes": 1538492,
+      "sha256": "fa52bdb9ca596e1aeb33ec6e77d38b67542f1854afbacdb7f076d2fb66c26101",
+      "meshes": 1,
+      "skins": 0,
+      "rig": null,
+      "animations": [],
+      "bounds": {
+        "min": [
+          -0.4805000126361847,
+          0,
+          -0.20749999582767487
+        ],
+        "max": [
+          0.4805000126361847,
+          0.8220000267028809,
+          0.20749999582767487
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "label": "baseline",
+  "scope": "Fresh Chromium context on localhost, production build, compatible mode; software-rendered startup, not a hardware FPS benchmark",
+  "htmlBytes": 180121471,
+  "readyMs": 40713.0404,
+  "transferredBytes": 81983752,
+  "requests": 6,
+  "glbRequests": 0,
+  "heapBytes": 1520135635,
+  "geometries": 151,
+  "textures": 202,
+  "documents": [
+    {
+      "transferBytes": 81834299,
+      "decodedBytes": 180121471
+    }
+  ],
+  "resources": [],
+  "errors": []
+}

@@ -15,10 +15,12 @@ Cada pieza tiene 32 compases, entre 98 y 142 segundos. Las frases de ocho compas
 
 - La selección sigue `worldHour()`, la misma hora que el cielo y las luces. No depende de la hora del menú ni del ordenador del jugador.
 - Los cambios de tramo se funden durante ocho segundos, manteniendo como máximo dos arreglos a la vez.
-- En interiores la mezcla se vuelve más íntima. Durante diálogos y cinemáticas baja de volumen; en combate deja más espacio a los efectos.
+- En interiores la mezcla se vuelve más íntima. Durante diálogos y cinemáticas baja de volumen; en combate deja más espacio a los efectos, sin quedar casi inaudible al combinar estas atenuaciones.
 - **Opciones → Sonido** ofrece un interruptor de música ambiental y volumen de música independientes de aves, agua y viento. El volumen general afecta a todos.
+- La salida de música, ambiente y efectos está calibrada para resultar más audible sin alterar los valores guardados de los controles; al 0 % sigue habiendo silencio.
+- Durante la carga de un viaje o una recuperación continúa la música del mundo que ya estaba activa, sin reiniciar la pieza salvo por un cambio normal de tramo horario. En las cargas del acceso y del creador continúa su propia música.
 - Se respeta el silencio elegido, la pestaña oculta y la salida de la partida. La música de los menús conserva su propio control.
-- No se intenta reproducir audio antes de una interacción del jugador.
+- No se intenta reproducir audio antes de una interacción del jugador, tampoco en la pantalla inicial de carga: el navegador exige ese gesto.
 
 Las aves del ambiente se reservan para las horas de luz; las campanas se afinan con la música y suenan más discretas por la noche.
 
@@ -31,6 +33,7 @@ Las muestras se preparan entre fotogramas y se reutilizan por instrumento y octa
 ## Escucha y comprobación
 
 - `npm run test:music`: partituras, audio estéreo real, picos, silencio, transiciones, visibilidad y opciones del juego.
+- `npm run test:audio`: niveles reales y margen de picos de música, ambiente y efectos; continuidad de la música durante las cargas, silencio y visibilidad.
 - `npm run music:render`: genera muestras WAV estéreo de los cuatro tramos en `art/music/` usando los mismos instrumentos.
 - `npm run music:render -- --full`: exporta las cuatro piezas completas.
 

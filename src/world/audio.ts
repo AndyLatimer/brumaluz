@@ -1,3 +1,5 @@
+const OUTPUT_GAIN = 1.5;
+
 export class AmbientSoundscape {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -18,7 +20,7 @@ export class AmbientSoundscape {
   // Volumen relativo (0-1) del paisaje sonoro: ambiente × volumen general.
   setLevel(level: number) {
     this.level = Math.max(0, Math.min(1, level));
-    if (this.active && this.context && this.master) this.master.gain.setTargetAtTime(0.72 * this.level, this.context.currentTime, 0.1);
+    if (this.active && this.context && this.master) this.master.gain.setTargetAtTime(OUTPUT_GAIN * this.level, this.context.currentTime, 0.1);
   }
 
   async prepare() {
@@ -51,7 +53,7 @@ export class AmbientSoundscape {
       this.connected = true;
     }
     this.master!.gain.cancelAndHoldAtTime(this.context!.currentTime);
-    this.master!.gain.setTargetAtTime(0.72 * this.level, this.context!.currentTime, 0.15);
+    this.master!.gain.setTargetAtTime(OUTPUT_GAIN * this.level, this.context!.currentTime, 0.15);
     this.scheduleBirds();
   }
 
@@ -77,14 +79,14 @@ export class AmbientSoundscape {
     windFilter.type = 'lowpass';
     windFilter.frequency.value = 420;
     const windGain = context.createGain();
-    windGain.gain.value = 0.1;
+    windGain.gain.value = 0.14;
     wind.connect(windFilter).connect(windGain).connect(this.master);
     wind.start();
 
     const breeze = context.createOscillator();
     const breezeDepth = context.createGain();
     breeze.frequency.value = 0.07;
-    breezeDepth.gain.value = 0.045;
+    breezeDepth.gain.value = 0.055;
     breeze.connect(breezeDepth).connect(windGain.gain);
     breeze.start();
 
@@ -96,7 +98,7 @@ export class AmbientSoundscape {
     streamFilter.frequency.value = 560;
     streamFilter.Q.value = 0.45;
     const streamGain = context.createGain();
-    streamGain.gain.value = 0.045;
+    streamGain.gain.value = 0.065;
     stream.connect(streamFilter).connect(streamGain).connect(this.master);
     stream.start();
 
@@ -108,7 +110,7 @@ export class AmbientSoundscape {
     townFilter.frequency.value = 330;
     townFilter.Q.value = 0.8;
     const townGain = context.createGain();
-    townGain.gain.value = 0.018;
+    townGain.gain.value = 0.03;
     const townPan = context.createStereoPanner();
     townPan.pan.value = -0.35;
     town.connect(townFilter).connect(townGain).connect(townPan).connect(this.master);
@@ -116,7 +118,7 @@ export class AmbientSoundscape {
     const murmur = context.createOscillator();
     const murmurDepth = context.createGain();
     murmur.frequency.value = 0.18;
-    murmurDepth.gain.value = 0.01;
+    murmurDepth.gain.value = 0.016;
     murmur.connect(murmurDepth).connect(townGain.gain);
     murmur.start();
   }

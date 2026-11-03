@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { loadKits } from '../character/character';
 import { createNpc } from '../character/npc';
+import { createMapAssetProvider } from '../world/mapAssetsCore';
 import {
   RACES, CLASSES, ATTRIBUTES, HAIR_NAMES, HAIR_COLORS, CLOTH_NAMES, CLOTH, EYE_COLOR_NAMES, EYE_COLORS,
   HAIR_ACCS, HAIR_ACC_VALUES, ACCS, MAKEUPS, ACC_COLORS, ACC_COLOR_NAMES, randomChar, type CharData,
@@ -230,6 +231,8 @@ const light = new THREE.DirectionalLight('#fff0d5', 3); light.position.set(-3, 6
 scene.add(light);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: '#c3cdc6', roughness: 1 }));
 floor.rotation.x = -Math.PI / 2; floor.position.y = -.01; floor.receiveShadow = true; scene.add(floor);
+const previewBench = await createMapAssetProvider(async () => { throw new Error('Solo se necesita el banco básico.'); }).instantiate('builtin/bench');
+previewBench.position.set(.36, 0, -.4); previewBench.visible = false; scene.add(previewBench);
 const camera = new THREE.PerspectiveCamera(32, 1, .01, 100);
 const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.minDistance = .1; controls.maxDistance = 50;
 let lastFrame = '', time = 0, previous = performance.now();
@@ -243,6 +246,7 @@ function frame() {
 }
 const clipSources = catalog.assets.filter(asset => asset.pack === 'character-animations' && asset.kind === 'animations' && asset.rig === 'medium');
 const clipCache = new Map<string, Promise<THREE.AnimationClip[]>>();
+animation.add(new window.Option('Sentarse · banco de la ciudad', 'seat'));
 for (const source of clipSources) {
   const group = document.createElement('optgroup'); group.label = source.name.replace('Rig_Medium_', '');
   source.animations.forEach((name, index) => group.append(new window.Option(name, `${source.id}:${index}`)));
@@ -251,8 +255,14 @@ for (const source of clipSources) {
 async function playAnimation() {
   const version = ++previewRequest, actor = character;
   if (!actor) return;
-  actor.revive(); actor.stopGesture(); actor.setGait('idle');
+  actor.revive(); actor.stand(); actor.stopGesture(); actor.setGait('idle');
   const value = animation.value;
+  previewBench.visible = value === 'seat';
+  if (value === 'seat') {
+    actor.sit(.64);
+    window.setTimeout(() => { if (!closed && version === previewRequest && actor === character) frame(); }, 450);
+    return;
+  }
   if (value === 'idle' || value === 'walk' || value === 'run') { actor.setGait(value); return; }
   const split = value.lastIndexOf(':'), id = value.slice(0, split), index = Number(value.slice(split + 1));
   if (!clipCache.has(id)) {
@@ -426,6 +436,11 @@ window.addEventListener('beforeunload', event => { if (dirty) { event.preventDef
 window.addEventListener('pagehide', () => {
   closed = true; previewRequest++; buildRequest++; renderer.setAnimationLoop(null); resize.disconnect(); controls.dispose();
   character?.dispose(); floor.geometry.dispose(); floor.material.dispose(); renderer.dispose();
+  const benchResources = new Set<THREE.BufferGeometry | THREE.Material>();
+  previewBench.traverse(object => {
+    if (object instanceof THREE.Mesh) { benchResources.add(object.geometry); for (const material of Array.isArray(object.material) ? object.material : [object.material]) benchResources.add(material); }
+  });
+  for (const resource of benchResources) resource.dispose();
 });
 await operation(async () => {
   await Promise.all([loadKits(), request('GET')]);

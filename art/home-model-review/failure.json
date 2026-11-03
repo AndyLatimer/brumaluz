@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "All 18 self-contained GLBs loaded in the real asset editor",
+    "108 qualities × 15 camera/zoom positions: one draw, constant topology, identical repeat frames",
+    "Real game house: 18 pieces, stable movement/refresh, non-overlapping preview, cancellation and lantern on/off",
+    "Real game normal graphics: compatible=false, shadows=true, no graphics error"
+  ],
+  "errors": [],
+  "error": "page.waitForFunction: Timeout 120000ms exceeded."
+}

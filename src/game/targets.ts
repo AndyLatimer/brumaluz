@@ -7,7 +7,6 @@ import type { TargetDetails } from '../ui/targetFrame';
 import { npcActors } from './cities';
 import { isbertoVisible } from '../story/quests';
 import { holder } from './stage';
-import { npcSay } from './hud';
 import { storyLock } from './conversation';
 import { tradeWindow } from '../ui/gameInterface';
 import { playerInteractions } from './interaction';
@@ -17,8 +16,15 @@ import { wildernessTargets } from './wilderness';
 // Los NPC comentan algo de vez en cuando si estás cerca (canal NPC del chat).
 export const barkCooldown = new Map<string, number>();
 let nextTargetUpdate = 0;
+let nextBarkAt = 0;
+function npcInterfaceAvailable() {
+  return play.mode === 'play' && !play.mapTravelling && !play.dead && !storyLock() && !tradeWindow.isOpen && !isDialogOpen()
+    && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen && !playerInteractions.isOpen;
+}
+export function canHearNpcChatter() { return npcInterfaceAvailable() && !play.actionBusy && !document.hidden; }
+
 export function updateTargetFrame() {
-  const enabled = play.mode === 'play' && !play.dead && !storyLock() && !tradeWindow.isOpen && !isDialogOpen() && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !ui.openWindow && !ui.optionsOpen && !playerInteractions.isOpen;
+  const enabled = npcInterfaceAvailable();
   if (!enabled) { ui.targetFrame.update([], false, holder.position); return; }
   if (performance.now() < nextTargetUpdate) return;
   nextTargetUpdate = performance.now() + 100;
@@ -26,6 +32,7 @@ export function updateTargetFrame() {
     ...player, identity: { kind: 'player', username: player.username, cls: player.cls, title: player.title },
   }))];
   for (const npc of npcActors) {
+    if (!npc.character.root.visible || npc.character.root.position.distanceToSquared(holder.position) > 100) continue;
     if (npc.id === 'isberto' && !isbertoVisible()) continue;
     const def = story.NPCS[npc.id];
     const data = session.registeredNpcs[npc.id];
@@ -48,19 +55,27 @@ export function updateTargetFrame() {
   ui.targetFrame.update(targets, true, holder.position, fight.lockedEnemy ? fight.combatEncounter?.kind==='wilderness'?'wild:'+fight.combatEncounter.spawn:'enemy:shadowling' : null);
 }
 /** De vez en cuando, un NPC cercano comenta algo. */
+export function updateNpcBarks() {
+  if (!canHearNpcChatter()) return;
+  const now = Date.now();
+  if (now < nextBarkAt) return;
+  for (const npc of npcActors) {
+    if (!npc.character.root.visible || !npc.character.root.parent) continue;
+    if (npc.id === 'isberto' && !isbertoVisible()) continue;
+    const barks = story.NPCS[npc.id]?.barks;
+    if (story.NPCS[npc.id]?.type === 'debug') continue;
+    if (!barks?.length || now < (barkCooldown.get(npc.id) ?? 0)) continue;
+    if (Math.hypot(npc.character.root.position.x - holder.position.x, npc.character.root.position.z - holder.position.z) > 8) continue;
+    const speaker = npc.character.root.position.clone(); speaker.y += 1;
+    const listener = holder.position.clone(); listener.y += 1;
+    if (play.city.lineOfSight && !play.city.lineOfSight(speaker, listener)) continue;
+    barkCooldown.set(npc.id, now + 65000 + Math.random() * 45000);
+    nextBarkAt = now + 12000;
+    const line = t(barks[Math.floor(Math.random() * barks.length)]);
+    chatNpc(story.NPCS[npc.id].name, line);
+    return;
+  }
+}
 export function installNpcBarks() {
-  window.setInterval(() => {
-    if (play.mode !== 'play' || play.dead) return;
-    const now = Date.now();
-    for (const npc of npcActors) {
-      if (npc.id === 'isberto' && !isbertoVisible()) continue;
-      const barks = story.NPCS[npc.id]?.barks;
-      if (!barks?.length || now < (barkCooldown.get(npc.id) ?? 0)) continue;
-      if (Math.hypot(npc.character.root.position.x - holder.position.x, npc.character.root.position.z - holder.position.z) > 8) continue;
-      barkCooldown.set(npc.id, now + 40000 + Math.random() * 40000);
-      const line = t(barks[Math.floor(Math.random() * barks.length)]);
-      chatNpc(story.NPCS[npc.id].name, line);
-      npcSay(story.NPCS[npc.id].name, line);
-    }
-  }, 4000);
+  window.setInterval(updateNpcBarks, 4000);
 }
