@@ -271,4 +271,31 @@ export class FishingSoundSynthesizer {
       osc.stop(t + idx * 0.14 + 0.5);
     });
   }
+
+  /**
+   * Crujido de tensión del sedal cuando está en estrés crítico.
+   */
+  playCreak() {
+    if (this.muted) return;
+    this._initContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(85, t);
+    osc.frequency.linearRampToValueAtTime(140, t + 0.08);
+
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.08 * this.masterVolume, t + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.11);
+  }
 }

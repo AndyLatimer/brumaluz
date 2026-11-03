@@ -2,28 +2,174 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { resourceColor, type ResourceFamily } from '../data/resourceAppearance';
 
-/** Painted low-poly pieces, merged into a single draw per model, without textures. */
+/** Painted low-poly pieces, merged into a single draw per model, with procedural vertex texturing. */
+export type TextureKind = 'wood' | 'wood_light' | 'wood_dark' | 'metal' | 'brass' | 'iron' | 'gold' | 'cloth' | 'carpet' | 'linen' | 'terracotta' | 'leaf' | 'paper' | 'book' | 'glass' | 'flame' | 'plain';
+
 class Model {
  private parts:THREE.BufferGeometry[]=[];
- add(geometry:THREE.BufferGeometry,color:string,position=[0,0,0],scale=[1,1,1],rotation=[0,0,0]) {
+ private transformStack:THREE.Matrix4[]=[new THREE.Matrix4()];
+
+ pushGroup(position=[0,0,0],rotation=[0,0,0],scale=[1,1,1]){
+  const local=new THREE.Matrix4().compose(
+   new THREE.Vector3(...position),
+   new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)),
+   new THREE.Vector3(...scale)
+  );
+  const current=this.transformStack[this.transformStack.length-1];
+  this.transformStack.push(current.clone().multiply(local));
+ }
+
+ popGroup(){
+  if(this.transformStack.length>1)this.transformStack.pop();
+ }
+
+ withGroup(position:number[],rotation:number[],fn:()=>void,scale=[1,1,1]){
+  this.pushGroup(position,rotation,scale);
+  try{
+   fn();
+  }finally{
+   this.popGroup();
+  }
+ }
+
+ add(geometry:THREE.BufferGeometry,color:string,position=[0,0,0],scale=[1,1,1],rotation=[0,0,0],textureType?:TextureKind) {
   const flat=geometry.index?geometry.toNonIndexed():geometry; if(flat!==geometry)geometry.dispose();
   flat.deleteAttribute('uv');
-  const matrix=new THREE.Matrix4().compose(new THREE.Vector3(...position),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)),new THREE.Vector3(...scale));
-  flat.applyMatrix4(matrix);
-  const base=new THREE.Color(color),colors=new Float32Array(flat.attributes.position.count*3);
-  for(let i=0;i<flat.attributes.position.count;i+=3){const shade=.94+Math.sin(i*1.618+this.parts.length*3.4)*.055;for(let j=0;j<3;j++)base.clone().multiplyScalar(shade).toArray(colors,(i+j)*3);}
-  flat.setAttribute('color',new THREE.BufferAttribute(colors,3));this.parts.push(flat);return this;
+  const localMatrix=new THREE.Matrix4().compose(
+   new THREE.Vector3(...position),
+   new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)),
+   new THREE.Vector3(...scale)
+  );
+  const worldMatrix=this.transformStack[this.transformStack.length-1].clone().multiply(localMatrix);
+  flat.applyMatrix4(worldMatrix);
+  flat.computeVertexNormals();
+
+  const base=new THREE.Color(color);
+  const posAttr=flat.attributes.position;
+  const normAttr=flat.attributes.normal;
+  const count=posAttr.count;
+  const colors=new Float32Array(count*3);
+
+  // Directional key light vector for authentic top-down depth
+  const lx=0.38,ly=0.86,lz=0.34;
+
+  for(let i=0;i<count;i++){
+   const px=posAttr.getX(i),py=posAttr.getY(i),pz=posAttr.getZ(i);
+   const nx=normAttr.getX(i),ny=normAttr.getY(i),nz=normAttr.getZ(i);
+   let c=base.clone();
+
+   if(!textureType||textureType==='plain'){
+    const shade=.94+Math.sin(i*1.618+this.parts.length*3.4)*.055;
+    c.multiplyScalar(shade);
+   }else{
+    const dot=nx*lx+ny*ly+nz*lz;
+    const ao=Math.min(1.0,0.84+Math.max(0,py)*1.8);
+    let light=(0.86+Math.max(0,dot)*0.24+Math.max(0,ny)*0.10)*ao;
+    if(ny<-0.2)light*=0.78+(ny+1)*0.22;
+    const isBevel=(Math.abs(ny)>0.35&&Math.abs(ny)<0.85)||(Math.abs(nx)>0.35&&Math.abs(nx)<0.85);
+    if(isBevel)light*=1.08;
+
+    if(textureType.startsWith('wood')){
+     const trunkGrad=0.94+Math.sin(py*4.0)*0.06;
+     const partShift=0.96+((this.parts.length*17)%9)*0.01;
+     const endGrain=Math.abs(ny)>0.92?0.92:1.0;
+     c.multiplyScalar(light*trunkGrad*partShift*endGrain);
+    }else if(textureType==='cloth'||textureType==='carpet'||textureType==='linen'){
+     const rim=(1.0-Math.abs(dot))*0.08;
+     const partShift=0.97+((this.parts.length*13)%7)*0.01;
+     const heightGrad=0.96+Math.min(0.08,py*0.15);
+     c.multiplyScalar(light*partShift*heightGrad).addScalar(rim);
+    }else if(textureType==='brass'||textureType==='gold'){
+     const spec=Math.pow(Math.max(0,ny*0.75+nx*0.45-nz*0.45),3.0);
+     c.multiplyScalar(light*1.04).addScalar(spec*0.32);
+    }else if(textureType==='iron'||textureType==='metal'){
+     const spec=Math.pow(Math.max(0,ny*0.7+nx*0.5-nz*0.4),2.5);
+     c.multiplyScalar(light*0.98).addScalar(spec*0.16);
+    }else if(textureType==='terracotta'){
+     const clayGrad=0.92+Math.sin(py*3.5)*0.08;
+     c.multiplyScalar(light*clayGrad);
+    }else if(textureType==='leaf'){
+     const sss=0.90+Math.max(0,py-0.3)*0.28;
+     c.multiplyScalar(light*sss);
+    }else if(textureType==='paper'||textureType==='book'){
+     c.multiplyScalar(light*1.02);
+    }else if(textureType==='flame'){
+     c.multiplyScalar(1.40);
+    }else if(textureType==='glass'){
+     const rim=Math.pow(1.0-Math.abs(nz),2.0)*0.28;
+     c.multiplyScalar(light).addScalar(rim);
+    }else{
+     c.multiplyScalar(light);
+    }
+   }
+   c.r=Math.min(1,Math.max(0,c.r));
+   c.g=Math.min(1,Math.max(0,c.g));
+   c.b=Math.min(1,Math.max(0,c.b));
+   c.toArray(colors,i*3);
+  }
+
+  flat.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  this.parts.push(flat);return this;
  }
- box(color:string,p:number[],s:number[],r=[0,0,0]){return this.add(new THREE.BoxGeometry(1,1,1),color,p,s,r);}
+ box(color:string,p:number[],s:number[],r=[0,0,0],textureType?:TextureKind){return this.add(new THREE.BoxGeometry(1,1,1),color,p,s,r,textureType);}
  rock(color:string,p:number[],s:number[],r=[0,0,0]){return this.add(new THREE.IcosahedronGeometry(1,0),color,p,s,r);}
- ball(color:string,p:number[],s:number[]){return this.add(new THREE.SphereGeometry(1,8,5),color,p,s);}
- rod(color:string,a:number[],b:number[],radius:number,top=radius,segments=7){
+ ball(color:string,p:number[],s:number[],textureType?:TextureKind){return this.add(new THREE.SphereGeometry(1,10,7),color,p,s,[0,0,0],textureType);}
+ rod(color:string,a:number[],b:number[],radius:number,top=radius,segments=8,textureType?:TextureKind){
   const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),direction=to.clone().sub(from);
+  const len=direction.length();
+  if(len<=0.0001)return this;
   const rotation=new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize()));
-  return this.add(new THREE.CylinderGeometry(top,radius,direction.length(),segments),color,from.lerp(to,.5).toArray(),[1,1,1],[rotation.x,rotation.y,rotation.z]);
+  return this.add(new THREE.CylinderGeometry(top,radius,direction.length(),segments),color,from.lerp(to,.5).toArray(),[1,1,1],[rotation.x,rotation.y,rotation.z],textureType);
+  return this.add(new THREE.CylinderGeometry(top,radius,len,segments),color,from.lerp(to,.5).toArray(),[1,1,1],[rotation.x,rotation.y,rotation.z],textureType);
+ }
+ cyl(color:string,p:number[],radius:number,height:number,segments=16,r=[0,0,0],radiusTop=radius,textureType?:TextureKind){
+  return this.add(new THREE.CylinderGeometry(radiusTop,radius,height,segments),color,p,[1,1,1],r,textureType);
+ }
+ torus(color:string,p:number[],radius:number,tube:number,radialSegments=8,tubularSegments=16,r=[0,0,0],textureType?:TextureKind){
+  return this.add(new THREE.TorusGeometry(radius,tube,radialSegments,tubularSegments),color,p,[1,1,1],r,textureType);
+ }
+ lathe(color:string,p:number[],points:[number,number][],segments=16,r=[0,0,0],textureType?:TextureKind){
+  const pts=points.map(([x,y])=>new THREE.Vector2(x,y));
+  return this.add(new THREE.LatheGeometry(pts,segments),color,p,[1,1,1],r,textureType);
+ }
+ extrude(color:string,p:number[],shape:THREE.Shape,depth:number,r=[0,0,0],s=[1,1,1],textureType?:TextureKind){
+  const geom=new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:false});
+  geom.center();
+  return this.add(geom,color,p,s,r,textureType);
+ }
+ leaf3D(color:string,start:number[],tip:number[],width=0.08,textureType:TextureKind='leaf'){
+  const a=new THREE.Vector3(...start),b=new THREE.Vector3(...tip);
+  const dir=b.clone().sub(a);
+  let side=new THREE.Vector3(-dir.y,dir.x,0);
+  if(side.length()<0.001)side=new THREE.Vector3(1,0,0);
+  side.normalize();
+  const outline=[
+   a.clone(),
+   a.clone().add(dir.clone().multiplyScalar(0.28)).add(side.clone().multiplyScalar(width)),
+   a.clone().add(dir.clone().multiplyScalar(0.68)).add(side.clone().multiplyScalar(width*0.72)),
+   b.clone(),
+   a.clone().add(dir.clone().multiplyScalar(0.68)).sub(side.clone().multiplyScalar(width*0.72)),
+   a.clone().add(dir.clone().multiplyScalar(0.28)).sub(side.clone().multiplyScalar(width))
+  ];
+  const ridge=a.clone().add(dir.clone().multiplyScalar(0.48)).add(new THREE.Vector3(0,width*0.28,0));
+  const underside=ridge.clone().sub(new THREE.Vector3(0,0.012,0));
+  const verts=[...outline,ridge,underside];
+  const positions:number[]=[];
+  for(let i=0;i<6;i++){
+   const p1=verts[i],p2=verts[(i+1)%6],p3=verts[6];
+   positions.push(p1.x,p1.y,p1.z,p2.x,p2.y,p2.z,p3.x,p3.y,p3.z);
+  }
+  for(let i=0;i<6;i++){
+   const p1=verts[(i+1)%6],p2=verts[i],p3=verts[7];
+   positions.push(p1.x,p1.y,p1.z,p2.x,p2.y,p2.z,p3.x,p3.y,p3.z);
+  }
+  const geom=new THREE.BufferGeometry();
+  geom.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geom.computeVertexNormals();
+  return this.add(geom,color,[0,0,0],[1,1,1],[0,0,0],textureType);
  }
  leaf(p:number[],size:number,angle:number,color='#769354'){
-  return this.add(new THREE.SphereGeometry(1,5,3),color,p,[size*.42,size*.12,size],[.25,angle,.25]);
+  return this.add(new THREE.SphereGeometry(1,6,4),color,p,[size*.42,size*.12,size],[.25,angle,.25],'leaf');
  }
  finish(){const merged=mergeGeometries(this.parts);for(const part of this.parts)part.dispose();merged.computeBoundingBox();merged.computeBoundingSphere();return merged;}
 }
@@ -108,6 +254,12 @@ export function gatheringToolGeometry(job:string,tier=0){
   m.box('#c4aa72',[0,.61,0],[.1,.12,.1]);
  }else if(job==='lenador'){
   m.box(steel,[.15,.57,0],[.35,.26,.065],[0,0,.16]);m.box('#d8ddd2',[.32,.55,0],[.04,.26,.055],[0,0,.16]);m.box('#80705b',[-.055,.57,0],[.12,.14,.09]);
+ }else if(job==='pescador'||job==='pesca'){
+  m.rod('#9c6f2a',[0,.62,0],[.06,1.82,.14],.024,.008,8);
+  m.rod(steel,[0,-.04,-.04],[0,-.04,.04],.042,.042,8);
+  m.box('#d8a85c',[0,-.04,0],[.045,.07,.055]);
+  m.box(steel,[.03,1.15,.08],[.018,.026,.018]);
+  m.box(steel,[.055,1.78,.13],[.014,.02,.014]);
  }else{
   const blade=new THREE.Shape();blade.absarc(.16,.65,.28,-.4,Math.PI*1.3,false);blade.absarc(.16,.65,.19,Math.PI*1.3,-.4,true);blade.closePath();
   m.add(new THREE.ExtrudeGeometry(blade,{depth:.04,bevelEnabled:false,curveSegments:10}),steel,[0,0,-.02]);
@@ -115,38 +267,6 @@ export function gatheringToolGeometry(job:string,tier=0){
  return m.finish();
 }
 
-export function furnitureGeometry(kind:string,tier=0,job?:string){
- const m=new Model(),wood=resourceColor('wood',tier),light='#c7a477',iron='#6e7772';
- if(kind==='biblioteca'){
-  m.box('#70553d',[0,.9,.32],[1.5,1.8,.08]);
-  for(const x of [-.74,.74])m.box(wood,[x,.92,0],[.13,1.84,.72]);
-  for(let i=0;i<4;i++)m.box(wood,[0,.13+i*.54,0],[1.55,.09,.77]);
-  m.box(light,[0,1.86,0],[1.7,.1,.82]);
-  for(let row=0;row<3;row++)for(let i=0;i<7;i++){
-   const x=-.59+i*.18,h=.3+(i%3)*.04,col=['#71815d','#8d6b65','#737f91','#b29a69'][i%4];
-   m.box(col,[x,.34+row*.54,-.06],[.115,h,.39],[0,0,i===6?-.13:0]);
-   for(const y of [-.09,.09])m.box('#c3ad7f',[x,.34+row*.54+y,-.26],[.095,.012,.015]);
-  }
- }else{
-  const small=kind==='taburete',w=small?.62:1.6,depth=small?.6:.8,h=small?.53:.8;
-  if(small)m.add(new THREE.CylinderGeometry(.36,.34,.11,12),wood,[0,h,0]);
-  else for(let i=0;i<4;i++)m.box(i%2?wood:light,[0,h,-.3+i*.2],[w,.1,.19]);
-  for(const x of [-w*.38,w*.38])for(const z of [-depth*.34,depth*.34]){
-   m.box(wood,[x,h*.48,z],[.095,h,.095],[small?z*.25:0,0,small?-x*.25:0]);
-   if(!small)m.box(iron,[x,.12,z],[.102,.07,.102]);
-  }
-  for(const z of [-depth*.34,depth*.34])m.box(wood,[0,h*.4,z],[w*.8,.065,.065]);
-  for(const x of [-w*.38,w*.38])m.box(wood,[x,h*.27,0],[.065,.065,depth*.8]);
-  if(kind==='estacion'){
-   m.box('#65533d',[0,.46,.13],[1.35,.07,.4]);m.box(wood,[0,.63,.02],[.66,.22,.56]);
-   m.box(iron,[.38,.86,-.07],[.22,.13,.25]);m.box(iron,[.47,.91,-.07],[.065,.23,.25]);
-   m.rod(iron,[.37,.86,-.18],[.37,.86,-.42],.025);m.rod(light,[.37,.76,-.39],[.37,.96,-.39],.023);
-   m.box('#b6a887',[-.39,.86,.03],[.42,.035,.33],[0,.15,0]);
-   m.rod(bark,[-.54,.9,-.05],[-.25,.9,.17],.025);m.box(iron,[-.24,.92,.17],[.14,.08,.08],[0,.6,0]);
-   if(job==='alquimia'||job==='cocina'){m.ball('#8cae95',[-.44,.99,-.19],[.075,.11,.075]);m.rod('#b58f5b',[-.44,1.06,-.19],[-.44,1.13,-.19],.035);}
-  }
- }
- return m.finish();
-}
+export { furnitureGeometry } from './homeFurniture';
 
-export const resourceMaterial=()=>new THREE.MeshStandardMaterial({vertexColors:true,roughness:.88,metalness:.035});
+export const resourceMaterial=()=>new THREE.MeshStandardMaterial({vertexColors:true,roughness:.74,metalness:.06});

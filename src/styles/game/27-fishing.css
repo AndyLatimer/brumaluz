@@ -1,0 +1,52 @@
+/**
+ * @file 27-fishing.css
+ * Estilos para la integración del minijuego de pesca en la interfaz de Brumaluz.
+ */
+
+@import '/standalone/fishing/styles/fishing.css';
+
+.integrated-fishing-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(14, 25, 30, 0.45) 0%, rgba(8, 14, 18, 0.75) 100%);
+  backdrop-filter: blur(2.5px);
+  animation: fishing-overlay-fade 0.25s ease-out;
+}
+
+.integrated-fishing-overlay[hidden] {
+  display: none !important;
+}
+
+.integrated-fishing-close-btn {
+  position: absolute;
+  top: 22px;
+  right: 28px;
+  z-index: 95;
+  padding: 8px 18px;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffe2a0;
+  background: linear-gradient(135deg, rgba(58, 36, 20, 0.95), rgba(30, 18, 10, 0.95));
+  border: 2px solid #e3b45a;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.15s ease-in-out;
+}
+
+.integrated-fishing-close-btn:hover {
+  background: linear-gradient(135deg, #5a3a22, #3b2516);
+  transform: scale(1.05);
+  border-color: #ffd166;
+}
+
+@keyframes fishing-overlay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+

@@ -14,7 +14,7 @@ import { holder, keys, marker, playerVel, canvas, ray, camera } from './stage';
 import { houseOpen, isbertoVisible, talkGnomi, restInBed, performWelcome } from '../story/quests';
 import { groundPoint, doorLocked } from '../story/scenes';
 import { remotePlayers } from './worldClient';
-import { npcActors, travelPortal } from './cities';
+import { npcActors, travelPortal, cityPopulation } from './cities';
 import { beginConversation, storyLock } from './conversation';
 import { toast } from '../ui/toast';
 import { setWindow } from '../ui/menus';
@@ -24,8 +24,11 @@ import { lockCombatTarget } from './combat';
 import { wildernessInteractions, openWildernessCorpse, clickWilderness } from './wilderness';
 import { $ } from '../ui/dom';
 import { professionInteractions } from '../world/professionWorld';
+import { fishingInteractions, startFishing } from './fishing';
 import { gatherResource, performProfession } from './professions';
 import { selectProfessionTab } from '../ui/professionsWindow';
+import {homeAt,homeState,HOME_FURNISHINGS,visibleFurniture} from '../data/homes';
+import {RPG_CATALOG} from '../data/professions';
 
 // ---------------- Interacción (tecla E) ----------------
 export const playerInteractions = createPlayerInteractions((target) => tradeWindow.invite(target));
@@ -52,14 +55,17 @@ export function nearestInteractable(): Interactable | null {
     id: `portal:${portal.id}`, label: portal.name, position: portal.position, radius: portal.radius,
   }));
   const spot = BANK_SPOTS[play.city.locationId];
-  const banks: Interactable[] = spot && houseOpen()
+  const home=homeAt(play.city.locationId),homes=homeState(session.state.rpg?.homes),ownHome=home&&homes.owned.includes(home.id)&&!homes.visit;
+  const banks: Interactable[] = spot && (home?ownHome:houseOpen())
     ? [{ id: 'bank:chest', label: 'Abrir el banco', position: new THREE.Vector3(spot.x, play.city.groundY(spot.x, spot.z), spot.z), radius: BANK_INTERACT_RADIUS }] : [];
   const beds: Interactable[] = play.city.locationId === ISBERTO_HOUSE && houseOpen()
     ? [{ id: 'house:bed', label: 'Descansar', position: groundPoint(HOUSE_BED), radius: BED_RADIUS }] : [];
-  const seats: Interactable[] = play.city.seats.map(seat => ({
+  const seats: Interactable[] = play.city.seats.filter(seat => !cityPopulation?.isSeatOccupied(seat.id)).map(seat => ({
     id: `seat:${seat.id}`, label: 'Sentarse', position: seat.position, radius: 2.2,
   }));
-  for (const item of [...portals, ...corpses, ...banks, ...beds, ...seats, ...wildernessInteractions(), ...professionInteractions(play.city,session.state.rpg), ...play.city.interactables, ...story.welcomeWorld.interactions(), ...story.coinBags.interactions(), ...story.fairyDust.interactions()]) {
+  if(ownHome)beds.push({id:'home:bed',label:'Descansar en mi cama',position:new THREE.Vector3(home.bed.x,play.city.groundY(home.bed.x,home.bed.z),home.bed.z),radius:home.bed.radius});
+  const lamps:Interactable[]=visibleFurniture(session.state.rpg,play.city.locationId).filter(p=>p.location===play.city.locationId&&HOME_FURNISHINGS[RPG_CATALOG.items[p.item.id]?.furniture??'']?.light&&!session.state.rpg?.homes?.visit).map(p=>({id:`home-light:${p.id}`,label:p.lit===false?'Encender farol':'Apagar farol',position:new THREE.Vector3(p.x,play.city.groundY(p.x,p.z),p.z),radius:1.5}));
+  for (const item of [...portals, ...corpses, ...banks, ...beds, ...seats, ...lamps, ...wildernessInteractions(), ...professionInteractions(play.city,session.state.rpg,holder.position), ...play.city.interactables, ...story.welcomeWorld.interactions(), ...story.coinBags.interactions(), ...story.fairyDust.interactions(), ...fishingInteractions(play.city, holder.position)]) {
     if (item.id === 'npc:isberto' && !isbertoVisible()) continue;
     const distance = Math.hypot(item.position.x - holder.position.x, item.position.z - holder.position.z);
     if (distance <= item.radius && distance < bestDistance) { best = item; bestDistance = distance; }
@@ -102,11 +108,12 @@ export function interact() {
     void playerInteractions.open(player);
     return;
   }
+  if (item?.id.startsWith('fishing:')) { prepareObjectInteraction(item); startFishing(item.id); return; }
   if (item?.id === 'welcome:gnomi') { talkGnomi(); return; }
   if (item?.id.startsWith('seat:')) {
     if (isInCombat(fight.combatEncounter) || play.jumpHeight > 0.05) return;
     const seat = play.city.seats.find(candidate => candidate.id === item.id.slice(5));
-    if (!seat || !play.char.sit(seat.seatHeight)) return;
+    if (!seat || cityPopulation?.isSeatOccupied(seat.id) || !play.char.sit(seat.seatHeight - seat.position.y)) return;
     play.pendingTalk = null;
     keys.clear();
     play.moveTarget = null;
@@ -128,6 +135,8 @@ export function interact() {
     return;
   }
   if (item?.id === 'house:bed') { void restInBed(); return; }
+  if(item?.id==='home:bed'){prepareObjectInteraction(item);void performProfession('home_rest');return;}
+  if(item?.id.startsWith('home-light:')){const p=session.state.rpg?.furniture.find(p=>p.id===item.id.slice(11));if(p)void performProfession('home_toggle',{id:p.id,instanceId:p.item.instanceId});return;}
   if (item?.id === 'welcome:badge') { prepareObjectInteraction(item);void performWelcome('collect'); return; }
   if (item?.id === 'corpse:shadowling') { prepareObjectInteraction(item,'pickup');fight.lootEncounter=null;fight.lootTargetRoot=null;setWindow('loot'); return; }
   if (item?.id === 'bank:chest') { prepareObjectInteraction(item,'inspect');void openBank(); return; }
@@ -172,7 +181,7 @@ export function clickNpc(e: PointerEvent) {
     }
     return true;
   }
-  for (const hit of ray.intersectObjects(npcActors.filter(npc => npc.id !== 'isberto' || isbertoVisible()).map((n) => n.character.root), true)) {
+  for (const hit of ray.intersectObjects(npcActors.filter(npc => npc.character.root.visible && (npc.id !== 'isberto' || isbertoVisible())).map((n) => n.character.root), true)) {
     const npc = npcActors.find((n) => { let o: THREE.Object3D | null = hit.object; while (o) { if (o === n.character.root) return true; o = o.parent; } return false; });
     if (!npc || !story.NPCS[npc.id]) continue;
     const p = npc.character.root.position;

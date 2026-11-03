@@ -24,8 +24,13 @@ export class CanvasWaterRenderer {
     };
 
     this.time = 0;
+    this.ambientTimeOfDay = 'dusk';
     this._initParticles();
     this.resize();
+  }
+
+  setAmbientTimeOfDay(mode) {
+    this.ambientTimeOfDay = mode;
   }
 
   resize() {

@@ -71,7 +71,7 @@ export class MinigameView {
     this._renderProgressBar(ctx, trackX + trackW + 16, trackY, 20, trackH, reel.catchProgress, reel.isFishInside, dt);
 
     // 6. Sedal de tensión (izquierda)
-    this._renderTensionLine(ctx, trackX - 14, trackY, trackH, reel.zonePosition, reel.lineTension);
+    this._renderTensionLine(ctx, trackX - 14, trackY, trackH, reel.zonePosition, reel.lineTension, reel.tensionStress);
 
     ctx.restore();
   }
@@ -199,6 +199,18 @@ export class MinigameView {
     ctx.fillRect(x + 4, zoneTop, w - 8, 3);
     ctx.fillRect(x + 4, zoneTop + zoneHeight - 3, w - 8, 3);
 
+    // Indicador de Combo de Maestría
+    if (reel.comboMultiplier > 1.0) {
+      ctx.save();
+      ctx.font = '700 11px Cinzel, serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 6;
+      ctx.textAlign = 'center';
+      ctx.fillText(`x${reel.comboMultiplier.toFixed(1)} COMBO`, x + (w / 2), zoneTop - 6);
+      ctx.restore();
+    }
+
     // Chispas festivas si el pez está dentro
     if (isInside && Math.random() < 0.4) {
       this.sparks.push({
@@ -248,6 +260,24 @@ export class MinigameView {
     const pCol = species.primaryColor || '#38bdf8';
     const aCol = species.accentColor || '#e0f2fe';
 
+    // Aleta dorsal
+    ctx.fillStyle = aCol;
+    ctx.beginPath();
+    ctx.moveTo(-6, -7);
+    ctx.lineTo(1, -13 + (waggle * 0.4));
+    ctx.lineTo(7, -7);
+    ctx.closePath();
+    ctx.fill();
+
+    // Aleta pectoral
+    ctx.fillStyle = aCol;
+    ctx.beginPath();
+    ctx.moveTo(-1, 3);
+    ctx.lineTo(-5, 10 + (waggle * 0.5));
+    ctx.lineTo(4, 5);
+    ctx.closePath();
+    ctx.fill();
+
     // Cola
     ctx.fillStyle = aCol;
     ctx.beginPath();
@@ -269,14 +299,14 @@ export class MinigameView {
     ctx.lineWidth = 1.4;
     ctx.stroke();
 
-    // Ojo
+    // Ojo con pupila animada
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(9, -2, 2.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(10, -2, 1.1, 0, Math.PI * 2);
+    ctx.arc(9.8, -2, 1.1, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -345,13 +375,14 @@ export class MinigameView {
     ctx.restore();
   }
 
-  _renderTensionLine(ctx, x, y, h, zonePos, tension) {
+  _renderTensionLine(ctx, x, y, h, zonePos, tension, stress = 0) {
     ctx.save();
-    ctx.strokeStyle = tension > 0.8 ? '#f87171' : 'rgba(255, 226, 160, 0.65)';
-    ctx.lineWidth = 1.6;
+    const isStress = stress > 0.45 || tension > 0.85;
+    ctx.strokeStyle = isStress ? '#ef4444' : (tension > 0.7 ? '#f59e0b' : 'rgba(255, 226, 160, 0.65)');
+    ctx.lineWidth = isStress ? 2.4 : 1.6;
 
-    // Vibración ligera según tensión
-    const jitter = tension > 0.8 ? (Math.random() - 0.5) * 2.5 : 0;
+    // Vibración ligera según tensión y estrés de línea
+    const jitter = isStress ? (Math.random() - 0.5) * 3.8 : (tension > 0.7 ? (Math.random() - 0.5) * 1.5 : 0);
 
     const reelY = y + ((1.0 - zonePos) * h);
 
@@ -361,9 +392,9 @@ export class MinigameView {
     ctx.stroke();
 
     // Anilla o carrete en la posición
-    ctx.fillStyle = '#c99142';
+    ctx.fillStyle = isStress ? '#ef4444' : '#c99142';
     ctx.beginPath();
-    ctx.arc(x + jitter, reelY, 3.5, 0, Math.PI * 2);
+    ctx.arc(x + jitter, reelY, isStress ? 4.2 : 3.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();

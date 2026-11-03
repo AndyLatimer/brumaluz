@@ -9,8 +9,9 @@ import barbarianUrl from '../assets/models/Barbarian.glb?url';
 import ambientAnimationsUrl from '../assets/models/ambient-animations.glb?url';
 import rangedAnimationsUrl from '../assets/library/character-animations/animations/Rig_Medium_CombatRanged.glb?url';
 import meleeAnimationsUrl from '../assets/library/character-animations/animations/Rig_Medium_CombatMelee.glb?url';
+import toolsAnimationsUrl from '../assets/library/character-animations/animations/Rig_Medium_Tools.glb?url';
 import creatorPartsUrl from '../assets/models/creator-parts.glb?url';
-import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark } from '../data/data';
+import { CharData, RACES, CLOTH, HAIR_COLORS, EYE_COLORS, ACC_COLORS, coatMark, WALK_STYLES } from '../data/data';
 import { buildHead, FACE_KITS, type HeadSource, type HeadKit, type HeadResult, type CreatorParts, type HeadOptions } from './head';
 import { paintCell, smoothNormals } from './head/geometry';
 import { softDot } from '../world/paint';
@@ -23,6 +24,7 @@ import { loadWardrobe, mountWardrobe, wardrobeRegions, WARDROBES, type WardrobeI
 import { gatheringToolGeometry, resourceMaterial } from '../world/resourceModels';
 import { fitCreatorNeckAccessory } from './creatorNeckFit';
 import { fitEyewearToHeadwear } from './head/headwearEyewearFit';
+import {RetainedCache} from './retainedCache';
 
 // ---------------------------------------------------------------------------
 // Personajes a partir del pack "KayKit Adventurers" (Kay Lousberg, CC0).
@@ -42,6 +44,7 @@ export function characterKit(kit: Kit) {
 let ambientAnimations: THREE.AnimationClip[] = [];
 let rangedAnimations: THREE.AnimationClip[] = [];
 let meleeAnimations: THREE.AnimationClip[] = [];
+let toolsAnimations: THREE.AnimationClip[] = [];
 /** Cuánto se hunde el modelo bajo la superficie del agua: flotando de pie (hasta los hombros) y nadando (tumbado). */
 const SWIM_TREAD_DEPTH = -0.62;
 const SWIM_STROKE_DEPTH = -0.3;
@@ -49,14 +52,15 @@ let creatorParts: CreatorParts;
 
 const heads = {} as Record<HeadKit, HeadSource>;
 
-export async function loadKits() {
+export async function loadKits(allEquipment = true) {
   await Promise.all([
     ...(Object.keys(URLS) as Kit[]).map(async (k) => { kits[k] = await loadGLB(URLS[k]); }),
-    loadWardrobe(),
-    loadWeaponModels(),
+    loadWardrobe(allEquipment ? undefined : ['helpers','medieval','traje_guerrero_artesano']),
+    loadWeaponModels(allEquipment ? undefined : Object.keys(STARTER_MODELS).filter(id=>id.endsWith('_inicial'))),
     loadGLB(ambientAnimationsUrl).then(gltf => { ambientAnimations = gltf.animations; }),
     loadGLB(rangedAnimationsUrl).then(gltf => { rangedAnimations = gltf.animations.filter(clip=>clip.name.startsWith('Ranged_1H_')); }),
     loadGLB(meleeAnimationsUrl).then(gltf => { meleeAnimations = gltf.animations.filter(clip=>/^Melee_(1H_Attack|Dualwield_Attack)/.test(clip.name)); }),
+    loadGLB(toolsAnimationsUrl).then(gltf => { toolsAnimations = gltf.animations.filter(clip=>clip.name.startsWith('Fishing_')); }),
     loadGLB(creatorPartsUrl).then(gltf => {
       const geometry = (name: keyof CreatorParts) => {
         const mesh = gltf.scene.getObjectByName(name);
@@ -109,12 +113,13 @@ const VILLAGER: Outfit = { kit: 'Rogue', cape: false, idle: 'Idle', items: [] };
 // Repintado de la paleta
 // ---------------------------------------------------------------------------
 
-const texCache = new Map<string, THREE.Texture>();
+const texCache = new RetainedCache<THREE.Texture>();
+export const recolorCacheStats=()=>texCache.stats();
 const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
 
 /** Copia la textura cambiando el color de algunas celdas, conservando su degradado. */
 export function recolor(src: THREE.Texture, kit: string, map: [number[], string][]): THREE.Texture {
-  const key = kit + '|' + map.map(([c, h]) => c.join(',') + h).join(';');
+  const key = src.uuid + '|' + kit + '|' + map.map(([c, h]) => c.join(',') + h).join(';');
   let t = texCache.get(key);
   if (t) return t;
   const img = src.image as HTMLImageElement | ImageBitmap;
@@ -212,6 +217,8 @@ export class Character {
   private happyReq = false;
   private happyUntil = -1;
   private owned: { dispose(): void }[] = [];
+  private recoloredTextures=new Set<THREE.Texture>();
+  private disposed=false;
   private heldObjects:THREE.Object3D[]=[];
   private gatheringTool:THREE.Mesh|null=null;
   private gatheringHidden:{object:THREE.Object3D;visible:boolean}[]=[];
@@ -219,6 +226,8 @@ export class Character {
   constructor(public d: CharData, public opts: BuildOpts) {
     this.build();
     this.root.scale.setScalar(opts.scale ?? 1);
+    for(const resource of this.owned)if(resource instanceof THREE.MeshStandardMaterial&&resource.map&&!this.recoloredTextures.has(resource.map)&&texCache.retain(resource.map))this.recoloredTextures.add(resource.map);
+    texCache.trim();
   }
 
   private build() {
@@ -276,7 +285,8 @@ export class Character {
       let m = headMats.get(kit);
       if (!m) {
         const src = (kits[kit].scene.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6 }));
+        const croppedScalp = '#' + new THREE.Color(skin).lerp(new THREE.Color(hair), .28).getHexString();
+        m = charm(new THREE.MeshStandardMaterial({ map: recolor(src.map!, kit, [[SKIN, skin], [HAIR, hair], [[63], croppedScalp], [[10], EYE_COLORS[d.eyeColor]], [[2], '#6a2c30']]), roughness: 0.6 }));
         headMats.set(kit, m);
         this.owned.push(m);
       }
@@ -394,7 +404,7 @@ export class Character {
 
     // Animaciones
     this.mixer = new THREE.AnimationMixer(this.model);
-    for (const clip of [...base.animations, ...ambientAnimations, ...refinedCombatClips([...base.animations,...rangedAnimations,...meleeAnimations])]) this.actions.set(clip.name, this.mixer.clipAction(clip));
+    for (const clip of [...base.animations, ...ambientAnimations, ...refinedCombatClips([...base.animations,...rangedAnimations,...meleeAnimations]), ...toolsAnimations]) this.actions.set(clip.name, this.mixer.clipAction(clip));
     for(const [name,source] of [['Gather_Mine','Melee_1H_Attack_Chop'],['Gather_Chop','Melee_1H_Attack_Slice_Diagonal']] as const){
       const original=meleeAnimations.find(clip=>clip.name===source);
       if(original){const clip=original.clone();clip.name=name;clip.duration=1.25;for(const track of clip.tracks){const ratio=1.25/original.duration;for(let i=0;i<track.times.length;i++)track.times[i]*=ratio;}this.actions.set(name,this.mixer.clipAction(clip));}
@@ -404,6 +414,7 @@ export class Character {
     this.applyBodyShape();
     this.mixer.addEventListener('finished', (e) => {
       if (e.action !== this.oneShot || this.dead) return;
+      if (e.action.getClip().name === 'Cheering') this.completeCelebration(true);
       this.oneShot = null;
       this.interruptible = false;
       this.playGait(e.action);
@@ -695,12 +706,13 @@ export class Character {
 
   // ---------------- Animación ----------------
   private play(name: string, interruptible = false) {
+    this.completeCelebration(false);
     if (this.dead && name !== 'Death_A') return 0;
     const a = this.actions.get(name);
     if (!a) throw new Error(`Falta la animación ${name}.`);
     const from = this.oneShot ?? this.gaitAction();
     if (name !== 'Idle_B') this.stopItemGesture();
-    this.clearGatheringTool();this.gatherAction = null;
+    if (!name.startsWith('Fishing_')) { this.clearGatheringTool(); this.gatherAction = null; }
     if (name !== 'Sit_Chair_Idle') this.seated = false;
     this.oneShot = a;
     this.interruptible = interruptible;
@@ -724,6 +736,7 @@ export class Character {
     return this.play(key, true);
   }
   stopGesture() {
+    this.completeCelebration(false);
     if (!this.oneShot || this.dead) return;
     const from = this.oneShot;
     this.clearGatheringTool();this.gatherAction=null;
@@ -745,7 +758,7 @@ export class Character {
   private gaitAction(gait = this.gait) {
     // Nadando: brazadas (el gateo, tumbado a ras de agua) al avanzar y reposo flotando al estar quieto.
     if (this.swimming) return gait === 'idle' ? this.idle : this.actions.get('Crawling') ?? this.idle;
-    return gait === 'idle' ? this.idle : this.actions.get(gait === 'walk' ? 'Walking_A' : 'Running_A') ?? this.idle;
+    return gait === 'idle' ? this.idle : this.actions.get(gait === 'walk' ? WALK_STYLES[this.d.walkStyle] ?? WALK_STYLES[0] : 'Running_A') ?? this.idle;
   }
   private swimming = false;
   /** 0 en tierra, 1 del todo en el agua: suaviza la entrada y la salida. */
@@ -762,13 +775,14 @@ export class Character {
     this.playGait(from);
   }
   get isSwimming() { return this.swimming; }
-  private playGait(from?: THREE.AnimationAction) {
+  private playGait(from?: THREE.AnimationAction, preservePhase = this.gait !== 'idle') {
     const action = this.gaitAction();
     // Keep the footfall phase instead of restarting the first step after every gesture.
-    const locomotion = ['Walking_A','Running_A','Crawling'].includes(from?.getClip().name ?? '');
-    const phase = from && locomotion ? from.time / from.getClip().duration : action.time / action.getClip().duration;
+    const locomotion = [...WALK_STYLES,'Running_A','Crawling'].includes(from?.getClip().name ?? '');
+    const phaseSource = from && locomotion ? from : action;
+    const phase = preservePhase ? phaseSource.time / phaseSource.getClip().duration : 0;
     action.reset().setEffectiveWeight(1).setLoop(THREE.LoopRepeat, Infinity).play();
-    if (this.gait !== 'idle') action.time = (phase % 1) * action.getClip().duration;
+    if (this.gait !== 'idle' && preservePhase) action.time = (phase % 1) * action.getClip().duration;
     if (from && from !== action) from.crossFadeTo(action, 0.28, false);
     else action.fadeIn(0.28);
   }
@@ -776,13 +790,14 @@ export class Character {
   setGait(g: 'idle' | 'walk' | 'run') {
     if (g === this.gait) return;
     const from = this.oneShot ?? this.gaitAction();
+    const preservePhase = this.gait !== 'idle';
     this.gait = g;
     if (this.dead || (this.oneShot && !this.interruptible)) return;
     this.seated = false;
     this.oneShot = null;
     this.interruptible = false;
     this.nextIdleAt = Math.max(this.lastT, 0) + 10 + Math.random() * 8;
-    this.playGait(from);
+    this.playGait(from, preservePhase);
   }
   /** Actual displacement after collision, used to match footsteps to movement. */
   setLocomotionSpeed(speed: number) { this.locomotionSpeed = Number.isFinite(speed) ? Math.max(0,speed) : 0; }
@@ -851,11 +866,64 @@ export class Character {
   }
   private clearGatheringTool(){
     if(this.gatheringTool){this.gatheringTool.removeFromParent();this.gatheringTool.geometry.dispose();(this.gatheringTool.material as THREE.Material).dispose();this.gatheringTool=null;}
+    const found = this.model.getObjectByName('gathering-tool');
+    if (found) found.removeFromParent();
     for(const entry of this.gatheringHidden)entry.object.visible=entry.visible;this.gatheringHidden=[];
   }
   endGathering() { if (this.gatherAction && this.oneShot === this.gatherAction) this.stopGesture(); this.clearGatheringTool();this.gatherAction = null; }
+  fishingPhase: string | null = null;
+  get hasFishingRod(): boolean { return !!this.gatheringTool || !!this.model.getObjectByName('gathering-tool'); }
+  beginFishing(tier = 0) {
+    if (this.dead || this.seated || this.swimming || this.jumpTime >= 0) return false;
+    this.clearGatheringTool();
+    const ok = this.beginGathering('pescador', tier);
+    if (ok) {
+      this.fishingPhase = 'CASTING';
+      this.setFishingPhase('CASTING');
+    }
+    return ok;
+  }
+  setFishingPhase(phase: string) {
+    if (this.dead) return;
+    this.fishingPhase = phase;
+    const clipMap: Record<string, string> = {
+      PREPARATION: 'Fishing_Idle',
+      CASTING: 'Fishing_Cast',
+      WAITING: 'Fishing_Idle',
+      HOOKING: 'Fishing_Bite',
+      REELING: 'Fishing_Reeling',
+      RESULT: 'Fishing_Catch',
+      IDLE: 'Fishing_Idle',
+      CAST: 'Fishing_Cast',
+      CATCH: 'Fishing_Catch'
+    };
+    const key = phase.toUpperCase();
+    const clipName = clipMap[key] || clipMap[phase] || 'Fishing_Idle';
+    if (this.actions.has(clipName)) {
+      this.play(clipName, true);
+      this.gatherAction = this.oneShot;
+      if (['WAITING', 'REELING'].includes(key)) this.gatherAction?.setLoop(THREE.LoopRepeat, Infinity);
+      else this.gatherAction?.setLoop(THREE.LoopOnce, 1);
+    }
+  }
+  endFishing() {
+    this.fishingPhase = null;
+    this.stopGesture();
+    this.clearGatheringTool();
+    this.gatherAction = null;
+  }
   inspect() { this.gesture('Interact'); }
   wave() { if (!this.dead) { this.play('Cheer'); this.happyReq = true; } }
+  private finishCelebration: ((completed: boolean) => void) | null = null;
+  private completeCelebration(completed: boolean) {
+    const finish = this.finishCelebration; this.finishCelebration = null; finish?.(completed);
+  }
+  /** Resolves on the actual end of Cheering, or false if interrupted/disposed. */
+  celebrate(): Promise<boolean> {
+    if (this.dead) return Promise.resolve(false);
+    this.play('Cheering'); this.happyReq = true;
+    return new Promise(resolve => { this.finishCelebration = resolve; });
+  }
   attachToChest(object: THREE.Object3D) {
     const chest = this.bones.get('chest');
     if (!chest) throw new Error('El personaje no tiene hueso de pecho.');
@@ -909,7 +977,7 @@ export class Character {
   private jumpAction: THREE.AnimationAction | null = null;
   private jumpTime = -1;
   private jumpLength = 0;
-  /** El salto se mezcla por encima de la locomoción con un peso suave, para que no parezca un clip aparte. */
+  /** Transición de locomoción a salto y vuelta, con pesos complementarios. */
   jump() {
     if (this.dead) return 0;
     this.stand();
@@ -937,10 +1005,17 @@ export class Character {
     if (this.jumpTime < 0 || !this.jumpAction) return;
     this.jumpTime += dt;
     const p = this.jumpTime / this.jumpLength;
-    if (p >= 1) { this.jumpAction.stop(); this.jumpAction = null; this.jumpTime = -1; return; }
     const smooth = (a: number, b: number, x: number) => { const k = Math.min(Math.max((x - a) / (b - a), 0), 1); return k * k * (3 - 2 * k); };
-    const envelope = smooth(0, 0.14, p) * (1 - smooth(0.72, 0.99, p));
-    this.jumpAction.setEffectiveWeight(envelope * 0.68);
+    const jumpWeight = Math.min(smooth(0, 0.13, p), 1 - smooth(0.68, 1, p));
+    const baseAction = this.oneShot ?? this.gaitAction();
+    baseAction.setEffectiveWeight(1 - jumpWeight);
+    this.jumpAction.setEffectiveWeight(jumpWeight);
+    if (p >= 1) {
+      baseAction.setEffectiveWeight(1);
+      this.jumpAction.stop();
+      this.jumpAction = null;
+      this.jumpTime = -1;
+    }
   }
 
   /** Centro aproximado de la cara, para encuadrar la cámara. */
@@ -1049,10 +1124,14 @@ export class Character {
   }
 
   dispose() {
+    if(this.disposed)return;this.disposed=true;
+    this.completeCelebration(false);
     this.clearGatheringTool();
     this.root.removeFromParent();
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.model);
     this.owned.forEach((o) => o.dispose());
+    for(const texture of this.recoloredTextures)texCache.release(texture);
+    this.recoloredTextures.clear();texCache.trim();
   }
 }

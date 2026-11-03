@@ -15,6 +15,7 @@ import { resourceFamily } from './resourceAppearance';
 import { resourceInventoryDrawing } from './resourceInventoryArt';
 import { craftingComponentDrawing } from './craftingArt';
 import {gatheringToolPainting,equipmentSlotPainting,potionPainting,scrollPainting,furniturePainting,foodPainting} from '../art/inventoryPaintings';
+import { FISHING_ITEMS } from './fishingItems';
 
 export interface ItemDef {
   id: string;
@@ -286,6 +287,8 @@ for (const custom of ((itemsCatalog as any).items || [])) {
     };
   }
 }
+
+for (const [fId, fDef] of Object.entries(FISHING_ITEMS)) { if (!ITEMS[fId]) ITEMS[fId] = fDef; }
 
 export const itemStack = (id: string) => ITEMS[id]?.stack ?? DEFAULT_STACK;
 export const itemDef = (id: string): ItemDef | undefined => ITEMS[id];

@@ -40,7 +40,12 @@ export class ReelingMechanics {
     // Progreso y combate (0.0 a 1.0)
     this.catchProgress = 0.35; // Inicio con margen cordial
     this.lineTension = 0.5;
+    this.tensionStress = 0.0;
     this.isFishInside = false;
+
+    // Racha / combo de precisión
+    this.continuousTimeInside = 0;
+    this.comboMultiplier = 1.0;
 
     // Métricas de precisión para calidad del pez
     this.totalCombatTime = 0;
@@ -135,13 +140,30 @@ export class ReelingMechanics {
 
     if (this.isFishInside) {
       this.timeInsideZone += clampedDt;
-      this.catchProgress += this.fillRate * clampedDt;
-      // Tensión equilibrada en zona óptima
-      this.lineTension = Math.min(1.0, this.lineTension + (0.2 * clampedDt));
+      this.continuousTimeInside += clampedDt;
+
+      // Multiplicador de combo por maestría continua
+      if (this.continuousTimeInside >= 4.0) this.comboMultiplier = 2.0;
+      else if (this.continuousTimeInside >= 2.2) this.comboMultiplier = 1.5;
+      else if (this.continuousTimeInside >= 1.0) this.comboMultiplier = 1.25;
+      else this.comboMultiplier = 1.0;
+
+      this.catchProgress += this.fillRate * this.comboMultiplier * clampedDt;
+      this.lineTension = Math.min(0.85, Math.max(0.4, this.lineTension + (0.15 * clampedDt)));
+      this.tensionStress = Math.max(0, this.tensionStress - (0.6 * clampedDt));
     } else {
+      this.continuousTimeInside = 0;
+      this.comboMultiplier = 1.0;
       this.catchProgress -= this.drainRate * clampedDt;
-      // Pérdida de tensión
-      this.lineTension = Math.max(0.1, this.lineTension - (0.35 * clampedDt));
+
+      // Tensión forzada si el jugador recoge sin tener al pez
+      if (this.isReeling) {
+        this.tensionStress = Math.min(1.0, this.tensionStress + (0.5 * clampedDt));
+        this.lineTension = Math.min(1.0, this.lineTension + (0.35 * clampedDt));
+      } else {
+        this.tensionStress = Math.max(0, this.tensionStress - (0.4 * clampedDt));
+        this.lineTension = Math.max(0.1, this.lineTension - (0.28 * clampedDt));
+      }
     }
 
     this.catchProgress = Math.min(1.0, Math.max(0.0, this.catchProgress));

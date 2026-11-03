@@ -159,11 +159,16 @@ export class FishingMinigameController {
 
     // Efectos de progreso continuo
     let lastProgressTick = 0;
+    let lastCreakTick = 0;
     this.on('progress', ({ progress, tension }) => {
       const now = Date.now();
       if (now - lastProgressTick > 180 && this.engine.reelingMechanics?.isFishInside) {
         lastProgressTick = now;
         this.sound.playProgressTick();
+      }
+      if (now - lastCreakTick > 450 && (this.engine.reelingMechanics?.tensionStress || 0) > 0.45) {
+        lastCreakTick = now;
+        this.sound.playCreak();
       }
     });
   }

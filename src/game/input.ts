@@ -9,6 +9,7 @@ import { canvas, holder, keys, marker } from './stage';
 import { storyLock } from './conversation';
 import { tradeWindow } from '../ui/gameInterface';
 import { playerInteractions, clickNpc, clickToMove, interact } from './interaction';
+import { isFishingActive } from './fishing';
 import { cinematic } from '../story/scenes';
 import { respawn } from './vitals';
 import { setOptionsOpen } from '../ui/options';
@@ -16,6 +17,7 @@ import { $ } from '../ui/dom';
 import { setWindow, setPlayerMenuOpen, setWorldMenuOpen, setGameMenuOpen } from '../ui/menus';
 import { releaseCombatTarget, lockCombatTarget, cycleCombatTarget } from './combat';
 import { noteCameraControl } from './camera';
+import { openBugReportModal, openBugReviewModal } from '../dev/bugReporter';
 
 let dragPointer: number | null = null;
 let dragButton = -1;
@@ -40,6 +42,7 @@ export const endDrag = (e: PointerEvent) => {
   const click = view.dragging && dragButton === 0 && view.dragDist < 6;
   // Soltar la captura antes de activar una interacción: esta puede abrir un diálogo.
   cancelDrag();
+  if (isFishingActive()) return;
   if (click && play.mode === 'play' && !play.dead && !play.mapTravelling && !storyLock() && !isDialogOpen() && !tradeWindow.isOpen && !playerInteractions.isOpen && !ui.optionsOpen && !ui.openWindow && !ui.gameMenuOpen && !ui.playerMenuOpen && !ui.worldMenuOpen && !clickNpc(e)) clickToMove(e);
 };
 export function startJump() {
@@ -95,8 +98,16 @@ export function installInput() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) clearHeldInput(); });
   document.addEventListener('focusin', (e) => { if (editableTarget(e.target)) { keys.clear(); heldShift.clear(); shiftUsedAsModifier = false; } });
   window.addEventListener('keydown', (e) => {
-    if (play.mode !== 'play') return;
     if (editableTarget(e.target) || e.isComposing) return;
+    if (e.code === 'F8') {
+      e.preventDefault();
+      if (!e.repeat) {
+        if (e.shiftKey) void openBugReviewModal();
+        else openBugReportModal();
+      }
+      return;
+    }
+    if (play.mode !== 'play') return;
     const isShift = e.code === 'ShiftLeft' || e.code === 'ShiftRight';
     if (!isShift && !e.repeat && heldShift.size) shiftUsedAsModifier = true;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -191,6 +202,7 @@ export function installInput() {
       return;
     }
     keys.add(e.code);
+    if (isFishingActive()) return;
     if (e.code === 'KeyE' && !e.repeat) interact();
     if (e.code === 'IntlBackslash' || e.key === '<') { play.char.wave(); play.waveSequence++; }
     if (e.code === 'Space') {
